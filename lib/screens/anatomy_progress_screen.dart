@@ -439,9 +439,7 @@ class HUDPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTWH(0, scanY - 80, size.width, 80), scanGlowPaint);
   }
 
-  @override
-  bool Repaint(covariant CustomPainter oldDelegate) => true;
-  
+
   @override
   bool shouldRepaint(covariant HUDPainter oldDelegate) {
     return oldDelegate.scanProgress != scanProgress;

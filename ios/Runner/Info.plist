@@ -25,7 +25,9 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Нам потрібен доступ до камери для сканування QR-кодів.</string>
+	<string>Нам потрібен доступ до камери для створення фото профілю та сканування QR-кодів.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Нам потрібен доступ до галереї для вибору фото профілю.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

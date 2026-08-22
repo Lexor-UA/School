@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/theme.dart';
-import 'screens/role_selection_screen.dart';
-import 'controllers/theme_controller.dart';
+import 'core/theme/theme.dart';
+import 'core/router/app_router.dart';
 
 void main() {
   runApp(const ProviderScope(child: SwimmingSchoolApp()));
@@ -24,16 +23,16 @@ class SwimmingSchoolApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = ref.watch(themeControllerProvider);
+    final router = ref.watch(goRouterProvider);
     
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'CitySwim',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme, // Default to dark theme
       darkTheme: AppTheme.darkTheme,
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: ThemeMode.dark, // Force dark mode
       scrollBehavior: CustomScrollBehavior(),
-      home: const RoleSelectionScreen(),
+      routerConfig: router,
     );
   }
 }

@@ -1,0 +1,420 @@
+import 'dart:ui';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:swimming_school_app/shared/widgets/water_particles.dart'; 
+
+class TrophyRoomScreen extends StatefulWidget {
+  const TrophyRoomScreen({super.key});
+
+  @override
+  State<TrophyRoomScreen> createState() => _TrophyRoomScreenState();
+}
+
+class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProviderStateMixin {
+  late AnimationController _rotationController;
+
+  final List<Map<String, dynamic>> _trophies = [
+    {
+      'title': 'Золотий Дельфін',
+      'description': 'За ідеальну техніку Батерфляй',
+      'date': '15 Серпня 2026',
+      'colors': [Colors.amberAccent, Colors.orange],
+      'icon': LucideIcons.trophy,
+      'unlocked': true,
+    },
+    {
+      'title': 'Швидка Акула',
+      'description': '100 метрів Кролем менш ніж за 1:20',
+      'date': '2 Вересня 2026',
+      'colors': [Colors.cyanAccent, Colors.blueAccent],
+      'icon': LucideIcons.medal,
+      'unlocked': true,
+    },
+    {
+      'title': 'Майстер Глибин',
+      'description': 'Здано норматив із затримки дихання (2 хвилини)',
+      'date': 'Заблоковано',
+      'colors': [Colors.grey.shade400, Colors.grey.shade700],
+      'icon': LucideIcons.lock,
+      'unlocked': false,
+    },
+    {
+      'title': 'Залізна Витримка',
+      'description': '10 тренувань без пропусків',
+      'date': 'Заблоковано',
+      'colors': [Colors.grey.shade400, Colors.grey.shade700],
+      'icon': LucideIcons.shieldAlert,
+      'unlocked': false,
+    }
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat();
+    _rotationController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final int shelfCount = (_trophies.length / 2).ceil();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF030D1B), 
+      body: Stack(
+        children: [
+          // Background ambient light
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.indigo.shade900.withValues(alpha: 0.3),
+                    const Color(0xFF030D1B),
+                  ],
+                  center: Alignment.center,
+                  radius: 1.5,
+                ),
+              ),
+            ),
+          ),
+          // Confetti / Particles
+          const Positioned.fill(
+            child: WaterParticles(), 
+          ),
+          
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton(
+                  padding: const EdgeInsets.all(24),
+                  icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 32),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Вітрина Трофеїв',
+                        style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                      ).animate().fadeIn().slideY(begin: -0.2),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Натисніть на трофей для деталей',
+                        style: TextStyle(color: Colors.white54, fontSize: 16),
+                      ).animate().fadeIn(delay: 200.ms),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // 3D Cabinet View
+                Expanded(
+                  child: ListView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 40, bottom: 100),
+                    itemCount: shelfCount,
+                    itemBuilder: (context, index) {
+                      int firstIndex = index * 2;
+                      int secondIndex = firstIndex + 1;
+                      
+                      return _buildShelf(
+                        context,
+                        _trophies[firstIndex],
+                        secondIndex < _trophies.length ? _trophies[secondIndex] : null,
+                        index
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShelf(BuildContext context, Map<String, dynamic> item1, Map<String, dynamic>? item2, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 80),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          // The Shelf itself (3D glass platform)
+          Positioned(
+            bottom: -20,
+            left: 16,
+            right: 16,
+            child: Container(
+              height: 25,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.white.withValues(alpha: 0.3), Colors.black.withValues(alpha: 0.5)],
+                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(5),
+                  topRight: Radius.circular(5),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.15), blurRadius: 40, spreadRadius: 5, offset: const Offset(0, -10)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 20, offset: const Offset(0, 25)),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            ),
+          ),
+          
+          // The items on the shelf
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _buildCabinetTrophy(context, item1, index * 2),
+              if (item2 != null) 
+                _buildCabinetTrophy(context, item2, index * 2 + 1) 
+              else 
+                const SizedBox(width: 140),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: (index * 200).ms).slideY(begin: 0.3, end: 0, duration: 800.ms, curve: Curves.easeOutCubic);
+  }
+
+  Widget _buildCabinetTrophy(BuildContext context, Map<String, dynamic> trophy, int index) {
+    bool isUnlocked = trophy['unlocked'];
+    List<Color> colors = trophy['colors'];
+
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF071426),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: isUnlocked ? colors[0].withValues(alpha: 0.5) : Colors.white24, width: 2),
+            ),
+            title: Text(
+              trophy['title'], 
+              style: TextStyle(color: isUnlocked ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 24),
+              textAlign: TextAlign.center,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(trophy['icon'], size: 80, color: isUnlocked ? colors[0] : Colors.white24),
+                const SizedBox(height: 24),
+                Text(trophy['description'], style: const TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isUnlocked ? colors[0].withValues(alpha: 0.2) : Colors.black38,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isUnlocked ? colors[0].withValues(alpha: 0.5) : Colors.transparent),
+                  ),
+                  child: Text(
+                    isUnlocked ? 'Здобуто: ${trophy['date']}' : trophy['date'],
+                    style: TextStyle(
+                      color: isUnlocked ? colors[0] : Colors.white54,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('ЗАКРИТИ', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Floating Trophy/Shield
+          Transform(
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001) // Perspective
+              ..rotateY(isUnlocked ? (math.sin((_rotationController.value * math.pi * 2) + (index * 0.5)) * 0.25) : 0),
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 140,
+              height: 170,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  // Base glow shadow on the shelf
+                  if (isUnlocked)
+                    Positioned(
+                      bottom: -15,
+                      child: Container(
+                        width: 100,
+                        height: 25,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(50),
+                          boxShadow: [
+                            BoxShadow(color: colors[0].withValues(alpha: 0.8), blurRadius: 20, spreadRadius: 5),
+                          ],
+                        ),
+                      ),
+                    ),
+                  
+                  // The Glass Shield
+                  Container(
+                    width: 110,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isUnlocked ? colors[1].withValues(alpha: 0.8) : Colors.white24, width: 1.5),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.25),
+                          isUnlocked ? colors[0].withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                          Colors.black.withValues(alpha: 0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: isUnlocked ? [
+                        BoxShadow(color: colors[0].withValues(alpha: 0.3), blurRadius: 15, spreadRadius: -5),
+                      ] : [],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Sweeping holographic reflection
+                            if (isUnlocked)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.0),
+                                        Colors.white.withValues(alpha: 0.5),
+                                        Colors.white.withValues(alpha: 0.0),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                ).animate(onPlay: (c) => c.repeat()).slide(begin: const Offset(-1, -1), end: const Offset(1, 1), duration: 3.seconds),
+                              ),
+                            
+                            // Inner flare
+                            if (isUnlocked)
+                              Positioned(
+                                top: -20,
+                                right: -20,
+                                child: ImageFiltered(
+                                  imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  child: Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: colors[0].withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            
+                            // The Trophy Icon
+                            Center(
+                              child: Icon(
+                                trophy['icon'],
+                                size: 55,
+                                color: isUnlocked ? Colors.white : Colors.white38,
+                                shadows: isUnlocked ? [
+                                  Shadow(color: colors[0], blurRadius: 10),
+                                  Shadow(color: colors[1], blurRadius: 20),
+                                ] : [],
+                              ).animate(onPlay: (c) => isUnlocked ? c.repeat(reverse: true) : null)
+                               .moveY(begin: -5, end: 5, duration: 2.seconds),
+                            ),
+                            
+                            // Level Stars at the bottom of the card
+                            if (isUnlocked)
+                              Positioned(
+                                bottom: 12,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(3, (i) => Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                                    child: Icon(LucideIcons.star, color: Colors.amberAccent, size: 12, shadows: const [Shadow(color: Colors.amber, blurRadius: 5)])
+                                      .animate(delay: (i * 200).ms, onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1,1), end: const Offset(1.2,1.2), duration: 1.seconds),
+                                  )),
+                                ),
+                              )
+                          ],
+                        ),
+                      ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Name Plate
+          Container(
+            width: 140,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              border: Border.all(color: isUnlocked ? colors[0].withValues(alpha: 0.5) : Colors.white24, width: 1.5),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: isUnlocked ? [BoxShadow(color: colors[0].withValues(alpha: 0.2), blurRadius: 5)] : [],
+            ),
+            child: Text(
+              trophy['title'],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isUnlocked ? Colors.white : Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

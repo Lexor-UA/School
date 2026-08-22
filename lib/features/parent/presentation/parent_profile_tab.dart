@@ -38,7 +38,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
     final accentColor = isDark ? Colors.cyanAccent : AppTheme.primaryBlue;
     final cardBgColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
     final cardBorderColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.1);
-    final anatomyBannerBg = isDark ? const Color(0xFF030D1B) : Colors.white;
+    final anatomyBannerBg = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
     final anatomyBannerBorder = isDark ? Colors.cyanAccent.withValues(alpha: 0.3) : Colors.blue.withValues(alpha: 0.2);
 
     return Scaffold(

@@ -66,12 +66,12 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
-      primaryColor: primaryBlue,
-      scaffoldBackgroundColor: const Color(0xFF030D1B),
+      primaryColor: const Color(0xFF38BDF8), // Premium lighter blue
+      scaffoldBackgroundColor: const Color(0xFF0F172A), // Slate 900 - Lighter than pitch black, premium
       colorScheme: const ColorScheme.dark(
-        primary: primaryBlue,
-        secondary: accentTeal,
-        surface: Color(0xFF111C2A),
+        primary: Color(0xFF38BDF8),
+        secondary: Color(0xFF34D399), // Soft mint teal
+        surface: Color(0xFF1E293B), // Slate 800 for cards/surfaces
         error: Colors.redAccent,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
@@ -83,6 +83,27 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1E293B),
+        elevation: 8,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF38BDF8),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          elevation: 4,
+          shadowColor: const Color(0xFF38BDF8).withValues(alpha: 0.3),
+        ),
       ),
     );
   }

@@ -51,7 +51,10 @@ class _ParentMainState extends ConsumerState<ParentMain> {
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppTheme.primaryBlue.withValues(alpha: 0.6), Colors.black.withValues(alpha: 0.85)],
+                  colors: [
+                    const Color(0xFF00B4DB).withValues(alpha: 0.2), 
+                    const Color(0xFF0F172A).withValues(alpha: 0.75)
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),

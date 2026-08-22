@@ -196,11 +196,7 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
   Widget _buildGlassStat(String label, String value, IconData icon, Color accentColor) {
     return Container(
       decoration: BoxDecoration(
-        image: const DecorationImage(
-          image: AssetImage('assets/images/modern_matte_texture.jpg'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken),
-        ),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [

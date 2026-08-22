@@ -49,8 +49,8 @@ class _CoachMainState extends State<CoachMain> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withValues(alpha: 0.7),
-                    Colors.black.withValues(alpha: 0.9),
+                    const Color(0xFF00B4DB).withValues(alpha: 0.2),
+                    const Color(0xFF0F172A).withValues(alpha: 0.75),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart'; 
+import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 
 class TrophyRoomScreen extends StatefulWidget {
   const TrophyRoomScreen({super.key});
@@ -70,27 +71,29 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
     final int shelfCount = (_trophies.length / 2).ceil();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF030D1B), 
+      backgroundColor: Colors.black, 
       body: Stack(
         children: [
-          // Background ambient light
+          const Positioned.fill(
+            child: RepaintBoundary(child: AnimatedWaterBackground()),
+          ),
+          const Positioned.fill(
+            child: RepaintBoundary(child: WaterParticles()),
+          ),
+          // Fluid transition overlay
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                gradient: RadialGradient(
+                gradient: LinearGradient(
                   colors: [
-                    Colors.indigo.shade900.withValues(alpha: 0.3),
-                    const Color(0xFF030D1B),
+                    const Color(0xFF00B4DB).withValues(alpha: 0.2), 
+                    const Color(0xFF0F172A).withValues(alpha: 0.75)
                   ],
-                  center: Alignment.center,
-                  radius: 1.5,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
             ),
-          ),
-          // Confetti / Particles
-          const Positioned.fill(
-            child: WaterParticles(), 
           ),
           
           SafeArea(

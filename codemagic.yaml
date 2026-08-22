@@ -47,7 +47,18 @@ workflows:
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Build iOS (IPA)
-        script: flutter build ipa --release --export-method=app-store
+        script: |
+          cat <<EOF > export_options.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+          </dict>
+          </plist>
+          EOF
+          flutter build ipa --release --export-options-plist=export_options.plist
       - name: Publish to TestFlight
         script: app-store-connect publish --path $(find build/ios/ipa -name "*.ipa")
     artifacts:

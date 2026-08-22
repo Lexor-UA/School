@@ -69,15 +69,15 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         child: Row(
                           children: [
                             _buildQuickAction(LucideIcons.barChart2, 'Звіти', Colors.blueAccent, 250, () {
-                              _showOwnerDevSnackbar('Звіти у розробці');
+                              context.go('/owner/reports');
                             }),
                             const SizedBox(width: 12),
                             _buildQuickAction(LucideIcons.users, 'Персонал', Colors.cyanAccent, 300, () {
-                              _showOwnerDevSnackbar('Управління персоналом у розробці');
+                              context.go('/owner/staff');
                             }),
                             const SizedBox(width: 12),
                             _buildQuickAction(LucideIcons.banknote, 'Виплати', Colors.pinkAccent, 350, () {
-                              _showOwnerDevSnackbar('Виплата зарплат у розробці');
+                              context.go('/owner/payouts');
                             }),
                           ],
                         ),
@@ -102,9 +102,12 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       const SizedBox(height: 32),
                       
                       // Live Activity Feed
-                      const Text(
-                        'LIVE СТАТУС',
-                        style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 2),
+                        child: Text(
+                          'LIVE СТАТУС',
+                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
+                        ),
                       ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 16),
                       _buildActivityItem(LucideIcons.arrowDownCircle, 'Нова оплата: Абонемент', '+ ₴ 2,400', Colors.greenAccent, 700),
@@ -131,31 +134,36 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15)],
-                  ),
-                  child: const AvatarPicker(
-                    heroTag: 'hero_avatar_Власникам',
-                    radius: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Вітаємо, ${user?.name ?? "Власник"}',
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15)],
                     ),
-                    const Text('CitySwim CEO', style: TextStyle(color: Colors.cyanAccent, fontSize: 13, letterSpacing: 1)),
-                  ],
-                ),
-              ],
-            ).animate().fadeIn(),
+                    child: const AvatarPicker(
+                      heroTag: 'hero_avatar_Власникам',
+                      radius: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Вітаємо, ${user?.name ?? "Власник"}',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Text('CitySwim CEO', style: TextStyle(color: Colors.cyanAccent, fontSize: 13, letterSpacing: 1)),
+                      ],
+                    ),
+                  ),
+                ],
+              ).animate().fadeIn(),
+            ),
             IconButton(
               icon: const Icon(LucideIcons.logOut, color: Colors.white70),
               onPressed: () {
@@ -184,9 +192,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.1), blurRadius: 30, spreadRadius: -5),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: Column(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -215,7 +221,6 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               const Text('₴ 124,500', style: TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold, letterSpacing: -1)),
             ],
           ),
-        ),
     );
   }
 
@@ -227,9 +232,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, color: accentColor, size: 28),
@@ -239,7 +242,6 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               Text(label, style: const TextStyle(color: Colors.white54, fontSize: 14)),
             ],
           ),
-        ),
     ).animate().fadeIn(delay: delay.ms).slideY(begin: 0.1);
   }
 
@@ -274,9 +276,15 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2),
+                      child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2),
+                      child: Text(subtitle, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+                    ),
                   ],
                 ),
               ),
@@ -331,7 +339,13 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('ДИНАМІКА ПРИБУТКУ', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+              const Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: 2),
+                  child: Text('ДИНАМІКА ПРИБУТКУ', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                ),
+              ),
+              const SizedBox(width: 8),
               Row(
                 children: ['День', 'Тиждень', 'Місяць'].map((period) {
                   final isSelected = _selectedTimeframe == period;
@@ -339,8 +353,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     onTap: () => setState(() => _selectedTimeframe = period),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      margin: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
                         color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.2) : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
@@ -350,7 +364,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         period,
                         style: TextStyle(
                           color: isSelected ? Colors.cyanAccent : Colors.white54,
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),

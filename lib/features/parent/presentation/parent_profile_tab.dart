@@ -57,73 +57,59 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
         padding: const EdgeInsets.all(24),
         children: [
           Center(
-            child: AnimatedBuilder(
-              animation: _scrollController,
-              builder: (context, child) {
-                // Parallax effect: avatar moves at half the scroll speed
-                double offset = 0;
-                if (_scrollController.hasClients) {
-                  offset = _scrollController.offset * 0.5;
-                }
-                return Transform.translate(
-                  offset: Offset(0, offset),
-                  child: child,
-                );
-              },
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [AppTheme.accentTeal, isDark ? Colors.white : Colors.blue.shade100],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(color: AppTheme.accentTeal.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 2),
-                      ],
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [AppTheme.accentTeal, isDark ? Colors.white : Colors.blue.shade100],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: const AvatarPicker(
-                      heroTag: 'hero_avatar_Клієнтам',
-                      radius: 50,
+                    boxShadow: [
+                      BoxShadow(color: AppTheme.accentTeal.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 2),
+                    ],
+                  ),
+                  child: const AvatarPicker(
+                    heroTag: 'hero_avatar_Клієнтам',
+                    radius: 50,
+                  ),
+                ).animate().scale(duration: 400.ms),
+                const SizedBox(height: 16),
+                Text(
+                  user?.name ?? 'Мія К.',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
+                ).animate().fadeIn(delay: 200.ms),
+                Text(
+                  'Група: Юніори Pro',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: accentColor, fontWeight: FontWeight.bold),
+                ).animate().fadeIn(delay: 300.ms),
+                
+                const SizedBox(height: 24),
+                
+                // EXP Bar
+                if (user != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Рівень ${user.level}: Дельфін', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      Text('${user.xp} / ${user.maxXp} XP', style: TextStyle(color: textSubColor, fontSize: 12)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: user.xp / user.maxXp,
+                      minHeight: 12,
+                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                     ),
-                  ).animate().scale(duration: 400.ms),
-                  const SizedBox(height: 16),
-                  Text(
-                    user?.name ?? 'Мія К.',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
-                  ).animate().fadeIn(delay: 200.ms),
-                  Text(
-                    'Група: Юніори Pro',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: accentColor, fontWeight: FontWeight.bold),
-                  ).animate().fadeIn(delay: 300.ms),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // EXP Bar
-                  if (user != null) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Рівень ${user.level}: Дельфін', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                        Text('${user.xp} / ${user.maxXp} XP', style: TextStyle(color: textSubColor, fontSize: 12)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: user.xp / user.maxXp,
-                        minHeight: 12,
-                        backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1),
-                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-                      ),
-                    ),
-                  ]
-                ],
-              ),
+                  ),
+                ]
+              ],
             ),
           ),
           const SizedBox(height: 32),
@@ -223,7 +209,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
           _buildSettingsTile(LucideIcons.shieldQuestion, 'Допомога та Підтримка', textColor, textSubColor, cardBgColor, cardBorderColor),
           const SizedBox(height: 32),
           _buildLogoutButton(context, ref, isDark).animate().fadeIn(delay: 1100.ms),
-          const SizedBox(height: 80),
+          const SizedBox(height: 120),
         ],
       ),
     );

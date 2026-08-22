@@ -12,7 +12,8 @@ class BookingSheet extends StatefulWidget {
 
 class _BookingSheetState extends State<BookingSheet> {
   String _selectedClient = 'Марія (Юніори)';
-  String _selectedTime = 'Сьогодні, 16:00';
+  DateTime _selectedDate = DateTime.now();
+  String _selectedTimeSlot = '16:00';
   bool _isSuccess = false;
 
   final List<String> _clients = [
@@ -21,11 +22,20 @@ class _BookingSheetState extends State<BookingSheet> {
     'Іван (Дорослі)',
   ];
 
-  final List<String> _times = [
-    'Сьогодні, 16:00',
-    'Сьогодні, 18:30',
-    'Завтра, 10:00',
-  ];
+  String _getWeekday(int weekday) {
+    const days = ['Пн', 'Вв', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+    return days[weekday - 1];
+  }
+
+  List<String> _getTimeSlotsForDate(DateTime date) {
+    // Generate some mock available time slots based on the day
+    if (date.weekday == DateTime.sunday) {
+      return ['10:00', '11:00', '12:00'];
+    } else if (date.weekday == DateTime.saturday) {
+      return ['10:00', '11:00', '14:00', '15:00'];
+    }
+    return ['16:00', '17:00', '18:30', '19:30'];
+  }
 
   void _submit() {
     setState(() {
@@ -80,7 +90,7 @@ class _BookingSheetState extends State<BookingSheet> {
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 8),
         Text(
-          '$_selectedClient на $_selectedTime',
+          '$_selectedClient на ${_selectedDate.day}/${_selectedDate.month}, $_selectedTimeSlot',
           style: const TextStyle(color: Colors.white70, fontSize: 16),
         ).animate().fadeIn(delay: 400.ms),
         const SizedBox(height: 40),
@@ -140,22 +150,76 @@ class _BookingSheetState extends State<BookingSheet> {
         ),
         
         const SizedBox(height: 24),
+        const Text('Дата тренування', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 80,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: 14,
+            itemBuilder: (context, index) {
+              final date = DateTime.now().add(Duration(days: index));
+              final isSelected = date.day == _selectedDate.day && date.month == _selectedDate.month;
+              
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedDate = date;
+                  _selectedTimeSlot = ''; // Reset time on date change
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.greenAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _getWeekday(date.weekday),
+                        style: TextStyle(
+                          color: isSelected ? Colors.greenAccent : Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${date.day}',
+                        style: TextStyle(
+                          color: isSelected ? Colors.greenAccent : Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 24),
         const Text('Час тренування', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _times.map((time) {
-            final isSelected = time == _selectedTime;
+          children: _getTimeSlotsForDate(_selectedDate).map((time) {
+            final isSelected = time == _selectedTimeSlot;
             return GestureDetector(
-              onTap: () => setState(() => _selectedTime = time),
+              onTap: () => setState(() => _selectedTimeSlot = time),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                  color: isSelected ? Colors.greenAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withValues(alpha: 0.1)),
+                  border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withOpacity(0.1)),
                 ),
                 child: Text(
                   time,

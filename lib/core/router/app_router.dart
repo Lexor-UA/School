@@ -5,6 +5,11 @@ import '../../features/parent/presentation/parent_main.dart';
 import '../../features/coach/presentation/coach_main.dart';
 import '../../features/admin/presentation/admin_main.dart';
 import '../../features/owner/presentation/owner_main.dart';
+import '../../features/owner/presentation/owner_reports_screen.dart';
+import '../../features/owner/presentation/owner_staff_screen.dart';
+import '../../features/owner/presentation/owner_payouts_screen.dart';
+
+import '../../features/admin/presentation/admin_chat_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -25,10 +30,33 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminMain(),
+        routes: [
+          GoRoute(
+            path: 'chat',
+            builder: (context, state) {
+              final clientName = state.uri.queryParameters['clientName'] ?? 'Клієнт';
+              return AdminChatScreen(clientName: clientName);
+            },
+          ),
+        ]
       ),
       GoRoute(
         path: '/owner',
         builder: (context, state) => const OwnerMain(),
+        routes: [
+          GoRoute(
+            path: 'reports',
+            builder: (context, state) => const OwnerReportsScreen(),
+          ),
+          GoRoute(
+            path: 'staff',
+            builder: (context, state) => const OwnerStaffScreen(),
+          ),
+          GoRoute(
+            path: 'payouts',
+            builder: (context, state) => const OwnerPayoutsScreen(),
+          ),
+        ]
       ),
     ],
   );

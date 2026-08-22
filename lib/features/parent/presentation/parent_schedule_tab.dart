@@ -116,7 +116,7 @@ class _ParentScheduleTabState extends State<ParentScheduleTab> {
             coachName: 'Тренер Марк',
           ).animate().slideX(begin: 0.2, end: 0, delay: 300.ms).fadeIn(),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 64),
           Text(
             'Історія Відвідувань',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),

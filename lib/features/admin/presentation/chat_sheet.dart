@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
 
 class ChatSheet extends StatefulWidget {
   const ChatSheet({super.key});
@@ -86,9 +87,9 @@ class _ChatSheetState extends State<ChatSheet> {
     bool isUnread = chat['unread'];
     return GestureDetector(
       onTap: () {
-        setState(() {
-          chat['unread'] = false;
-        });
+        context.go('/admin/chat?clientName=${Uri.encodeComponent(chat['name'])}');
+        // Close the bottom sheet
+        Navigator.pop(context);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),

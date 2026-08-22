@@ -51,6 +51,9 @@ workflows:
       - name: Build iOS (IPA)
         script: xcode-project build-ipa --workspace "ios/Runner.xcworkspace" --scheme "Runner"
       - name: Publish to TestFlight
-        script: app-store-connect publish --path $(find build/ios/ipa -name "*.ipa")
+        script: |
+          IPA_FILE=$(find build/ios/ipa -name "*.ipa" | head -n 1)
+          echo "Found IPA: $IPA_FILE"
+          app-store-connect publish --path "$IPA_FILE"
     artifacts:
       - build/ios/ipa/*.ipa

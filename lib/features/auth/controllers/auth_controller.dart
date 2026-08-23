@@ -104,20 +104,18 @@ class AuthController extends _$AuthController {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
-      if (kDebugMode) {
-        // Hardcoded test credentials for testing different portals
-        final login = email.trim().toLowerCase();
-        if (password.trim() == '1') {
-          if (login == 'coach') {
-            state = const AppUser(id: 'mock_coach', name: 'Тренер Тест', role: UserRole.coach);
-            return;
-          } else if (login == 'admin') {
-            state = const AppUser(id: 'mock_admin', name: 'Адмін Тест', role: UserRole.admin);
-            return;
-          } else if (login == 'owner') {
-            state = const AppUser(id: 'mock_owner', name: 'Власник Тест', role: UserRole.owner);
-            return;
-          }
+      // Hardcoded test credentials for testing different portals
+      final login = email.trim().toLowerCase();
+      if (password.trim() == '1') {
+        if (login == 'coach') {
+          state = const AppUser(id: 'mock_coach', name: 'Тренер Тест', role: UserRole.coach);
+          return;
+        } else if (login == 'admin') {
+          state = const AppUser(id: 'mock_admin', name: 'Адмін Тест', role: UserRole.admin);
+          return;
+        } else if (login == 'owner') {
+          state = const AppUser(id: 'mock_owner', name: 'Власник Тест', role: UserRole.owner);
+          return;
         }
       }
 

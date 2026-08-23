@@ -40,32 +40,30 @@ class RoleSelectionScreen extends ConsumerWidget {
         children: [
           // Premium dark blue/purple gradient background with cinematic scale animation
           // Shifted up so the logo is perfectly centered between top and buttons
-          Positioned(
-            top: -MediaQuery.of(context).size.height * 0.15,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/images/splash_bg_1.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF00054F), Color(0xFF6B0E96)], // Approximate gradient of the image edges
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
-            ).animate()
-                .fadeIn(duration: 1500.ms)
-                .scale(
-                  begin: const Offset(1.15, 1.15),
-                  end: const Offset(1.0, 1.0),
-                  duration: 8000.ms,
-                  curve: Curves.easeOutQuart,
-                )
-                .blurXY(begin: 15, end: 0, duration: 2500.ms, curve: Curves.easeInOut),
+              child: Image.asset(
+                'assets/images/splash_bg_1.jpg',
+                fit: BoxFit.fitWidth,
+                alignment: const Alignment(0, -0.4),
+                errorBuilder: (context, error, stackTrace) => const SizedBox(),
+              ).animate()
+                  .fadeIn(duration: 800.ms)
+                  .scale(
+                    begin: const Offset(1.10, 1.10),
+                    end: const Offset(1.0, 1.0),
+                    duration: 3000.ms,
+                    curve: Curves.easeOutQuart,
+                  )
+                  .blurXY(begin: 10, end: 0, duration: 1500.ms, curve: Curves.easeInOut),
+            ),
           ),
 
           // Subtle water particles overlaid for theme

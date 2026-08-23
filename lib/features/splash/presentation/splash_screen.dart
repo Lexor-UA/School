@@ -31,25 +31,26 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Premium dark blue/purple gradient background with cinematic scale animation
-          Image.asset(
-            'assets/images/splash_bg_1.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF00054F), Color(0xFF6B0E96)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
-          ).animate().fadeIn(duration: 1000.ms).scale(
-                begin: const Offset(1.1, 1.1),
-                end: const Offset(1.05, 1.05),
-                duration: 3000.ms,
-                curve: Curves.easeOutQuart,
-              ),
+            child: Image.asset(
+              'assets/images/splash_bg_1.jpg',
+              fit: BoxFit.fitWidth,
+              alignment: const Alignment(0, -0.4),
+              errorBuilder: (context, error, stackTrace) => const SizedBox(),
+            ).animate().fadeIn(duration: 800.ms).scale(
+                  begin: const Offset(1.10, 1.10),
+                  end: const Offset(1.0, 1.0),
+                  duration: 3000.ms,
+                  curve: Curves.easeOutQuart,
+                ),
+          ),
 
           // Subtle water particles overlaid for theme
           Positioned.fill(

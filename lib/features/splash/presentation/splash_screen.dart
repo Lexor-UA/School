@@ -32,24 +32,44 @@ class _SplashScreenState extends State<SplashScreen> {
         fit: StackFit.expand,
         children: [
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF00054F), Color(0xFF6B0E96)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: Image.asset(
-              'assets/images/splash_bg_1.jpg',
-              fit: BoxFit.fitWidth,
-              alignment: const Alignment(0, -0.4),
-              errorBuilder: (context, error, stackTrace) => const SizedBox(),
-            ).animate().fadeIn(duration: 800.ms).scale(
-                  begin: const Offset(1.10, 1.10),
-                  end: const Offset(1.0, 1.0),
-                  duration: 3000.ms,
-                  curve: Curves.easeOutQuart,
+            color: const Color(0xFF0F0229), // Deep dark purple
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Image.asset(
+                    'assets/images/splash_bg_1.jpg',
+                    fit: BoxFit.fitWidth,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                  ).animate().fadeIn(duration: 800.ms).scale(
+                        begin: const Offset(1.10, 1.10),
+                        end: const Offset(1.0, 1.0),
+                        duration: 3000.ms,
+                        curve: Curves.easeOutQuart,
+                      ),
                 ),
+                // Gradient vignette to smoothly blend the image into the background
+                Positioned.fill(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.transparent,
+                          Color(0xAA0F0229),
+                          Color(0xFF0F0229),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        stops: [0.0, 0.5, 0.75, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Subtle water particles overlaid for theme

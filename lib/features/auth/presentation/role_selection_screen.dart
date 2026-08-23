@@ -42,27 +42,47 @@ class RoleSelectionScreen extends ConsumerWidget {
           // Shifted up so the logo is perfectly centered between top and buttons
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF00054F), Color(0xFF6B0E96)], // Approximate gradient of the image edges
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+              color: const Color(0xFF0F0229), // Deep dark purple
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Image.asset(
+                      'assets/images/splash_bg_1.jpg',
+                      fit: BoxFit.fitWidth,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    ).animate()
+                        .fadeIn(duration: 800.ms)
+                        .scale(
+                          begin: const Offset(1.10, 1.10),
+                          end: const Offset(1.0, 1.0),
+                          duration: 3000.ms,
+                          curve: Curves.easeOutQuart,
+                        )
+                        .blurXY(begin: 10, end: 0, duration: 1500.ms, curve: Curves.easeInOut),
+                  ),
+                  // Gradient vignette to smoothly blend the image into the background
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.transparent,
+                            Color(0xAA0F0229),
+                            Color(0xFF0F0229),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: [0.0, 0.5, 0.75, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: Image.asset(
-                'assets/images/splash_bg_1.jpg',
-                fit: BoxFit.fitWidth,
-                alignment: const Alignment(0, -0.4),
-                errorBuilder: (context, error, stackTrace) => const SizedBox(),
-              ).animate()
-                  .fadeIn(duration: 800.ms)
-                  .scale(
-                    begin: const Offset(1.10, 1.10),
-                    end: const Offset(1.0, 1.0),
-                    duration: 3000.ms,
-                    curve: Curves.easeOutQuart,
-                  )
-                  .blurXY(begin: 10, end: 0, duration: 1500.ms, curve: Curves.easeInOut),
             ),
           ),
 

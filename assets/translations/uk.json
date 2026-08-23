@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "choose_language": "ОБЕРІТЬ МОВУ",
+    "parent_portal": "Клієнтам",
+    "coach_portal": "Тренерам",
+    "admin_portal": "Адміністраторам",
+    "owner_portal": "Власникам",
+    "subtitle": "СИСТЕМА УПРАВЛІННЯ",
+    "motto": "Мистецтво води.\nВаш шлях до досконалості.",
+    "languages": {
+      "uk": "Українська",
+      "en": "English",
+      "ru": "Русский",
+      "de": "Deutsch"
+    }
+  }
+}
+

@@ -82,8 +82,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+        color: Colors.white.withValues(alpha: 0.02),
+        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: Row(
         children: [
@@ -93,7 +93,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: Colors.orangeAccent.withOpacity(0.2),
+            backgroundColor: Colors.orangeAccent.withValues(alpha: 0.2),
             child: Text(widget.clientName[0], style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 16),
@@ -133,8 +133,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isMe 
-              ? [Colors.cyanAccent.withOpacity(0.8), Colors.blueAccent.withOpacity(0.8)]
-              : [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+              ? [Colors.cyanAccent.withValues(alpha: 0.8), Colors.blueAccent.withValues(alpha: 0.8)]
+              : [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -145,10 +145,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
             bottomRight: Radius.circular(isMe ? 0 : 20),
           ),
           boxShadow: isMe 
-            ? [BoxShadow(color: Colors.cyanAccent.withOpacity(0.2), blurRadius: 10)]
+            ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 10)]
             : [],
           border: Border.all(
-            color: isMe ? Colors.cyanAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1),
+            color: isMe ? Colors.cyanAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: ClipRRect(
@@ -189,8 +189,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        color: Colors.white.withValues(alpha: 0.02),
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: Row(
         children: [
@@ -202,9 +202,9 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: TextField(
                 controller: _messageController,
@@ -223,7 +223,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Colors.cyanAccent, Colors.blueAccent]),
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.4), blurRadius: 10)],
+              boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 10)],
             ),
             child: IconButton(
               icon: const Icon(LucideIcons.send, color: Colors.black87, size: 20),

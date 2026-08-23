@@ -5,6 +5,8 @@ import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 
 class ParentDashboard extends ConsumerWidget {
   const ParentDashboard({super.key});
@@ -54,6 +56,21 @@ class ParentDashboard extends ConsumerWidget {
                       'З поверненням',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
+                    if (currentSub == null && user != null)
+                      ElevatedButton(
+                        onPressed: () async {
+                          final newSub = Subscription(
+                            id: 'sub_${DateTime.now().millisecondsSinceEpoch}',
+                            userId: user.id,
+                            totalClasses: 10,
+                            remainingClasses: 10,
+                            isActive: true,
+                          );
+                          await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, foregroundColor: Colors.white),
+                        child: const Text('Отримати 10 занять (Тест)'),
+                      ),
                   ],
                 ),
               ],

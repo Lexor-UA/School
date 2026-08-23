@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "choose_language": "SPRACHE WÄHLEN",
+    "parent_portal": "Für Kunden",
+    "coach_portal": "Für Trainer",
+    "admin_portal": "Für Administratoren",
+    "owner_portal": "Für Eigentümer",
+    "subtitle": "MANAGEMENTSYSTEM",
+    "motto": "Die Kunst des Wassers.\nDein Weg zur Perfektion.",
+    "languages": {
+      "uk": "Ukrainisch",
+      "en": "Englisch",
+      "ru": "Russisch",
+      "de": "Deutsch"
+    }
+  }
+}
+

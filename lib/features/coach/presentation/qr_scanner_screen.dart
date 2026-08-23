@@ -26,7 +26,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       ),
       body: MobileScanner(
         controller: cameraController,
-        onDetect: (capture) {
+        onDetect: (capture) async {
           if (_isScanned) return;
           
           final List<Barcode> barcodes = capture.barcodes;
@@ -35,7 +35,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             if (code != null) {
               _isScanned = true;
               
-              final success = ref.read(subscriptionControllerProvider.notifier).deductClass(code);
+              final success = await ref.read(subscriptionControllerProvider.notifier).deductClass(code);
               
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(

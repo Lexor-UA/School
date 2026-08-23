@@ -95,11 +95,11 @@ class _OwnerReportsScreenState extends State<OwnerReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
         boxShadow: [
-          BoxShadow(color: Colors.blueAccent.withOpacity(0.1), blurRadius: 20),
+          BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.1), blurRadius: 20),
         ],
       ),
       child: Column(
@@ -112,7 +112,7 @@ class _OwnerReportsScreenState extends State<OwnerReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.greenAccent.withOpacity(0.2),
+                  color: Colors.greenAccent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text('+12.5%', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),
@@ -140,9 +140,9 @@ class _OwnerReportsScreenState extends State<OwnerReportsScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.blueAccent.withOpacity(0.2) : Colors.transparent,
+              color: isSelected ? Colors.blueAccent.withValues(alpha: 0.2) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: isSelected ? Colors.blueAccent : Colors.white.withOpacity(0.1)),
+              border: Border.all(color: isSelected ? Colors.blueAccent : Colors.white.withValues(alpha: 0.1)),
             ),
             child: Text(
               period,
@@ -161,9 +161,9 @@ class _OwnerReportsScreenState extends State<OwnerReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -191,7 +191,7 @@ class _OwnerReportsScreenState extends State<OwnerReportsScreen> {
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: percentage / 100,
-              backgroundColor: Colors.white.withOpacity(0.05),
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 8,
             ),
@@ -216,9 +216,9 @@ class _OwnerReportsScreenState extends State<OwnerReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

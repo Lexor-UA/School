@@ -1,0 +1,21 @@
+{
+  "auth": {
+    "choose_language": "CHOOSE LANGUAGE",
+    "choose_portal": "CHOOSE PORTAL",
+    "login_google": "Sign in with Google",
+    "login_email": "Sign in with Email / Password",
+    "parent_portal": "For Clients",
+    "coach_portal": "For Coaches",
+    "admin_portal": "For Admins",
+    "owner_portal": "For Owners",
+    "subtitle": "MANAGEMENT SYSTEM",
+    "motto": "The art of water.\nYour path to perfection.",
+    "languages": {
+      "uk": "Ukrainian",
+      "en": "English",
+      "ru": "Russian",
+      "de": "German"
+    }
+  }
+}
+

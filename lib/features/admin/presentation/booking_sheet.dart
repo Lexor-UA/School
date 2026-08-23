@@ -172,9 +172,9 @@ class _BookingSheetState extends State<BookingSheet> {
                   margin: const EdgeInsets.only(right: 12),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.greenAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                    color: isSelected ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -217,9 +217,9 @@ class _BookingSheetState extends State<BookingSheet> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.greenAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                  color: isSelected ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withOpacity(0.1)),
+                  border: Border.all(color: isSelected ? Colors.greenAccent : Colors.white.withValues(alpha: 0.1)),
                 ),
                 child: Text(
                   time,

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "720928546774",
+    "project_id": "city-swim",
+    "storage_bucket": "city-swim.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720928546774:android:4ef30433593af253f0ce77",
+        "android_client_info": {
+          "package_name": "city.swim.school"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCksupN7sWAU7vKvijngNnbRnroTjHBnes"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

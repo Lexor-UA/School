@@ -17,7 +17,7 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: Colors.pinkAccent.withOpacity(0.8),
+        backgroundColor: Colors.pinkAccent.withValues(alpha: 0.8),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -93,7 +93,7 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.pinkAccent.withOpacity(0.1),
+              color: Colors.pinkAccent.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(LucideIcons.landmark, color: Colors.pinkAccent, size: 20),
@@ -108,14 +108,14 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.pinkAccent.withOpacity(0.2), Colors.purpleAccent.withOpacity(0.05)],
+          colors: [Colors.pinkAccent.withValues(alpha: 0.2), Colors.purpleAccent.withValues(alpha: 0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.pinkAccent.withOpacity(0.3)),
+        border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
         boxShadow: [
-          BoxShadow(color: Colors.pinkAccent.withOpacity(0.1), blurRadius: 30, spreadRadius: -5),
+          BoxShadow(color: Colors.pinkAccent.withValues(alpha: 0.1), blurRadius: 30, spreadRadius: -5),
         ],
       ),
       child: Column(
@@ -125,7 +125,7 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('ДОСТУПНО ДЛЯ ВИПЛАТ', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-              Icon(LucideIcons.creditCard, color: Colors.pinkAccent.withOpacity(0.8)),
+              Icon(LucideIcons.creditCard, color: Colors.pinkAccent.withValues(alpha: 0.8)),
             ],
           ),
           const SizedBox(height: 16),
@@ -139,7 +139,7 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
                     _showDevSnackbar('Поповнення рахунку у розробці');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -160,9 +160,9 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.pinkAccent.withOpacity(0.2)),
+        border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -193,7 +193,7 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
                 _showDevSnackbar('Виплата для $name виконана успішно!');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent.withOpacity(0.2),
+                backgroundColor: Colors.pinkAccent.withValues(alpha: 0.2),
                 foregroundColor: Colors.pinkAccent,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -212,9 +212,9 @@ class _OwnerPayoutsScreenState extends State<OwnerPayoutsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

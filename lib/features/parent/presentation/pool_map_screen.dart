@@ -246,7 +246,7 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
           top: inset,
           child: Transform(
             transform: Matrix4.identity()
-              ..translate(0.0, 0.0, borderZ)
+              ..setTranslationRaw(0.0, 0.0, borderZ)
               ..rotateY(pi / 2),
             alignment: Alignment.centerLeft,
             child: Container(
@@ -262,7 +262,7 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
           top: inset,
           child: Transform(
             transform: Matrix4.identity()
-              ..translate(0.0, 0.0, borderZ)
+              ..setTranslationRaw(0.0, 0.0, borderZ)
               ..rotateY(-pi / 2),
             alignment: Alignment.centerRight,
             child: Container(
@@ -278,7 +278,7 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
           top: inset,
           child: Transform(
             transform: Matrix4.identity()
-              ..translate(0.0, 0.0, borderZ)
+              ..setTranslationRaw(0.0, 0.0, borderZ)
               ..rotateX(-pi / 2),
             alignment: Alignment.topCenter,
             child: Container(
@@ -294,7 +294,7 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
           bottom: inset,
           child: Transform(
             transform: Matrix4.identity()
-              ..translate(0.0, 0.0, borderZ)
+              ..setTranslationRaw(0.0, 0.0, borderZ)
               ..rotateX(pi / 2),
             alignment: Alignment.bottomCenter,
             child: Container(

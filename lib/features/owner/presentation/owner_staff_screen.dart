@@ -76,7 +76,7 @@ class OwnerStaffScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.cyanAccent.withOpacity(0.1),
+              color: Colors.cyanAccent.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(LucideIcons.userPlus, color: Colors.cyanAccent, size: 20),
@@ -90,20 +90,20 @@ class OwnerStaffScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)),
+        border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.2)),
         boxShadow: [
-          BoxShadow(color: Colors.cyanAccent.withOpacity(0.05), blurRadius: 20),
+          BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.05), blurRadius: 20),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildSummaryStat('Всього', '12', LucideIcons.users),
-          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
+          Container(width: 1, height: 40, color: Colors.white.withValues(alpha: 0.1)),
           _buildSummaryStat('Онлайн', '4', LucideIcons.checkCircle2, Colors.greenAccent),
-          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
+          Container(width: 1, height: 40, color: Colors.white.withValues(alpha: 0.1)),
           _buildSummaryStat('Відпустка', '1', LucideIcons.tent, Colors.orangeAccent),
         ],
       ),
@@ -126,16 +126,16 @@ class OwnerStaffScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
             backgroundImage: NetworkImage(avatarUrl),
-            backgroundColor: Colors.blueAccent.withOpacity(0.2),
+            backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -154,7 +154,7 @@ class OwnerStaffScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           child: LinearProgressIndicator(
                             value: load / 100,
-                            backgroundColor: Colors.white.withOpacity(0.05),
+                            backgroundColor: Colors.white.withValues(alpha: 0.05),
                             valueColor: AlwaysStoppedAnimation<Color>(
                               load > 85 ? Colors.orangeAccent : Colors.greenAccent,
                             ),

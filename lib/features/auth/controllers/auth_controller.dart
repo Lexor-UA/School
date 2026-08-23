@@ -57,7 +57,12 @@ class AuthController extends _$AuthController {
         user = userCredential.user;
       } else {
         // Use google_sign_in plugin for Android/iOS
-        final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          clientId: defaultTargetPlatform == TargetPlatform.iOS
+              ? '720928546774-5q4bbigk2gjgh90qblrbk2gp2smecifp.apps.googleusercontent.com'
+              : null,
+        );
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
         if (googleUser == null) return; 
 
         final GoogleSignInAuthentication googleAuth = await googleUser.authentication;

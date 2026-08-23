@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
-import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 
 
@@ -39,143 +38,95 @@ class RoleSelectionScreen extends ConsumerWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Backgrounds
-          const AnimatedWaterBackground(),
-          const Positioned.fill(child: WaterParticles()),
-          
-          // Realistic Ultra-HD Background overlay
-          Image.asset(
-            'assets/images/bg_kids.jpg',
-            fit: BoxFit.cover,
-            color: Colors.black.withValues(alpha: 0.3),
-            colorBlendMode: BlendMode.darken,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: const Color(0xFF0D47A1),
+          // Premium dark blue/purple gradient background with cinematic scale animation
+          // Shifted up so the logo is perfectly centered between top and buttons
+          Positioned(
+            top: -MediaQuery.of(context).size.height * 0.15,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Image.asset(
+              'assets/images/splash_bg_1.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ).animate()
+                .fadeIn(duration: 1500.ms)
+                .scale(
+                  begin: const Offset(1.15, 1.15),
+                  end: const Offset(1.0, 1.0),
+                  duration: 8000.ms,
+                  curve: Curves.easeOutQuart,
+                )
+                .blurXY(begin: 15, end: 0, duration: 2500.ms, curve: Curves.easeInOut),
+          ),
+
+          // Subtle water particles overlaid for theme
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: const WaterParticles(),
             ),
-          ).animate().fadeIn(duration: 1000.ms),
+          ),
 
           // Main Content
           // Main Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Consistent Language Button
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 24.0, top: 16.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5)),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => _showLanguageSelector(context),
-                          splashColor: Colors.white.withValues(alpha: 0.2),
-                          highlightColor: Colors.white.withValues(alpha: 0.1),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(LucideIcons.globe, color: Colors.cyanAccent, size: 14),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'auth.subtitle'.tr(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(LucideIcons.chevronDown, color: Colors.white54, size: 14),
-                              ],
-                            ),
-                          ),
+          // Language Button
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 24,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.0),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(30),
+                      onTap: () => _showLanguageSelector(context),
+                      splashColor: Colors.white.withValues(alpha: 0.2),
+                      highlightColor: Colors.white.withValues(alpha: 0.1),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(LucideIcons.globe, color: Colors.white, size: 20),
+                            const SizedBox(width: 6),
+                            const Icon(LucideIcons.chevronDown, color: Colors.white70, size: 16),
+                          ],
                         ),
                       ),
-                    ).animate().fadeIn(delay: 200.ms),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Logo Section
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            blurRadius: 120,
-                            spreadRadius: 50,
-                          ),
-                        ],
-                      ),
                     ),
-                    Image.asset(
-                      'assets/images/logo.png',
-                      height: 140,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Column(
-                        children: [
-                          const Icon(
-                            LucideIcons.waves,
-                            size: 80,
-                            color: Colors.white,
-                          ).animate().scale(duration: 800.ms, curve: Curves.easeOutBack),
-                          const SizedBox(height: 8),
-                          Text(
-                            'CITY SWIM',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 4.0,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-                  ],
-                ),
-                
-                const Spacer(),
-                
-                // Portal Text
-                Text(
-                  'auth.choose_portal'.tr(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    letterSpacing: 4.0,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
                   ),
-                ).animate().fadeIn(delay: 400.ms),
-                
-                const SizedBox(height: 20),
+                ),
+              ),
+            ).animate()
+             .fadeIn(delay: 1500.ms, duration: 800.ms)
+             .slideX(begin: 0.5, end: 0, duration: 1000.ms, curve: Curves.easeOutExpo),
+          ),
 
+          // Bottom Content (Buttons and Motto)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).size.height * 0.08, // 8% from bottom
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 // Login Options
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -185,7 +136,8 @@ class RoleSelectionScreen extends ConsumerWidget {
                         context: context,
                         title: 'auth.login_google'.tr(),
                         icon: LucideIcons.globe,
-                        delay: 500,
+                        isGoogle: true,
+                        delay: 1600,
                         onTap: () async {
                           try {
                             await ref.read(authControllerProvider.notifier).signInWithGoogle();
@@ -202,7 +154,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                         context: context,
                         title: 'auth.login_email'.tr(),
                         icon: LucideIcons.mail,
-                        delay: 600,
+                        delay: 1800,
                         onTap: () {
                           _showEmailLoginModal(context, ref);
                         },
@@ -218,21 +170,18 @@ class RoleSelectionScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Text(
                     'auth.motto'.tr(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      letterSpacing: 1.0,
-                      height: 1.3,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 2)),
-                      ],
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 14,
+                      letterSpacing: 2.0,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                ).animate().fadeIn(delay: 1000.ms),
-                
-                const SizedBox(height: 48),
+                ).animate()
+                 .fadeIn(delay: 2000.ms, duration: 1200.ms)
+                 .slideY(begin: 0.5, end: 0, duration: 1200.ms, curve: Curves.easeOutExpo),
               ],
             ),
           ),
@@ -245,57 +194,77 @@ class RoleSelectionScreen extends ConsumerWidget {
     required BuildContext context,
     required String title,
     required IconData icon,
+    bool isGoogle = false,
     required int delay,
     required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3), // Glass effect
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 5)),
-              ]
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: Colors.cyanAccent, size: 22),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white, 
-                      fontSize: 16, 
-                      fontWeight: FontWeight.bold, 
-                      letterSpacing: 1.2,
+    final textColor = isGoogle ? const Color(0xFF0F2027) : const Color(0xFF0072FF);
+    final iconBgColor = isGoogle ? Colors.transparent : const Color(0xFF0072FF).withValues(alpha: 0.1);
+    final iconColor = isGoogle ? Colors.transparent : const Color(0xFF0072FF);
+    final chevronColor = Colors.black38;
+
+    final content = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        splashColor: Colors.black.withValues(alpha: 0.05),
+        highlightColor: Colors.black.withValues(alpha: 0.05),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Center(
+                  child: Container(
+                    padding: EdgeInsets.all(isGoogle ? 0 : 8),
+                    decoration: BoxDecoration(
+                      color: iconBgColor,
+                      shape: BoxShape.circle,
                     ),
+                    child: isGoogle
+                        ? Image.asset('assets/images/google_logo.png', width: 26, height: 26)
+                        : Icon(icon, color: iconColor, size: 22),
                   ),
                 ),
-                const Icon(LucideIcons.chevronRight, color: Colors.white54, size: 24),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: textColor, 
+                    fontSize: 16, 
+                    fontWeight: FontWeight.w700, 
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Icon(LucideIcons.chevronRight, color: chevronColor, size: 20),
+            ],
           ),
         ),
       ),
-    ).animate().fadeIn(delay: delay.ms).slideX(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOutQuad);
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 10)),
+          ],
+        ),
+        child: content,
+      ),
+    ).animate()
+     .fadeIn(delay: delay.ms, duration: 800.ms)
+     .slideY(begin: 0.8, end: 0, duration: 1200.ms, curve: Curves.easeOutBack)
+     .shimmer(delay: (delay + 1200).ms, duration: 1500.ms, color: Colors.white.withValues(alpha: 0.2));
   }
 
   void _showLanguageSelector(BuildContext context) {
@@ -434,7 +403,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                       style: const TextStyle(color: Colors.white),
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        hintText: 'Email',
+                        hintText: 'Email / Логін',
                         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                         filled: true,
                         fillColor: Colors.black.withValues(alpha: 0.2),

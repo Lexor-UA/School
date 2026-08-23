@@ -6,6 +6,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/coach/presentation/qr_scanner_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 
 class CoachDashboard extends ConsumerStatefulWidget {
   const CoachDashboard({super.key});
@@ -17,11 +20,11 @@ class CoachDashboard extends ConsumerStatefulWidget {
 class _CoachDashboardState extends ConsumerState<CoachDashboard> {
   // Dummy attendees list with extended data
   final List<Map<String, dynamic>> _attendees = [
-    {'id': '1', 'name': 'Лев М.', 'status': 'Очікується', 'level': 'Pro', 'avatarColor': Colors.purpleAccent},
-    {'id': '2', 'name': 'Мія К.', 'status': 'Присутня', 'level': 'Початківець', 'avatarColor': Colors.pinkAccent},
-    {'id': '3', 'name': 'Ноа С.', 'status': 'Присутній', 'level': 'Середній', 'avatarColor': Colors.orangeAccent},
-    {'id': '4', 'name': 'Емма Т.', 'status': 'Очікується', 'level': 'Pro', 'avatarColor': Colors.cyanAccent},
-    {'id': '5', 'name': 'Артем Д.', 'status': 'Очікується', 'level': 'Середній', 'avatarColor': Colors.blueAccent},
+    {'id': '1', 'name': 'Лев М.', 'status': 'coach.status_expected'.tr(), 'level': 'Pro', 'avatarColor': Colors.purpleAccent},
+    {'id': '2', 'name': 'Мія К.', 'status': 'coach.status_present_f'.tr(), 'level': 'coach.level_beginner'.tr(), 'avatarColor': Colors.pinkAccent},
+    {'id': '3', 'name': 'Ноа С.', 'status': 'coach.status_present_m'.tr(), 'level': 'coach.level_intermediate'.tr(), 'avatarColor': Colors.orangeAccent},
+    {'id': '4', 'name': 'Емма Т.', 'status': 'coach.status_expected'.tr(), 'level': 'Pro', 'avatarColor': Colors.cyanAccent},
+    {'id': '5', 'name': 'Артем Д.', 'status': 'coach.status_expected'.tr(), 'level': 'coach.level_intermediate'.tr(), 'avatarColor': Colors.blueAccent},
   ];
 
   void _scanQR() {
@@ -33,11 +36,11 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
 
   void _manualCheckIn(int index) {
     setState(() {
-      _attendees[index]['status'] = 'Присутній';
+      _attendees[index]['status'] = 'coach.status_present_m'.tr();
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${_attendees[index]['name']} відмічено вручну!'),
+        content: Text('${_attendees[index]['name']} ${'coach.marked_manually'.tr()}'),
         backgroundColor: Colors.greenAccent.shade700,
         behavior: SnackBarBehavior.floating,
       ),
@@ -47,7 +50,7 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
   void _leaveNote(int index) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Нотатку додано для: ${_attendees[index]['name']}'),
+        content: Text('${'coach.note_added'.tr()}: ${_attendees[index]['name']}'),
         backgroundColor: Colors.cyan.shade700,
         behavior: SnackBarBehavior.floating,
       ),
@@ -57,12 +60,12 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
-    final presentCount = _attendees.where((a) => a['status'] == 'Присутній' || a['status'] == 'Присутня').length;
+    final presentCount = _attendees.where((a) => a['status'] == 'coach.status_present_m'.tr() || a['status'] == 'coach.status_present_f'.tr()).length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Тренерська', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        title: Text('coach.title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -97,12 +100,12 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Привіт, ${user?.name ?? 'Олексій'}!',
+                              '${'coach.hello'.tr()}, ${user?.name ?? 'Олексій'}!',
                               style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                             ),
-                            const Text(
-                              'Група "Юніори (Батерфляй)"',
-                              style: TextStyle(color: Colors.cyanAccent, letterSpacing: 1, fontWeight: FontWeight.w600),
+                            Text(
+                              'coach.group_juniors'.tr(),
+                              style: const TextStyle(color: Colors.cyanAccent, letterSpacing: 1, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0),
@@ -114,9 +117,9 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                   // Top Stats (Glassmorphism)
                   Row(
                     children: [
-                      Expanded(child: _buildGlassStat('Учнів', '${_attendees.length}', LucideIcons.users, Colors.cyanAccent)),
+                      Expanded(child: _buildGlassStat('coach.students'.tr(), '${_attendees.length}', LucideIcons.users, Colors.cyanAccent)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildGlassStat('Присутність', '${((presentCount / _attendees.length) * 100).toInt()}%', LucideIcons.activity, Colors.greenAccent)),
+                      Expanded(child: _buildGlassStat('coach.attendance'.tr(), '${((presentCount / _attendees.length) * 100).toInt()}%', LucideIcons.activity, Colors.greenAccent)),
                     ],
                   ).animate().slideY(begin: 0.2, end: 0, delay: 100.ms).fadeIn(),
                   const SizedBox(height: 32),
@@ -128,33 +131,48 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                   const SizedBox(height: 48),
 
                   // Today's Classes
-                  const Text(
-                    'РОЗКЛАД НА СЬОГОДНІ',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
+                  Text(
+                    'coach.schedule_today'.tr(),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
                   ).animate().fadeIn(delay: 300.ms),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    height: 110,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      clipBehavior: Clip.none, // Allow glow to overflow
-                      children: [
-                        _buildPremiumClassChip(time: '16:00', name: 'Юніори (Батерфляй)', isActive: true).animate().slideX(begin: 0.2, end: 0, delay: 400.ms).fadeIn(),
-                        _buildPremiumClassChip(time: '17:30', name: 'Підлітки Pro', isActive: false).animate().slideX(begin: 0.2, end: 0, delay: 500.ms).fadeIn(),
-                        _buildPremiumClassChip(time: '19:00', name: 'Дорослі', isActive: false).animate().slideX(begin: 0.2, end: 0, delay: 600.ms).fadeIn(),
-                      ],
-                    ),
+                  
+                  ref.watch(scheduleControllerProvider).when(
+                    data: (classes) {
+                      final coachClasses = classes.where((c) => c.coachId == user?.id).toList();
+                      if (coachClasses.isEmpty) {
+                        return const Text('Немає занять на сьогодні', style: TextStyle(color: Colors.white70));
+                      }
+                      
+                      return SizedBox(
+                        height: 110,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          clipBehavior: Clip.none,
+                          children: coachClasses.map((c) {
+                            final time = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: _buildPremiumClassChip(time: time, name: c.title, isActive: true).animate().slideX(begin: 0.2, end: 0, delay: 400.ms).fadeIn(),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
+                    loading: () => const CircularProgressIndicator(),
+                    error: (err, stack) => const Text('Помилка завантаження'),
                   ),
+                  
                   const SizedBox(height: 40),
 
                   // Attendees List
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'ЖУРНАЛ (16:00)',
-                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
+                      Text(
+                        'coach.journal'.tr(),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -305,9 +323,9 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                   children: [
                     const Icon(LucideIcons.scanLine, color: Colors.white, size: 28),
                     const SizedBox(width: 16),
-                    const Text(
-                      'СКАНУВАТИ QR',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 3),
+                    Text(
+                      'coach.scan_qr'.tr(),
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 3),
                     ),
                   ],
                 ),
@@ -386,7 +404,7 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
   }
 
   Widget _buildAttendeeCard(Map<String, dynamic> attendee, int index) {
-    bool isPresent = attendee['status'] == 'Присутній' || attendee['status'] == 'Присутня';
+    bool isPresent = attendee['status'] == 'coach.status_present_m'.tr() || attendee['status'] == 'coach.status_present_f'.tr();
     Color avatarColor = attendee['avatarColor'];
 
     return Container(

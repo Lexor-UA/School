@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 part 'subscription_controller.g.dart';
 
@@ -45,7 +46,7 @@ class SubscriptionController extends _$SubscriptionController {
         });
         return true;
       } catch (e) {
-        print('Error deducting class: $e');
+        debugPrint('Error deducting class: $e');
         return false;
       }
     }

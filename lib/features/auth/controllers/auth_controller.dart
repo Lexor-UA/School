@@ -1,10 +1,10 @@
-import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 
 part 'auth_controller.g.dart';
 
@@ -24,60 +24,109 @@ class AuthController extends _$AuthController {
 
   Future<void> _fetchUserFromFirestore(String uid) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get().timeout(const Duration(seconds: 15));
       if (doc.exists && doc.data() != null) {
         state = AppUser.fromJson(doc.data()!);
+      } else {
+        // Create default user if missing
+        state = AppUser(
+          id: uid,
+          name: 'New User',
+          role: UserRole.parent,
+        );
       }
     } catch (e) {
-      print('Error fetching user data: $e');
+      debugPrint('Error fetching user data: $e');
+      // Fallback for offline or permission issues
+      state = AppUser(
+        id: uid,
+        name: 'Offline User',
+        role: UserRole.parent,
+      );
     }
   }
 
   Future<void> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return; 
+      User? user;
+      
+      if (kIsWeb) {
+        // Use Firebase's built-in popup for Web (much more reliable and recommended)
+        final authProvider = GoogleAuthProvider();
+        final userCredential = await FirebaseAuth.instance.signInWithPopup(authProvider);
+        user = userCredential.user;
+      } else {
+        // Use google_sign_in plugin for Android/iOS
+        final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) return; 
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      final user = userCredential.user;
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+        user = userCredential.user;
+      }
 
       if (user != null) {
-        final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-        final docSnap = await docRef.get();
+        final defaultUser = AppUser(
+          id: user.uid,
+          name: user.displayName ?? 'New User',
+          role: UserRole.parent,
+          avatarUrl: user.photoURL ?? 'https://ui-avatars.com/api/?name=${user.displayName ?? 'User'}',
+        );
 
-        if (!docSnap.exists) {
-          final newUser = AppUser(
-            id: user.uid,
-            name: user.displayName ?? 'New User',
-            role: UserRole.parent,
-            avatarUrl: user.photoURL ?? 'https://ui-avatars.com/api/?name=${user.displayName ?? 'User'}',
-          );
-          await docRef.set(newUser.toJson());
-          state = newUser;
-        } else {
-          state = AppUser.fromJson(docSnap.data()!);
+        try {
+          final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+          final docSnap = await docRef.get().timeout(const Duration(seconds: 15));
+
+          if (!docSnap.exists) {
+            await docRef.set(defaultUser.toJson()).timeout(const Duration(seconds: 15));
+            state = defaultUser;
+          } else {
+            final dbUser = AppUser.fromJson(docSnap.data()!);
+            // Force role to parent as requested
+            state = dbUser.copyWith(role: UserRole.parent);
+          }
+        } catch (e) {
+          debugPrint('Firestore error, falling back to default Client role: $e');
+          // If Firestore is offline, still log the user in locally as Client!
+          state = defaultUser;
         }
       }
     } catch (e) {
-      print('Error during Google Sign In: $e');
+      debugPrint('Error during Google Sign In: $e');
       rethrow;
     }
   }
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
+      if (kDebugMode) {
+        // Hardcoded test credentials for testing different portals
+        final login = email.trim().toLowerCase();
+        if (password.trim() == '1') {
+          if (login == 'coach') {
+            state = const AppUser(id: 'mock_coach', name: 'Тренер Тест', role: UserRole.coach);
+            return;
+          } else if (login == 'admin') {
+            state = const AppUser(id: 'mock_admin', name: 'Адмін Тест', role: UserRole.admin);
+            return;
+          } else if (login == 'owner') {
+            state = const AppUser(id: 'mock_owner', name: 'Власник Тест', role: UserRole.owner);
+            return;
+          }
+        }
+      }
+
       final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       if (userCredential.user != null) {
         await _fetchUserFromFirestore(userCredential.user!.uid);
       }
     } catch (e) {
-      print('Error during Email Sign In: $e');
+      debugPrint('Error during Email Sign In: $e');
       rethrow;
     }
   }
@@ -100,9 +149,9 @@ class AuthController extends _$AuthController {
         try {
           final oldRef = FirebaseStorage.instance.refFromURL(user.avatarUrl);
           await oldRef.delete();
-          print('Old avatar deleted successfully.');
+          debugPrint('Old avatar deleted successfully.');
         } catch (e) {
-          print('Error deleting old avatar: $e');
+          debugPrint('Error deleting old avatar: $e');
           // Proceed with upload even if delete fails (e.g. file doesn't exist)
         }
       }
@@ -111,7 +160,7 @@ class AuthController extends _$AuthController {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final newAvatarRef = storageRef.child('avatars/${user.id}_$timestamp.jpg');
       
-      final uploadTask = await newAvatarRef.putData(
+      await newAvatarRef.putData(
         bytes, 
         SettableMetadata(contentType: 'image/jpeg')
       );
@@ -127,7 +176,7 @@ class AuthController extends _$AuthController {
       state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
       
     } catch (e) {
-      print('Error uploading avatar: $e');
+      debugPrint('Error uploading avatar: $e');
     }
   }
 }

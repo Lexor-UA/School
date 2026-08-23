@@ -3,6 +3,7 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'coach_dashboard.dart';
 import 'dart:ui';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -103,9 +104,9 @@ class _CoachMainState extends State<CoachMain> {
                       duration: const Duration(milliseconds: 400),
                       tabBackgroundColor: Colors.blueAccent.withValues(alpha: 0.3),
                       color: Colors.white54,
-                      tabs: const [
-                        GButton(icon: LucideIcons.layoutDashboard, text: 'Розклад'),
-                        GButton(icon: LucideIcons.user, text: 'Профіль'),
+                      tabs: [
+                        GButton(icon: LucideIcons.layoutDashboard, text: 'coach.tab_schedule'.tr()),
+                        GButton(icon: LucideIcons.user, text: 'coach.tab_profile'.tr()),
                       ],
                       selectedIndex: index,
                         onTabChange: (index) {
@@ -155,7 +156,7 @@ class _CoachProfileTab extends ConsumerWidget {
                     context.go('/');
                   },
                   icon: const Icon(LucideIcons.logOut, color: Colors.redAccent),
-                  label: const Text('Вийти', style: TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                  label: Text('coach.logout'.tr(), style: const TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
             ),

@@ -10,6 +10,7 @@ import 'package:swimming_school_app/shared/utils/page_transitions.dart';
 import 'package:swimming_school_app/features/parent/presentation/trophy_room_screen.dart';
 import 'package:swimming_school_app/features/parent/presentation/anatomy_progress_screen.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
+import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 
 class ParentProfileTab extends ConsumerStatefulWidget {
   const ParentProfileTab({super.key});
@@ -124,6 +125,54 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
             ],
           ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
           const SizedBox(height: 16),
+          
+          // Subscription Banner
+          if (user != null) ...[
+            Builder(
+              builder: (context) {
+                final subs = ref.watch(subscriptionControllerProvider);
+                final sub = subs.where((s) => s.userId == user.id).firstOrNull;
+                
+                if (sub != null) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: const Color(0xFF00B4DB).withValues(alpha: 0.3), blurRadius: 10)],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.creditCard, color: Colors.white, size: 32),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Мій Абонемент', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(sub.isActive ? 'Активний' : 'Неактивний', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('${sub.remainingClasses}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                            const Text('занять', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 420.ms).slideY(begin: 0.2, end: 0);
+                }
+                return const SizedBox.shrink();
+              }
+            )
+          ],
           
           // Anatomy Progress Banner
           GestureDetector(

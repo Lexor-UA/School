@@ -513,22 +513,6 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
     ).animate().fadeIn().slideY(begin: 0.2);
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white54, size: 18),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 2),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-          ],
-        )
-      ],
-    );
-  }
 
   Widget _buildMapStat(IconData icon, String value, String label) {
     return Column(

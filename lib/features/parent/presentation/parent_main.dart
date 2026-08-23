@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'dart:ui';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_home_tab.dart';
@@ -107,10 +108,10 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                         duration: const Duration(milliseconds: 400),
                         tabBackgroundColor: AppTheme.accentTeal.withValues(alpha: 0.4),
                         color: Colors.white70,
-                        tabs: const [
-                          GButton(icon: LucideIcons.home, text: 'Головна'),
-                          GButton(icon: LucideIcons.calendarDays, text: 'Розклад'),
-                          GButton(icon: LucideIcons.user, text: 'Профіль'),
+                        tabs: [
+                          GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
+                          GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_schedule'.tr()),
+                          GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
                         ],
                         selectedIndex: index,
                         onTabChange: (i) {

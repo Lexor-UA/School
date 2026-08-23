@@ -37,6 +37,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
               
               final success = await ref.read(subscriptionControllerProvider.notifier).deductClass(code);
               
+              if (!context.mounted) return;
+
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

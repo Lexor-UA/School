@@ -4,14 +4,19 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'dart:ui';
 
-class ParentScheduleTab extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+
+class ParentScheduleTab extends ConsumerStatefulWidget {
   const ParentScheduleTab({super.key});
 
   @override
-  State<ParentScheduleTab> createState() => _ParentScheduleTabState();
+  ConsumerState<ParentScheduleTab> createState() => _ParentScheduleTabState();
 }
 
-class _ParentScheduleTabState extends State<ParentScheduleTab> {
+class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
   final ValueNotifier<int> _selectedFilterNotifier = ValueNotifier<int>(0);
   final List<String> _filters = ['Усі', 'Плавання', 'Стрибки', 'Змагання'];
 
@@ -84,54 +89,71 @@ class _ParentScheduleTabState extends State<ParentScheduleTab> {
           ).animate().fadeIn(),
           const SizedBox(height: 24),
 
+          const SizedBox(height: 24),
+
           Text(
             'Майбутні Заняття',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
           ).animate().fadeIn(),
           const SizedBox(height: 16),
-          _buildScheduleCard(
-            context,
-            day: 'Сгд',
-            date: '10',
-            time: '16:00 - 17:00',
-            className: 'Юніори (Батерфляй)',
-            coachName: 'Тренер Алекс',
-          ).animate().slideX(begin: 0.2, end: 0, delay: 100.ms).fadeIn(),
-          const SizedBox(height: 12),
-          _buildScheduleCard(
-            context,
-            day: 'Чтв',
-            date: '12',
-            time: '17:30 - 18:30',
-            className: 'Стрибки у воду',
-            coachName: 'Тренер Олена',
-          ).animate().slideX(begin: 0.2, end: 0, delay: 200.ms).fadeIn(),
-          const SizedBox(height: 12),
-          _buildScheduleCard(
-            context,
-            day: 'Сбт',
-            date: '14',
-            time: '10:00 - 12:00',
-            className: 'Підготовка до змагань',
-            coachName: 'Тренер Марк',
-          ).animate().slideX(begin: 0.2, end: 0, delay: 300.ms).fadeIn(),
+          
+          ref.watch(scheduleControllerProvider).when(
+            data: (classes) {
+              if (classes.isEmpty) {
+                return const Center(child: Text('Немає доступних занять', style: TextStyle(color: Colors.white70)));
+              }
+              return Column(
+                children: classes.map((c) => _buildScheduleCard(context, c)).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Помилка завантаження: $err', style: const TextStyle(color: Colors.redAccent))),
+          ),
           
           const SizedBox(height: 64),
           Text(
-            'Історія Відвідувань',
+            'Мої Бронювання',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
           ).animate().fadeIn(delay: 300.ms),
           const SizedBox(height: 16),
-          _buildHistoryCard(context, date: '5 Грудня, 16:00', status: 'Відвідано', grade: 'Відмінно', comment: 'Чудова робота ногами!').animate().fadeIn(delay: 400.ms),
-          const SizedBox(height: 12),
-          _buildHistoryCard(context, date: '3 Грудня, 16:00', status: 'Відвідано', grade: 'Добре', comment: 'Потрібно попрацювати над диханням.').animate().fadeIn(delay: 500.ms),
+          
+          ref.watch(scheduleControllerProvider).when(
+            data: (classes) {
+              final user = ref.read(authControllerProvider);
+              if (user == null) return const SizedBox.shrink();
+              
+              final myClasses = classes.where((c) => c.enrolledUserIds.contains(user.id)).toList();
+              
+              if (myClasses.isEmpty) {
+                return const Center(child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Ви ще не забронювали жодного заняття.', style: TextStyle(color: Colors.white70)),
+                ));
+              }
+              
+              return Column(
+                children: myClasses.map((c) => _buildScheduleCard(context, c)).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => const SizedBox.shrink(),
+          ),
+          
           const SizedBox(height: 80), // Padding for floating nav bar
         ],
       ),
     );
   }
 
-  Widget _buildScheduleCard(BuildContext context, {required String day, required String date, required String time, required String className, required String coachName}) {
+  Widget _buildScheduleCard(BuildContext context, GroupClass groupClass) {
+    final user = ref.read(authControllerProvider);
+    final isEnrolled = user != null && groupClass.enrolledUserIds.contains(user.id);
+    final isFull = groupClass.enrolledUserIds.length >= groupClass.maxCapacity;
+
+    final String day = _getDayName(groupClass.startTime.weekday);
+    final String date = groupClass.startTime.day.toString();
+    final String time = '${groupClass.startTime.hour.toString().padLeft(2, '0')}:${groupClass.startTime.minute.toString().padLeft(2, '0')} - '
+        '${groupClass.endTime.hour.toString().padLeft(2, '0')}:${groupClass.endTime.minute.toString().padLeft(2, '0')}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: ClipRRect(
@@ -152,7 +174,9 @@ class _ParentScheduleTabState extends State<ParentScheduleTab> {
                 BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: -5),
               ],
             ),
-            child: Row(
+            child: Column(
+              children: [
+                Row(
               children: [
                 // Glowing Date Box
                 Container(
@@ -177,7 +201,7 @@ class _ParentScheduleTabState extends State<ParentScheduleTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(className, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                      Text(groupClass.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -199,23 +223,67 @@ class _ParentScheduleTabState extends State<ParentScheduleTab> {
                             child: const Icon(LucideIcons.user, size: 12, color: Colors.amberAccent),
                           ),
                           const SizedBox(width: 8),
-                          Text(coachName, style: const TextStyle(fontSize: 13, color: Colors.amberAccent, fontWeight: FontWeight.w600)),
+                          Text(groupClass.coachName, style: const TextStyle(fontSize: 13, color: Colors.amberAccent, fontWeight: FontWeight.w600)),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Вільних місць: ${groupClass.maxCapacity - groupClass.enrolledUserIds.length} / ${groupClass.maxCapacity}',
+                        style: TextStyle(
+                          color: isFull ? Colors.redAccent : Colors.white70,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle),
-                  child: const Icon(LucideIcons.chevronRight, color: Colors.white70, size: 20),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: (isEnrolled || isFull) ? null : () async {
+                    final success = await ref.read(scheduleControllerProvider.notifier).bookClass(groupClass.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(success ? 'Успішно заброньовано!' : 'Помилка бронювання. Перевірте залишок занять.'),
+                          backgroundColor: success ? Colors.green : Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isEnrolled ? Colors.green : (isFull ? Colors.grey : Colors.cyan),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    isEnrolled ? 'Ви записані' : (isFull ? 'Місць немає' : 'Записатися'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
-              ],
+              ),
+            ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _getDayName(int weekday) {
+    switch (weekday) {
+      case 1: return 'Пнд';
+      case 2: return 'Втр';
+      case 3: return 'Срд';
+      case 4: return 'Чтв';
+      case 5: return 'Птн';
+      case 6: return 'Сбт';
+      case 7: return 'Ндл';
+      default: return '';
+    }
   }
 
   Widget _buildHistoryCard(BuildContext context, {required String date, required String status, required String grade, required String comment}) {

@@ -20,7 +20,7 @@ final class SubscriptionControllerProvider
         argument: null,
         retry: null,
         name: r'subscriptionControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -42,7 +42,7 @@ final class SubscriptionControllerProvider
 }
 
 String _$subscriptionControllerHash() =>
-    r'925b8d70205d29e28a999b87e4721d36110447df';
+    r'3a76fd63b334a3ae026a6941e2f0d36784ba27af';
 
 abstract class _$SubscriptionController extends $Notifier<List<Subscription>> {
   List<Subscription> build();

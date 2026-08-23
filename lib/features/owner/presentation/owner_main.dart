@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
@@ -45,14 +46,14 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      const Text(
-                        'ОГЛЯД БІЗНЕСУ',
-                        style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      Text(
+                        'owner.business_overview'.tr(),
+                        style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
                       ).animate().fadeIn().slideX(begin: -0.1),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Фінансові Метрики',
-                        style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      Text(
+                        'owner.financial_metrics'.tr(),
+                        style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 1),
                       ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
                       
                       const SizedBox(height: 32),
@@ -68,15 +69,15 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         physics: const BouncingScrollPhysics(),
                         child: Row(
                           children: [
-                            _buildQuickAction(LucideIcons.barChart2, 'Звіти', Colors.blueAccent, 250, () {
+                            _buildQuickAction(LucideIcons.barChart2, 'owner.reports'.tr(), Colors.blueAccent, 250, () {
                               context.go('/owner/reports');
                             }),
                             const SizedBox(width: 12),
-                            _buildQuickAction(LucideIcons.users, 'Персонал', Colors.cyanAccent, 300, () {
+                            _buildQuickAction(LucideIcons.users, 'owner.staff'.tr(), Colors.cyanAccent, 300, () {
                               context.go('/owner/staff');
                             }),
                             const SizedBox(width: 12),
-                            _buildQuickAction(LucideIcons.banknote, 'Виплати', Colors.pinkAccent, 350, () {
+                            _buildQuickAction(LucideIcons.banknote, 'owner.payouts'.tr(), Colors.pinkAccent, 350, () {
                               context.go('/owner/payouts');
                             }),
                           ],
@@ -88,9 +89,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       // KPI Grid
                       Row(
                         children: [
-                          Expanded(child: _buildGlassMetricCard(LucideIcons.users, '412', 'Клієнти', Colors.cyanAccent, 300)),
+                          Expanded(child: _buildGlassMetricCard(LucideIcons.users, '412', 'owner.clients'.tr(), Colors.cyanAccent, 300)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildGlassMetricCard(LucideIcons.calendarCheck, '84%', 'Завантаження', Colors.orangeAccent, 400)),
+                          Expanded(child: _buildGlassMetricCard(LucideIcons.calendarCheck, '84%', 'owner.occupancy'.tr(), Colors.orangeAccent, 400)),
                         ],
                       ),
                       
@@ -102,17 +103,17 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       const SizedBox(height: 32),
                       
                       // Live Activity Feed
-                      const Padding(
-                        padding: EdgeInsets.only(left: 2),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 2),
                         child: Text(
-                          'LIVE СТАТУС',
-                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
+                          'owner.live_status'.tr(),
+                          style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
                         ),
                       ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 16),
-                      _buildActivityItem(LucideIcons.arrowDownCircle, 'Нова оплата: Абонемент', '+ ₴ 2,400', Colors.greenAccent, 700),
-                      _buildActivityItem(LucideIcons.userPlus, 'Новий клієнт: Олена', 'Сьогодні, 14:30', Colors.cyanAccent, 800),
-                      _buildActivityItem(LucideIcons.wallet, 'Виплата зарплати', '- ₴ 12,000', Colors.pinkAccent, 900),
+                      _buildActivityItem(LucideIcons.arrowDownCircle, 'owner.new_payment'.tr(), '+ ₴ 2,400', Colors.greenAccent, 700),
+                      _buildActivityItem(LucideIcons.userPlus, 'owner.new_client'.tr(), 'owner.today_time'.tr(), Colors.cyanAccent, 800),
+                      _buildActivityItem(LucideIcons.wallet, 'owner.salary_payout'.tr(), '- ₴ 12,000', Colors.pinkAccent, 900),
                       
                       const SizedBox(height: 40),
                     ]),
@@ -153,7 +154,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Вітаємо, ${user?.name ?? "Власник"}',
+                          '${'owner.hello'.tr()}, ${user?.name ?? "Власник"}',
                           style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -216,7 +217,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text('ЗАГАЛЬНИЙ ДОХІД (МІСЯЦЬ)', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+              Text('owner.total_revenue'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               const Text('₴ 124,500', style: TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold, letterSpacing: -1)),
             ],
@@ -250,7 +251,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          _showOwnerDevSnackbar('Деталі транзакції: $title');
+          _showOwnerDevSnackbar('${'owner.transaction_details'.tr()}: $title');
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
@@ -339,18 +340,24 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(left: 2),
-                  child: Text('ДИНАМІКА ПРИБУТКУ', style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Text('owner.profit_dynamics'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
                 ),
               ),
               const SizedBox(width: 8),
               Row(
-                children: ['День', 'Тиждень', 'Місяць'].map((period) {
-                  final isSelected = _selectedTimeframe == period;
+                children: [
+                  {'key': 'owner.day'.tr(), 'val': 'День'}, 
+                  {'key': 'owner.week'.tr(), 'val': 'Тиждень'}, 
+                  {'key': 'owner.month'.tr(), 'val': 'Місяць'}
+                ].map((item) {
+                  final periodLabel = item['key']!;
+                  final periodVal = item['val']!;
+                  final isSelected = _selectedTimeframe == periodVal;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedTimeframe = period),
+                    onTap: () => setState(() => _selectedTimeframe = periodVal),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.only(left: 4),
@@ -361,7 +368,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         border: Border.all(color: isSelected ? Colors.cyanAccent : Colors.transparent),
                       ),
                       child: Text(
-                        period,
+                        periodLabel,
                         style: TextStyle(
                           color: isSelected ? Colors.cyanAccent : Colors.white54,
                           fontSize: 11,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -36,17 +37,17 @@ class ParentHomeTab extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Сповіщення', style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text('parent.notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  _buildNotificationItem('Тренування перенесено', 'Сьогоднішнє заняття о 16:00 перенесено на 16:15.', LucideIcons.clock, isDark),
-                  _buildNotificationItem('Нове досягнення!', 'Ваша дитина отримала бейдж "Акула басейну".', LucideIcons.award, isDark),
-                  _buildNotificationItem('Абонемент', 'Залишилось 2 заняття. Не забудьте подовжити.', LucideIcons.creditCard, isDark),
+                  _buildNotificationItem('parent.notif_rescheduled_title'.tr(), 'parent.notif_rescheduled_desc'.tr(), LucideIcons.clock, isDark),
+                  _buildNotificationItem('parent.notif_badge_title'.tr(), 'parent.notif_badge_desc'.tr(), LucideIcons.award, isDark),
+                  _buildNotificationItem('parent.notif_sub_title'.tr(), 'parent.notif_sub_desc'.tr(), LucideIcons.creditCard, isDark),
                   const SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('Закрити', style: TextStyle(color: isDark ? Colors.cyanAccent : AppTheme.primaryBlue, fontWeight: FontWeight.bold)),
+                      child: Text('parent.close'.tr(), style: TextStyle(color: isDark ? Colors.cyanAccent : AppTheme.primaryBlue, fontWeight: FontWeight.bold)),
                     ),
                   )
                 ],
@@ -129,7 +130,7 @@ class ParentHomeTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Привіт, ${user?.name ?? 'Олено'}!',
+                      '${'parent.hello'.tr()}, ${user?.name ?? 'Олено'}!',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -143,7 +144,7 @@ class ParentHomeTab extends ConsumerWidget {
                             border: Border.all(color: isDark ? Colors.white24 : Colors.white, width: 1.5),
                             boxShadow: [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 8)],
                           ),
-                          child: Text('Lvl $level', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                          child: Text('${'parent.level'.tr()} $level', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -169,7 +170,7 @@ class ParentHomeTab extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Text('XP', style: TextStyle(color: Colors.orangeAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                        Text('parent.xp'.tr(), style: const TextStyle(color: Colors.orangeAccent, fontSize: 13, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -251,16 +252,16 @@ class ParentHomeTab extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                            child: Text('СЬОГОДНІ', style: TextStyle(color: isDark ? Colors.greenAccent : Colors.green.shade700, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                            child: Text('parent.today'.tr(), style: TextStyle(color: isDark ? Colors.greenAccent : Colors.green.shade700, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                           ),
                           const SizedBox(height: 12),
-                          Text('Батерфляй (Юніори)', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text('parent.class_name'.tr(), style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 6),
                           Row(
                             children: [
                               Icon(LucideIcons.user, color: textSubColor, size: 16),
                               const SizedBox(width: 6),
-                              Text('Тренер: Олександр В.', style: TextStyle(color: textSubColor, fontSize: 14)),
+                              Text('parent.coach_name'.tr(), style: TextStyle(color: textSubColor, fontSize: 14)),
                             ],
                           ),
                         ],
@@ -325,7 +326,7 @@ class ParentHomeTab extends ConsumerWidget {
                             children: [
                               Icon(LucideIcons.map, size: 24, color: accentColor),
                               const SizedBox(width: 12),
-                              Text('ВІДКРИТИ 3D КАРТУ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: accentColor)),
+                              Text('parent.open_map'.tr(), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: accentColor)),
                             ],
                           ),
                         ),
@@ -342,7 +343,7 @@ class ParentHomeTab extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                Text('ВАША ПЕРЕПУСТКА', style: TextStyle(color: textSubColor, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
+                Text('parent.your_pass'.tr(), style: TextStyle(color: textSubColor, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
                 const SizedBox(height: 16),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(32),
@@ -365,7 +366,7 @@ class ParentHomeTab extends ConsumerWidget {
                               color: isDark ? Colors.cyanAccent.withValues(alpha: 0.2) : AppTheme.primaryBlue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text('VIP ACCESS', style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
+                            child: Text('parent.vip_access'.tr(), style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
                           ),
                           const SizedBox(height: 24),
                           Container(
@@ -387,7 +388,7 @@ class ParentHomeTab extends ConsumerWidget {
                   ),
                 const SizedBox(height: 24),
                 Text(
-                  'Покажіть цей QR-код тренеру',
+                  'parent.show_qr'.tr(),
                   style: TextStyle(color: accentColor, fontSize: 14, letterSpacing: 1.1),
                 ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.5, end: 1.0, duration: 1000.ms),
               ],

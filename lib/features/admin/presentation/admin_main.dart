@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
@@ -52,16 +53,16 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       _buildLiveStatusBanner().animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
                       const SizedBox(height: 32),
                       
-                      const Text(
-                        'ШВИДКІ ДІЇ',
-                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      Text(
+                        'admin.quick_actions'.tr(),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 2),
                       ).animate().fadeIn(delay: 300.ms),
                       const SizedBox(height: 16),
                       
                       // Quick Actions Grid
                       Row(
                         children: [
-                          Expanded(child: _buildActionCard(LucideIcons.userPlus, 'Новий Клієнт', Colors.cyanAccent, 400, () {
+                          Expanded(child: _buildActionCard(LucideIcons.userPlus, 'admin.new_client'.tr(), Colors.cyanAccent, 400, () {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
@@ -70,7 +71,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             );
                           })),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildActionCard(LucideIcons.calendarPlus, 'Запис', Colors.greenAccent, 500, () {
+                          Expanded(child: _buildActionCard(LucideIcons.calendarPlus, 'admin.booking'.tr(), Colors.greenAccent, 500, () {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
@@ -83,7 +84,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(child: _buildActionCard(LucideIcons.messageCircle, 'Чат (3 нові)', Colors.orangeAccent, 600, () {
+                          Expanded(child: _buildActionCard(LucideIcons.messageCircle, 'admin.chat'.tr(), Colors.orangeAccent, 600, () {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
@@ -92,7 +93,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             );
                           })),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildActionCard(LucideIcons.wallet, 'Оплата', Colors.purpleAccent, 700, () {
+                          Expanded(child: _buildActionCard(LucideIcons.wallet, 'admin.payment'.tr(), Colors.purpleAccent, 700, () {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
@@ -105,17 +106,17 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       
                       const SizedBox(height: 40),
                       
-                      const Text(
-                        'ЗАВДАННЯ НА СЬОГОДНІ',
-                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      Text(
+                        'admin.tasks_today'.tr(),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 2),
                       ).animate().fadeIn(delay: 800.ms),
                       const SizedBox(height: 16),
                       
-                      _buildTaskItem('Підтвердити оплату', 'Клієнт: Марія, Група Юніори', true).animate().fadeIn(delay: 900.ms).slideX(begin: 0.1),
+                      _buildTaskItem('admin.task_payment'.tr(), 'admin.task_payment_desc'.tr(), true).animate().fadeIn(delay: 900.ms).slideX(begin: 0.1),
                       const SizedBox(height: 12),
-                      _buildTaskItem('Зателефонувати новеньким', '3 пропущених дзвінка', false, isUrgent: true).animate().fadeIn(delay: 1000.ms).slideX(begin: 0.1),
+                      _buildTaskItem('admin.task_call'.tr(), 'admin.task_call_desc'.tr(), false, isUrgent: true).animate().fadeIn(delay: 1000.ms).slideX(begin: 0.1),
                       const SizedBox(height: 12),
-                      _buildTaskItem('Оновити розклад', 'Тренер Алекс захворів', false).animate().fadeIn(delay: 1100.ms).slideX(begin: 0.1),
+                      _buildTaskItem('admin.task_schedule'.tr(), 'admin.task_schedule_desc'.tr(), false).animate().fadeIn(delay: 1100.ms).slideX(begin: 0.1),
                       
                       const SizedBox(height: 40),
                     ]),
@@ -154,7 +155,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Вітаємо, ${user?.name ?? "Адмін"}',
+                      '${'admin.hello'.tr()}, ${user?.name ?? "Адмін"}',
                       style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const Text('CitySwim CRM', style: TextStyle(color: Colors.cyanAccent, fontSize: 13, letterSpacing: 1)),
@@ -189,12 +190,12 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: const TextField(
-            style: TextStyle(color: Colors.white),
+          child: TextField(
+            style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'Пошук клієнта, групи, або транзакції...',
-              hintStyle: TextStyle(color: Colors.white54),
-              prefixIcon: Icon(LucideIcons.search, color: Colors.cyanAccent),
+              hintText: 'admin.search_hint'.tr(),
+              hintStyle: const TextStyle(color: Colors.white54),
+              prefixIcon: const Icon(LucideIcons.search, color: Colors.cyanAccent),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
@@ -237,15 +238,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Зараз у басейні', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                Text('admin.in_pool'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Text('24 клієнта', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('admin.clients_count'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 12),
                     Container(width: 1, height: 16, color: Colors.white24),
                     const SizedBox(width: 12),
-                    const Text('3 тренери', style: TextStyle(color: Colors.cyanAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+                    Text('admin.coaches_count'.tr(), style: const TextStyle(color: Colors.cyanAccent, fontSize: 14, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -319,7 +320,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       onDismissed: (direction) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(direction == DismissDirection.startToEnd ? 'Завдання виконано!' : 'Завдання відкладено'),
+            content: Text(direction == DismissDirection.startToEnd ? 'admin.task_done'.tr() : 'admin.task_postponed'.tr()),
             backgroundColor: direction == DismissDirection.startToEnd ? Colors.greenAccent.shade700 : Colors.orangeAccent.shade700,
             behavior: SnackBarBehavior.floating,
           ),

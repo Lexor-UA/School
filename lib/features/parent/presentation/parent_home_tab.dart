@@ -210,14 +210,16 @@ class ParentHomeTab extends ConsumerWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDark ? [const Color(0xFF1E293B), const Color(0xFF0F172A)] : [Colors.white, Colors.grey.shade50],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  colors: isDark 
+                      ? [Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.02)] 
+                      : [Colors.white, Colors.grey.shade50],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: cardBorderColor, width: 1.5),
+                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : cardBorderColor, width: 1.5),
                 boxShadow: [
-                  BoxShadow(color: shadowColor, blurRadius: 20, spreadRadius: 2),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, spreadRadius: 1),
                 ],
               ),
               child: Row(
@@ -227,8 +229,8 @@ class ParentHomeTab extends ConsumerWidget {
                     width: 100,
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.05),
-                      border: Border(right: BorderSide(color: cardBorderColor, width: 1.5)),
+                      color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.blue.withValues(alpha: 0.05),
+                      border: Border(right: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : cardBorderColor, width: 1.5)),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

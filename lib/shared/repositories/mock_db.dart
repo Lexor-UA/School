@@ -9,6 +9,7 @@ class MockDB {
     level: 5,
     xp: 2800,
     maxXp: 3500,
+    avatarUrl: 'assets/images/maria.jpg',
     achievements: [
       Achievement(
         id: 'a1',

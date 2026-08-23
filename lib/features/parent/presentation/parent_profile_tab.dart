@@ -163,10 +163,13 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  'Вітрина Трофеїв',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Вітрина Трофеїв',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               TextButton(
@@ -208,7 +211,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
           _buildSettingsTile(LucideIcons.bell, 'Сповіщення', textColor, textSubColor, cardBgColor, cardBorderColor),
           _buildSettingsTile(LucideIcons.shieldQuestion, 'Допомога та Підтримка', textColor, textSubColor, cardBgColor, cardBorderColor),
           const SizedBox(height: 32),
-          _buildLogoutButton(context, ref, isDark).animate().fadeIn(delay: 1100.ms),
+          _buildLogoutButton(context, ref, isDark).animate().fadeIn(duration: 400.ms),
           const SizedBox(height: 120),
         ],
       ),

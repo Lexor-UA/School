@@ -51,6 +51,8 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
     ImageProvider imageProvider;
     if (user.avatarBytes != null) {
       imageProvider = MemoryImage(user.avatarBytes!);
+    } else if (user.avatarUrl.startsWith('assets/')) {
+      imageProvider = AssetImage(user.avatarUrl);
     } else {
       imageProvider = NetworkImage(user.avatarUrl);
     }

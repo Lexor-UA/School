@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:math';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
@@ -49,13 +50,14 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
             ),
           ),
           // Interactive 3D Map
-          Center(
+          Align(
+            alignment: const Alignment(0, -0.1), // Shift slightly up to avoid bottom panel
             child: GestureDetector(
               onPanUpdate: (details) {
                 setState(() {
                   _rotationZ -= details.delta.dx * 0.01;
                   _rotationX += details.delta.dy * 0.01;
-                  _rotationX = _rotationX.clamp(0.0, 1.5); // Limit tilt
+                  _rotationX = _rotationX.clamp(0.0, 1.1); // Limit tilt to avoid extreme side angles
                 });
               },
               child: Transform(
@@ -169,13 +171,13 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 1. POOL STRUCTURE & BOTTOM
+          // 1. POOL BOTTOM (Deep)
           Transform(
             transform: Matrix4.translationValues(0, 0, -20),
             child: _buildPoolBottom(),
           ),
           
-          // 2. WATER SURFACE (Glassy)
+          // 2. WATER SURFACE & ROPES
           Transform(
             transform: Matrix4.translationValues(0, 0, 0),
             child: _buildWaterSurface(),
@@ -189,37 +191,178 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
               child: _buildInteractiveLanes(),
             ),
           ),
+          
+          // 3.5 POOL WALLS (To hide the Z-gaps)
+          _buildPoolWalls(),
+          
+          // 4. POOL BORDER (Tiles on top to hide edges and add depth)
+          Transform(
+            transform: Matrix4.translationValues(0, 0, 4),
+            child: Container(
+              width: 260, height: 440,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.cyan.shade600, width: 8),
+                boxShadow: [
+                  BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15, spreadRadius: 2), // Outer glow
+                ],
+              ),
+              // Inner shadow effect using gradient
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.blue.shade900.withValues(alpha: 0.3), width: 2),
+                ),
+              ),
+            ),
+          ),
+
+          // 5. STARTING BLOCKS
+          Positioned(
+            top: -12, left: 8, right: 8, // Fit inside the border
+            child: Transform(
+              transform: Matrix4.translationValues(0, 0, 10),
+              child: _buildStartingBlocks(),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPoolWalls() {
+    final Color wallColor = Colors.blue.shade900.withValues(alpha: 0.95); // Dark basin walls
+    const double poolDepth = 24.0; // Distance between -20 and 4
+    const double poolWidth = 260.0;
+    const double poolHeight = 440.0;
+    const double borderZ = 4.0; // The Z of the top border
+    const double inset = 6.0; // Inset to hide sharp corners under the rounded border
+
+    return Stack(
+      children: [
+        // Left Wall
+        Positioned(
+          left: inset,
+          top: inset,
+          child: Transform(
+            transform: Matrix4.identity()
+              ..translate(0.0, 0.0, borderZ)
+              ..rotateY(pi / 2),
+            alignment: Alignment.centerLeft,
+            child: Container(
+              width: poolDepth,
+              height: poolHeight - (inset * 2),
+              color: wallColor,
+            ),
+          ),
+        ),
+        // Right Wall
+        Positioned(
+          right: inset,
+          top: inset,
+          child: Transform(
+            transform: Matrix4.identity()
+              ..translate(0.0, 0.0, borderZ)
+              ..rotateY(-pi / 2),
+            alignment: Alignment.centerRight,
+            child: Container(
+              width: poolDepth,
+              height: poolHeight - (inset * 2),
+              color: wallColor,
+            ),
+          ),
+        ),
+        // Top Wall
+        Positioned(
+          left: inset,
+          top: inset,
+          child: Transform(
+            transform: Matrix4.identity()
+              ..translate(0.0, 0.0, borderZ)
+              ..rotateX(-pi / 2),
+            alignment: Alignment.topCenter,
+            child: Container(
+              width: poolWidth - (inset * 2),
+              height: poolDepth,
+              color: wallColor,
+            ),
+          ),
+        ),
+        // Bottom Wall
+        Positioned(
+          left: inset,
+          bottom: inset,
+          child: Transform(
+            transform: Matrix4.identity()
+              ..translate(0.0, 0.0, borderZ)
+              ..rotateX(pi / 2),
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: poolWidth - (inset * 2),
+              height: poolDepth,
+              color: wallColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStartingBlocks() {
+    return Row(
+      children: List.generate(6, (index) {
+        return Expanded(
+          child: Center(
+            child: Container(
+              width: 22,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200, // Lighter plastic/metal blocks
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+                border: Border.all(color: Colors.black54, width: 1),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  height: 8,
+                  margin: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 
   Widget _buildPoolBottom() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.5), width: 3),
+        color: const Color(0xFF0096C7), // Bright azure
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
-          BoxShadow(color: Colors.blue.shade900.withValues(alpha: 0.5), blurRadius: 60, spreadRadius: -10),
+          BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.15), blurRadius: 50, spreadRadius: 15),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Stack(
           children: [
-            // Animated Water Base for extreme realism
-            const Positioned.fill(
-              child: AnimatedWaterBackground(),
-            ),
-            // Deep gradient overlay
+            // Base gradient
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.blue.shade900.withValues(alpha: 0.7),
-                      Colors.cyan.shade800.withValues(alpha: 0.6),
+                      Colors.cyan.shade400,
+                      Colors.blue.shade600,
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -227,23 +370,22 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
                 ),
               ),
             ),
-            // Lanes (Glowing pulsing lines)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(4, (index) {
-                return Container(
-                  width: 3,
-                  color: Colors.cyanAccent.withValues(alpha: 0.6),
-                  margin: const EdgeInsets.symmetric(vertical: 20),
-                ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(begin: 0.4, end: 1.0, duration: 2.seconds);
-              }),
+            // Animated Water Base
+            const Positioned.fill(
+              child: AnimatedWaterBackground(),
+            ),
+            // T-shaped lane markers
+            Positioned.fill(
+              child: CustomPaint(
+                painter: PoolBottomPainter(),
+              ),
             ),
             // Inner shadow for depth
             Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
-                  radius: 1.8,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.4)],
+                  radius: 1.5,
                 ),
               ),
             )
@@ -256,23 +398,25 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
   Widget _buildWaterSurface() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.cyanAccent.withValues(alpha: 0.15),
+        color: Colors.cyanAccent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Stack(
             children: [
-              // Ropes
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(4, (index) {
-                  return CustomPaint(
-                    size: const Size(4, 500),
-                    painter: RopePainter(),
-                  );
-                }),
+              // Ropes (5 ropes for 6 lanes)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8), // Keep ropes from touching border directly
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(5, (index) {
+                    return CustomPaint(
+                      size: const Size(4, 500),
+                      painter: RopePainter(),
+                    );
+                  }),
+                ),
               ),
               // Subtle reflections
               Container(
@@ -298,21 +442,19 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
     );
   }
 
-
-
   Widget _buildPremiumClassInfo() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3), width: 1.5),
             boxShadow: [
-              BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.1), blurRadius: 20, spreadRadius: 0),
+              BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.1), blurRadius: 15, spreadRadius: 0),
             ],
           ),
           child: Column(
@@ -321,65 +463,48 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.cyanAccent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.5)),
-                      boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 20)],
-                    ),
-                    child: const Icon(LucideIcons.waves, color: Colors.cyanAccent, size: 28)
-                      .animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 1.seconds),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.cyanAccent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2),
-                            ],
-                          ),
-                          child: Text(
-                            'ДОРІЖКА ${(widget.targetLane ?? 0) + 1}  •  МАРІЯ',
-                            style: const TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.2),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(widget.groupName ?? '', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      color: Colors.cyanAccent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 8),
                       ],
                     ),
+                    child: Text(
+                      'ДОРІЖКА ${(widget.targetLane ?? 0) + 1} • МАРІЯ',
+                      style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w900),
+                    ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: IconButton(
-                      icon: const Icon(LucideIcons.x, color: Colors.white),
-                      onPressed: () => setState(() => _selectedLane = null),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.groupName ?? '', 
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedLane = null),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.x, color: Colors.white, size: 16),
                     ),
                   )
                 ],
               ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildInfoItem(LucideIcons.user, 'Тренер', widget.coachName ?? ''),
-                    Container(height: 40, width: 1, color: Colors.white.withValues(alpha: 0.1)),
-                    _buildInfoItem(LucideIcons.clock, 'Час', widget.timeSlot ?? ''),
-                  ],
-                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(LucideIcons.user, color: Colors.white54, size: 14),
+                  const SizedBox(width: 6),
+                  Text(widget.coachName ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  const SizedBox(width: 16),
+                  const Icon(LucideIcons.clock, color: Colors.white54, size: 14),
+                  const SizedBox(width: 6),
+                  Text(widget.timeSlot ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                ],
               )
             ],
           ),
@@ -419,7 +544,7 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
 
   Widget _buildInteractiveLanes() {
     return Row(
-      children: List.generate(5, (index) {
+      children: List.generate(6, (index) { // 6 Lanes
         bool isSelected = _selectedLane == index;
         bool isTarget = widget.targetLane == index;
         return Expanded(
@@ -433,20 +558,20 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
                 color: isTarget 
-                  ? Colors.cyanAccent.withValues(alpha: 0.2) 
+                  ? Colors.white.withValues(alpha: 0.15) 
                   : (isSelected ? Colors.white.withValues(alpha: 0.1) : Colors.transparent),
                 border: Border(
                   left: BorderSide(
-                    color: isTarget ? Colors.cyanAccent.withValues(alpha: 0.8) : (isSelected ? Colors.white.withValues(alpha: 0.4) : Colors.transparent), 
+                    color: isTarget ? Colors.white.withValues(alpha: 0.6) : (isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent), 
                     width: isTarget ? 2 : (isSelected ? 1 : 0)
                   ),
                   right: BorderSide(
-                    color: isTarget ? Colors.cyanAccent.withValues(alpha: 0.8) : (isSelected ? Colors.white.withValues(alpha: 0.4) : Colors.transparent), 
+                    color: isTarget ? Colors.white.withValues(alpha: 0.6) : (isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent), 
                     width: isTarget ? 2 : (isSelected ? 1 : 0)
                   ),
                 ),
                 boxShadow: isTarget ? [
-                  BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 30, spreadRadius: 0)
+                  BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 0)
                 ] : [],
               ),
               child: isTarget ? Column(
@@ -456,26 +581,26 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
                     alignment: Alignment.center,
                     children: [
                       Container(
-                        width: 70, height: 70,
+                        width: 50, height: 50,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4), width: 1),
+                          border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.6), width: 1.5),
                         ),
                       ).animate(onPlay: (c) => c.repeat()).scale(begin: const Offset(0.5,0.5), end: const Offset(1.5,1.5)).fade(begin: 1, end: 0, duration: 2.seconds),
                       Container(
-                        width: 44, height: 44,
+                        width: 36, height: 36,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.cyanAccent.withValues(alpha: 0.15),
+                          color: Colors.cyanAccent.withValues(alpha: 0.2),
                           border: Border.all(color: Colors.cyanAccent, width: 2),
                           boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.8), blurRadius: 20)],
                         ),
-                        child: const Icon(LucideIcons.user, color: Colors.cyanAccent, size: 24),
+                        child: const Icon(LucideIcons.user, color: Colors.cyanAccent, size: 20),
                       ),
                     ],
                   ).animate(onPlay: (c) => c.repeat(reverse: true)).slideY(begin: -0.15, end: 0.15, duration: 2.seconds),
                   Container(
-                    width: 3, height: 70,
+                    width: 2, height: 70,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.cyanAccent, Colors.cyanAccent.withValues(alpha: 0.0)],
@@ -493,42 +618,23 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
   }
 }
 
-class GridPainter extends CustomPainter {
+class PoolBottomPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Background base (Deep Teal/Blue gradient)
-    final bgPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [Colors.cyan.shade900, const Color(0xFF001524)],
-        center: Alignment.center,
-        radius: 1.5,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-      
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+    final paint = Paint()
+      ..color = const Color(0xFF003049).withValues(alpha: 0.6) // Dark deep blue T-markers
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke;
 
-    final tilePaint = Paint()..style = PaintingStyle.fill;
-    const double tileSize = 12;
-    const double spacing = 2;
-
-    for (double i = 0; i < size.width; i += (tileSize + spacing)) {
-      for (double j = 0; j < size.height; j += (tileSize + spacing)) {
-        // Pseudo-random light variations for mosaic effect
-        int randomVal = ((i * 17) + (j * 11)).toInt() % 100;
-        
-        if (randomVal < 10) {
-          tilePaint.color = Colors.cyanAccent.withValues(alpha: 0.6); // Bright highlights
-        } else if (randomVal < 35) {
-          tilePaint.color = Colors.blue.shade400.withValues(alpha: 0.3); // Mid tones
-        } else {
-          tilePaint.color = Colors.transparent; // Let deep background show through
-        }
-        
-        // Use RRect for softer, premium looking tiles
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(Rect.fromLTWH(i, j, tileSize, tileSize), const Radius.circular(2)), 
-          tilePaint
-        );
-      }
+    final double laneWidth = size.width / 6; // 6 lanes
+    for (int i = 0; i < 6; i++) {
+      double centerX = (i * laneWidth) + (laneWidth / 2);
+      // Main central line
+      canvas.drawLine(Offset(centerX, 40), Offset(centerX, size.height - 40), paint);
+      // Top T-bar
+      canvas.drawLine(Offset(centerX - 8, 40), Offset(centerX + 8, 40), paint);
+      // Bottom T-bar
+      canvas.drawLine(Offset(centerX - 8, size.height - 40), Offset(centerX + 8, size.height - 40), paint);
     }
   }
 
@@ -539,31 +645,37 @@ class GridPainter extends CustomPainter {
 class RopePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final glowPaint = Paint()
-      ..color = Colors.cyanAccent.withValues(alpha: 0.4)
-      ..strokeWidth = 6
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12)
+    // Drop shadow for the rope
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
+      ..strokeWidth = 4
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2)
+      ..style = PaintingStyle.stroke;
+    
+    canvas.drawLine(Offset(size.width / 2 + 2, 0), Offset(size.width / 2 + 2, size.height), shadowPaint);
+
+    final whitePaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
       
-    final corePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.8)
-      ..strokeWidth = 2
+    final redPaint = Paint()
+      ..color = Colors.red.shade600
+      ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
 
-    // Glowing beam line
-    canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), glowPaint);
-    
-    // Core dashed line to mimic hi-tech ropes
-    const double dashWidth = 15;
-    const double dashSpace = 15;
+    const double dashWidth = 8;
     double startY = 0;
+    bool isRed = false;
+    
     while (startY < size.height) {
       canvas.drawLine(
         Offset(size.width / 2, startY),
         Offset(size.width / 2, startY + dashWidth),
-        corePaint,
+        isRed ? redPaint : whitePaint,
       );
-      startY += dashWidth + dashSpace;
+      startY += dashWidth;
+      isRed = !isRed;
     }
   }
 

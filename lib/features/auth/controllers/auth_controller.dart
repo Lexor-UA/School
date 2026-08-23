@@ -113,13 +113,13 @@ class AuthController extends _$AuthController {
       final login = email.trim().toLowerCase();
       if (password.trim() == '1') {
         if (login == 'coach') {
-          state = const AppUser(id: 'mock_coach', name: 'Тренер Тест', role: UserRole.coach);
+          state = const AppUser(id: 'mock_coach', name: 'Coach', role: UserRole.coach);
           return;
         } else if (login == 'admin') {
-          state = const AppUser(id: 'mock_admin', name: 'Адмін Тест', role: UserRole.admin);
+          state = const AppUser(id: 'mock_admin', name: 'Admin', role: UserRole.admin);
           return;
         } else if (login == 'owner') {
-          state = const AppUser(id: 'mock_owner', name: 'Власник Тест', role: UserRole.owner);
+          state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
           return;
         }
       }

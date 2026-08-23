@@ -138,31 +138,36 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15)],
-                  ),
-                  child: const AvatarPicker(
-                    heroTag: 'hero_avatar_Адміністраторам',
-                    radius: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${'admin.hello'.tr()}, ${user?.name ?? "Адмін"}',
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15)],
                     ),
-                    const Text('CitySwim CRM', style: TextStyle(color: Colors.cyanAccent, fontSize: 13, letterSpacing: 1)),
-                  ],
-                ),
-              ],
-            ).animate().fadeIn(),
+                    child: const AvatarPicker(
+                      heroTag: 'hero_avatar_Адміністраторам',
+                      radius: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${'admin.hello'.tr()}, ${user?.name ?? "Адмін"}',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Text('CitySwim CRM', style: TextStyle(color: Colors.cyanAccent, fontSize: 13, letterSpacing: 1)),
+                      ],
+                    ),
+                  ),
+                ],
+              ).animate().fadeIn(),
+            ),
             IconButton(
               icon: const Icon(LucideIcons.logOut, color: Colors.white70),
               onPressed: () {

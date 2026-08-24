@@ -130,7 +130,7 @@ class ParentHomeTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${'parent.hello'.tr()}, ${user?.name ?? 'Олено'}!',
+                      '${'parent.hello'.tr()}, ${user?.name ?? 'Гість'}!',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -381,7 +381,7 @@ class ParentHomeTab extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Text(user?.name.toUpperCase() ?? 'ОЛЕНА', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
+                          Text(user?.name.toUpperCase() ?? 'ГІСТЬ', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
                         ],
                       ),
                     ),

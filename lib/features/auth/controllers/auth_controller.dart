@@ -50,7 +50,7 @@ class AuthController extends _$AuthController {
 
   Future<void> _fetchUserFromFirestore(String uid, {bool hasCachedState = false}) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get().timeout(const Duration(seconds: 15));
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get().timeout(const Duration(seconds: 3));
       if (doc.exists && doc.data() != null) {
         state = AppUser.fromJson(doc.data()!);
         await _syncRoleToPrefs(state);
@@ -65,8 +65,8 @@ class AuthController extends _$AuthController {
       }
     } catch (e) {
       debugPrint('Error fetching user data: $e');
-      if (!hasCachedState) {
-        // Sign out if we can't fetch the user data to prevent weird automatic offline logins
+      if (state == null && !hasCachedState) {
+        // Sign out if we can't fetch the user data and we have no state, to prevent weird automatic offline logins
         state = null;
         await _syncRoleToPrefs(null);
         try {
@@ -115,10 +115,10 @@ class AuthController extends _$AuthController {
 
         try {
           final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-          final docSnap = await docRef.get().timeout(const Duration(seconds: 15));
+          final docSnap = await docRef.get().timeout(const Duration(seconds: 3));
 
           if (!docSnap.exists) {
-            await docRef.set(defaultUser.toJson()).timeout(const Duration(seconds: 15));
+            await docRef.set(defaultUser.toJson()).timeout(const Duration(seconds: 3));
             state = defaultUser;
             await _syncRoleToPrefs(state);
           } else {

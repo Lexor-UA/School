@@ -81,7 +81,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                 ).animate().scale(duration: 400.ms),
                 const SizedBox(height: 16),
                 Text(
-                  user?.name ?? 'parent.mia_k'.tr(),
+                  user?.name ?? 'Гість',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 200.ms),
                 Text(

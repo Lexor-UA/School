@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -23,7 +24,7 @@ class ParentDashboard extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundGrey,
       appBar: AppBar(
-        title: const Text('Панель Батьків'),
+        title: Text('Панель Батьків'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () {
@@ -69,7 +70,7 @@ class ParentDashboard extends ConsumerWidget {
                           await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
                         },
                         style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, foregroundColor: Colors.white),
-                        child: const Text('Отримати 10 занять (Тест)'),
+                        child: Text('Отримати 10 занять (Тест)'),
                       ),
                   ],
                 ),
@@ -102,7 +103,7 @@ class ParentDashboard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Активний абонемент',
                         style: TextStyle(color: Colors.white70, fontSize: 16),
                       ),
@@ -112,7 +113,7 @@ class ParentDashboard extends ConsumerWidget {
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Pro',
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
@@ -128,12 +129,12 @@ class ParentDashboard extends ConsumerWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Залишок занять',
                     style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Діє до: 15 Грудня, 2026',
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),

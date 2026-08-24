@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -10,22 +11,22 @@ class AnatomyProgressScreen extends StatefulWidget {
 }
 
 class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with TickerProviderStateMixin {
-  String _selectedStyle = 'Кроль';
+  String _selectedStyle = 'parent.style_crawl';
   late AnimationController _pulseController;
   late AnimationController _scanController;
   
   final Map<String, List<String>> _styleMuscles = {
-    'Кроль': ['плечі', 'руки', 'кор'],
-    'Брас': ['ноги', 'кор', 'руки'],
-    'Батерфляй': ['плечі', 'кор', 'руки', 'ноги'],
-    'На спині': ['плечі', 'ноги'],
+    'parent.style_crawl': ['shoulders', 'arms', 'core'],
+    'parent.style_breaststroke': ['legs', 'core', 'arms'],
+    'parent.style_butterfly': ['shoulders', 'core', 'arms', 'legs'],
+    'parent.style_backstroke': ['shoulders', 'legs'],
   };
 
   final Map<String, double> _progress = {
-    'плечі': 0.85,
-    'кор': 0.70,
-    'руки': 0.60,
-    'ноги': 0.90,
+    'shoulders': 0.85,
+    'core': 0.70,
+    'arms': 0.60,
+    'legs': 0.90,
   };
 
   @override
@@ -80,11 +81,11 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                           border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(LucideIcons.activity, color: Colors.cyanAccent, size: 16),
                             SizedBox(width: 8),
-                            Text('СЕНСОРИ АКТИВНІ', style: TextStyle(color: Colors.cyanAccent, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                            Text('parent.sensors_active'.tr(), style: TextStyle(color: Colors.cyanAccent, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
                           ],
                         ),
                       ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(begin: 0.5, end: 1.0, duration: 1.seconds),
@@ -95,13 +96,13 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'АНАТОМІЯ ПРОГРЕСУ',
+                        Text(
+                          'parent.anatomy_progress_upper'.tr(),
                           style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2.5),
                         ).animate().fadeIn().slideX(begin: -0.1),
                         const SizedBox(height: 8),
-                        const Text(
-                          'БІОМЕТРИЧНИЙ АНАЛІЗ...',
+                        Text(
+                          'parent.biometric_analysis'.tr(),
                           style: TextStyle(color: Colors.cyanAccent, fontSize: 12, letterSpacing: 4, fontFamily: 'monospace', fontWeight: FontWeight.bold),
                         ).animate().fadeIn(delay: 200.ms).then().shimmer(duration: 2000.ms, color: Colors.white),
                       ],
@@ -173,7 +174,7 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
           boxShadow: isSelected ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 15)] : [],
         ),
         child: Text(
-          style.toUpperCase(),
+          style.tr().toUpperCase(),
           style: TextStyle(
             color: isSelected ? Colors.cyanAccent : Colors.white54,
             fontWeight: FontWeight.bold,
@@ -203,11 +204,11 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(LucideIcons.target, color: Colors.cyanAccent, size: 20),
                   SizedBox(width: 12),
-                  Text('АКТИВНІ М\'ЯЗОВІ ГРУПИ', style: TextStyle(color: Colors.cyanAccent, letterSpacing: 2, fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text('parent.active_muscle_groups'.tr(), style: TextStyle(color: Colors.cyanAccent, letterSpacing: 2, fontSize: 13, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -220,7 +221,7 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(muscle.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                          Text('parent.$muscle'.tr().toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                           Text('${(_progress[muscle]! * 100).toInt()}%', style: const TextStyle(color: Colors.cyanAccent, fontSize: 16, fontWeight: FontWeight.bold)),
                         ],
                       ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -45,7 +46,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text('Мій Профіль', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        title: Text('parent.my_profile'.tr(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -80,11 +81,11 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                 ).animate().scale(duration: 400.ms),
                 const SizedBox(height: 16),
                 Text(
-                  user?.name ?? 'Мія К.',
+                  user?.name ?? 'parent.mia_k'.tr(),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 200.ms),
                 Text(
-                  'Група: Юніори Pro',
+                  'parent.group_juniors_pro'.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: accentColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 300.ms),
                 
@@ -95,7 +96,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Рівень ${user.level}: Дельфін', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      Text('parent.level_dolphin'.tr(args: [user.level.toString()]), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
                       Text('${user.xp} / ${user.maxXp} XP', style: TextStyle(color: textSubColor, fontSize: 12)),
                     ],
                   ),
@@ -119,9 +120,9 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem('24', 'Занять', LucideIcons.calendar, textColor, textSubColor, accentColor, cardBgColor),
-              _buildStatItem('15 км', 'Дистанція', LucideIcons.waves, textColor, textSubColor, accentColor, cardBgColor),
-              _buildStatItem('Кроль', 'Улюблений', LucideIcons.heart, textColor, textSubColor, accentColor, cardBgColor),
+              _buildStatItem('24', 'parent.classes'.tr(), LucideIcons.calendar, textColor, textSubColor, accentColor, cardBgColor),
+              _buildStatItem('15 км', 'parent.distance'.tr(), LucideIcons.waves, textColor, textSubColor, accentColor, cardBgColor),
+              _buildStatItem('parent.freestyle'.tr(), 'parent.favorite'.tr(), LucideIcons.heart, textColor, textSubColor, accentColor, cardBgColor),
             ],
           ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
           const SizedBox(height: 16),
@@ -153,7 +154,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Мій Абонемент', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text('Мій Абонемент', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                               Text(sub.isActive ? 'Активний' : 'Неактивний', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                             ],
                           ),
@@ -162,7 +163,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('${sub.remainingClasses}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                            const Text('занять', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                            Text('занять', style: TextStyle(color: Colors.white70, fontSize: 12)),
                           ],
                         ),
                       ],
@@ -195,8 +196,8 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Анатомія Прогресу', style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('Переглянути розвиток м\'язів', style: TextStyle(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.8) : AppTheme.primaryBlue, fontSize: 12)),
+                        Text('parent.anatomy_progress'.tr(), style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('parent.view_muscle_development'.tr(), style: TextStyle(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.8) : AppTheme.primaryBlue, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -216,7 +217,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Вітрина Трофеїв',
+                    'parent.trophy_showcase'.tr(),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -228,7 +229,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Увійти в 3D Кімнату', style: TextStyle(color: isDark ? Colors.amber : Colors.orange.shade700, fontWeight: FontWeight.bold)),
+                    Text('parent.enter_3d_room'.tr(), style: TextStyle(color: isDark ? Colors.amber : Colors.orange.shade700, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 4),
                     Icon(LucideIcons.cuboid, color: isDark ? Colors.amber : Colors.orange.shade700, size: 16),
                   ],
@@ -251,14 +252,14 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
               ),
             )
           else
-            Center(child: Text('Немає досягнень', style: TextStyle(color: textSubColor))),
+            Center(child: Text('parent.no_achievements'.tr(), style: TextStyle(color: textSubColor))),
 
           const SizedBox(height: 48),
 
-          _buildSettingsTile(LucideIcons.settings, 'Налаштування акаунту', textColor, textSubColor, cardBgColor, cardBorderColor),
-          _buildSettingsTile(LucideIcons.creditCard, 'Оплата та підписки', textColor, textSubColor, cardBgColor, cardBorderColor),
-          _buildSettingsTile(LucideIcons.bell, 'Сповіщення', textColor, textSubColor, cardBgColor, cardBorderColor),
-          _buildSettingsTile(LucideIcons.shieldQuestion, 'Допомога та Підтримка', textColor, textSubColor, cardBgColor, cardBorderColor),
+          _buildSettingsTile(LucideIcons.settings, 'parent.account_settings'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
+          _buildSettingsTile(LucideIcons.creditCard, 'parent.payment_subscriptions'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
+          _buildSettingsTile(LucideIcons.bell, 'parent.notifications'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
+          _buildSettingsTile(LucideIcons.shieldQuestion, 'parent.help_support'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
           const SizedBox(height: 32),
           _buildLogoutButton(context, ref, isDark).animate().fadeIn(duration: 400.ms),
           const SizedBox(height: 120),
@@ -335,7 +336,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
             children: [
               Icon(LucideIcons.logOut, color: textCol),
               const SizedBox(width: 8),
-              Text('Вийти з акаунту', style: TextStyle(color: textCol, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('parent.logout'.tr(), style: TextStyle(color: textCol, fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
         ),

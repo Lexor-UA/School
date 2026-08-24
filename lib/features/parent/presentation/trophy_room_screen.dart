@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -18,33 +19,33 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
 
   final List<Map<String, dynamic>> _trophies = [
     {
-      'title': 'Золотий Дельфін',
-      'description': 'За ідеальну техніку Батерфляй',
-      'date': '15 Серпня 2026',
+      'title': 'parent.golden_dolphin'.tr(),
+      'description': 'parent.perfect_butterfly_technique'.tr(),
+      'date': 'parent.august_15_2026'.tr(),
       'colors': [Colors.amberAccent, Colors.orange],
       'icon': LucideIcons.trophy,
       'unlocked': true,
     },
     {
-      'title': 'Швидка Акула',
-      'description': '100 метрів Кролем менш ніж за 1:20',
-      'date': '2 Вересня 2026',
+      'title': 'parent.fast_shark'.tr(),
+      'description': 'parent.100m_freestyle_under_1_20'.tr(),
+      'date': 'parent.september_2_2026'.tr(),
       'colors': [Colors.cyanAccent, Colors.blueAccent],
       'icon': LucideIcons.medal,
       'unlocked': true,
     },
     {
-      'title': 'Майстер Глибин',
-      'description': 'Здано норматив із затримки дихання (2 хвилини)',
-      'date': 'Заблоковано',
+      'title': 'parent.master_of_depths'.tr(),
+      'description': 'parent.breath_holding_passed'.tr(),
+      'date': 'parent.locked'.tr(),
       'colors': [Colors.grey.shade400, Colors.grey.shade700],
       'icon': LucideIcons.lock,
       'unlocked': false,
     },
     {
-      'title': 'Залізна Витримка',
-      'description': '10 тренувань без пропусків',
-      'date': 'Заблоковано',
+      'title': 'parent.iron_endurance'.tr(),
+      'description': 'parent.10_trainings_without_skips'.tr(),
+      'date': 'parent.locked'.tr(),
       'colors': [Colors.grey.shade400, Colors.grey.shade700],
       'icon': LucideIcons.shieldAlert,
       'unlocked': false,
@@ -110,13 +111,13 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Вітрина Трофеїв',
+                      Text(
+                        'parent.trophy_showcase'.tr(),
                         style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                       ).animate().fadeIn().slideY(begin: -0.2),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Натисніть на трофей для деталей',
+                      Text(
+                        'parent.click_trophy_for_details'.tr(),
                         style: TextStyle(color: Colors.white54, fontSize: 16),
                       ).animate().fadeIn(delay: 200.ms),
                     ],
@@ -247,7 +248,7 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
                     border: Border.all(color: isUnlocked ? colors[0].withValues(alpha: 0.5) : Colors.transparent),
                   ),
                   child: Text(
-                    isUnlocked ? 'Здобуто: ${trophy['date']}' : trophy['date'],
+                    isUnlocked ? 'parent.unlocked_date'.tr(args: [trophy['date'].toString()]) : trophy['date'],
                     style: TextStyle(
                       color: isUnlocked ? colors[0] : Colors.white54,
                       fontWeight: FontWeight.bold,
@@ -259,7 +260,7 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('ЗАКРИТИ', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                child: Text('parent.close'.tr(), style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
               ),
             ],
           ),

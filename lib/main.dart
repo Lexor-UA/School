@@ -6,6 +6,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/theme.dart';
 import 'core/router/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/providers/shared_prefs_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +17,8 @@ void main() async {
   );
   
   await EasyLocalization.ensureInitialized();
+  
+  final prefs = await SharedPreferences.getInstance();
 
   runApp(
     EasyLocalization(
@@ -26,7 +30,12 @@ void main() async {
       ],
       path: 'assets/translations', 
       fallbackLocale: const Locale('uk'),
-      child: const ProviderScope(child: SwimmingSchoolApp()),
+      child: ProviderScope(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+        ],
+        child: const SwimmingSchoolApp(),
+      ),
     ),
   );
 }

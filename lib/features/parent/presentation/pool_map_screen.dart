@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:math';
@@ -14,8 +15,8 @@ class PoolMapScreen extends StatefulWidget {
   const PoolMapScreen({
     super.key,
     this.targetLane = 2, // Defaulting to 2 for demonstration
-    this.groupName = 'Юніори Pro',
-    this.coachName = 'Олександр В.',
+    this.groupName = 'parent.juniors_pro',
+    this.coachName = 'parent.oleksandr_v',
     this.timeSlot = '16:00 - 17:00',
   });
 
@@ -100,13 +101,13 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '3D Карта Басейну',
+                        Text(
+                          'parent.3d_pool_map'.tr(),
                           style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                         ).animate().fadeIn().slideY(begin: -0.2),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Проведіть пальцем для обертання',
+                        Text(
+                          'parent.swipe_to_rotate'.tr(),
                           style: TextStyle(color: Colors.cyanAccent, fontSize: 13),
                         ).animate().fadeIn(delay: 200.ms),
                       ],
@@ -154,9 +155,9 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildMapStat(LucideIcons.mapPin, 'Доріжка ${(widget.targetLane ?? 0) + 1}', 'Локація'),
-                _buildMapStat(LucideIcons.clock, '16:00', 'Час'),
-                _buildMapStat(LucideIcons.thermometer, '28°C', 'Вода'),
+                _buildMapStat(LucideIcons.mapPin, 'parent.lane_number'.tr(args: [((widget.targetLane ?? 0) + 1).toString()]), 'parent.location'.tr()),
+                _buildMapStat(LucideIcons.clock, '16:00', 'parent.time'.tr()),
+                _buildMapStat(LucideIcons.thermometer, '28°C', 'parent.water'.tr()),
               ],
             ),
           ),
@@ -472,14 +473,14 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
                       ],
                     ),
                     child: Text(
-                      'ДОРІЖКА ${(widget.targetLane ?? 0) + 1} • МАРІЯ',
+                      'parent.lane_mariia'.tr(args: [((widget.targetLane ?? 0) + 1).toString()]),
                       style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w900),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      widget.groupName ?? '', 
+                      (widget.groupName?.tr()) ?? '', 
                       style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -499,7 +500,7 @@ class _PoolMapScreenState extends State<PoolMapScreen> {
                 children: [
                   const Icon(LucideIcons.user, color: Colors.white54, size: 14),
                   const SizedBox(width: 6),
-                  Text(widget.coachName ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text((widget.coachName?.tr()) ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
                   const SizedBox(width: 16),
                   const Icon(LucideIcons.clock, color: Colors.white54, size: 14),
                   const SizedBox(width: 6),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -18,7 +19,7 @@ class ParentScheduleTab extends ConsumerStatefulWidget {
 
 class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
   final ValueNotifier<int> _selectedFilterNotifier = ValueNotifier<int>(0);
-  final List<String> _filters = ['Усі', 'Плавання', 'Стрибки', 'Змагання'];
+  final List<String> _filters = ['parent.all'.tr(), 'parent.swimming'.tr(), 'parent.diving'.tr(), 'parent.competitions'.tr()];
 
   @override
   void dispose() {
@@ -31,7 +32,7 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Розклад та Історія', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('parent.schedule_history'.tr(), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -92,7 +93,7 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
           const SizedBox(height: 24),
 
           Text(
-            'Майбутні Заняття',
+            'parent.upcoming_classes'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
           ).animate().fadeIn(),
           const SizedBox(height: 16),
@@ -100,19 +101,19 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
           ref.watch(scheduleControllerProvider).when(
             data: (classes) {
               if (classes.isEmpty) {
-                return const Center(child: Text('Немає доступних занять', style: TextStyle(color: Colors.white70)));
+                return Center(child: Text('parent.no_classes_available'.tr(), style: TextStyle(color: Colors.white70)));
               }
               return Column(
                 children: classes.map((c) => _buildScheduleCard(context, c)).toList(),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Center(child: Text('Помилка завантаження: $err', style: const TextStyle(color: Colors.redAccent))),
+            loading: () => Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('parent.loading_error'.tr(args: [err.toString()]), style: const TextStyle(color: Colors.redAccent))),
           ),
           
           const SizedBox(height: 64),
           Text(
-            'Мої Бронювання',
+            'parent.my_bookings'.tr(),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
           ).animate().fadeIn(delay: 300.ms),
           const SizedBox(height: 16),
@@ -125,9 +126,9 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
               final myClasses = classes.where((c) => c.enrolledUserIds.contains(user.id)).toList();
               
               if (myClasses.isEmpty) {
-                return const Center(child: Padding(
+                return Center(child: Padding(
                   padding: EdgeInsets.all(16.0),
-                  child: Text('Ви ще не забронювали жодного заняття.', style: TextStyle(color: Colors.white70)),
+                  child: Text('parent.no_bookings_yet'.tr(), style: TextStyle(color: Colors.white70)),
                 ));
               }
               
@@ -135,7 +136,7 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
                 children: myClasses.map((c) => _buildScheduleCard(context, c)).toList(),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Center(child: CircularProgressIndicator()),
             error: (err, stack) => const SizedBox.shrink(),
           ),
           
@@ -247,7 +248,7 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(success ? 'Успішно заброньовано!' : 'Помилка бронювання. Перевірте залишок занять.'),
+                          content: Text(success ? 'parent.booked_successfully'.tr() : 'parent.booking_error'.tr()),
                           backgroundColor: success ? Colors.green : Colors.red,
                         ),
                       );
@@ -260,7 +261,7 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: Text(
-                    isEnrolled ? 'Ви записані' : (isFull ? 'Місць немає' : 'Записатися'),
+                    isEnrolled ? 'parent.enrolled'.tr() : (isFull ? 'parent.no_seats'.tr() : 'parent.enroll'.tr()),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
@@ -275,13 +276,13 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
 
   String _getDayName(int weekday) {
     switch (weekday) {
-      case 1: return 'Пнд';
-      case 2: return 'Втр';
-      case 3: return 'Срд';
-      case 4: return 'Чтв';
-      case 5: return 'Птн';
-      case 6: return 'Сбт';
-      case 7: return 'Ндл';
+      case 1: return 'parent.mon'.tr();
+      case 2: return 'parent.tue'.tr();
+      case 3: return 'parent.wed'.tr();
+      case 4: return 'parent.thu'.tr();
+      case 5: return 'parent.fri'.tr();
+      case 6: return 'parent.sat'.tr();
+      case 7: return 'parent.sun'.tr();
       default: return '';
     }
   }
@@ -318,17 +319,17 @@ class _ParentScheduleTabState extends ConsumerState<ParentScheduleTab> {
                       child: const Icon(LucideIcons.check, color: Colors.white, size: 16),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
-                      child: Text('Юніори (Плавання)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16, letterSpacing: 0.5)),
+                    Expanded(
+                      child: Text('parent.juniors_swimming'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16, letterSpacing: 0.5)),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: grade == 'Відмінно' ? Colors.greenAccent.withValues(alpha: 0.15) : Colors.orangeAccent.withValues(alpha: 0.15),
+                        color: grade == 'parent.excellent'.tr() ? Colors.greenAccent.withValues(alpha: 0.15) : Colors.orangeAccent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: grade == 'Відмінно' ? Colors.greenAccent.withValues(alpha: 0.5) : Colors.orangeAccent.withValues(alpha: 0.5)),
+                        border: Border.all(color: grade == 'parent.excellent'.tr() ? Colors.greenAccent.withValues(alpha: 0.5) : Colors.orangeAccent.withValues(alpha: 0.5)),
                       ),
-                      child: Text(grade.toUpperCase(), style: TextStyle(color: grade == 'Відмінно' ? Colors.greenAccent : Colors.orangeAccent, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                      child: Text(grade.toUpperCase(), style: TextStyle(color: grade == 'parent.excellent'.tr() ? Colors.greenAccent : Colors.orangeAccent, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

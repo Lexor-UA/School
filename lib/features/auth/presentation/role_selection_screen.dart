@@ -48,11 +48,22 @@ class RoleSelectionScreen extends ConsumerWidget {
                 children: [
                   Align(
                     alignment: Alignment.topCenter,
-                    child: Image.asset(
-                      'assets/images/splash_bg_1.jpg',
-                      fit: BoxFit.fitWidth,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.white, Colors.white, Colors.transparent],
+                          stops: [0.0, 0.65, 1.0],
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.dstIn,
+                      child: Image.asset(
+                        'assets/images/splash_bg_1.jpg',
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                      ),
                     ).animate()
                         .fadeIn(duration: 800.ms)
                         .scale(
@@ -133,7 +144,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                 ),
               ),
             ).animate()
-             .fadeIn(delay: 1500.ms, duration: 800.ms)
+             .fadeIn(delay: 2500.ms, duration: 800.ms)
              .slideX(begin: 0.5, end: 0, duration: 1000.ms, curve: Curves.easeOutExpo),
           ),
 
@@ -155,7 +166,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                         title: 'auth.login_google'.tr(),
                         icon: LucideIcons.globe,
                         isGoogle: true,
-                        delay: 1600,
+                        delay: 2600,
                         onTap: () async {
                           try {
                             await ref.read(authControllerProvider.notifier).signInWithGoogle();
@@ -172,7 +183,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                         context: context,
                         title: 'auth.login_email'.tr(),
                         icon: LucideIcons.mail,
-                        delay: 1800,
+                        delay: 2800,
                         onTap: () {
                           _showEmailLoginModal(context, ref);
                         },
@@ -198,7 +209,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                     textAlign: TextAlign.center,
                   ),
                 ).animate()
-                 .fadeIn(delay: 2000.ms, duration: 1200.ms)
+                 .fadeIn(delay: 3000.ms, duration: 1200.ms)
                  .slideY(begin: 0.5, end: 0, duration: 1200.ms, curve: Curves.easeOutExpo),
               ],
             ),
@@ -229,7 +240,7 @@ class RoleSelectionScreen extends ConsumerWidget {
         splashColor: Colors.black.withValues(alpha: 0.05),
         highlightColor: Colors.black.withValues(alpha: 0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
             children: [
               SizedBox(
@@ -450,16 +461,30 @@ class RoleSelectionScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 50,
+                      height: 55,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00C9FF), Color(0xFF92FE9D)], // Premium fresh gradient
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00C9FF).withValues(alpha: 0.4),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.cyanAccent.withValues(alpha: 0.2),
-                          foregroundColor: Colors.cyanAccent,
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: const BorderSide(color: Colors.cyanAccent),
                           ),
                         ),
                         onPressed: () async {
@@ -477,9 +502,18 @@ class RoleSelectionScreen extends ConsumerWidget {
                             }
                           }
                         },
-                        child: const Text('УВІЙТИ', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2)),
+                        child: const Text(
+                          'УВІЙТИ', 
+                          style: TextStyle(
+                            color: Colors.white, 
+                            fontSize: 16, 
+                            fontWeight: FontWeight.w800, 
+                            letterSpacing: 2
+                          )
+                        ),
                       ),
-                    ),
+                    ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                     .shimmer(duration: 2500.ms, color: Colors.white.withValues(alpha: 0.3)),
                     const SizedBox(height: 16),
                   ],
                 ),

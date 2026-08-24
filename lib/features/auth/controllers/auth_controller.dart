@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'auth_controller.g.dart';
 
@@ -15,18 +16,44 @@ class AuthController extends _$AuthController {
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (user == null) {
         state = null;
+        await _syncRoleToPrefs(null);
       } else {
-        await _fetchUserFromFirestore(user.uid);
+        final prefs = await SharedPreferences.getInstance();
+        final savedRoleString = prefs.getString('userRole');
+        bool hasCachedState = false;
+        
+        if (savedRoleString != null) {
+          final role = UserRole.values.firstWhere((e) => e.name == savedRoleString, orElse: () => UserRole.parent);
+          // Immediately set state using saved role to enter the app without waiting
+          state = AppUser(
+            id: user.uid,
+            name: user.displayName ?? 'User',
+            role: role,
+          );
+          hasCachedState = true;
+        }
+        
+        await _fetchUserFromFirestore(user.uid, hasCachedState: hasCachedState);
       }
     });
     return null;
   }
 
-  Future<void> _fetchUserFromFirestore(String uid) async {
+  Future<void> _syncRoleToPrefs(AppUser? user) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (user != null) {
+      await prefs.setString('userRole', user.role.name);
+    } else {
+      await prefs.remove('userRole');
+    }
+  }
+
+  Future<void> _fetchUserFromFirestore(String uid, {bool hasCachedState = false}) async {
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get().timeout(const Duration(seconds: 15));
       if (doc.exists && doc.data() != null) {
         state = AppUser.fromJson(doc.data()!);
+        await _syncRoleToPrefs(state);
       } else {
         // Create default user if missing
         state = AppUser(
@@ -34,15 +61,18 @@ class AuthController extends _$AuthController {
           name: 'New User',
           role: UserRole.parent,
         );
+        await _syncRoleToPrefs(state);
       }
     } catch (e) {
       debugPrint('Error fetching user data: $e');
-      // Fallback for offline or permission issues
-      state = AppUser(
-        id: uid,
-        name: 'Offline User',
-        role: UserRole.parent,
-      );
+      if (!hasCachedState) {
+        // Sign out if we can't fetch the user data to prevent weird automatic offline logins
+        state = null;
+        await _syncRoleToPrefs(null);
+        try {
+          await FirebaseAuth.instance.signOut();
+        } catch (_) {}
+      }
     }
   }
 
@@ -90,17 +120,27 @@ class AuthController extends _$AuthController {
           if (!docSnap.exists) {
             await docRef.set(defaultUser.toJson()).timeout(const Duration(seconds: 15));
             state = defaultUser;
+            await _syncRoleToPrefs(state);
           } else {
             final dbUser = AppUser.fromJson(docSnap.data()!);
             // Force role to parent as requested
             state = dbUser.copyWith(role: UserRole.parent);
+            await _syncRoleToPrefs(state);
           }
         } catch (e) {
           debugPrint('Firestore error, falling back to default Client role: $e');
           // If Firestore is offline, still log the user in locally as Client!
           state = defaultUser;
+          await _syncRoleToPrefs(state);
         }
       }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user') {
+        debugPrint('Google Sign In cancelled by user.');
+        return;
+      }
+      debugPrint('Error during Google Sign In (FirebaseAuthException): $e');
+      rethrow;
     } catch (e) {
       debugPrint('Error during Google Sign In: $e');
       rethrow;
@@ -114,12 +154,15 @@ class AuthController extends _$AuthController {
       if (password.trim() == '1') {
         if (login == 'coach') {
           state = const AppUser(id: 'mock_coach', name: 'Coach', role: UserRole.coach);
+          await _syncRoleToPrefs(state);
           return;
         } else if (login == 'admin') {
           state = const AppUser(id: 'mock_admin', name: 'Admin', role: UserRole.admin);
+          await _syncRoleToPrefs(state);
           return;
         } else if (login == 'owner') {
           state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
+          await _syncRoleToPrefs(state);
           return;
         }
       }
@@ -138,6 +181,7 @@ class AuthController extends _$AuthController {
     await FirebaseAuth.instance.signOut();
     await GoogleSignIn().signOut();
     state = null;
+    await _syncRoleToPrefs(null);
   }
 
   Future<void> updateAvatar(Uint8List bytes) async {

@@ -37,8 +37,9 @@ class _CoachMainState extends State<CoachMain> {
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
           const Positioned.fill(
             child: RepaintBoundary(child: AnimatedWaterBackground()),
           ),
@@ -66,6 +67,7 @@ class _CoachMainState extends State<CoachMain> {
             },
           ),
         ],
+      ),
       ),
       bottomNavigationBar: SafeArea(
         child: Container(

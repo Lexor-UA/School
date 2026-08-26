@@ -20,7 +20,7 @@ class ScheduleController extends _$ScheduleController {
     });
   }
 
-  Future<bool> bookClass(String classId) async {
+  Future<bool> bookClass(String classId, String childId) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return false;
 
@@ -49,12 +49,12 @@ class ScheduleController extends _$ScheduleController {
         final groupClass = GroupClass.fromJson({'id': classDoc.id, ...classDoc.data()!});
         final remainingClasses = subDoc.data()!['remainingClasses'] as int;
         
-        if (remainingClasses > 0 && groupClass.enrolledUserIds.length < groupClass.maxCapacity && !groupClass.enrolledUserIds.contains(user.id)) {
+        if (remainingClasses > 0 && groupClass.enrolledChildIds.length < groupClass.maxCapacity && !groupClass.enrolledChildIds.contains(childId)) {
           // Both conditions met: class has space, user has remaining classes
-          List<String> newEnrolled = List.from(groupClass.enrolledUserIds)..add(user.id);
+          List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..add(childId);
           int newRemaining = remainingClasses - 1;
           
-          transaction.update(classRef, {'enrolledUserIds': newEnrolled});
+          transaction.update(classRef, {'enrolledChildIds': newEnrolled});
           transaction.update(subRef, {
             'remainingClasses': newRemaining,
             'isActive': newRemaining > 0
@@ -68,5 +68,32 @@ class ScheduleController extends _$ScheduleController {
     } catch (e) {
       return false;
     }
+  }
+
+  Future<void> createClass({
+    required String title,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String coachId,
+    required String coachName,
+    required int maxCapacity,
+    required String category,
+    required String lane,
+  }) async {
+    final newClassRef = FirebaseFirestore.instance.collection('classes').doc();
+    final newClass = GroupClass(
+      id: newClassRef.id,
+      title: title,
+      startTime: startTime,
+      endTime: endTime,
+      coachId: coachId,
+      coachName: coachName,
+      maxCapacity: maxCapacity,
+      enrolledChildIds: [],
+      category: category,
+      lane: lane,
+    );
+
+    await newClassRef.set(newClass.toJson());
   }
 }

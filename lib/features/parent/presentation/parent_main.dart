@@ -6,10 +6,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_home_tab.dart';
-import 'package:swimming_school_app/features/parent/presentation/parent_schedule_tab.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_calendar_tab.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_progress_tab.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_profile_tab.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
+
+final parentTabProvider = StateProvider<int>((ref) => 0);
+
 class ParentMain extends ConsumerStatefulWidget {
   const ParentMain({super.key});
 
@@ -18,27 +22,23 @@ class ParentMain extends ConsumerStatefulWidget {
 }
 
 class _ParentMainState extends ConsumerState<ParentMain> {
-  final ValueNotifier<int> _selectedIndexNotifier = ValueNotifier<int>(0);
-
   final List<Widget> _tabs = const [
     ParentHomeTab(),
-    ParentScheduleTab(),
+    ParentCalendarTab(),
+    ParentProgressTab(),
     ParentProfileTab(),
   ];
 
   @override
-  void dispose() {
-    _selectedIndexNotifier.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final selectedIndex = ref.watch(parentTabProvider);
+
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
           const Positioned.fill(
             child: RepaintBoundary(child: AnimatedWaterBackground()),
           ),
@@ -62,13 +62,9 @@ class _ParentMainState extends ConsumerState<ParentMain> {
               ),
             ),
           ),
-          ValueListenableBuilder<int>(
-            valueListenable: _selectedIndexNotifier,
-            builder: (context, index, child) {
-              return SafeArea(bottom: false, child: _tabs[index]);
-            },
-          ),
+          SafeArea(bottom: false, child: _tabs[selectedIndex]),
         ],
+      ),
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
@@ -95,29 +91,25 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: _selectedIndexNotifier,
-                    builder: (context, index, child) {
-                      return GNav(
-                        rippleColor: Colors.white.withValues(alpha: 0.1),
-                        hoverColor: Colors.white.withValues(alpha: 0.1),
-                        gap: 8,
-                        activeColor: Colors.white,
-                        iconSize: 24,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        duration: const Duration(milliseconds: 400),
-                        tabBackgroundColor: AppTheme.accentTeal.withValues(alpha: 0.4),
-                        color: Colors.white70,
-                        tabs: [
-                          GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
-                          GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_schedule'.tr()),
-                          GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
-                        ],
-                        selectedIndex: index,
-                        onTabChange: (i) {
-                          _selectedIndexNotifier.value = i;
-                        },
-                      );
+                  child: GNav(
+                    rippleColor: Colors.white.withValues(alpha: 0.1),
+                    hoverColor: Colors.white.withValues(alpha: 0.1),
+                    gap: 8,
+                    activeColor: Colors.white,
+                    iconSize: 24,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    duration: const Duration(milliseconds: 400),
+                    tabBackgroundColor: AppTheme.accentTeal.withValues(alpha: 0.4),
+                    color: Colors.white70,
+                    tabs: [
+                      GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
+                      GButton(icon: LucideIcons.calendarDays, text: 'Календар'),
+                      GButton(icon: LucideIcons.trendingUp, text: 'Прогрес'),
+                      GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
+                    ],
+                    selectedIndex: selectedIndex,
+                    onTabChange: (i) {
+                      ref.read(parentTabProvider.notifier).state = i;
                     },
                   )),
             ),

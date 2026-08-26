@@ -6,42 +6,25 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
-import 'package:swimming_school_app/shared/widgets/achievement_card.dart';
 import 'package:swimming_school_app/shared/utils/page_transitions.dart';
 import 'package:swimming_school_app/features/parent/presentation/trophy_room_screen.dart';
-import 'package:swimming_school_app/features/parent/presentation/anatomy_progress_screen.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
-import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 
-class ParentProfileTab extends ConsumerStatefulWidget {
+class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
 
   @override
-  ConsumerState<ParentProfileTab> createState() => _ParentProfileTabState();
-}
-
-class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Adaptive colors
     final textColor = isDark ? Colors.white : const Color(0xFF0A2540);
     final textSubColor = isDark ? Colors.white70 : const Color(0xFF4A6572);
     final accentColor = isDark ? Colors.cyanAccent : AppTheme.primaryBlue;
-    final cardBgColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
-    final cardBorderColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.1);
-    final anatomyBannerBg = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
-    final anatomyBannerBorder = isDark ? Colors.cyanAccent.withValues(alpha: 0.3) : Colors.blue.withValues(alpha: 0.2);
+    final cardBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+    final cardBorderColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -50,14 +33,12 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          const SizedBox(width: 16),
-        ],
       ),
       body: ListView(
-        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(24),
         children: [
+          // 1. Header (Avatar + Name)
           Center(
             child: Column(
               children: [
@@ -65,229 +46,155 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [AppTheme.accentTeal, isDark ? Colors.white : Colors.blue.shade100],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
                     boxShadow: [
-                      BoxShadow(color: AppTheme.accentTeal.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 2),
+                      BoxShadow(color: accentColor.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2),
                     ],
                   ),
-                  child: const AvatarPicker(
-                    heroTag: 'hero_avatar_Клієнтам',
-                    radius: 50,
-                  ),
+                  child: const AvatarPicker(heroTag: 'hero_avatar_profile', radius: 46),
                 ).animate().scale(duration: 400.ms),
                 const SizedBox(height: 16),
                 Text(
-                  user?.name ?? 'Гість',
+                  user?.name ?? 'Андрій',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 200.ms),
                 Text(
-                  'parent.group_juniors_pro'.tr(),
+                  'Батьківський акаунт',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: accentColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 300.ms),
-                
-                const SizedBox(height: 24),
-                
-                // EXP Bar
-                if (user != null) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('parent.level_dolphin'.tr(args: [user.level.toString()]), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                      Text('${user.xp} / ${user.maxXp} XP', style: TextStyle(color: textSubColor, fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: user.xp / user.maxXp,
-                      minHeight: 12,
-                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-                    ),
-                  ),
-                ]
               ],
             ),
           ),
           const SizedBox(height: 32),
-
-          // Child Stats Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatItem('24', 'parent.classes'.tr(), LucideIcons.calendar, textColor, textSubColor, accentColor, cardBgColor),
-              _buildStatItem('15 км', 'parent.distance'.tr(), LucideIcons.waves, textColor, textSubColor, accentColor, cardBgColor),
-              _buildStatItem('parent.freestyle'.tr(), 'parent.favorite'.tr(), LucideIcons.heart, textColor, textSubColor, accentColor, cardBgColor),
-            ],
-          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
-          const SizedBox(height: 16),
           
-          // Subscription Banner
-          if (user != null) ...[
-            Builder(
-              builder: (context) {
-                final subs = ref.watch(subscriptionControllerProvider);
-                final sub = subs.where((s) => s.userId == user.id).firstOrNull;
-                
-                if (sub != null) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: const Color(0xFF00B4DB).withValues(alpha: 0.3), blurRadius: 10)],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(LucideIcons.creditCard, color: Colors.white, size: 32),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Мій Абонемент', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                              Text(sub.isActive ? 'Активний' : 'Неактивний', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('${sub.remainingClasses}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                            Text('занять', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: 420.ms).slideY(begin: 0.2, end: 0);
-                }
-                return const SizedBox.shrink();
-              }
-            )
-          ],
+          // 3. Navigation List
+          _buildSettingsTile(LucideIcons.userPlus, 'Додати дитину', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            _showAddChildDialog(context, ref, isDark);
+          }),
+          _buildSettingsTile(LucideIcons.trendingUp, 'Мій прогрес', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            ref.read(parentTabProvider.notifier).state = 2;
+          }),
+          _buildSettingsTile(LucideIcons.trophy, 'Мої досягнення', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen()));
+          }),
+          _buildSettingsTile(LucideIcons.creditCard, 'Абонемент', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Керування абонементом буде доступне незабаром')));
+          }),
+          _buildSettingsTile(LucideIcons.settings, 'Налаштування', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Налаштування в розробці')));
+          }),
+          _buildSettingsTile(LucideIcons.helpCircle, 'Допомога', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Допомога в розробці')));
+          }),
           
-          // Anatomy Progress Banner
-          GestureDetector(
-            onTap: () {
-              Navigator.push(context, FadeScaleRoute(page: const AnatomyProgressScreen()));
-            },
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: anatomyBannerBg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: anatomyBannerBorder),
-                boxShadow: [BoxShadow(color: accentColor.withValues(alpha: 0.2), blurRadius: 10)],
-              ),
-              child: Row(
-                children: [
-                  Icon(LucideIcons.activity, color: accentColor, size: 32),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('parent.anatomy_progress'.tr(), style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('parent.view_muscle_development'.tr(), style: TextStyle(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.8) : AppTheme.primaryBlue, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  Icon(LucideIcons.chevronRight, color: textSubColor),
-                ],
-              ),
-            ),
-          ).animate().fadeIn(delay: 450.ms).slideY(begin: 0.2, end: 0),
-          const SizedBox(height: 32),
-
-          // Badges / Achievements
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'parent.trophy_showcase'.tr(),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen()));
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('parent.enter_3d_room'.tr(), style: TextStyle(color: isDark ? Colors.amber : Colors.orange.shade700, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 4),
-                    Icon(LucideIcons.cuboid, color: isDark ? Colors.amber : Colors.orange.shade700, size: 16),
-                  ],
-                ),
-              )
-            ],
-          ).animate().fadeIn(delay: 500.ms),
-          const SizedBox(height: 16),
-          
-          if (user != null && user.achievements.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: user.achievements.length,
-                itemBuilder: (context, index) {
-                  return AchievementCard(achievement: user.achievements[index])
-                      .animate().slideX(begin: 0.2, end: 0, delay: (600 + index * 100).ms).fadeIn();
-                },
-              ),
-            )
-          else
-            Center(child: Text('parent.no_achievements'.tr(), style: TextStyle(color: textSubColor))),
-
-          const SizedBox(height: 48),
-
-          _buildSettingsTile(LucideIcons.settings, 'parent.account_settings'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
-          _buildSettingsTile(LucideIcons.creditCard, 'parent.payment_subscriptions'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
-          _buildSettingsTile(LucideIcons.bell, 'parent.notifications'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
-          _buildSettingsTile(LucideIcons.shieldQuestion, 'parent.help_support'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor),
           const SizedBox(height: 32),
           _buildLogoutButton(context, ref, isDark).animate().fadeIn(duration: 400.ms),
-          const SizedBox(height: 120),
+          const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String value, String label, IconData icon, Color textColor, Color textSubColor, Color accentColor, Color bg) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: bg,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: accentColor, size: 28),
-        ),
-        const SizedBox(height: 8),
-        Text(value, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(color: textSubColor, fontSize: 12)),
-      ],
+  void _showAddChildDialog(BuildContext context, WidgetRef ref, bool isDark) {
+    final nameController = TextEditingController();
+    String selectedColor = '0xFF40C4FF'; // Default Cyan
+    final colors = {
+      '0xFF40C4FF': Colors.cyanAccent,
+      '0xFF448AFF': Colors.blueAccent,
+      '0xFFE040FB': Colors.purpleAccent,
+      '0xFFFF4081': Colors.pinkAccent,
+      '0xFF69F0AE': Colors.greenAccent,
+      '0xFFFFAB40': Colors.orangeAccent,
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              top: 24,
+              left: 24,
+              right: 24,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Додати дитину', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 24),
+                
+                TextField(
+                  controller: nameController,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  decoration: InputDecoration(
+                    labelText: "Ім'я дитини",
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Text('Колір профілю', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: colors.entries.map((entry) {
+                    final isSelected = selectedColor == entry.key;
+                    return GestureDetector(
+                      onTap: () => setModalState(() => selectedColor = entry.key),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: entry.value,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? (isDark ? Colors.white : Colors.black) : Colors.transparent,
+                            width: 3,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 32),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (nameController.text.trim().isNotEmpty) {
+                        ref.read(childrenControllerProvider.notifier).addChild(nameController.text.trim(), selectedColor);
+                        Navigator.pop(ctx);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyanAccent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Зберегти', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
-
-  Widget _buildSettingsTile(IconData icon, String title, Color textColor, Color subColor, Color bg, Color border) {
+  Widget _buildSettingsTile(IconData icon, String title, Color textColor, Color subColor, Color bg, Color border, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -303,7 +210,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
             leading: Icon(icon, color: textColor),
             title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
             trailing: Icon(LucideIcons.chevronRight, color: subColor),
-            onTap: () {},
+            onTap: onTap,
           ),
         ),
       ),
@@ -312,7 +219,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
 
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref, bool isDark) {
     final bg = isDark ? Colors.redAccent.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.05);
-    final border = isDark ? Colors.redAccent.withValues(alpha: 0.5) : Colors.red.withValues(alpha: 0.2);
+    final border = isDark ? Colors.redAccent.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.2);
     final textCol = isDark ? Colors.redAccent : Colors.red;
 
     return Material(
@@ -336,7 +243,7 @@ class _ParentProfileTabState extends ConsumerState<ParentProfileTab> {
             children: [
               Icon(LucideIcons.logOut, color: textCol),
               const SizedBox(width: 8),
-              Text('parent.logout'.tr(), style: TextStyle(color: textCol, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('Вийти', style: TextStyle(color: textCol, fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
         ),

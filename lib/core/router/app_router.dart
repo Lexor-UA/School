@@ -1,6 +1,5 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/shared_prefs_provider.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/parent/presentation/parent_main.dart';
 import '../../features/coach/presentation/coach_main.dart';
@@ -13,17 +12,12 @@ import '../../features/owner/presentation/owner_payouts_screen.dart';
 import '../../features/admin/presentation/admin_chat_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final prefs = ref.watch(sharedPrefsProvider);
-  final savedRole = prefs.getString('userRole');
+  // We no longer set initialLocation based on prefs here.
+  // We always start at '/' so the user sees the Splash Screen animation.
+  // The RoleSelectionScreen will handle auto-login if prefs are set.
   
-  String initialLocation = '/';
-  if (savedRole == 'parent') initialLocation = '/parent';
-  else if (savedRole == 'coach') initialLocation = '/coach';
-  else if (savedRole == 'admin') initialLocation = '/admin';
-  else if (savedRole == 'owner') initialLocation = '/owner';
-
   return GoRouter(
-    initialLocation: initialLocation,
+    initialLocation: '/',
     routes: [
       GoRoute(
         path: '/',

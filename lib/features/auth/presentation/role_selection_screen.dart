@@ -5,10 +5,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
-import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dart';
+import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -20,18 +22,89 @@ class RoleSelectionScreen extends ConsumerStatefulWidget {
 
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   bool _isLoading = false;
-  bool _showContent = false;
+  final LocalAuthentication _auth = LocalAuthentication();
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _showContent = true;
-        });
+
+    Future.delayed(const Duration(seconds: 3), () async {
+      if (!mounted) return;
+      
+      final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
+      final authState = ref.read(authControllerProvider);
+      
+      UserRole? targetRole;
+      if (authState != null) {
+        targetRole = authState.role;
+      } else {
+        final savedRole = prefs.getString('userRole');
+        if (savedRole != null) {
+          targetRole = UserRole.values.firstWhere((e) => e.name == savedRole, orElse: () => UserRole.parent);
+        }
+      }
+
+      if (targetRole != null) {
+        // User is authorized, attempt Face ID / Biometrics
+        bool authenticated = false;
+        if (kIsWeb) {
+          // Skip biometrics on Web
+          authenticated = true;
+        } else {
+          try {
+            final canCheckBiometrics = await _auth.canCheckBiometrics;
+            final isDeviceSupported = await _auth.isDeviceSupported();
+            
+            if (canCheckBiometrics || isDeviceSupported) {
+              authenticated = await _auth.authenticate(
+                localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
+                biometricOnly: false,
+                persistAcrossBackgrounding: true,
+              );
+            } else {
+              // Device doesn't support biometrics, just let them in
+              authenticated = true;
+            }
+          } catch (e) {
+            debugPrint('Biometric auth error: $e');
+            // If biometrics fail unexpectedly, fallback to requiring manual login
+            authenticated = false; 
+          }
+        }
+
+        if (authenticated) {
+          if (mounted) _navigateBasedOnRole(targetRole);
+        } else {
+          // User cancelled biometrics or it failed. 
+          // Show the login buttons so they can log in manually.
+          // Optional: clear the session so they are forced to log in again.
+          ref.read(authControllerProvider.notifier).logout();
+          if (mounted) {
+
+          }
+        }
+      } else {
+        // No saved session, show login buttons
+
       }
     });
+  }
+
+  void _navigateBasedOnRole(UserRole role) {
+    switch (role) {
+      case UserRole.parent:
+        context.go('/parent');
+        break;
+      case UserRole.coach:
+        context.go('/coach');
+        break;
+      case UserRole.admin:
+        context.go('/admin');
+        break;
+      case UserRole.owner:
+        context.go('/owner');
+        break;
+    }
   }
 
   @override
@@ -127,7 +200,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                             0.8, // Відрізаємо нижні 20% логотипу, де написано "KYIV"
                                         child: Image.asset(
                                           'assets/images/logo_light.png',
-                                          height: 55, // Зробимо трохи більшим
+                                          height: 75, // Збільшений розмір логотипу
                                           fit: BoxFit.contain,
                                           errorBuilder:
                                               (
@@ -148,41 +221,38 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                     )
                                     .animate()
                                     .fadeIn(
-                                      duration: 1000.ms,
+                                      duration: 1200.ms,
                                       curve: Curves.easeOut,
                                     )
                                     .moveY(
                                       begin: splashOffset,
                                       end: 0,
-                                      duration: 1200.ms,
-                                      delay: 3000.ms,
-                                      curve: Curves.easeInOutCubic,
+                                      duration: 4500.ms,
+                                      delay: 2400.ms, // Starts a bit earlier for smoother transition
+                                      curve: Curves.easeOutQuint, // Extremely smooth and slow deceleration
                                     )
                                     .scaleXY(
                                       begin: 1.6,
                                       end: 1.0,
-                                      duration: 1200.ms,
-                                      delay: 3000.ms,
-                                      curve: Curves.easeInOutCubic,
+                                      duration: 4500.ms,
+                                      delay: 2400.ms,
+                                      curve: Curves.easeOutQuint,
                                     ),
 
                                 const SizedBox(height: 80),
 
                                 // Google Button
-                                ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: Colors.black87,
-                                        minimumSize: const Size(
-                                          double.infinity,
-                                          56,
+                                OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: BorderSide(
+                                          color: Colors.blue.withValues(alpha: 0.5),
+                                          width: 1.5,
                                         ),
+                                        minimumSize: const Size(double.infinity, 56),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          borderRadius: BorderRadius.circular(16),
                                         ),
-                                        elevation: 0,
                                       ),
                                       onPressed: _isLoading
                                           ? null
@@ -239,13 +309,13 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       ),
                                     )
                                     .animate()
-                                    .fadeIn(delay: 3600.ms, duration: 800.ms)
+                                    .fadeIn(delay: 3200.ms, duration: 1000.ms)
                                     .slideY(
-                                      begin: 0.2,
+                                      begin: 0.1,
                                       end: 0,
-                                      duration: 800.ms,
-                                      delay: 3600.ms,
-                                      curve: Curves.easeOutCubic,
+                                      duration: 1000.ms,
+                                      delay: 3200.ms,
+                                      curve: Curves.easeOutExpo,
                                     ),
 
                                 const SizedBox(height: 24),
@@ -282,8 +352,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                     ),
                                   ],
                                 ).animate().fadeIn(
-                                  delay: 3700.ms,
-                                  duration: 800.ms,
+                                  delay: 3300.ms,
+                                  duration: 1000.ms,
                                 ),
 
                                 const SizedBox(height: 24),
@@ -331,13 +401,13 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       ),
                                     )
                                     .animate()
-                                    .fadeIn(delay: 3800.ms, duration: 800.ms)
+                                    .fadeIn(delay: 3400.ms, duration: 1000.ms)
                                     .slideY(
-                                      begin: 0.2,
+                                      begin: 0.1,
                                       end: 0,
-                                      duration: 800.ms,
-                                      delay: 3800.ms,
-                                      curve: Curves.easeOutCubic,
+                                      duration: 1000.ms,
+                                      delay: 3400.ms,
+                                      curve: Curves.easeOutExpo,
                                     ),
 
                                 const SizedBox(height: 10),
@@ -753,11 +823,13 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               .trim();
 
                                           // Спочатку закриваємо модалку, щоб не конфліктувати з GoRouter
-                                          if (modalContext.mounted)
+                                          if (modalContext.mounted) {
                                             Navigator.pop(modalContext);
+                                          }
 
-                                          if (mounted)
+                                          if (context.mounted) {
                                             setState(() => _isLoading = true);
+                                          }
 
                                           await notifier.signInWithEmail(
                                             email,
@@ -769,7 +841,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               () => isModalLoading = false,
                                             );
                                           }
-                                          if (mounted) {
+                                          if (context.mounted) {
                                             ScaffoldMessenger.of(
                                               context,
                                             ).showSnackBar(

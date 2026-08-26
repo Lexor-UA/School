@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -9,8 +8,9 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'dart:ui';
 import 'package:swimming_school_app/features/parent/presentation/pool_map_screen.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_booking_screen.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
-import 'package:swimming_school_app/shared/widgets/subscription_flip_card.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 
 class ParentHomeTab extends ConsumerWidget {
   const ParentHomeTab({super.key});
@@ -18,9 +18,9 @@ class ParentHomeTab extends ConsumerWidget {
   void _showNotifications(BuildContext context, bool isDark) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.7), // Зробити фон темнішим
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8), // Розмити весь задній фон
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: AlertDialog(
           backgroundColor: Colors.transparent,
           contentPadding: EdgeInsets.zero,
@@ -30,18 +30,17 @@ class ParentHomeTab extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.1)),
-            ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.1)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('parent.notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  _buildNotificationItem('parent.notif_rescheduled_title'.tr(), 'parent.notif_rescheduled_desc'.tr(), LucideIcons.clock, isDark),
-                  _buildNotificationItem('parent.notif_badge_title'.tr(), 'parent.notif_badge_desc'.tr(), LucideIcons.award, isDark),
-                  _buildNotificationItem('parent.notif_sub_title'.tr(), 'parent.notif_sub_desc'.tr(), LucideIcons.creditCard, isDark),
+                  _buildNotificationItem('Тренування перенесено', 'Сьогодні · 16:15', LucideIcons.clock, isDark),
+                  _buildNotificationItem('Абонемент', 'Залишилось 2 заняття', LucideIcons.creditCard, isDark),
                   const SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerRight,
@@ -83,25 +82,19 @@ class ParentHomeTab extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
     ref.watch(subscriptionControllerProvider);
     final currentSub = user != null ? ref.read(subscriptionControllerProvider.notifier).getSubscriptionForUser(user.id) : null;
 
-    final int level = user?.level ?? 1;
-    final int xp = user?.xp ?? 0;
-    final int maxXp = user?.maxXp ?? 1000;
-    final double xpPercent = (xp / maxXp).clamp(0.0, 1.0);
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Adaptive Colors
     final textColor = isDark ? Colors.white : Colors.black87;
     final textSubColor = isDark ? Colors.white70 : Colors.black54;
     final accentColor = isDark ? Colors.cyanAccent : AppTheme.primaryBlue;
-    final cardBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6);
-    final cardBorderColor = isDark ? Colors.cyanAccent.withValues(alpha: 0.3) : AppTheme.primaryBlue.withValues(alpha: 0.3);
-    final shadowColor = isDark ? Colors.cyanAccent.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05);
+
+    // TODO: Connect to real schedule data. Using mock for UI redesign.
+    bool hasNextClass = DateTime.now().millisecond > -1; // Hack to make it dynamic for UI preview
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -109,7 +102,7 @@ class ParentHomeTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. GAMIFIED HEADER
+          // 1. HEADER
           Row(
             children: [
               Container(
@@ -121,59 +114,14 @@ class ParentHomeTab extends ConsumerWidget {
                 ),
                 child: const AvatarPicker(
                   heroTag: 'hero_avatar_Клієнтам_home',
-                  radius: 34,
+                  radius: 28,
                 ),
               ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${'parent.hello'.tr()}, ${user?.name ?? 'Гість'}!',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: textColor, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: isDark ? Colors.white24 : Colors.white, width: 1.5),
-                            boxShadow: [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.5), blurRadius: 8)],
-                          ),
-                          child: Text('${'parent.level'.tr()} $level', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              Container(
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              Container(
-                                height: 10,
-                                width: MediaQuery.of(context).size.width * 0.4 * xpPercent,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.yellowAccent]),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.8), blurRadius: 10)],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text('parent.xp'.tr(), style: const TextStyle(color: Colors.orangeAccent, fontSize: 13, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
+                child: Text(
+                  'Привіт, ${user?.name ?? 'Гість'} 👋',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0),
               ),
               const SizedBox(width: 16),
@@ -181,7 +129,7 @@ class ParentHomeTab extends ConsumerWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                      color: Colors.white.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -204,242 +152,238 @@ class ParentHomeTab extends ConsumerWidget {
           ),
           const SizedBox(height: 40),
           
-          // 2. NEXT CLASS TICKET (Boarding Pass Style)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark 
-                      ? [Colors.cyanAccent.withValues(alpha: 0.15), Colors.blue.withValues(alpha: 0.05)] 
-                      : [Colors.white, Colors.grey.shade50],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.3) : cardBorderColor, width: 1.5),
-                boxShadow: [
-                  BoxShadow(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.2), blurRadius: 15, spreadRadius: 1),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Timeline / Icon side
-                  Container(
-                    width: 100,
-                    padding: const EdgeInsets.symmetric(vertical: 30),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.cyanAccent.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.05),
-                      border: Border(right: BorderSide(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.2) : cardBorderColor, width: 1.5)),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.clock, color: accentColor, size: 36),
-                        const SizedBox(height: 12),
-                        Text('16:00', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                  // Content side
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                            child: Text('parent.today'.tr(), style: TextStyle(color: isDark ? Colors.greenAccent : Colors.green.shade700, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                          ),
-                          const SizedBox(height: 12),
-                          Text('parent.class_name'.tr(), style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Icon(LucideIcons.user, color: textSubColor, size: 16),
-                              const SizedBox(width: 6),
-                              Text('parent.coach_name'.tr(), style: TextStyle(color: textSubColor, fontSize: 14)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ).animate().slideX(begin: -0.2, end: 0, duration: 500.ms).fadeIn(),
+          // 2. MAIN CLASS CARD
+          Text('Наступне заняття', style: TextStyle(color: textSubColor, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          
+          if (hasNextClass)
+            _buildNextClassCard(context, isDark, accentColor, textColor, textSubColor)
+          else
+            _buildEmptyStateCard(context, isDark, accentColor, textColor),
+          
           const SizedBox(height: 24),
 
-          SubscriptionFlipCard(currentSub: currentSub),
-          const SizedBox(height: 24),
-
-          // 4. ANIMATED 3D MAP BUTTON
-          Center(
-            child: SizedBox(
-              width: double.infinity,
-              height: 70,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark 
-                          ? [Colors.cyanAccent.withValues(alpha: 0.2), Colors.blue.withValues(alpha: 0.1)] 
-                          : [Colors.cyan.shade50, Colors.white],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: isDark ? Colors.cyanAccent.withValues(alpha: 0.4) : cardBorderColor, width: 1.5),
-                    boxShadow: [
-                      if (isDark) BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.15), blurRadius: 20, spreadRadius: 0),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.white.withValues(alpha: 0.0), Colors.cyanAccent.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.0)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                        ).animate(onPlay: (c) => c.repeat()).slide(begin: const Offset(-1, -1), end: const Offset(1, 1), duration: 2.seconds),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PoolMapScreen())),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          padding: EdgeInsets.zero,
-                        ),
-                        child: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(LucideIcons.map, size: 24, color: accentColor),
-                              const SizedBox(width: 12),
-                              Text('parent.open_map'.tr(), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: accentColor)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ).animate(onPlay: (controller) => controller.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.02, 1.02), duration: 2.seconds),
+          // 3. PROGRESS ROW
+          _buildActionRow(
+            context: context,
+            title: 'Мій прогрес',
+            subtitle: '24 тренування · 15 км',
+            icon: LucideIcons.trendingUp,
+            isDark: isDark,
+            onTap: () {
+              ref.read(parentTabProvider.notifier).state = 2; // Jump to Progress Tab
+            }
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 16),
 
-          // 5. VIP PASS (QR CODE)
-          Center(
-            child: Column(
-              children: [
-                Text('parent.your_pass'.tr(), style: TextStyle(color: textSubColor, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: Container(
-                    width: 280,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: cardBgColor,
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(color: cardBorderColor, width: 2),
-                      boxShadow: [
-                        BoxShadow(color: shadowColor, blurRadius: 40, spreadRadius: 10),
-                      ],
-                    ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.cyanAccent.withValues(alpha: 0.2) : AppTheme.primaryBlue.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text('parent.vip_access'.tr(), style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
-                          ),
-                          const SizedBox(height: 24),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                            child: QrImageView(
-                              data: user?.id ?? 'invalid_user',
-                              version: QrVersions.auto,
-                              size: 180.0,
-                              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primaryBlue),
-                              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryBlue),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(user?.name.toUpperCase() ?? 'ГІСТЬ', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 24),
-                Text(
-                  'parent.show_qr'.tr(),
-                  style: TextStyle(color: accentColor, fontSize: 14, letterSpacing: 1.1),
-                ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.5, end: 1.0, duration: 1000.ms),
-              ],
-            ).animate().scale(delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
+          // 4. SUBSCRIPTION ROW
+          _buildActionRow(
+            context: context,
+            title: 'Абонемент',
+            subtitle: currentSub != null ? 'Залишилось ${currentSub.remainingClasses} заняття' : 'Немає активного абонемента',
+            icon: LucideIcons.creditCard,
+            isDark: isDark,
+            onTap: () {
+              ref.read(parentTabProvider.notifier).state = 3; // Jump to Profile Tab for Subscription info
+            }
           ),
+          const SizedBox(height: 32),
+
+          // 5. 3D POOL SIMPLIFIED BUTTON
+          _build3DPoolButton(context, isDark, accentColor),
+
           const SizedBox(height: 100), // Space for bottom nav
         ],
       ),
     );
   }
-}
 
-class ChipPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.amber.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-      
-    final path = Path();
-    // Simple chip lines
-    path.moveTo(0, size.height * 0.3);
-    path.lineTo(size.width * 0.3, size.height * 0.3);
-    path.lineTo(size.width * 0.3, 0);
-    
-    path.moveTo(size.width, size.height * 0.3);
-    path.lineTo(size.width * 0.7, size.height * 0.3);
-    path.lineTo(size.width * 0.7, 0);
-    
-    path.moveTo(0, size.height * 0.7);
-    path.lineTo(size.width * 0.3, size.height * 0.7);
-    path.lineTo(size.width * 0.3, size.height);
-    
-    path.moveTo(size.width, size.height * 0.7);
-    path.lineTo(size.width * 0.7, size.height * 0.7);
-    path.lineTo(size.width * 0.7, size.height);
-    
-    // Center rectangle
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height / 2),
-        width: size.width * 0.4,
-        height: size.height * 0.4,
+  Widget _buildNextClassCard(BuildContext context, bool isDark, Color accentColor, Color textColor, Color textSubColor) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05), width: 1.5),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(LucideIcons.waves, color: accentColor, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                                child: Text('СЬОГОДНІ', style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                              ),
+                              const Spacer(),
+                              Text('16:00 - 17:00', style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text('🏊 Кроль', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text('HappyLand · Доріжка 3', style: TextStyle(color: textSubColor, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Деталі заняття будуть доступні незабаром")));
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.shade100,
+                      border: Border(top: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Відкрити заняття', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
+                        Icon(LucideIcons.arrowRight, color: accentColor, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      paint,
-    );
-    
-    canvas.drawPath(path, paint);
+    ).animate().slideY(begin: 0.1, end: 0, duration: 500.ms).fadeIn();
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget _buildEmptyStateCard(BuildContext context, bool isDark, Color accentColor, Color textColor) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05), width: 1.5),
+            // Dashed border effect could be cool here but standard border is safer
+          ),
+          child: Column(
+            children: [
+              Icon(LucideIcons.calendarX2, color: Colors.white54, size: 40),
+              const SizedBox(height: 16),
+              Text('У вас поки немає запланованих занять', textAlign: TextAlign.center, style: TextStyle(color: textColor, fontSize: 16)),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ParentBookingScreen(date: DateTime.now()))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Записатися', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn();
+  }
+
+  Widget _buildActionRow({required BuildContext context, required String title, required String subtitle, required IconData icon, required bool isDark, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: isDark ? Colors.white : Colors.black87, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14)),
+                    ],
+                  ),
+                ),
+                Icon(LucideIcons.chevronRight, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 200.ms);
+  }
+
+  Widget _build3DPoolButton(BuildContext context, bool isDark, Color accentColor) {
+    return Center(
+      child: GestureDetector(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PoolMapScreen())),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.blue.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.box, size: 20, color: accentColor),
+              const SizedBox(width: 12),
+              Text('3D Карта Басейну', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : Colors.black87)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

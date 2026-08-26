@@ -13,8 +13,9 @@ abstract class GroupClass with _$GroupClass {
     required String coachId,
     required String coachName,
     required int maxCapacity,
-    @Default([]) List<String> enrolledUserIds,
+    @Default([]) List<String> enrolledChildIds,
     required String category, // 'Плавання', 'Стрибки' etc.
+    @Default('') String lane, // 'Доріжка 3' etc.
   }) = _GroupClass;
 
   factory GroupClass.fromJson(Map<String, dynamic> json) => _$GroupClassFromJson(json);

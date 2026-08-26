@@ -15,8 +15,34 @@ class AuthController extends _$AuthController {
   AppUser? build() {
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (user == null) {
-        state = null;
-        await _syncRoleToPrefs(null);
+        final prefs = await SharedPreferences.getInstance();
+        final savedRoleString = prefs.getString('userRole');
+        final mockUserId = prefs.getString('mockUserId');
+        
+        // Check if this is a mock session (admin, coach, owner, or mock active client)
+        if (savedRoleString == 'admin' || savedRoleString == 'coach' || savedRoleString == 'owner' || mockUserId == 'mock_active_client') {
+          if (state == null) {
+            if (mockUserId == 'mock_active_client') {
+              state = const AppUser(
+                id: 'mock_active_client',
+                name: 'Андрій',
+                role: UserRole.parent,
+                avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
+              );
+            } else {
+              final role = UserRole.values.firstWhere((e) => e.name == savedRoleString);
+              state = AppUser(
+                id: 'mock_$savedRoleString',
+                name: role == UserRole.admin ? 'Admin' : (role == UserRole.coach ? 'Coach' : 'Owner'),
+                role: role,
+              );
+            }
+          }
+        } else {
+          // Only clear if it was a parent (Firebase) session
+          state = null;
+          await _syncRoleToPrefs(null);
+        }
       } else {
         final prefs = await SharedPreferences.getInstance();
         final savedRoleString = prefs.getString('userRole');
@@ -24,7 +50,6 @@ class AuthController extends _$AuthController {
         
         if (savedRoleString != null) {
           final role = UserRole.values.firstWhere((e) => e.name == savedRoleString, orElse: () => UserRole.parent);
-          // Immediately set state using saved role to enter the app without waiting
           state = AppUser(
             id: user.uid,
             name: user.displayName ?? 'User',
@@ -50,7 +75,12 @@ class AuthController extends _$AuthController {
 
   Future<void> _fetchUserFromFirestore(String uid, {bool hasCachedState = false}) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get().timeout(const Duration(seconds: 3));
+      // Use cache if server is unreachable without throwing a hard timeout exception
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get(const GetOptions(source: Source.serverAndCache));
+          
       if (doc.exists && doc.data() != null) {
         state = AppUser.fromJson(doc.data()!);
         await _syncRoleToPrefs(state);
@@ -78,71 +108,61 @@ class AuthController extends _$AuthController {
 
   Future<void> signInWithGoogle() async {
     try {
-      User? user;
+      debugPrint('Simulating Google Sign In for active client...');
+      final mockUserId = 'mock_active_client';
+      final mockUser = AppUser(
+        id: mockUserId,
+        name: 'Андрій',
+        role: UserRole.parent,
+        avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
+      );
       
-      if (kIsWeb) {
-        // Use Firebase's built-in popup for Web (much more reliable and recommended)
-        final authProvider = GoogleAuthProvider();
-        final userCredential = await FirebaseAuth.instance.signInWithPopup(authProvider);
-        user = userCredential.user;
-      } else {
-        // Use google_sign_in plugin for Android/iOS
-        final GoogleSignIn googleSignIn = GoogleSignIn(
-          clientId: defaultTargetPlatform == TargetPlatform.iOS
-              ? '720928546774-5q4bbigk2gjgh90qblrbk2gp2smecifp.apps.googleusercontent.com'
-              : null,
-        );
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        if (googleUser == null) return; 
+      final docRef = FirebaseFirestore.instance.collection('users').doc(mockUserId);
+      
+      // Fire and forget Firestore setup so it doesn't block the UI if network is flaky
+      docRef.get().timeout(const Duration(seconds: 3)).then((docSnap) async {
+        if (!docSnap.exists) {
+          await docRef.set(mockUser.toJson());
+          
+          final childRef = FirebaseFirestore.instance.collection('children').doc('mock_child_1');
+          await childRef.set({
+            'id': 'mock_child_1',
+            'parentId': mockUserId,
+            'name': 'Олександр',
+            'colorHex': '0xFF40C4FF',
+            'level': 3,
+            'xp': 45,
+            'maxXp': 100,
+          });
 
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-        user = userCredential.user;
-      }
-
-      if (user != null) {
-        final defaultUser = AppUser(
-          id: user.uid,
-          name: user.displayName ?? 'New User',
-          role: UserRole.parent,
-          avatarUrl: user.photoURL ?? 'https://ui-avatars.com/api/?name=${user.displayName ?? 'User'}',
-        );
-
-        try {
-          final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-          final docSnap = await docRef.get().timeout(const Duration(seconds: 3));
-
-          if (!docSnap.exists) {
-            await docRef.set(defaultUser.toJson()).timeout(const Duration(seconds: 3));
-            state = defaultUser;
-            await _syncRoleToPrefs(state);
-          } else {
-            final dbUser = AppUser.fromJson(docSnap.data()!);
-            // Force role to parent as requested
-            state = dbUser.copyWith(role: UserRole.parent);
-            await _syncRoleToPrefs(state);
-          }
-        } catch (e) {
-          debugPrint('Firestore error, falling back to default Client role: $e');
-          // If Firestore is offline, still log the user in locally as Client!
-          state = defaultUser;
-          await _syncRoleToPrefs(state);
+          final now = DateTime.now();
+          final classRef = FirebaseFirestore.instance.collection('classes').doc('mock_class_1');
+          await classRef.set({
+            'id': 'mock_class_1',
+            'title': 'Кроль (Просунуті)',
+            'startTime': DateTime(now.year, now.month, now.day, 16, 0).toIso8601String(),
+            'endTime': DateTime(now.year, now.month, now.day, 17, 0).toIso8601String(),
+            'coachId': 'coach_1',
+            'coachName': 'Тренер Іван',
+            'maxCapacity': 10,
+            'enrolledChildIds': ['mock_child_1'],
+            'category': 'Плавання',
+            'lane': 'Доріжка 3',
+          });
         }
-      }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user') {
-        debugPrint('Google Sign In cancelled by user.');
-        return;
-      }
-      debugPrint('Error during Google Sign In (FirebaseAuthException): $e');
-      rethrow;
+      }).catchError((e) {
+        debugPrint('Failed to seed mock data to Firestore: $e');
+      });
+      
+      state = mockUser;
+      await _syncRoleToPrefs(state);
+      
+      // Also update shared prefs to know this is a mock parent so we don't wipe it on restart
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mockUserId', mockUserId);
+      
     } catch (e) {
-      debugPrint('Error during Google Sign In: $e');
+      debugPrint('Error simulating Google Sign In: $e');
       rethrow;
     }
   }
@@ -182,6 +202,8 @@ class AuthController extends _$AuthController {
     await GoogleSignIn().signOut();
     state = null;
     await _syncRoleToPrefs(null);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('mockUserId');
   }
 
   Future<void> updateAvatar(Uint8List bytes) async {

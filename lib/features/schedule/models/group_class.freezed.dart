@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GroupClass {
 
- String get id; String get title; DateTime get startTime; DateTime get endTime; String get coachId; String get coachName; int get maxCapacity; List<String> get enrolledUserIds; String get category;
+ String get id; String get title; DateTime get startTime; DateTime get endTime; String get coachId; String get coachName; int get maxCapacity; List<String> get enrolledChildIds; String get category; String get lane;
 /// Create a copy of GroupClass
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $GroupClassCopyWith<GroupClass> get copyWith => _$GroupClassCopyWithImpl<GroupCl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other.enrolledUserIds, enrolledUserIds)&&(identical(other.category, category) || other.category == category));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other.enrolledChildIds, enrolledChildIds)&&(identical(other.category, category) || other.category == category)&&(identical(other.lane, lane) || other.lane == lane));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(enrolledUserIds),category);
+int get hashCode => Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(enrolledChildIds),category,lane);
 
 @override
 String toString() {
-  return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledUserIds: $enrolledUserIds, category: $category)';
+  return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledChildIds: $enrolledChildIds, category: $category, lane: $lane)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $GroupClassCopyWith<$Res>  {
   factory $GroupClassCopyWith(GroupClass value, $Res Function(GroupClass) _then) = _$GroupClassCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, DateTime startTime, DateTime endTime, String coachId, String coachName, int maxCapacity, List<String> enrolledUserIds, String category
+ String id, String title, DateTime startTime, DateTime endTime, String coachId, String coachName, int maxCapacity, List<String> enrolledChildIds, String category, String lane
 });
 
 
@@ -65,7 +65,7 @@ class _$GroupClassCopyWithImpl<$Res>
 
 /// Create a copy of GroupClass
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? startTime = null,Object? endTime = null,Object? coachId = null,Object? coachName = null,Object? maxCapacity = null,Object? enrolledUserIds = null,Object? category = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? startTime = null,Object? endTime = null,Object? coachId = null,Object? coachName = null,Object? maxCapacity = null,Object? enrolledChildIds = null,Object? category = null,Object? lane = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -74,8 +74,9 @@ as DateTime,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_n
 as DateTime,coachId: null == coachId ? _self.coachId : coachId // ignore: cast_nullable_to_non_nullable
 as String,coachName: null == coachName ? _self.coachName : coachName // ignore: cast_nullable_to_non_nullable
 as String,maxCapacity: null == maxCapacity ? _self.maxCapacity : maxCapacity // ignore: cast_nullable_to_non_nullable
-as int,enrolledUserIds: null == enrolledUserIds ? _self.enrolledUserIds : enrolledUserIds // ignore: cast_nullable_to_non_nullable
+as int,enrolledChildIds: null == enrolledChildIds ? _self.enrolledChildIds : enrolledChildIds // ignore: cast_nullable_to_non_nullable
 as List<String>,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as String,lane: null == lane ? _self.lane : lane // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -161,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  DateTime startTime,  DateTime endTime,  String coachId,  String coachName,  int maxCapacity,  List<String> enrolledUserIds,  String category)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  DateTime startTime,  DateTime endTime,  String coachId,  String coachName,  int maxCapacity,  List<String> enrolledChildIds,  String category,  String lane)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GroupClass() when $default != null:
-return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId,_that.coachName,_that.maxCapacity,_that.enrolledUserIds,_that.category);case _:
+return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId,_that.coachName,_that.maxCapacity,_that.enrolledChildIds,_that.category,_that.lane);case _:
   return orElse();
 
 }
@@ -182,10 +183,10 @@ return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  DateTime startTime,  DateTime endTime,  String coachId,  String coachName,  int maxCapacity,  List<String> enrolledUserIds,  String category)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  DateTime startTime,  DateTime endTime,  String coachId,  String coachName,  int maxCapacity,  List<String> enrolledChildIds,  String category,  String lane)  $default,) {final _that = this;
 switch (_that) {
 case _GroupClass():
-return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId,_that.coachName,_that.maxCapacity,_that.enrolledUserIds,_that.category);case _:
+return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId,_that.coachName,_that.maxCapacity,_that.enrolledChildIds,_that.category,_that.lane);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +203,10 @@ return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  DateTime startTime,  DateTime endTime,  String coachId,  String coachName,  int maxCapacity,  List<String> enrolledUserIds,  String category)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  DateTime startTime,  DateTime endTime,  String coachId,  String coachName,  int maxCapacity,  List<String> enrolledChildIds,  String category,  String lane)?  $default,) {final _that = this;
 switch (_that) {
 case _GroupClass() when $default != null:
-return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId,_that.coachName,_that.maxCapacity,_that.enrolledUserIds,_that.category);case _:
+return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId,_that.coachName,_that.maxCapacity,_that.enrolledChildIds,_that.category,_that.lane);case _:
   return null;
 
 }
@@ -217,7 +218,7 @@ return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId
 @JsonSerializable()
 
 class _GroupClass implements GroupClass {
-  const _GroupClass({required this.id, required this.title, required this.startTime, required this.endTime, required this.coachId, required this.coachName, required this.maxCapacity, final  List<String> enrolledUserIds = const [], required this.category}): _enrolledUserIds = enrolledUserIds;
+  const _GroupClass({required this.id, required this.title, required this.startTime, required this.endTime, required this.coachId, required this.coachName, required this.maxCapacity, final  List<String> enrolledChildIds = const [], required this.category, this.lane = ''}): _enrolledChildIds = enrolledChildIds;
   factory _GroupClass.fromJson(Map<String, dynamic> json) => _$GroupClassFromJson(json);
 
 @override final  String id;
@@ -227,14 +228,15 @@ class _GroupClass implements GroupClass {
 @override final  String coachId;
 @override final  String coachName;
 @override final  int maxCapacity;
- final  List<String> _enrolledUserIds;
-@override@JsonKey() List<String> get enrolledUserIds {
-  if (_enrolledUserIds is EqualUnmodifiableListView) return _enrolledUserIds;
+ final  List<String> _enrolledChildIds;
+@override@JsonKey() List<String> get enrolledChildIds {
+  if (_enrolledChildIds is EqualUnmodifiableListView) return _enrolledChildIds;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_enrolledUserIds);
+  return EqualUnmodifiableListView(_enrolledChildIds);
 }
 
 @override final  String category;
+@override@JsonKey() final  String lane;
 
 /// Create a copy of GroupClass
 /// with the given fields replaced by the non-null parameter values.
@@ -249,16 +251,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other._enrolledUserIds, _enrolledUserIds)&&(identical(other.category, category) || other.category == category));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other._enrolledChildIds, _enrolledChildIds)&&(identical(other.category, category) || other.category == category)&&(identical(other.lane, lane) || other.lane == lane));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(_enrolledUserIds),category);
+int get hashCode => Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(_enrolledChildIds),category,lane);
 
 @override
 String toString() {
-  return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledUserIds: $enrolledUserIds, category: $category)';
+  return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledChildIds: $enrolledChildIds, category: $category, lane: $lane)';
 }
 
 
@@ -269,7 +271,7 @@ abstract mixin class _$GroupClassCopyWith<$Res> implements $GroupClassCopyWith<$
   factory _$GroupClassCopyWith(_GroupClass value, $Res Function(_GroupClass) _then) = __$GroupClassCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, DateTime startTime, DateTime endTime, String coachId, String coachName, int maxCapacity, List<String> enrolledUserIds, String category
+ String id, String title, DateTime startTime, DateTime endTime, String coachId, String coachName, int maxCapacity, List<String> enrolledChildIds, String category, String lane
 });
 
 
@@ -286,7 +288,7 @@ class __$GroupClassCopyWithImpl<$Res>
 
 /// Create a copy of GroupClass
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? startTime = null,Object? endTime = null,Object? coachId = null,Object? coachName = null,Object? maxCapacity = null,Object? enrolledUserIds = null,Object? category = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? startTime = null,Object? endTime = null,Object? coachId = null,Object? coachName = null,Object? maxCapacity = null,Object? enrolledChildIds = null,Object? category = null,Object? lane = null,}) {
   return _then(_GroupClass(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -295,8 +297,9 @@ as DateTime,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_n
 as DateTime,coachId: null == coachId ? _self.coachId : coachId // ignore: cast_nullable_to_non_nullable
 as String,coachName: null == coachName ? _self.coachName : coachName // ignore: cast_nullable_to_non_nullable
 as String,maxCapacity: null == maxCapacity ? _self.maxCapacity : maxCapacity // ignore: cast_nullable_to_non_nullable
-as int,enrolledUserIds: null == enrolledUserIds ? _self._enrolledUserIds : enrolledUserIds // ignore: cast_nullable_to_non_nullable
+as int,enrolledChildIds: null == enrolledChildIds ? _self._enrolledChildIds : enrolledChildIds // ignore: cast_nullable_to_non_nullable
 as List<String>,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as String,lane: null == lane ? _self.lane : lane // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

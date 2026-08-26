@@ -13,6 +13,7 @@ import 'add_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'booking_sheet.dart';
 import 'chat_sheet.dart';
+import 'create_class_sheet.dart';
 
 class AdminMain extends ConsumerStatefulWidget {
   const AdminMain({super.key});
@@ -60,6 +61,19 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       const SizedBox(height: 16),
                       
                       // Quick Actions Grid
+                      Row(
+                        children: [
+                          Expanded(child: _buildActionCard(LucideIcons.plusCircle, 'Створити заняття', Colors.pinkAccent, 350, () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const CreateClassSheet(),
+                            );
+                          })),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(child: _buildActionCard(LucideIcons.userPlus, 'admin.new_client'.tr(), Colors.cyanAccent, 400, () {

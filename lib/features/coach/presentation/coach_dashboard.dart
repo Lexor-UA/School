@@ -8,7 +8,7 @@ import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/coach/presentation/qr_scanner_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
-import 'package:swimming_school_app/features/schedule/models/group_class.dart';
+
 
 class CoachDashboard extends ConsumerStatefulWidget {
   const CoachDashboard({super.key});

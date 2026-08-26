@@ -15,7 +15,15 @@
     },
     "choose_portal": "PORTAL WÄHLEN",
     "login_google": "Mit Google anmelden",
-    "login_email": "Mit E-Mail / Passwort anmelden"
+    "login_email": "Mit E-Mail / Passwort anmelden",
+    "slogan": "SCHWIMMEN. VERBESSERN. INSPIRIEREN.",
+    "welcome_back": "Willkommen zurück!",
+    "login_desc": "Melden Sie sich an, um Kurse zu verwalten,\nFortschritte zu verfolgen und mehr zu erreichen.",
+    "or": "oder",
+    "feature_booking": "Einfache\nBuchung",
+    "feature_progress": "Fortschritt\nverfolgen",
+    "feature_goals": "Ziele\nerreichen",
+    "motto_bottom": "Die Kunst des Wassers. Ihr Weg zur Perfektion."
   },
   "coach.status_expected": "Erwartet",
   "coach.status_present_f": "Anwesend",

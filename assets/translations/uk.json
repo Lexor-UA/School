@@ -15,7 +15,15 @@
     },
     "choose_portal": "ОБЕРІТЬ ПОРТАЛ",
     "login_google": "Увійти через Google",
-    "login_email": "Увійти через Email"
+    "login_email": "Увійти через Email",
+    "slogan": "ПЛАВАЙ. ВДОСКОНАЛЮЙСЯ. НАДИХАЙ.",
+    "welcome_back": "З поверненням!",
+    "login_desc": "Увійдіть, щоб керувати заняттями,\nвідстежувати прогрес та досягати більшого.",
+    "or": "або",
+    "feature_booking": "Легке\nбронювання",
+    "feature_progress": "Трекінг\nпрогресу",
+    "feature_goals": "Досягнення\nцілей",
+    "motto_bottom": "Мистецтво води. Ваш шлях до досконалості."
   },
   "coach.status_expected": "Очікується",
   "coach.status_present_f": "Присутня",

@@ -12,7 +12,16 @@ import 'package:swimming_school_app/features/parent/presentation/parent_profile_
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 
-final parentTabProvider = StateProvider<int>((ref) => 0);
+class ParentTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setTab(int index) {
+    state = index;
+  }
+}
+
+final parentTabProvider = NotifierProvider<ParentTabNotifier, int>(ParentTabNotifier.new);
 
 class ParentMain extends ConsumerStatefulWidget {
   const ParentMain({super.key});
@@ -109,7 +118,7 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     ],
                     selectedIndex: selectedIndex,
                     onTabChange: (i) {
-                      ref.read(parentTabProvider.notifier).state = i;
+                      ref.read(parentTabProvider.notifier).setTab(i);
                     },
                   )),
             ),

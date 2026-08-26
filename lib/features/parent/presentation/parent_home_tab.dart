@@ -82,7 +82,7 @@ class ParentHomeTab extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
     ref.watch(subscriptionControllerProvider);
     final currentSub = user != null ? ref.read(subscriptionControllerProvider.notifier).getSubscriptionForUser(user.id) : null;
@@ -171,7 +171,7 @@ class ParentHomeTab extends ConsumerWidget {
             icon: LucideIcons.trendingUp,
             isDark: isDark,
             onTap: () {
-              ref.read(parentTabProvider.notifier).state = 2; // Jump to Progress Tab
+              ref.read(parentTabProvider.notifier).setTab(2); // Jump to Progress Tab
             }
           ),
           const SizedBox(height: 16),
@@ -184,7 +184,7 @@ class ParentHomeTab extends ConsumerWidget {
             icon: LucideIcons.creditCard,
             isDark: isDark,
             onTap: () {
-              ref.read(parentTabProvider.notifier).state = 3; // Jump to Profile Tab for Subscription info
+              ref.read(parentTabProvider.notifier).setTab(3); // Jump to Profile Tab for Subscription info
             }
           ),
           const SizedBox(height: 32),

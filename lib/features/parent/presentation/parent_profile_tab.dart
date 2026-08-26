@@ -71,7 +71,7 @@ class ParentProfileTab extends ConsumerWidget {
             _showAddChildDialog(context, ref, isDark);
           }),
           _buildSettingsTile(LucideIcons.trendingUp, 'Мій прогрес', textColor, textSubColor, cardBgColor, cardBorderColor, () {
-            ref.read(parentTabProvider.notifier).state = 2;
+            ref.read(parentTabProvider.notifier).setTab(2);
           }),
           _buildSettingsTile(LucideIcons.trophy, 'Мої досягнення', textColor, textSubColor, cardBgColor, cardBorderColor, () {
             Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen()));

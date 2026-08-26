@@ -89,7 +89,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const SizedBox(height: 60),
+                          const SizedBox(height: 30),
                           // Logo
                           ClipRect(
                             child: Align(
@@ -103,42 +103,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               ),
                             ),
                           ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0, duration: 800.ms),
-                          const SizedBox(height: 16),
-                          Text(
-                            'auth.slogan'.tr(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF4FC3F7), // Світло-блакитний колір як на макеті
-                              letterSpacing: 3.5,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
                           
-                          const SizedBox(height: 60),
-                          
-                          Text(
-                            'auth.welcome_back'.tr(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
-                          
-                          const SizedBox(height: 12),
-                          
-                          Text(
-                            'auth.login_desc'.tr(),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 16,
-                              height: 1.4,
-                            ),
-                          ).animate().fadeIn(delay: 800.ms, duration: 800.ms),
-                          
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 80),
                           
                           // Google Button
                           ElevatedButton(
@@ -219,14 +185,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildFeatureItem(LucideIcons.calendarDays, 'auth.feature_booking'.tr()),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               _buildFeatureItem(LucideIcons.barChart2, 'auth.feature_progress'.tr()),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               _buildFeatureItem(LucideIcons.trophy, 'auth.feature_goals'.tr()),
                             ],
                           ).animate().fadeIn(delay: 1400.ms, duration: 800.ms),
                           
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 10),
                         ],
                       ),
                     ),
@@ -329,27 +295,27 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
   Widget _buildFeatureItem(IconData icon, String text) {
     return Expanded(
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: Colors.white.withValues(alpha: 0.05),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
-            child: Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 16),
+            child: Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 18),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 11,
-                height: 1.2,
-              ),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 11,
+              height: 1.2,
             ),
           ),
         ],

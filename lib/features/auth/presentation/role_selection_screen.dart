@@ -10,19 +10,36 @@ import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dart';
 
-
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   const RoleSelectionScreen({super.key});
 
   @override
-  ConsumerState<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
+  ConsumerState<RoleSelectionScreen> createState() =>
+      _RoleSelectionScreenState();
 }
 
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   bool _isLoading = false;
+  bool _showContent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showContent = true;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final splashOffset =
+        screenHeight * 0.25; // Відступ для центрування логотипу
+
     ref.listen(authControllerProvider, (previous, next) {
       if (next != null) {
         switch (next.role) {
@@ -50,9 +67,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
           Image.asset(
             'assets/images/new_background.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF003B73)),
+            errorBuilder: (context, error, stackTrace) =>
+                Container(color: const Color(0xFF003B73)),
           ),
-          
+
           // Gradient overlay for better text readability at the bottom
           Container(
             decoration: BoxDecoration(
@@ -69,158 +87,274 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               ),
             ),
           ),
-          
+
           SafeArea(
             child: Column(
               children: [
                 // Top Bar with Language Selector
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 16.0,
+                  ),
                   child: Align(
                     alignment: Alignment.topRight,
                     child: _buildLanguageButton(context),
                   ),
-                ),
-                
+                ).animate().fadeIn(delay: 3800.ms, duration: 800.ms),
+
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 30),
-                          // Logo
-                          ClipRect(
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              heightFactor: 0.8, // Відрізаємо нижні 20% логотипу, де написано "KYIV"
-                              child: Image.asset(
-                                'assets/images/logo_light.png',
-                                height: 50, // Початкова висота (до обрізки)
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) => const Text('CITY SWIM', style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic)),
-                              ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
                             ),
-                          ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0, duration: 800.ms),
-                          
-                          const SizedBox(height: 80),
-                          
-                          // Google Button
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black87,
-                              minimumSize: const Size(double.infinity, 56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            onPressed: _isLoading ? null : () async {
-                              try {
-                                setState(() => _isLoading = true);
-                                await ref.read(authControllerProvider.notifier).signInWithGoogle();
-                              } catch (e) {
-                                if (mounted) {
-                                  setState(() => _isLoading = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Помилка Google Sign In: $e')),
-                                  );
-                                }
-                              }
-                            },
-                            child: Row(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Image.asset('assets/images/google_logo.png', height: 24, errorBuilder: (c,e,s) => const Icon(LucideIcons.globe, color: Colors.blue)),
-                                const SizedBox(width: 12),
-                                Text('auth.login_google'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 30),
+                                // Logo
+                                ClipRect(
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        heightFactor:
+                                            0.8, // Відрізаємо нижні 20% логотипу, де написано "KYIV"
+                                        child: Image.asset(
+                                          'assets/images/logo_light.png',
+                                          height: 55, // Зробимо трохи більшим
+                                          fit: BoxFit.contain,
+                                          errorBuilder:
+                                              (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                              ) => const Text(
+                                                'CITY SWIM',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 40,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                        ),
+                                      ),
+                                    )
+                                    .animate()
+                                    .fadeIn(
+                                      duration: 1000.ms,
+                                      curve: Curves.easeOut,
+                                    )
+                                    .moveY(
+                                      begin: splashOffset,
+                                      end: 0,
+                                      duration: 1200.ms,
+                                      delay: 3000.ms,
+                                      curve: Curves.easeInOutCubic,
+                                    )
+                                    .scaleXY(
+                                      begin: 1.6,
+                                      end: 1.0,
+                                      duration: 1200.ms,
+                                      delay: 3000.ms,
+                                      curve: Curves.easeInOutCubic,
+                                    ),
+
+                                const SizedBox(height: 80),
+
+                                // Google Button
+                                ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: Colors.black87,
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () async {
+                                              try {
+                                                setState(
+                                                  () => _isLoading = true,
+                                                );
+                                                await ref
+                                                    .read(
+                                                      authControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .signInWithGoogle();
+                                              } catch (e) {
+                                                if (mounted) {
+                                                  setState(
+                                                    () => _isLoading = false,
+                                                  );
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Помилка Google Sign In: $e',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/images/google_logo.png',
+                                            height: 24,
+                                            errorBuilder: (c, e, s) =>
+                                                const Icon(
+                                                  LucideIcons.globe,
+                                                  color: Colors.blue,
+                                                ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'auth.login_google'.tr(),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                    .animate()
+                                    .fadeIn(delay: 3600.ms, duration: 800.ms)
+                                    .slideY(
+                                      begin: 0.2,
+                                      end: 0,
+                                      duration: 800.ms,
+                                      delay: 3600.ms,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+
+                                const SizedBox(height: 24),
+
+                                // OR Divider
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      child: Text(
+                                        'auth.or'.tr(),
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Divider(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ).animate().fadeIn(
+                                  delay: 3700.ms,
+                                  duration: 800.ms,
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                // Email Button
+                                OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: BorderSide(
+                                          color: Colors.blue.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          width: 1.5,
+                                        ), // Синя обводка
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                      ),
+                                      onPressed: () =>
+                                          _showEmailLoginModal(context, ref),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            LucideIcons.mail,
+                                            size: 20,
+                                            color: Colors.blueAccent,
+                                          ), // Синя іконка
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'auth.login_email'.tr(),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                    .animate()
+                                    .fadeIn(delay: 3800.ms, duration: 800.ms)
+                                    .slideY(
+                                      begin: 0.2,
+                                      end: 0,
+                                      duration: 800.ms,
+                                      delay: 3800.ms,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+
+                                const SizedBox(height: 10),
                               ],
                             ),
-                          ).animate().fadeIn(delay: 1000.ms, duration: 800.ms).slideY(begin: 0.2, end: 0, duration: 800.ms),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // OR Divider
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text('auth.or'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
-                              ),
-                              Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
-                            ],
-                          ).animate().fadeIn(delay: 1100.ms, duration: 800.ms),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Email Button
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: BorderSide(color: Colors.blue.withValues(alpha: 0.5), width: 1.5), // Синя обводка
-                              minimumSize: const Size(double.infinity, 56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            onPressed: () => _showEmailLoginModal(context, ref),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(LucideIcons.mail, size: 20, color: Colors.blueAccent), // Синя іконка
-                                const SizedBox(width: 12),
-                                Text('auth.login_email'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                          ).animate().fadeIn(delay: 1200.ms, duration: 800.ms).slideY(begin: 0.2, end: 0, duration: 800.ms),
-                          
-                          const SizedBox(height: 40),
-                          
-                          // Features Row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFeatureItem(LucideIcons.calendarDays, 'auth.feature_booking'.tr()),
-                              const SizedBox(width: 12),
-                              _buildFeatureItem(LucideIcons.barChart2, 'auth.feature_progress'.tr()),
-                              const SizedBox(width: 12),
-                              _buildFeatureItem(LucideIcons.trophy, 'auth.feature_goals'.tr()),
-                            ],
-                          ).animate().fadeIn(delay: 1400.ms, duration: 800.ms),
-                          
-                          const SizedBox(height: 10),
-                        ],
-                      ),
-                    ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-                
-                // Bottom Motto
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(LucideIcons.waves, color: Colors.white.withValues(alpha: 0.6), size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'auth.motto_bottom'.tr(),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 1600.ms, duration: 800.ms),
+
+                const SizedBox.shrink(),
               ],
             ),
           ),
-          
+
           // Loading Overlay (Thematic)
           if (_isLoading)
             Positioned.fill(
@@ -232,17 +366,22 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const PremiumLoadingIndicator(size: 80, color: Colors.cyanAccent),
+                        const PremiumLoadingIndicator(
+                          size: 80,
+                          color: Colors.cyanAccent,
+                        ),
                         const SizedBox(height: 32),
                         const Text(
-                          'CITY SWIM',
-                          style: TextStyle(
-                            color: Colors.cyanAccent,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 4,
-                          ),
-                        ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 1500.ms, color: Colors.white),
+                              'CITY SWIM',
+                              style: TextStyle(
+                                color: Colors.cyanAccent,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 4,
+                              ),
+                            )
+                            .animate(onPlay: (c) => c.repeat(reverse: true))
+                            .shimmer(duration: 1500.ms, color: Colors.white),
                       ],
                     ),
                   ),
@@ -259,7 +398,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.0),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1.0,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
@@ -271,54 +413,39 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               borderRadius: BorderRadius.circular(30),
               onTap: () => _showLanguageSelector(context),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(LucideIcons.globe, color: Colors.white, size: 16),
+                    const Icon(
+                      LucideIcons.globe,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       context.locale.languageCode.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(LucideIcons.chevronDown, color: Colors.white70, size: 16),
+                    const Icon(
+                      LucideIcons.chevronDown,
+                      color: Colors.white70,
+                      size: 16,
+                    ),
                   ],
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(IconData icon, String text) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-            ),
-            child: Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 18),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 11,
-              height: 1.2,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -337,12 +464,25 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05), // Lighter frosted glass
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                color: Colors.white.withValues(
+                  alpha: 0.05,
+                ), // Lighter frosted glass
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
                 border: Border(
-                  top: BorderSide(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
-                  left: BorderSide(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
-                  right: BorderSide(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+                  top: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                  left: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                  right: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
                 ),
               ),
               child: Column(
@@ -360,18 +500,42 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   Text(
                     'auth.choose_language'.tr(),
                     style: const TextStyle(
-                      color: Colors.white, 
-                      fontSize: 18, 
-                      fontWeight: FontWeight.bold, 
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                       letterSpacing: 2,
-                      shadows: [Shadow(color: Colors.black, blurRadius: 10)]
+                      shadows: [Shadow(color: Colors.black, blurRadius: 10)],
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildLangItem(context, 'auth.languages.uk'.tr(), 'UKR', const Locale('uk'), currentLocale == 'uk'),
-                  _buildLangItem(context, 'auth.languages.en'.tr(), 'ENG', const Locale('en'), currentLocale == 'en'),
-                  _buildLangItem(context, 'auth.languages.ru'.tr(), 'RUS', const Locale('ru'), currentLocale == 'ru'),
-                  _buildLangItem(context, 'auth.languages.de'.tr(), 'DEU', const Locale('de'), currentLocale == 'de'),
+                  _buildLangItem(
+                    context,
+                    'auth.languages.uk'.tr(),
+                    'UKR',
+                    const Locale('uk'),
+                    currentLocale == 'uk',
+                  ),
+                  _buildLangItem(
+                    context,
+                    'auth.languages.en'.tr(),
+                    'ENG',
+                    const Locale('en'),
+                    currentLocale == 'en',
+                  ),
+                  _buildLangItem(
+                    context,
+                    'auth.languages.ru'.tr(),
+                    'RUS',
+                    const Locale('ru'),
+                    currentLocale == 'ru',
+                  ),
+                  _buildLangItem(
+                    context,
+                    'auth.languages.de'.tr(),
+                    'DEU',
+                    const Locale('de'),
+                    currentLocale == 'de',
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -382,16 +546,33 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     );
   }
 
-  Widget _buildLangItem(BuildContext context, String title, String code, Locale locale, bool isActive) {
+  Widget _buildLangItem(
+    BuildContext context,
+    String title,
+    String code,
+    Locale locale,
+    bool isActive,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isActive ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.15),
+        color: isActive
+            ? Colors.white.withValues(alpha: 0.1)
+            : Colors.black.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isActive ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.6)
+              : Colors.white.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5)),
-        ]
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -400,9 +581,23 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             context.setLocale(locale);
             Navigator.pop(context);
           },
-          leading: Text(code, style: TextStyle(color: isActive ? Colors.white : Colors.white54, fontWeight: FontWeight.bold)),
-          title: Text(title, style: TextStyle(color: isActive ? Colors.white : Colors.white70, fontWeight: FontWeight.bold)),
-          trailing: isActive ? const Icon(LucideIcons.checkCircle2, color: Colors.white) : null,
+          leading: Text(
+            code,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white54,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white70,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: isActive
+              ? const Icon(LucideIcons.checkCircle2, color: Colors.white)
+              : null,
         ),
       ),
     );
@@ -411,7 +606,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   void _showEmailLoginModal(BuildContext context, WidgetRef ref) {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -421,146 +616,205 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(modalContext).viewInsets.bottom),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+              ),
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                  border: Border(
-                    top: BorderSide(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(30),
+                      ),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const Text(
+                          'АВТОРИЗАЦІЯ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: emailController,
+                          style: const TextStyle(color: Colors.white),
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            hintText: 'Email / Логін',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                            filled: true,
+                            fillColor: Colors.black.withValues(alpha: 0.2),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: const Icon(
+                              LucideIcons.mail,
+                              color: Colors.cyanAccent,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: passwordController,
+                          obscureText: true,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Пароль',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                            filled: true,
+                            fillColor: Colors.black.withValues(alpha: 0.2),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: const Icon(
+                              LucideIcons.lock,
+                              color: Colors.cyanAccent,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                              width: double.infinity,
+                              height: 55,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF00C9FF),
+                                    Color(0xFF92FE9D),
+                                  ], // Premium fresh gradient
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF00C9FF,
+                                    ).withValues(alpha: 0.4),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                onPressed: isModalLoading
+                                    ? null
+                                    : () async {
+                                        try {
+                                          setModalState(
+                                            () => isModalLoading = true,
+                                          );
+                                          final notifier = ref.read(
+                                            authControllerProvider.notifier,
+                                          );
+                                          final email = emailController.text
+                                              .trim();
+                                          final password = passwordController
+                                              .text
+                                              .trim();
+
+                                          // Спочатку закриваємо модалку, щоб не конфліктувати з GoRouter
+                                          if (modalContext.mounted)
+                                            Navigator.pop(modalContext);
+
+                                          if (mounted)
+                                            setState(() => _isLoading = true);
+
+                                          await notifier.signInWithEmail(
+                                            email,
+                                            password,
+                                          );
+                                        } catch (e) {
+                                          if (modalContext.mounted) {
+                                            setModalState(
+                                              () => isModalLoading = false,
+                                            );
+                                          }
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Помилка входу: $e',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                child: isModalLoading
+                                    ? const PremiumLoadingIndicator(
+                                        size: 26,
+                                        color: Colors.white,
+                                      )
+                                    : const Text(
+                                        'УВІЙТИ',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                              ),
+                            )
+                            .animate(
+                              onPlay: (controller) =>
+                                  controller.repeat(reverse: true),
+                            )
+                            .shimmer(
+                              duration: 2500.ms,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const Text(
-                      'АВТОРИЗАЦІЯ',
-                      style: TextStyle(
-                        color: Colors.white, 
-                        fontSize: 18, 
-                        fontWeight: FontWeight.bold, 
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: emailController,
-                      style: const TextStyle(color: Colors.white),
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'Email / Логін',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                        filled: true,
-                        fillColor: Colors.black.withValues(alpha: 0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(LucideIcons.mail, color: Colors.cyanAccent),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: passwordController,
-                      obscureText: true,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Пароль',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                        filled: true,
-                        fillColor: Colors.black.withValues(alpha: 0.2),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(LucideIcons.lock, color: Colors.cyanAccent),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      width: double.infinity,
-                      height: 55,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00C9FF), Color(0xFF92FE9D)], // Premium fresh gradient
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF00C9FF).withValues(alpha: 0.4),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: isModalLoading ? null : () async {
-                          try {
-                            setModalState(() => isModalLoading = true);
-                            final notifier = ref.read(authControllerProvider.notifier);
-                            final email = emailController.text.trim();
-                            final password = passwordController.text.trim();
-                            
-                            // Спочатку закриваємо модалку, щоб не конфліктувати з GoRouter
-                            if (modalContext.mounted) Navigator.pop(modalContext);
-                            
-                            await notifier.signInWithEmail(email, password);
-                          } catch (e) {
-                            if (modalContext.mounted) {
-                              setModalState(() => isModalLoading = false);
-                            }
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Помилка входу: $e')),
-                              );
-                            }
-                          }
-                        },
-                        child: isModalLoading
-                            ? const PremiumLoadingIndicator(size: 26, color: Colors.white)
-                            : const Text(
-                                'УВІЙТИ', 
-                                style: TextStyle(
-                                  color: Colors.white, 
-                                  fontSize: 16, 
-                                  fontWeight: FontWeight.w800, 
-                                  letterSpacing: 2
-                                )
-                              ),
-                      ),
-                    ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                     .shimmer(duration: 2500.ms, color: Colors.white.withValues(alpha: 0.3)),
-                    const SizedBox(height: 16),
-                  ],
-                ),
               ),
-            ),
-          ),
+            );
+          },
         );
-      });
       },
     );
   }

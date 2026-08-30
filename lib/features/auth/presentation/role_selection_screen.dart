@@ -841,11 +841,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                             email,
                                             password,
                                           );
-                                          
-                                          // Якщо успішно, закриваємо модалку
-                                          if (modalContext.mounted) {
-                                            Navigator.pop(modalContext);
-                                          }
                                         } catch (e) {
                                           if (modalContext.mounted) {
                                             setModalState(

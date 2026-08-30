@@ -20,8 +20,26 @@ class SubscriptionController extends _$SubscriptionController {
         data['id'] = doc.id;
         return Subscription.fromJson(data);
       }).toList();
+      
+      _checkExpirations(subs);
       state = subs;
     });
+  }
+
+  void _checkExpirations(List<Subscription> subs) {
+    final now = DateTime.now();
+    for (final sub in subs) {
+      if (sub.isActive && sub.expiryDate != null) {
+        if (now.isAfter(sub.expiryDate!)) {
+          // Auto deactivate expired subscription
+          FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
+            'isActive': false,
+          }).catchError((e) {
+            debugPrint('Failed to auto-deactivate subscription ${sub.id}: $e');
+          });
+        }
+      }
+    }
   }
 
   Subscription? getSubscriptionForUser(String userId) {

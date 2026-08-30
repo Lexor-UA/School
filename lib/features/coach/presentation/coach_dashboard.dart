@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,7 +9,9 @@ import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/coach/presentation/qr_scanner_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
-
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 class CoachDashboard extends ConsumerStatefulWidget {
   const CoachDashboard({super.key});
@@ -18,14 +21,9 @@ class CoachDashboard extends ConsumerStatefulWidget {
 }
 
 class _CoachDashboardState extends ConsumerState<CoachDashboard> {
-  // Dummy attendees list with extended data
-  final List<Map<String, dynamic>> _attendees = [
-    {'id': '1', 'name': 'Лев М.', 'status': 'coach.status_expected'.tr(), 'level': 'Pro', 'avatarColor': Colors.purpleAccent},
-    {'id': '2', 'name': 'Мія К.', 'status': 'coach.status_present_f'.tr(), 'level': 'coach.level_beginner'.tr(), 'avatarColor': Colors.pinkAccent},
-    {'id': '3', 'name': 'Ноа С.', 'status': 'coach.status_present_m'.tr(), 'level': 'coach.level_intermediate'.tr(), 'avatarColor': Colors.orangeAccent},
-    {'id': '4', 'name': 'Емма Т.', 'status': 'coach.status_expected'.tr(), 'level': 'Pro', 'avatarColor': Colors.cyanAccent},
-    {'id': '5', 'name': 'Артем Д.', 'status': 'coach.status_expected'.tr(), 'level': 'coach.level_intermediate'.tr(), 'avatarColor': Colors.blueAccent},
-  ];
+  String? _selectedClassId;
+  List<Child> _enrolledChildren = [];
+  bool _isLoadingChildren = false;
 
   void _scanQR() {
     Navigator.push(
@@ -34,33 +32,101 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
     );
   }
 
-  void _manualCheckIn(int index) {
-    setState(() {
-      _attendees[index]['status'] = 'coach.status_present_m'.tr();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_attendees[index]['name']} ${'coach.marked_manually'.tr()}'),
-        backgroundColor: Colors.greenAccent.shade700,
-        behavior: SnackBarBehavior.floating,
-      ),
+  Future<void> _fetchChildren(List<String> childIds) async {
+    if (childIds.isEmpty) {
+      if (mounted) setState(() { _enrolledChildren = []; _isLoadingChildren = false; });
+      return;
+    }
+    
+    setState(() => _isLoadingChildren = true);
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('children')
+          .where(FieldPath.documentId, whereIn: childIds.take(10).toList())
+          .get();
+      
+      final children = snapshot.docs.map((doc) => Child.fromJson({'id': doc.id, ...doc.data()})).toList();
+      if (mounted) {
+        setState(() {
+          _enrolledChildren = children;
+          _isLoadingChildren = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching children: $e');
+      if (mounted) setState(() => _isLoadingChildren = false);
+    }
+  }
+
+  Future<void> _manualCheckIn(GroupClass gClass, String childId, String childName) async {
+    try {
+      final newAttended = List<String>.from(gClass.attendedChildIds)..add(childId);
+      await FirebaseFirestore.instance.collection('classes').doc(gClass.id).update({
+        'attendedChildIds': newAttended,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$childName ${'coach.marked_manually'.tr()}'),
+            backgroundColor: Colors.greenAccent.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error marking presence: $e');
+    }
+  }
+
+  void _awardMedal(Child child) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text('Нагородити дитину', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMedalOption(child, 'champion', 'Чемпіон', 'За відмінне старання на тренуванні', '🏆'),
+              _buildMedalOption(child, 'ninja', 'Водяний ніндзя', 'За швидкість та спритність', '🥷'),
+              _buildMedalOption(child, 'star', 'Супер Зірка', 'За ідеальну дисципліну', '⭐'),
+            ],
+          ),
+        );
+      }
     );
   }
-  
-  void _leaveNote(int index) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${'coach.note_added'.tr()}: ${_attendees[index]['name']}'),
-        backgroundColor: Colors.cyan.shade700,
-        behavior: SnackBarBehavior.floating,
-      ),
+
+  Widget _buildMedalOption(Child child, String id, String name, String desc, String icon) {
+    return ListTile(
+      leading: Text(icon, style: const TextStyle(fontSize: 24)),
+      title: Text(name, style: const TextStyle(color: Colors.white)),
+      subtitle: Text(desc, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+      onTap: () async {
+        Navigator.pop(context);
+        final achievement = Achievement(id: id, name: name, description: desc, iconType: icon, isUnlocked: true);
+        final newAchievements = List<Achievement>.from(child.achievements)..add(achievement);
+        
+        await FirebaseFirestore.instance.collection('children').doc(child.id).update({
+          'achievements': newAchievements.map((a) => a.toJson()).toList(),
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Нагороду видано!'),
+              backgroundColor: Colors.orangeAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
-    final presentCount = _attendees.where((a) => a['status'] == 'coach.status_present_m'.tr() || a['status'] == 'coach.status_present_f'.tr()).length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -70,143 +136,184 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(24.0),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section
-                  Row(
+      body: ref.watch(scheduleControllerProvider).when(
+        data: (classes) {
+          // Filter classes for today for this coach
+          final today = DateTime.now();
+          final coachClasses = classes.where((c) => 
+            c.coachId == user?.id && 
+            c.startTime.year == today.year && 
+            c.startTime.month == today.month && 
+            c.startTime.day == today.day
+          ).toList();
+
+          if (coachClasses.isNotEmpty && _selectedClassId == null) {
+            _selectedClassId = coachClasses.first.id;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _fetchChildren(coachClasses.first.enrolledChildIds);
+            });
+          }
+          
+          final selectedClass = coachClasses.firstWhere((c) => c.id == _selectedClassId, orElse: () => coachClasses.isNotEmpty ? coachClasses.first : coachClasses.firstWhere((_) => false, orElse: () => throw 'No classes'));
+          
+          final presentCount = selectedClass.attendedChildIds.length;
+          final totalCount = selectedClass.enrolledChildIds.length;
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(24.0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.5), blurRadius: 30, spreadRadius: -5),
-                          ],
+                      // Header Section
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.5), blurRadius: 30, spreadRadius: -5),
+                              ],
+                            ),
+                            child: const AvatarPicker(
+                              heroTag: 'hero_avatar_Тренерам_dashboard',
+                              radius: 36,
+                            ),
+                          ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${'coach.hello'.tr()}, ${user?.name ?? 'Тренер'}!',
+                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                                ),
+                                Text(
+                                  'У вас ${coachClasses.length} занять сьогодні',
+                                  style: const TextStyle(color: Colors.cyanAccent, letterSpacing: 1, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                      
+                      // Top Stats (Glassmorphism)
+                      Row(
+                        children: [
+                          Expanded(child: _buildGlassStat('coach.students'.tr(), '$totalCount', LucideIcons.users, Colors.cyanAccent)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildGlassStat('coach.attendance'.tr(), totalCount > 0 ? '${((presentCount / totalCount) * 100).toInt()}%' : '0%', LucideIcons.activity, Colors.greenAccent)),
+                        ],
+                      ).animate().slideY(begin: 0.2, end: 0, delay: 100.ms).fadeIn(),
+                      const SizedBox(height: 32),
+
+                      // Premium Scan Action Button
+                      Center(
+                        child: _buildPremiumScanButton(),
+                      ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+                      const SizedBox(height: 48),
+
+                      // Today's Classes
+                      Text(
+                        'coach.schedule_today'.tr(),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
+                      ).animate().fadeIn(delay: 300.ms),
+                      const SizedBox(height: 16),
+                      
+                      if (coachClasses.isEmpty)
+                        const Text('Немає занять на сьогодні', style: TextStyle(color: Colors.white70))
+                      else
+                        SizedBox(
+                          height: 110,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            clipBehavior: Clip.none,
+                            children: coachClasses.map((c) {
+                              final time = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+                              final isActive = c.id == _selectedClassId;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 16),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() => _selectedClassId = c.id);
+                                    _fetchChildren(c.enrolledChildIds);
+                                  },
+                                  child: _buildPremiumClassChip(time: time, name: c.title, isActive: isActive).animate().slideX(begin: 0.2, end: 0, delay: 400.ms).fadeIn(),
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         ),
-                        child: const AvatarPicker(
-                          heroTag: 'hero_avatar_Тренерам_dashboard',
-                          radius: 36, // Slightly larger avatar
-                        ),
-                      ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      
+                      const SizedBox(height: 40),
+
+                      // Attendees List Header
+                      if (coachClasses.isNotEmpty)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '${'coach.hello'.tr()}, ${user?.name ?? 'Олексій'}!',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                              'coach.journal'.tr(),
+                              style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
                             ),
-                            Text(
-                              'coach.group_juniors'.tr(),
-                              style: const TextStyle(color: Colors.cyanAccent, letterSpacing: 1, fontWeight: FontWeight.w600),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.cyanAccent.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4)),
+                                boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 10)],
+                              ),
+                              child: Text(
+                                '$presentCount / $totalCount',
+                                style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
                             ),
                           ],
-                        ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0),
-                      ),
+                        ).animate().fadeIn(delay: 700.ms),
+                      const SizedBox(height: 16),
                     ],
                   ),
-                  const SizedBox(height: 40),
-                  
-                  // Top Stats (Glassmorphism)
-                  Row(
-                    children: [
-                      Expanded(child: _buildGlassStat('coach.students'.tr(), '${_attendees.length}', LucideIcons.users, Colors.cyanAccent)),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildGlassStat('coach.attendance'.tr(), '${((presentCount / _attendees.length) * 100).toInt()}%', LucideIcons.activity, Colors.greenAccent)),
-                    ],
-                  ).animate().slideY(begin: 0.2, end: 0, delay: 100.ms).fadeIn(),
-                  const SizedBox(height: 32),
-
-                  // Premium Scan Action Button
-                  Center(
-                    child: _buildPremiumScanButton(),
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
-                  const SizedBox(height: 48),
-
-                  // Today's Classes
-                  Text(
-                    'coach.schedule_today'.tr(),
-                    style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
-                  ).animate().fadeIn(delay: 300.ms),
-                  const SizedBox(height: 16),
-                  
-                  ref.watch(scheduleControllerProvider).when(
-                    data: (classes) {
-                      final coachClasses = classes.where((c) => c.coachId == user?.id).toList();
-                      if (coachClasses.isEmpty) {
-                        return const Text('Немає занять на сьогодні', style: TextStyle(color: Colors.white70));
-                      }
-                      
-                      return SizedBox(
-                        height: 110,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          clipBehavior: Clip.none,
-                          children: coachClasses.map((c) {
-                            final time = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 16),
-                              child: _buildPremiumClassChip(time: time, name: c.title, isActive: true).animate().slideX(begin: 0.2, end: 0, delay: 400.ms).fadeIn(),
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    },
-                    loading: () => const CircularProgressIndicator(),
-                    error: (err, stack) => const Text('Помилка завантаження'),
-                  ),
-                  
-                  const SizedBox(height: 40),
-
-                  // Attendees List
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'coach.journal'.tr(),
-                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2.5),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.cyanAccent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4)),
-                          boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 10)],
-                        ),
-                        child: Text(
-                          '$presentCount / ${_attendees.length}',
-                          style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ).animate().fadeIn(delay: 700.ms),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
-          ),
-          
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            sliver: SliverList.builder(
-              itemCount: _attendees.length,
-              itemBuilder: (context, index) {
-                return _buildAttendeeCard(_attendees[index], index).animate().fadeIn(delay: (800 + index * 100).ms).slideX(begin: 0.1, end: 0);
-              },
-            ),
-          ),
-          
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)), // padding for bottom nav
-        ],
+              
+              if (_isLoadingChildren)
+                const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()))
+              else if (coachClasses.isNotEmpty && _enrolledChildren.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text('Немає записаних учнів', style: TextStyle(color: Colors.white54)),
+                    )
+                  )
+                )
+              else if (coachClasses.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  sliver: SliverList.builder(
+                    itemCount: _enrolledChildren.length,
+                    itemBuilder: (context, index) {
+                      final child = _enrolledChildren[index];
+                      final isPresent = selectedClass.attendedChildIds.contains(child.id);
+                      return _buildAttendeeCard(child, isPresent, selectedClass, index).animate().fadeIn(delay: (800 + index * 100).ms).slideX(begin: 0.1, end: 0);
+                    },
+                  ),
+                ),
+              
+              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => const Center(child: Text('Помилка завантаження')),
       ),
     );
   }
@@ -281,7 +388,6 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
           borderRadius: BorderRadius.circular(32),
           child: Stack(
             children: [
-              // Glass Background
               Positioned.fill(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
@@ -298,7 +404,6 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                   ),
                 ),
               ),
-              // Scanning sweep reflection
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -315,7 +420,6 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                   ),
                 ).animate(onPlay: (c) => c.repeat()).slide(begin: const Offset(-1, 0), end: const Offset(1, 0), duration: 2.seconds),
               ),
-              // Content
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 22),
                 child: Row(
@@ -403,9 +507,8 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
     );
   }
 
-  Widget _buildAttendeeCard(Map<String, dynamic> attendee, int index) {
-    bool isPresent = attendee['status'] == 'coach.status_present_m'.tr() || attendee['status'] == 'coach.status_present_f'.tr();
-    Color avatarColor = attendee['avatarColor'];
+  Widget _buildAttendeeCard(Child child, bool isPresent, GroupClass gClass, int index) {
+    Color avatarColor = Colors.cyanAccent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -422,86 +525,80 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Dismissible(
-              key: Key(attendee['id']),
-              background: _buildDismissBackground(Colors.greenAccent, LucideIcons.checkSquare, Alignment.centerLeft),
-              secondaryBackground: _buildDismissBackground(Colors.cyanAccent, LucideIcons.messageSquarePlus, Alignment.centerRight),
-              confirmDismiss: (direction) async {
-                if (direction == DismissDirection.startToEnd) {
-                  if (!isPresent) _manualCheckIn(index);
-                  return false;
-                } else {
-                  _leaveNote(index);
-                  return false;
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    // Glowing Avatar Ring
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [avatarColor.withValues(alpha: 0.8), avatarColor.withValues(alpha: 0.2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(color: avatarColor.withValues(alpha: 0.4), blurRadius: 12),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 26,
-                        backgroundColor: const Color(0xFF071426),
-                        child: Text(attendee['name'][0], style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold, fontSize: 20)),
-                      ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                // Glowing Avatar Ring
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [avatarColor.withValues(alpha: 0.8), avatarColor.withValues(alpha: 0.2)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    boxShadow: [
+                      BoxShadow(color: avatarColor.withValues(alpha: 0.4), blurRadius: 12),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: const Color(0xFF071426),
+                    child: Text(child.name.isNotEmpty ? child.name[0].toUpperCase() : '?', style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold, fontSize: 20)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(child.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: Colors.white, letterSpacing: 0.5)),
+                      const SizedBox(height: 6),
+                      Row(
                         children: [
-                          Text(attendee['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: Colors.white, letterSpacing: 0.5)),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isPresent ? Colors.greenAccent.withValues(alpha: 0.15) : Colors.orangeAccent.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: isPresent ? Colors.greenAccent.withValues(alpha: 0.5) : Colors.orangeAccent.withValues(alpha: 0.5)),
-                                  boxShadow: [
-                                    BoxShadow(color: (isPresent ? Colors.greenAccent : Colors.orangeAccent).withValues(alpha: 0.2), blurRadius: 8),
-                                  ],
-                                ),
-                                child: Text(
-                                  attendee['status'], 
-                                  style: TextStyle(
-                                    color: isPresent ? Colors.greenAccent : Colors.orangeAccent, 
-                                    fontSize: 11, 
-                                    fontWeight: FontWeight.bold
-                                  )
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(attendee['level'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPresent ? Colors.greenAccent.withValues(alpha: 0.15) : Colors.orangeAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isPresent ? Colors.greenAccent.withValues(alpha: 0.5) : Colors.orangeAccent.withValues(alpha: 0.5)),
+                              boxShadow: [
+                                BoxShadow(color: (isPresent ? Colors.greenAccent : Colors.orangeAccent).withValues(alpha: 0.2), blurRadius: 8),
+                              ],
+                            ),
+                            child: Text(
+                              isPresent ? 'coach.status_present_m'.tr() : 'coach.status_expected'.tr(), 
+                              style: TextStyle(
+                                color: isPresent ? Colors.greenAccent : Colors.orangeAccent, 
+                                fontSize: 11, 
+                                fontWeight: FontWeight.bold
                               )
-                            ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('Рівень ${child.level}', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                          )
                         ],
                       ),
-                    ),
-                    if (isPresent) 
+                    ],
+                  ),
+                ),
+                if (isPresent) 
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(LucideIcons.medal, color: Colors.orangeAccent, size: 24),
+                        onPressed: () => _awardMedal(child),
+                        tooltip: 'Видати нагороду',
+                      ),
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -509,36 +606,29 @@ class _CoachDashboardState extends ConsumerState<CoachDashboard> {
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(LucideIcons.check, color: Colors.greenAccent, size: 24),
-                      )
-                    else
-                      Row(
-                        children: [
-                          const Icon(LucideIcons.chevronsRight, color: Colors.white38, size: 20)
-                              .animate(onPlay: (c) => c.repeat())
-                              .slideX(begin: -0.2, end: 0.2, duration: 1.seconds)
-                              .fade(begin: 0.2, end: 1.0),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: const Icon(LucideIcons.userCheck, color: Colors.white54, size: 28),
-                            onPressed: () => _manualCheckIn(index),
-                          ),
-                        ],
                       ),
-                  ],
-                ),
-              ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.chevronsRight, color: Colors.white38, size: 20)
+                          .animate(onPlay: (c) => c.repeat())
+                          .slideX(begin: -0.2, end: 0.2, duration: 1.seconds)
+                          .fade(begin: 0.2, end: 1.0),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(LucideIcons.userCheck, color: Colors.white54, size: 28),
+                        onPressed: () => _manualCheckIn(gClass, child.id, child.name),
+                        tooltip: 'Відмітити присутність',
+                      ),
+                    ],
+                  ),
+              ],
             ),
           ),
         ),
-      );
-  }
-  
-  Widget _buildDismissBackground(Color color, IconData icon, Alignment alignment) {
-    return Container(
-      color: color.withValues(alpha: 0.2),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Icon(icon, color: color, size: 32),
+      ),
     );
   }
 }

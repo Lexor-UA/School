@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Child {
 
- String get id; String get parentId; String get name; int? get age; String get colorHex; int get level; int get xp; int get maxXp;
+ String get id; String get parentId; String get name; int? get age; String get colorHex; int get level; int get xp; int get maxXp; List<Achievement> get achievements;
 /// Create a copy of Child
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ChildCopyWith<Child> get copyWith => _$ChildCopyWithImpl<Child>(this as Child, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, achievements));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,parentId,name,age,colorHex,level,xp,maxXp);
+int get hashCode => Object.hash(runtimeType,id,parentId,name,age,colorHex,level,xp,maxXp,const DeepCollectionEquality().hash(achievements));
 
 @override
 String toString() {
-  return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp)';
+  return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ChildCopyWith<$Res>  {
   factory $ChildCopyWith(Child value, $Res Function(Child) _then) = _$ChildCopyWithImpl;
 @useResult
 $Res call({
- String id, String parentId, String name, int? age, String colorHex, int level, int xp, int maxXp
+ String id, String parentId, String name, int? age, String colorHex, int level, int xp, int maxXp, List<Achievement> achievements
 });
 
 
@@ -65,7 +65,7 @@ class _$ChildCopyWithImpl<$Res>
 
 /// Create a copy of Child
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? parentId = null,Object? name = null,Object? age = freezed,Object? colorHex = null,Object? level = null,Object? xp = null,Object? maxXp = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? parentId = null,Object? name = null,Object? age = freezed,Object? colorHex = null,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,parentId: null == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
@@ -75,7 +75,8 @@ as int?,colorHex: null == colorHex ? _self.colorHex : colorHex // ignore: cast_n
 as String,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
 as int,xp: null == xp ? _self.xp : xp // ignore: cast_nullable_to_non_nullable
 as int,maxXp: null == maxXp ? _self.maxXp : maxXp // ignore: cast_nullable_to_non_nullable
-as int,
+as int,achievements: null == achievements ? _self.achievements : achievements // ignore: cast_nullable_to_non_nullable
+as List<Achievement>,
   ));
 }
 
@@ -160,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age,  String colorHex,  int level,  int xp,  int maxXp)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Child() when $default != null:
-return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_that.level,_that.xp,_that.maxXp);case _:
+return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_that.level,_that.xp,_that.maxXp,_that.achievements);case _:
   return orElse();
 
 }
@@ -181,10 +182,10 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age,  String colorHex,  int level,  int xp,  int maxXp)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements)  $default,) {final _that = this;
 switch (_that) {
 case _Child():
-return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_that.level,_that.xp,_that.maxXp);case _:
+return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_that.level,_that.xp,_that.maxXp,_that.achievements);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +202,10 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parentId,  String name,  int? age,  String colorHex,  int level,  int xp,  int maxXp)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parentId,  String name,  int? age,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements)?  $default,) {final _that = this;
 switch (_that) {
 case _Child() when $default != null:
-return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_that.level,_that.xp,_that.maxXp);case _:
+return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_that.level,_that.xp,_that.maxXp,_that.achievements);case _:
   return null;
 
 }
@@ -216,7 +217,7 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.colorHex,_tha
 @JsonSerializable()
 
 class _Child implements Child {
-  const _Child({required this.id, required this.parentId, required this.name, this.age, this.colorHex = '0xFF40C4FF', this.level = 1, this.xp = 0, this.maxXp = 100});
+  const _Child({required this.id, required this.parentId, required this.name, this.age, this.colorHex = '0xFF40C4FF', this.level = 1, this.xp = 0, this.maxXp = 100, final  List<Achievement> achievements = const []}): _achievements = achievements;
   factory _Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);
 
 @override final  String id;
@@ -227,6 +228,13 @@ class _Child implements Child {
 @override@JsonKey() final  int level;
 @override@JsonKey() final  int xp;
 @override@JsonKey() final  int maxXp;
+ final  List<Achievement> _achievements;
+@override@JsonKey() List<Achievement> get achievements {
+  if (_achievements is EqualUnmodifiableListView) return _achievements;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_achievements);
+}
+
 
 /// Create a copy of Child
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other._achievements, _achievements));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,parentId,name,age,colorHex,level,xp,maxXp);
+int get hashCode => Object.hash(runtimeType,id,parentId,name,age,colorHex,level,xp,maxXp,const DeepCollectionEquality().hash(_achievements));
 
 @override
 String toString() {
-  return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp)';
+  return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements)';
 }
 
 
@@ -261,7 +269,7 @@ abstract mixin class _$ChildCopyWith<$Res> implements $ChildCopyWith<$Res> {
   factory _$ChildCopyWith(_Child value, $Res Function(_Child) _then) = __$ChildCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String parentId, String name, int? age, String colorHex, int level, int xp, int maxXp
+ String id, String parentId, String name, int? age, String colorHex, int level, int xp, int maxXp, List<Achievement> achievements
 });
 
 
@@ -278,7 +286,7 @@ class __$ChildCopyWithImpl<$Res>
 
 /// Create a copy of Child
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? parentId = null,Object? name = null,Object? age = freezed,Object? colorHex = null,Object? level = null,Object? xp = null,Object? maxXp = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? parentId = null,Object? name = null,Object? age = freezed,Object? colorHex = null,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,}) {
   return _then(_Child(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,parentId: null == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
@@ -288,7 +296,8 @@ as int?,colorHex: null == colorHex ? _self.colorHex : colorHex // ignore: cast_n
 as String,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
 as int,xp: null == xp ? _self.xp : xp // ignore: cast_nullable_to_non_nullable
 as int,maxXp: null == maxXp ? _self.maxXp : maxXp // ignore: cast_nullable_to_non_nullable
-as int,
+as int,achievements: null == achievements ? _self._achievements : achievements // ignore: cast_nullable_to_non_nullable
+as List<Achievement>,
   ));
 }
 

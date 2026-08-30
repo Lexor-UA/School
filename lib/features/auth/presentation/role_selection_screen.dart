@@ -23,6 +23,7 @@ class RoleSelectionScreen extends ConsumerStatefulWidget {
 
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   bool _isLoading = false;
+  bool _splashFinished = false;
   final LocalAuthentication _auth = LocalAuthentication();
 
   @override
@@ -31,6 +32,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
     Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
+      setState(() => _splashFinished = true);
       
       final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
       final authState = ref.read(authControllerProvider);
@@ -59,8 +61,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             if (canCheckBiometrics || isDeviceSupported) {
               authenticated = await _auth.authenticate(
                 localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
-                biometricOnly: false,
-                persistAcrossBackgrounding: true,
+                options: const AuthenticationOptions(
+                  biometricOnly: false,
+                  stickyAuth: true,
+                ),
               );
             } else {
               // Device doesn't support biometrics, just let them in
@@ -120,6 +124,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         screenHeight * 0.25; // Відступ для центрування логотипу
 
     ref.listen(authControllerProvider, (previous, next) {
+      if (!_splashFinished) return;
+      
       if (next != null) {
         if (next.role == UserRole.parent && next.phone == null) {
           context.go('/onboarding');

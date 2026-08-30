@@ -15,6 +15,11 @@ _Child _$ChildFromJson(Map<String, dynamic> json) => _Child(
   level: (json['level'] as num?)?.toInt() ?? 1,
   xp: (json['xp'] as num?)?.toInt() ?? 0,
   maxXp: (json['maxXp'] as num?)?.toInt() ?? 100,
+  achievements:
+      (json['achievements'] as List<dynamic>?)
+          ?.map((e) => Achievement.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ChildToJson(_Child instance) => <String, dynamic>{
@@ -26,4 +31,5 @@ Map<String, dynamic> _$ChildToJson(_Child instance) => <String, dynamic>{
   'level': instance.level,
   'xp': instance.xp,
   'maxXp': instance.maxXp,
+  'achievements': instance.achievements,
 };

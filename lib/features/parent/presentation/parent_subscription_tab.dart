@@ -423,27 +423,50 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             const SizedBox(height: 24),
 
             // Action Button
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8.0),
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner),
-                icon: _isLoading  
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
-                label: Text(
-                  _isLoading ? 'parent.processing'.tr() : 'parent.pay_subscription'.tr(),
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+            if (activeSubs.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3)),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentTeal,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 6,
-                  shadowColor: AppTheme.accentTeal.withValues(alpha: 0.4),
+                child: const Row(
+                  children: [
+                    Icon(LucideIcons.info, color: Colors.orangeAccent),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'У цього профілю вже є активний абонемент. Використайте його перед покупкою нового.',
+                        style: TextStyle(color: Colors.orangeAccent, fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ).animate().fadeIn(delay: 500.ms).scale(begin: const Offset(0.9, 0.9)),
+              ).animate().fadeIn(delay: 500.ms)
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner),
+                  icon: _isLoading  
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
+                  label: Text(
+                    _isLoading ? 'parent.processing'.tr() : 'parent.pay_subscription'.tr(),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentTeal,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 6,
+                    shadowColor: AppTheme.accentTeal.withValues(alpha: 0.4),
+                  ),
+                ),
+              ).animate().fadeIn(delay: 500.ms).scale(begin: const Offset(0.9, 0.9)),
             
             const SizedBox(height: 120), // spacing for bottom nav bar
           ],

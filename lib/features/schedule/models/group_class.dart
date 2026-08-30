@@ -14,6 +14,7 @@ abstract class GroupClass with _$GroupClass {
     required String coachName,
     required int maxCapacity,
     @Default([]) List<String> enrolledChildIds,
+    @Default([]) List<String> attendedChildIds,
     required String category, // 'Плавання', 'Стрибки' etc.
     @Default('') String lane, // 'Доріжка 3' etc.
   }) = _GroupClass;

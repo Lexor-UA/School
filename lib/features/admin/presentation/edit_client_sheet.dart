@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 
-class EditClientSheet extends StatefulWidget {
+class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
   final String initialName;
   final String initialPhone;
@@ -18,16 +21,26 @@ class EditClientSheet extends StatefulWidget {
   });
 
   @override
-  State<EditClientSheet> createState() => _EditClientSheetState();
+  ConsumerState<EditClientSheet> createState() => _EditClientSheetState();
 }
 
-class _EditClientSheetState extends State<EditClientSheet> {
+class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _loginIdController;
   bool _isLoading = false;
   String? _errorMessage;
   bool _isSuccess = false;
+
+  final List<Map<String, dynamic>> _services = [
+    {'name': 'Абонемент на 4 тренування', 'classes': 4, 'validityDays': 30},
+    {'name': 'Абонемент на 8 тренуваннь', 'classes': 8, 'validityDays': 30},
+    {'name': 'Абонемент на 12 тренуваннь', 'classes': 12, 'validityDays': 30},
+    {'name': 'Разове тренування у групі', 'classes': 1, 'validityDays': 1},
+    {'name': 'Разове відвідування/доросла група', 'classes': 1, 'validityDays': 2},
+    {'name': 'Абонемент на 4 тренування(ДОРОСЛА ГРУПА)', 'classes': 4, 'validityDays': 30},
+    {'name': 'Абонемент на 8 тренувань(ДОРОСЛА ГРУПА)', 'classes': 8, 'validityDays': 30},
+  ];
 
   @override
   void initState() {
@@ -85,6 +98,144 @@ class _EditClientSheetState extends State<EditClientSheet> {
     }
   }
 
+  void _updateSubscriptionClasses(Subscription sub, int delta) async {
+    final newClasses = sub.remainingClasses + delta;
+    if (newClasses < 0) return;
+    
+    try {
+      await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
+        'remainingClasses': newClasses,
+        'isActive': newClasses > 0,
+      });
+    } catch (e) {
+      debugPrint('Error updating subscription classes: $e');
+    }
+  }
+
+  void _deleteSubscription(Subscription sub) async {
+    try {
+      await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).delete();
+    } catch (e) {
+      debugPrint('Error deleting subscription: $e');
+    }
+  }
+
+  void _showAddSubscriptionDialog(List<String> availableOwners) {
+    String selectedService = _services.first['name'];
+    String selectedOwner = availableOwners.isNotEmpty ? availableOwners.first : widget.initialName;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F172A),
+              title: const Text('Призначити абонемент', style: TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Абонемент:', style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        dropdownColor: const Color(0xFF1E293B),
+                        value: selectedService,
+                        isExpanded: true,
+                        icon: const Icon(LucideIcons.chevronDown, color: Colors.cyanAccent),
+                        items: _services.map((s) {
+                          return DropdownMenuItem<String>(
+                            value: s['name'],
+                            child: Text(s['name'], style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) setStateDialog(() => selectedService = val);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Для кого:', style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 8),
+                  if (availableOwners.isEmpty)
+                    const Text('Немає дітей, буде призначено на клієнта', style: TextStyle(color: Colors.white54))
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          dropdownColor: const Color(0xFF1E293B),
+                          value: selectedOwner,
+                          isExpanded: true,
+                          icon: const Icon(LucideIcons.chevronDown, color: Colors.cyanAccent),
+                          items: availableOwners.map((owner) {
+                            return DropdownMenuItem<String>(
+                              value: owner,
+                              child: Text(owner, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) setStateDialog(() => selectedOwner = val);
+                          },
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    
+                    final serviceDetails = _services.firstWhere((s) => s['name'] == selectedService);
+                    final classes = serviceDetails['classes'] as int;
+                    final validityDays = serviceDetails['validityDays'] as int;
+                    final expiry = DateTime.now().add(Duration(days: validityDays));
+                    
+                    final newSub = Subscription(
+                      id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${selectedOwner.hashCode}',
+                      userId: widget.clientId,
+                      totalClasses: classes,
+                      remainingClasses: classes,
+                      isActive: true,
+                      serviceName: selectedService,
+                      expiryDate: expiry,
+                      ownerName: selectedOwner,
+                    );
+                    
+                    try {
+                      await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
+                    } catch (e) {
+                      debugPrint('Error assigning sub: $e');
+                    }
+                  },
+                  child: const Text('Призначити', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -136,6 +287,8 @@ class _EditClientSheetState extends State<EditClientSheet> {
   }
 
   Widget _buildFormState() {
+    final userSubs = ref.watch(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
+    
     return Column(
       children: [
         _buildTextField(
@@ -158,6 +311,142 @@ class _EditClientSheetState extends State<EditClientSheet> {
           label: 'Логін для входу (наприклад, Client1)',
           icon: LucideIcons.key,
         ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+        const SizedBox(height: 32),
+
+        // SUBSCRIPTION MANAGEMENT
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Управління абонементами', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        ).animate().fadeIn(delay: 350.ms),
+        const SizedBox(height: 12),
+        
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
+          builder: (context, snapshot) {
+            List<String> availableOwners = [widget.initialName];
+            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+              availableOwners.addAll(snapshot.data!.docs.map((d) => (d.data() as Map<String, dynamic>)['name'] as String? ?? 'Дитина'));
+            }
+
+            return Column(
+              children: [
+                if (userSubs.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Text('У клієнта немає абонементів', style: TextStyle(color: Colors.white54)),
+                    ),
+                  )
+                else
+                  ...userSubs.map((sub) {
+                    final isActive = sub.isActive;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: isActive ? Colors.greenAccent.withValues(alpha: 0.3) : Colors.redAccent.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  sub.serviceName ?? 'Абонемент',
+                                  style: TextStyle(color: isActive ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isActive ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.redAccent.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  isActive ? 'Активний' : 'Неактивний',
+                                  style: TextStyle(color: isActive ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text('Для: ${sub.ownerName ?? 'Не вказано'}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                          
+                          if (sub.expiryDate != null && sub.isActive)
+                            Builder(
+                              builder: (context) {
+                                final daysLeft = sub.expiryDate!.difference(DateTime.now()).inDays;
+                                if (daysLeft >= 0 && daysLeft <= 5) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      '⚠️ Закінчується через $daysLeft ${daysLeft == 1 ? 'день' : 'днів'}',
+                                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                            
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Залишилось: ${sub.remainingClasses} / ${sub.totalClasses}', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.minusCircle, color: Colors.orangeAccent),
+                                    onPressed: () => _updateSubscriptionClasses(sub, -1),
+                                    tooltip: 'Відняти 1 заняття',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.plusCircle, color: Colors.cyanAccent),
+                                    onPressed: () => _updateSubscriptionClasses(sub, 1),
+                                    tooltip: 'Додати 1 заняття',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
+                                    onPressed: () => _deleteSubscription(sub),
+                                    tooltip: 'Видалити абонемент',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(LucideIcons.plus, color: Colors.greenAccent),
+                    label: const Text('Призначити новий абонемент', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.greenAccent),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () => _showAddSubscriptionDialog(availableOwners),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        
         const SizedBox(height: 32),
 
         if (_errorMessage != null) ...[
@@ -188,7 +477,7 @@ class _EditClientSheetState extends State<EditClientSheet> {
             ),
             child: _isLoading
                 ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Зберегти зміни', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                : const Text('Зберегти зміни профілю', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.9, 0.9)),
         const SizedBox(height: 40),

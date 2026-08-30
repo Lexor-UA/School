@@ -3,18 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'edit_client_sheet.dart';
 
-class AdminClientsScreen extends StatefulWidget {
+class AdminClientsScreen extends ConsumerStatefulWidget {
   const AdminClientsScreen({super.key});
 
   @override
-  State<AdminClientsScreen> createState() => _AdminClientsScreenState();
+  ConsumerState<AdminClientsScreen> createState() => _AdminClientsScreenState();
 }
 
-class _AdminClientsScreenState extends State<AdminClientsScreen> {
+class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -145,6 +147,8 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                           final name = data['name'] ?? 'Невідомо';
                           final phone = data['phone'] ?? 'Немає номеру';
                           final loginId = data['loginId'] ?? 'Не призначено';
+                          
+                          final userSubs = ref.watch(subscriptionControllerProvider).where((s) => s.userId == clientId && s.isActive).toList();
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -229,6 +233,47 @@ class _AdminClientsScreenState extends State<AdminClientsScreen> {
                                     ],
                                   ),
                                 ),
+                                const SizedBox(height: 12),
+
+                                // Subscriptions Info
+                                const Text('Активні абонементи:', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                if (userSubs.isEmpty)
+                                  const Text('Немає активних абонементів', style: TextStyle(color: Colors.white54))
+                                else
+                                  ...userSubs.map((sub) {
+                                    final daysLeft = sub.expiryDate != null ? sub.expiryDate!.difference(DateTime.now()).inDays : null;
+                                    final showWarning = daysLeft != null && daysLeft >= 0 && daysLeft <= 5;
+                                    
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 4.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(LucideIcons.creditCard, color: Colors.greenAccent, size: 16),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  '${sub.serviceName ?? 'Абонемент'} (${sub.ownerName ?? 'Не вказано'}) - Залишилось: ${sub.remainingClasses}',
+                                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (showWarning)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 24.0, top: 2.0),
+                                              child: Text(
+                                                '⚠️ Закінчується через $daysLeft ${daysLeft == 1 ? 'день' : 'днів'}',
+                                                style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
                                 const SizedBox(height: 12),
 
                                 // Children Info

@@ -1,4 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -7,33 +9,18 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart'; 
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 
-class TrophyRoomScreen extends StatefulWidget {
+class TrophyRoomScreen extends ConsumerStatefulWidget {
   const TrophyRoomScreen({super.key});
 
   @override
-  State<TrophyRoomScreen> createState() => _TrophyRoomScreenState();
+  ConsumerState<TrophyRoomScreen> createState() => _TrophyRoomScreenState();
 }
 
-class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProviderStateMixin {
+class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with TickerProviderStateMixin {
   late AnimationController _rotationController;
 
-  final List<Map<String, dynamic>> _trophies = [
-    {
-      'title': 'parent.golden_dolphin'.tr(),
-      'description': 'parent.perfect_butterfly_technique'.tr(),
-      'date': 'parent.august_15_2026'.tr(),
-      'colors': [Colors.amberAccent, Colors.orange],
-      'icon': LucideIcons.trophy,
-      'unlocked': true,
-    },
-    {
-      'title': 'parent.fast_shark'.tr(),
-      'description': 'parent.100m_freestyle_under_1_20'.tr(),
-      'date': 'parent.september_2_2026'.tr(),
-      'colors': [Colors.cyanAccent, Colors.blueAccent],
-      'icon': LucideIcons.medal,
-      'unlocked': true,
-    },
+  // Default static trophies if none are earned yet
+  final List<Map<String, dynamic>> _defaultTrophies = [
     {
       'title': 'parent.master_of_depths'.tr(),
       'description': 'parent.breath_holding_passed'.tr(),
@@ -52,6 +39,24 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
     }
   ];
 
+  IconData _getIcon(String iconType) {
+    switch (iconType) {
+      case '🏆': return LucideIcons.trophy;
+      case '🥷': return LucideIcons.sword;
+      case '⭐': return LucideIcons.star;
+      default: return LucideIcons.medal;
+    }
+  }
+
+  List<Color> _getColors(String iconType) {
+    switch (iconType) {
+      case '🏆': return [Colors.amberAccent, Colors.orange];
+      case '🥷': return [Colors.cyanAccent, Colors.blueAccent];
+      case '⭐': return [Colors.yellowAccent, Colors.amber];
+      default: return [Colors.purpleAccent, Colors.deepPurple];
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +74,28 @@ class _TrophyRoomScreenState extends State<TrophyRoomScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final childrenAsync = ref.watch(childrenControllerProvider);
+    List<Map<String, dynamic>> _trophies = [];
+
+    if (childrenAsync.value != null) {
+      for (var child in childrenAsync.value!) {
+        for (var achievement in child.achievements) {
+          _trophies.add({
+            'title': achievement.name,
+            'description': achievement.description,
+            'date': child.name, // Display child name instead of date
+            'colors': _getColors(achievement.iconType),
+            'icon': _getIcon(achievement.iconType),
+            'unlocked': achievement.isUnlocked,
+          });
+        }
+      }
+    }
+    
+    if (_trophies.isEmpty) {
+      _trophies = _defaultTrophies;
+    }
+
     final int shelfCount = (_trophies.length / 2).ceil();
 
     return Scaffold(

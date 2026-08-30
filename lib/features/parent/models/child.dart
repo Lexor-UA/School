@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
+
 part 'child.freezed.dart';
 part 'child.g.dart';
 
@@ -14,6 +16,7 @@ abstract class Child with _$Child {
     @Default(1) int level,
     @Default(0) int xp,
     @Default(100) int maxXp,
+    @Default([]) List<Achievement> achievements,
   }) = _Child;
 
   factory Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);

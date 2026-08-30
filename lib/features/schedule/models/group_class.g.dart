@@ -19,6 +19,11 @@ _GroupClass _$GroupClassFromJson(Map<String, dynamic> json) => _GroupClass(
           ?.map((e) => e as String)
           .toList() ??
       const [],
+  attendedChildIds:
+      (json['attendedChildIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
   category: json['category'] as String,
   lane: json['lane'] as String? ?? '',
 );
@@ -33,6 +38,7 @@ Map<String, dynamic> _$GroupClassToJson(_GroupClass instance) =>
       'coachName': instance.coachName,
       'maxCapacity': instance.maxCapacity,
       'enrolledChildIds': instance.enrolledChildIds,
+      'attendedChildIds': instance.attendedChildIds,
       'category': instance.category,
       'lane': instance.lane,
     };

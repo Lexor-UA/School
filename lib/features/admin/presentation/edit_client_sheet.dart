@@ -4,7 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
-import 'package:swimming_school_app/features/schedule/models/class_session.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:intl/intl.dart';
 import 'package:swimming_school_app/features/admin/presentation/admin_booking_sheet.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
@@ -498,7 +498,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 final classes = classSnap.data!.docs.map((d) {
                   final data = d.data() as Map<String, dynamic>;
                   data['id'] = d.id;
-                  return ClassSession.fromJson(data);
+                  return GroupClass.fromJson(data);
                 }).toList();
                 
                 classes.sort((a, b) => a.date.compareTo(b.date));

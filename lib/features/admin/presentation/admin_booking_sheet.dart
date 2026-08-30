@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
-import 'package:swimming_school_app/features/schedule/models/class_session.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:intl/intl.dart';
 
 class AdminBookingSheet extends ConsumerStatefulWidget {
@@ -167,7 +167,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                 final classes = snapshot.data!.docs.map((d) {
                   final data = d.data() as Map<String, dynamic>;
                   data['id'] = d.id;
-                  return ClassSession.fromJson(data);
+                  return GroupClass.fromJson(data);
                 }).where((c) {
                   final d1 = c.date;
                   final d2 = _selectedDate;

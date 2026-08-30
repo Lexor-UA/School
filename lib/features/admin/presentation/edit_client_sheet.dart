@@ -3,6 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/class_session.dart';
+import 'package:intl/intl.dart';
+import 'package:swimming_school_app/features/admin/presentation/admin_booking_sheet.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 
@@ -324,8 +328,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
           builder: (context, snapshot) {
             List<String> availableOwners = [widget.initialName];
+            List<String> allRelatedIds = [widget.clientId];
+            
             if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
               availableOwners.addAll(snapshot.data!.docs.map((d) => (d.data() as Map<String, dynamic>)['name'] as String? ?? 'Дитина'));
+              allRelatedIds.addAll(snapshot.data!.docs.map((d) => d.id));
             }
 
             return Column(
@@ -415,6 +422,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     tooltip: 'Додати 1 заняття',
                                   ),
                                   IconButton(
+                                    icon: const Icon(LucideIcons.refreshCw, color: Colors.yellowAccent),
+                                    onPressed: () => _updateSubscriptionClasses(sub, -sub.remainingClasses),
+                                    tooltip: 'Обнулити абонемент',
+                                  ),
+                                  IconButton(
                                     icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
                                     onPressed: () => _deleteSubscription(sub),
                                     tooltip: 'Видалити абонемент',
@@ -443,6 +455,174 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   ),
                 ),
               ],
+            );
+          },
+        ),
+        
+        const SizedBox(height: 32),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Заняття клієнта', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        ).animate().fadeIn(delay: 400.ms),
+        const SizedBox(height: 12),
+        
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
+          builder: (context, childSnap) {
+            List<String> allRelatedIds = [widget.clientId];
+            if (childSnap.hasData) {
+              allRelatedIds.addAll(childSnap.data!.docs.map((d) => d.id));
+            }
+            
+            if (allRelatedIds.isEmpty) return const SizedBox.shrink();
+
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('classes')
+                .where('enrolledChildIds', arrayContainsAny: allRelatedIds)
+                .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(const Duration(days: 1))))
+                .snapshots(),
+              builder: (context, classSnap) {
+                if (!classSnap.hasData || classSnap.data!.docs.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Text('Немає активних записів', style: TextStyle(color: Colors.white54)),
+                    ),
+                  );
+                }
+
+                final classes = classSnap.data!.docs.map((d) {
+                  final data = d.data() as Map<String, dynamic>;
+                  data['id'] = d.id;
+                  return ClassSession.fromJson(data);
+                }).toList();
+                
+                classes.sort((a, b) => a.date.compareTo(b.date));
+
+                return Column(
+                  children: classes.map((session) {
+                    final enrolledHere = session.enrolledChildIds.where((id) => allRelatedIds.contains(id)).toList();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${DateFormat('dd.MM.yyyy').format(session.date)} о ${session.time}',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  session.category,
+                                  style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ...enrolledHere.map((enrolledId) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(enrolledId == widget.clientId ? widget.initialName : 'Дитина', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                  TextButton(
+                                    onPressed: () async {
+                                      try {
+                                        final success = await ref.read(scheduleControllerProvider.notifier).cancelClass(session.id, enrolledId);
+                                        if (success && mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Запис скасовано', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Помилка: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.redAccent),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(50, 24),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: const Text('Скасувати запис', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            );
+          },
+        ),
+        
+        const SizedBox(height: 16),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
+          builder: (context, snapshot) {
+            List<String> availableIds = [widget.clientId];
+            List<String> availableNames = [widget.initialName];
+            
+            if (snapshot.hasData) {
+              for (var d in snapshot.data!.docs) {
+                availableIds.add(d.id);
+                availableNames.add((d.data() as Map<String, dynamic>)['name'] as String? ?? 'Дитина');
+              }
+            }
+            
+            return SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                icon: const Icon(LucideIcons.calendarPlus, color: Colors.blueAccent),
+                label: const Text('Записати на заняття', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.blueAccent),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (ctx) => AdminBookingSheet(
+                      clientId: widget.clientId,
+                      clientName: widget.initialName,
+                      availableIds: availableIds,
+                      availableNames: availableNames,
+                    ),
+                  );
+                },
+              ),
             );
           },
         ),

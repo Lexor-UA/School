@@ -52,10 +52,26 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         // Delete user
         await FirebaseFirestore.instance.collection('users').doc(clientId).delete();
         
-        // Delete children
+        // Delete children and collect their IDs
         final childrenSnap = await FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: clientId).get();
+        List<String> allRelatedIds = [clientId];
         for (var doc in childrenSnap.docs) {
+          allRelatedIds.add(doc.id);
           await doc.reference.delete();
+        }
+
+        // Delete subscriptions
+        final subsSnap = await FirebaseFirestore.instance.collection('subscriptions').where('userId', isEqualTo: clientId).get();
+        for (var doc in subsSnap.docs) {
+          await doc.reference.delete();
+        }
+
+        // Remove from classes
+        final classesSnap = await FirebaseFirestore.instance.collection('classes').where('enrolledChildIds', arrayContainsAny: allRelatedIds).get();
+        for (var doc in classesSnap.docs) {
+          List<dynamic> enrolled = List.from(doc.data()['enrolledChildIds'] ?? []);
+          enrolled.removeWhere((id) => allRelatedIds.contains(id));
+          await doc.reference.update({'enrolledChildIds': enrolled});
         }
 
         if (mounted) {

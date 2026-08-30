@@ -35,31 +35,29 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     {'name': 'Абонемент на 8 тренувань(ДОРОСЛА ГРУПА)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30},
   ];
 
-  void _payForMultipleSubscriptions(String userId, String owner, List<String> selectedServices) async {
+  void _payForSubscription(String userId, String owner, String selectedService) async {
     setState(() => _isLoading = true);
 
     try {
       await Future.delayed(const Duration(seconds: 1)); // Імітація оплати
 
-      for (final serviceName in selectedServices) {
-        final serviceDetails = _services.firstWhere((s) => s['name'] == serviceName);
-        final classes = serviceDetails['classes'] as int;
-        final validityDays = serviceDetails['validityDays'] as int;
-        final expiry = DateTime.now().add(Duration(days: validityDays));
-        
-        final newSub = Subscription(
-          id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${owner.hashCode}',
-          userId: userId,
-          totalClasses: classes,
-          remainingClasses: classes,
-          isActive: true,
-          serviceName: serviceName,
-          expiryDate: expiry,
-          ownerName: owner,
-        );
-        
-        await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
-      }
+      final serviceDetails = _services.firstWhere((s) => s['name'] == selectedService);
+      final classes = serviceDetails['classes'] as int;
+      final validityDays = serviceDetails['validityDays'] as int;
+      final expiry = DateTime.now().add(Duration(days: validityDays));
+      
+      final newSub = Subscription(
+        id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${owner.hashCode}',
+        userId: userId,
+        totalClasses: classes,
+        remainingClasses: classes,
+        isActive: true,
+        serviceName: selectedService,
+        expiryDate: expiry,
+        ownerName: owner,
+      );
+      
+      await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,7 +84,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   }
 
   void _showPaymentSheet(String userId, String effectiveOwner) {
-    List<String> selectedServices = [];
+    String? selectedService;
 
     showModalBottomSheet(
       context: context,
@@ -96,13 +94,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             int totalPrice = 0;
-            for (final service in _services) {
-              final serviceName = service['name'] as String;
-              if (selectedServices.contains(serviceName)) {
-                final priceStr = service['price'] as String;
-                final priceNum = int.tryParse(priceStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-                totalPrice += priceNum;
-              }
+            if (selectedService != null) {
+              final service = _services.firstWhere((s) => s['name'] == selectedService);
+              final priceStr = service['price'] as String;
+              totalPrice = int.tryParse(priceStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
             }
 
             return Container(
@@ -134,15 +129,15 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       itemBuilder: (context, index) {
                         final service = _services[index];
                         final serviceName = service['name'] as String;
-                        final isSelected = selectedServices.contains(serviceName);
+                        final isSelected = selectedService == serviceName;
                         
                         return GestureDetector(
                           onTap: () {
                             setModalState(() {
                               if (isSelected) {
-                                selectedServices.remove(serviceName);
+                                selectedService = null;
                               } else {
-                                selectedServices.add(serviceName);
+                                selectedService = serviceName;
                               }
                             });
                           },
@@ -172,10 +167,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: totalPrice > 0
+                      onPressed: totalPrice > 0 && selectedService != null
                           ? () {
                               Navigator.pop(context);
-                              _payForMultipleSubscriptions(userId, effectiveOwner, selectedServices);
+                              _payForSubscription(userId, effectiveOwner, selectedService!);
                             }
                           : null,
                       style: ElevatedButton.styleFrom(

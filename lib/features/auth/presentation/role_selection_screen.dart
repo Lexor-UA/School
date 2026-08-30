@@ -61,10 +61,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             if (canCheckBiometrics || isDeviceSupported) {
               authenticated = await _auth.authenticate(
                 localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
-                options: const AuthenticationOptions(
-                  biometricOnly: false,
-                  stickyAuth: true,
-                ),
+                // For local_auth 3.0.0+, options are passed as direct parameters
+                biometricOnly: false,
+                stickyAuth: true,
               );
             } else {
               // Device doesn't support biometrics, just let them in

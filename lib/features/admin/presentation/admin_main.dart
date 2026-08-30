@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'add_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'booking_sheet.dart';
+import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'chat_sheet.dart';
 import 'create_class_sheet.dart';
 import 'admin_clients_screen.dart';
@@ -93,36 +94,43 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             );
                           })),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildActionCard(LucideIcons.calendarPlus, 'admin.booking'.tr(), Colors.greenAccent, 500, () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => const BookingSheet(),
-                            );
-                          })),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(child: _buildActionCard(LucideIcons.messageCircle, 'admin.chat'.tr(), Colors.orangeAccent, 600, () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => const ChatSheet(),
-                            );
-                          })),
-                          const SizedBox(width: 16),
-                          Expanded(child: _buildActionCard(LucideIcons.wallet, 'admin.payment'.tr(), Colors.purpleAccent, 700, () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => const PaymentSheet(),
-                            );
-                          })),
+                          Expanded(
+                            child: Consumer(
+                              builder: (context, ref, child) {
+                                final unreadCount = ref.watch(unreadAdminChatBadgeProvider);
+                                
+                                return Stack(
+                                  children: [
+                                    _buildActionCard(LucideIcons.messageCircle, 'admin.chat'.tr(), Colors.orangeAccent, 600, () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (context) => const ChatSheet(),
+                                      );
+                                    }),
+                                    if (unreadCount > 0)
+                                      Positioned(
+                                        top: 10,
+                                        right: 10,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: const Color(0xFF030D1B), width: 2),
+                                          ),
+                                          child: Text(
+                                            '$unreadCount',
+                                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                          ),
+                                        ).animate().scale(),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
                         ],
                       ),
                       
@@ -294,6 +302,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.03),

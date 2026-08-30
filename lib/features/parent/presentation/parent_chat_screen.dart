@@ -6,36 +6,37 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:go_router/go_router.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 
-class AdminChatScreen extends ConsumerStatefulWidget {
-  final String clientName;
-  final String clientId;
-  const AdminChatScreen({super.key, required this.clientName, required this.clientId});
+class ParentChatScreen extends ConsumerStatefulWidget {
+  const ParentChatScreen({super.key});
 
   @override
-  ConsumerState<AdminChatScreen> createState() => _AdminChatScreenState();
+  ConsumerState<ParentChatScreen> createState() => _ParentChatScreenState();
 }
 
-class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
+class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    if (widget.clientId.isEmpty) return;
+
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
 
     final repo = ref.read(chatRepositoryProvider);
     repo.sendMessage(
-      dialogId: widget.clientId, // using clientId as dialogId
-      clientId: widget.clientId,
-      clientName: widget.clientName,
-      clientAvatar: '',
-      senderId: 'admin',
+      dialogId: user.id, // Client ID is used as Dialog ID
+      clientId: user.id,
+      clientName: user.name,
+      clientAvatar: '', // Or appropriate avatar
+      senderId: user.id,
       text: text,
     );
-    
+
     _messageController.clear();
     
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -52,17 +53,21 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Mark messages as read by admin
-    if (widget.clientId.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(chatRepositoryProvider).markMessagesAsRead(widget.clientId, true);
-      });
-    }
+    // Mark messages as read when opening
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authControllerProvider);
+      if (user != null) {
+        ref.read(chatRepositoryProvider).markMessagesAsRead(user.id, false);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final messagesAsync = ref.watch(chatMessagesStreamProvider(widget.clientId));
+    final user = ref.watch(authControllerProvider);
+    final dialogId = user?.id ?? '';
+    final messagesAsync = ref.watch(chatMessagesStreamProvider(dialogId));
+    final isDark = true; // Match admin UI for consistency, or we could pass it
 
     return Scaffold(
       backgroundColor: const Color(0xFF030D1B),
@@ -80,12 +85,14 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                       if (messages.isEmpty) {
                         return const Center(
                           child: Text(
-                            'Немає повідомлень.',
+                            'Немає повідомлень.\nНапишіть нам, і ми обов\'язково допоможемо!',
+                            textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.white54, fontSize: 16),
                           ),
                         );
                       }
-
+                      
+                      // Auto-scroll logic if new message arrives
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (_scrollController.hasClients) {
                            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -99,14 +106,14 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
-                          final isMe = msg.senderId == 'admin';
+                          final isMe = msg.senderId == user?.id;
                           final timeString = "${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}";
                           return _buildMessageBubble(msg.text, isMe, timeString, index);
                         },
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
-                    error: (err, stack) => Center(child: Text('Помилка: $err', style: const TextStyle(color: Colors.white))),
+                    error: (err, stack) => Center(child: Text('Помилка завантаження: $err', style: const TextStyle(color: Colors.white))),
                   ),
                 ),
                 _buildInputArea(),
@@ -133,31 +140,27 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: Colors.orangeAccent.withValues(alpha: 0.2),
-            child: Text(widget.clientName.isNotEmpty ? widget.clientName[0] : '?', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.cyanAccent.withValues(alpha: 0.2),
+            child: const Icon(LucideIcons.headset, color: Colors.cyanAccent),
           ),
           const SizedBox(width: 16),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.clientName,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  'Підтримка CitySwim',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.circle, color: Colors.greenAccent, size: 10),
                     SizedBox(width: 4),
-                    Text('В мережі', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text('Онлайн', style: TextStyle(color: Colors.white54, fontSize: 12)),
                   ],
                 ),
               ],
             ),
-          ),
-          IconButton(
-            icon: const Icon(LucideIcons.phone, color: Colors.cyanAccent),
-            onPressed: () {},
           ),
         ],
       ),

@@ -8,6 +8,8 @@ import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/create_individual_class_sheet.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 class ParentCalendarTab extends ConsumerStatefulWidget {
   const ParentCalendarTab({super.key});
@@ -170,17 +172,6 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final children = childrenAsync.value ?? [];
     final allClasses = scheduleAsync.value ?? [];
 
-    var enrolledClasses = allClasses.where((c) {
-      return c.enrolledChildIds.any((enrolledId) => 
-        (user != null && user.id == enrolledId) || 
-        children.any((child) => child.id == enrolledId)
-      );
-    }).toList();
-
-    if (selectedChildId != null && selectedChildId != 'all') {
-      enrolledClasses = enrolledClasses.where((c) => c.enrolledChildIds.contains(selectedChildId)).toList();
-    }
-
     final daysInMonth = DateUtils.getDaysInMonth(selectedDate.year, selectedDate.month);
     final firstDayOffset = DateTime(selectedDate.year, selectedDate.month, 1).weekday - 1;
     final totalCells = ((daysInMonth + firstDayOffset) / 7).ceil() * 7;
@@ -218,10 +209,21 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               final isToday = DateTime.now().year == selectedDate.year && DateTime.now().month == selectedDate.month && DateTime.now().day == day;
               
               final currentCellDate = DateTime(selectedDate.year, selectedDate.month, day);
-              final hasClasses = enrolledClasses.any((c) => 
+              
+              final targetChildId = (selectedChildId == null || selectedChildId == 'all') ? (user?.id ?? '') : selectedChildId!;
+              
+              final hasEnrolledClasses = allClasses.any((c) => 
                   c.startTime.year == currentCellDate.year && 
                   c.startTime.month == currentCellDate.month && 
-                  c.startTime.day == currentCellDate.day);
+                  c.startTime.day == currentCellDate.day && 
+                  c.enrolledChildIds.contains(targetChildId));
+
+              final hasAvailableClasses = !hasEnrolledClasses && allClasses.any((c) => 
+                  c.startTime.year == currentCellDate.year && 
+                  c.startTime.month == currentCellDate.month && 
+                  c.startTime.day == currentCellDate.day && 
+                  !c.enrolledChildIds.contains(targetChildId) && 
+                  c.enrolledChildIds.length < c.maxCapacity);
 
               return GestureDetector(
                 onTap: () {
@@ -243,7 +245,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                         color: isSelected ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white : Colors.black),
                         fontWeight: (isSelected || isToday) ? FontWeight.bold : FontWeight.normal,
                       )),
-                      if (hasClasses)
+                      if (hasEnrolledClasses || hasAvailableClasses)
                         Positioned(
                           bottom: 6,
                           child: Container(
@@ -252,11 +254,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             decoration: BoxDecoration(
                               color: isSelected 
                                   ? (isDark ? Colors.black.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.7)) 
-                                  : (isDark ? Colors.cyanAccent : AppTheme.primaryBlue),
+                                  : (hasEnrolledClasses 
+                                      ? (isDark ? Colors.cyanAccent : AppTheme.primaryBlue)
+                                      : (isDark ? Colors.white30 : Colors.black26)),
                               borderRadius: BorderRadius.circular(2),
                               boxShadow: isSelected ? null : [
                                 BoxShadow(
-                                  color: (isDark ? Colors.cyanAccent : AppTheme.primaryBlue).withValues(alpha: 0.5),
+                                  color: hasEnrolledClasses 
+                                      ? (isDark ? Colors.cyanAccent : AppTheme.primaryBlue).withValues(alpha: 0.5)
+                                      : Colors.transparent,
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -281,7 +287,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Consumer(
-        builder: (context, ref, child) {
+        builder: (context, ref, childWidget) {
           final scheduleAsync = ref.watch(scheduleControllerProvider);
           final childrenAsync = ref.watch(childrenControllerProvider);
           final user = ref.watch(authControllerProvider);
@@ -297,31 +303,32 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           final children = childrenAsync.value ?? [];
           final allClasses = scheduleAsync.value ?? [];
 
-          var enrolledClasses = allClasses.where((c) {
-            return c.enrolledChildIds.any((enrolledId) => 
-              (user != null && user.id == enrolledId) || 
-              children.any((child) => child.id == enrolledId)
-            );
-          }).toList();
-
-          if (selectedChildId != 'all') {
-            enrolledClasses = enrolledClasses.where((c) => c.enrolledChildIds.contains(selectedChildId)).toList();
-          }
-
-          enrolledClasses = enrolledClasses.where((c) => 
+          final dayClasses = allClasses.where((c) => 
             c.startTime.year == selectedDate.year && 
             c.startTime.month == selectedDate.month && 
             c.startTime.day == selectedDate.day
           ).toList();
 
+          // Filter by selected child if not 'all'
+          final targetChildId = (selectedChildId == null || selectedChildId == 'all') ? (user?.id ?? '') : selectedChildId!;
+          
+          final enrolledClasses = dayClasses.where((c) {
+            return c.enrolledChildIds.contains(targetChildId);
+          }).toList();
+
+          final availableClasses = dayClasses.where((c) {
+            return !c.enrolledChildIds.contains(targetChildId) && c.enrolledChildIds.length < c.maxCapacity;
+          }).toList();
+
           return Container(
-            height: MediaQuery.of(context).size.height * 0.7,
+            height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF0F172A) : Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             ),
             padding: const EdgeInsets.all(24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
@@ -332,128 +339,150 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                 ),
                 Text(
                   '${selectedDate.day} ${DateFormat('MMMM yyyy', context.locale.languageCode).format(selectedDate)}',
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
                 Expanded(
-                  child: enrolledClasses.isEmpty
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'parent.no_classes_this_day_calendar'.tr(),
-                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                _showBookingSheet(context);
-                              },
-                              icon: const Icon(LucideIcons.plus, color: Colors.black, size: 20),
-                              label: Text('parent.schedule_class'.tr(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.cyanAccent,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: ListView(
+                    children: [
+                      if (enrolledClasses.isNotEmpty) ...[
+                        Text('Мої заняття', style: TextStyle(color: isDark ? Colors.cyanAccent : AppTheme.primaryBlue, fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        ...enrolledClasses.map((c) => _buildClassCard(c, true, targetChildId, isDark, ref, user, children)),
+                        const SizedBox(height: 24),
+                      ],
+                      if (availableClasses.isNotEmpty) ...[
+                        Text('Доступні заняття', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        ...availableClasses.map((c) => _buildClassCard(c, false, targetChildId, isDark, ref, user, children)),
+                        const SizedBox(height: 24),
+                      ],
+                      if (dayClasses.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'parent.no_classes_this_day_calendar'.tr(),
+                                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ],
-                        )
-                      : ListView(
-                          children: [
-                            ...enrolledClasses.map((c) {
-                              final enrolledChildId = c.enrolledChildIds.firstWhere((id) => (user != null && id == user.id) || children.any((ch) => ch.id == id), orElse: () => '');
-                              final isParent = user != null && enrolledChildId == user.id;
-                              final child = isParent ? Child(id: user.id, parentId: '', name: user.name, colorHex: '0xFF00BFFF') : children.firstWhere((ch) => ch.id == enrolledChildId, orElse: () => Child(id: '', parentId: '', name: 'Unknown', colorHex: '0xFFFFFFFF'));
-                              final color = isParent ? (isDark ? Colors.cyanAccent : AppTheme.primaryBlue) : Color(int.tryParse(child.colorHex) ?? (isDark ? 0xFFFFFFFF : 0xFF000000));
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        if (!isParent)
-                                          Icon(LucideIcons.baby, size: 16, color: color)
-                                        else
-                                          Icon(LucideIcons.user, size: 16, color: color),
-                                        const SizedBox(width: 8),
-                                        Text(child.name, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-                                        const Spacer(),
-                                        Text('${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(c.title, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-                                    if (c.lane.isNotEmpty && c.lane != 'Будь-яка')
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Text(c.lane, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14)),
-                                      ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Icon(LucideIcons.checkCircle2, color: Colors.greenAccent, size: 16),
-                                        const SizedBox(width: 6),
-                                        Text('parent.booking_confirmed'.tr(), style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                                        const Spacer(),
-                                        PopupMenuButton<String>(
-                                          icon: Icon(LucideIcons.moreHorizontal, color: isDark ? Colors.white54 : Colors.black54),
-                                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                          onSelected: (value) async {
-                                            if (value == 'cancel') {
-                                              await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, enrolledChildId);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            PopupMenuItem(
-                                              value: 'details',
-                                              child: Row(children: [Icon(LucideIcons.info, size: 18, color: isDark ? Colors.white : Colors.black), const SizedBox(width: 8), Text('parent.details'.tr())]),
-                                            ),
-                                            PopupMenuItem(
-                                              value: 'cancel',
-                                              child: Row(children: [Icon(LucideIcons.xCircle, size: 18, color: Colors.redAccent), const SizedBox(width: 8), Text('parent.cancel_class'.tr(), style: const TextStyle(color: Colors.redAccent))]),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                            const SizedBox(height: 16),
-                            Center(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  _showBookingSheet(context);
-                                },
-                                icon: const Icon(LucideIcons.plus, color: Colors.black, size: 20),
-                                label: Text('parent.schedule_more'.tr(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.cyanAccent,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _showBookingSheet(context);
+                          },
+                          icon: const Icon(LucideIcons.plus, color: Colors.black, size: 20),
+                          label: Text(dayClasses.isEmpty ? 'parent.schedule_class'.tr() : 'parent.schedule_more'.tr(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.cyanAccent,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildClassCard(GroupClass c, bool isEnrolled, String targetChildId, bool isDark, WidgetRef ref, AppUser? user, List<Child> children) {
+    final isParent = user != null && targetChildId == user.id;
+    final child = isParent ? Child(id: user.id, parentId: '', name: user.name, colorHex: '0xFF00BFFF') : children.firstWhere((ch) => ch.id == targetChildId, orElse: () => Child(id: '', parentId: '', name: 'Unknown', colorHex: '0xFFFFFFFF'));
+    final color = isParent ? (isDark ? Colors.cyanAccent : AppTheme.primaryBlue) : Color(int.tryParse(child.colorHex) ?? (isDark ? 0xFFFFFFFF : 0xFF000000));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: Text('${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+              ),
+              const Spacer(),
+              Text('${c.enrolledChildIds.length}/${c.maxCapacity} місць', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(c.title, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+          if (c.lane.isNotEmpty && c.lane != 'Будь-яка')
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(c.lane, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14)),
+            ),
+          if (c.coachName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Тренер: ${c.coachName}', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 14)),
+            ),
+          const SizedBox(height: 16),
+          if (isEnrolled)
+            Row(
+              children: [
+                Icon(LucideIcons.checkCircle2, color: Colors.greenAccent, size: 16),
+                const SizedBox(width: 6),
+                Text('parent.booking_confirmed'.tr(), style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                PopupMenuButton<String>(
+                  icon: Icon(LucideIcons.moreHorizontal, color: isDark ? Colors.white54 : Colors.black54),
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  onSelected: (value) async {
+                    if (value == 'cancel') {
+                      await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, targetChildId);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'cancel',
+                      child: Row(children: [Icon(LucideIcons.xCircle, size: 18, color: Colors.redAccent), const SizedBox(width: 8), Text('parent.cancel_class'.tr(), style: const TextStyle(color: Colors.redAccent))]),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final success = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, targetChildId);
+                  if (!success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Не вдалося записатись. Перевірте кількість занять в абонементі.')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                  foregroundColor: isDark ? Colors.white : Colors.black,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Записатися', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -224,7 +224,17 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
           
           const SizedBox(height: 24),
 
-          // 3. PROGRESS ROW
+          // 3. SUBSCRIPTION CARD
+          SubscriptionFrontCard(
+            currentSub: currentSub,
+            onTap: () {
+              ref.read(parentTabProvider.notifier).setTab(2); // Navigate to Subscription tab
+            },
+          ),
+          
+          const SizedBox(height: 32),
+
+          // 5. PROGRESS ROW
           _buildActionRow(
             context: context,
             title: 'parent.progress'.tr(),
@@ -238,28 +248,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               );
             }
           ),
-          const SizedBox(height: 32),
-
-          // 4. 3D POOL SIMPLIFIED BUTTON
-          _build3DPoolButton(context, isDark, accentColor),
-          
-          const SizedBox(height: 32),
-
-          // 5. SUBSCRIPTION CARD
-          SubscriptionFrontCard(
-            currentSub: currentSub,
-            onTap: () {
-              ref.read(parentTabProvider.notifier).setTab(2); // Navigate to Subscription tab
-            },
-          ),
-          
           const SizedBox(height: 24),
-          
-          // 6. QR CODE CARD
-          SubscriptionQrCard(
-            currentSub: currentSub,
-            isDark: isDark,
-          ),
+
+          // 6. 3D POOL SIMPLIFIED BUTTON
+          _build3DPoolButton(context, isDark, accentColor),
 
           const SizedBox(height: 140), // Space for bottom nav
         ],

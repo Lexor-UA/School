@@ -90,7 +90,7 @@
   "admin.quick_actions": "QUICK ACTIONS",
   "admin.new_client": "New Client",
   "admin.booking": "Booking",
-  "admin.chat": "Chat (3 new)",
+  "admin.chat": "Chat",
   "admin.payment": "Payment",
   "admin.tasks_today": "TODAY'S TASKS",
   "admin.task_payment": "Confirm payment",

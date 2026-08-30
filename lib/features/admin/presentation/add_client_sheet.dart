@@ -14,24 +14,45 @@ class AddClientSheet extends StatefulWidget {
 class _AddClientSheetState extends State<AddClientSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _childNameController = TextEditingController();
-  String _selectedGroup = 'Юніори (Батерфляй)';
+  final List<TextEditingController> _childrenControllers = [];
+  
   bool _isSuccess = false;
   bool _isLoading = false;
   String? _errorMessage;
   String? _generatedLogin;
 
-  final List<String> _groups = [
-    'Юніори (Батерфляй)',
-    'Малюки (Основи)',
-    'Підлітки Pro',
-    'Дорослі',
-  ];
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    for (var controller in _childrenControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addChildField() {
+    setState(() {
+      _childrenControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeChildField(int index) {
+    setState(() {
+      _childrenControllers[index].dispose();
+      _childrenControllers.removeAt(index);
+    });
+  }
 
   Future<void> _submit() async {
-    if (_nameController.text.isEmpty || _phoneController.text.isEmpty || _childNameController.text.isEmpty) {
+    final validChildren = _childrenControllers.where((c) => c.text.trim().isNotEmpty).toList();
+    if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'Будь ласка, заповніть ім\'я та телефон.';
+      });
       return;
     }
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -48,26 +69,28 @@ class _AddClientSheetState extends State<AddClientSheet> {
       final generatedLogin = 'client$clientCount';
 
       final userRef = FirebaseFirestore.instance.collection('users').doc();
-      final childRef = FirebaseFirestore.instance.collection('children').doc();
 
       await userRef.set({
         'id': userRef.id,
-        'name': _nameController.text,
+        'name': _nameController.text.trim(),
         'role': 'parent',
-        'phone': _phoneController.text,
+        'phone': _phoneController.text.trim(),
         'loginId': generatedLogin,
         'avatarUrl': '',
       }).timeout(const Duration(seconds: 5));
 
-      await childRef.set({
-        'id': childRef.id,
-        'parentId': userRef.id,
-        'name': _childNameController.text,
-        'colorHex': '0xFF40C4FF',
-        'level': 1,
-        'xp': 0,
-        'maxXp': 100,
-      }).timeout(const Duration(seconds: 5));
+      for (var childController in validChildren) {
+        final childRef = FirebaseFirestore.instance.collection('children').doc();
+        await childRef.set({
+          'id': childRef.id,
+          'parentId': userRef.id,
+          'name': childController.text.trim(),
+          'colorHex': '0xFF40C4FF',
+          'level': 1,
+          'xp': 0,
+          'maxXp': 100,
+        }).timeout(const Duration(seconds: 5));
+      }
 
       if (mounted) {
         setState(() {
@@ -134,7 +157,7 @@ class _AddClientSheetState extends State<AddClientSheet> {
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 8),
         Text(
-          '${_nameController.text} та дитина ${_childNameController.text}',
+          _nameController.text,
           style: const TextStyle(color: Colors.white70, fontSize: 16),
         ).animate().fadeIn(delay: 400.ms),
         const SizedBox(height: 16),
@@ -160,94 +183,106 @@ class _AddClientSheetState extends State<AddClientSheet> {
   }
 
   Widget _buildFormState() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        const Row(
-          children: [
-            Icon(LucideIcons.userPlus, color: Colors.cyanAccent),
-            SizedBox(width: 12),
-            Text('Новий Клієнт', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 24),
+          const Row(
+            children: [
+              Icon(LucideIcons.userPlus, color: Colors.cyanAccent),
+              SizedBox(width: 12),
+              Text('Новий Клієнт', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
+          const SizedBox(height: 16),
+          _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
+          const SizedBox(height: 24),
+          
+          if (_childrenControllers.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Text('Діти', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
           ],
-        ),
-        const SizedBox(height: 24),
-        _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
-        const SizedBox(height: 16),
-        _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
-        const SizedBox(height: 16),
-        _buildTextField('Ім\'я дитини', LucideIcons.baby, _childNameController),
-        const SizedBox(height: 24),
-        const Text('Група', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _groups.map((group) {
-            final isSelected = group == _selectedGroup;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedGroup = group),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? Colors.cyanAccent : Colors.white.withValues(alpha: 0.1)),
-                ),
-                child: Text(
-                  group,
-                  style: TextStyle(
-                    color: isSelected ? Colors.cyanAccent : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          
+          ...List.generate(_childrenControllers.length, (index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField('Ім\'я дитини', LucideIcons.baby, _childrenControllers[index]),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
+                      onPressed: () => _removeChildField(index),
+                    ),
+                  ),
+                ],
               ),
             );
-          }).toList(),
-        ),
-        const SizedBox(height: 32),
-        if (_errorMessage != null) ...[
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.redAccent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-            ),
-            child: Text(
-              'Помилка: $_errorMessage',
-              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+          }),
+          
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _addChildField,
+              icon: const Icon(LucideIcons.plus, color: Colors.cyanAccent, size: 18),
+              label: Text(_childrenControllers.isEmpty ? 'Додати дитину' : 'Додати ще дитину', style: const TextStyle(color: Colors.cyanAccent)),
             ),
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 32),
+          if (_errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                'Помилка: $_errorMessage',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.cyanAccent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 10,
+                shadowColor: Colors.cyanAccent.withValues(alpha: 0.5),
+              ),
+              onPressed: _isLoading ? null : _submit,
+              child: _isLoading 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                  : const Text('Зберегти', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            ),
+          ),
         ],
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.cyanAccent,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 10,
-              shadowColor: Colors.cyanAccent.withValues(alpha: 0.5),
-            ),
-            onPressed: _isLoading ? null : _submit,
-            child: _isLoading 
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                : const Text('Зберегти', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -273,3 +308,4 @@ class _AddClientSheetState extends State<AddClientSheet> {
     );
   }
 }
+

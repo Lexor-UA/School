@@ -9,6 +9,7 @@ import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/shared/utils/page_transitions.dart';
 import 'package:swimming_school_app/features/parent/presentation/trophy_room_screen.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
@@ -211,7 +212,7 @@ class ParentProfileTab extends ConsumerWidget {
               title: Text('Написати в підтримку', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
               onTap: () {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Відкриття чату підтримки...')));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ParentChatScreen()));
               },
             ),
             ListTile(

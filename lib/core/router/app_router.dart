@@ -44,7 +44,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: 'chat',
             builder: (context, state) {
               final clientName = state.uri.queryParameters['clientName'] ?? 'Клієнт';
-              return AdminChatScreen(clientName: clientName);
+              final clientId = state.uri.queryParameters['clientId'] ?? '';
+              return AdminChatScreen(clientName: clientName, clientId: clientId);
             },
           ),
         ]

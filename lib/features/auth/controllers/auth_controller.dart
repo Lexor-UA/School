@@ -146,7 +146,17 @@ class AuthController extends _$AuthController {
   Future<void> signInWithGoogle() async {
     try {
       _isLoggingIn = true;
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      String? clientId;
+      if (kIsWeb) {
+        clientId = '720928546774-fm9fipmt88b2uqp2n5cbogq6r0gg1l1u.apps.googleusercontent.com';
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        clientId = '720928546774-5q4bbigk2gjgh90qblrbk2gp2smecifp.apps.googleusercontent.com';
+      }
+      
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+        clientId: clientId,
+        serverClientId: kIsWeb ? null : '720928546774-fm9fipmt88b2uqp2n5cbogq6r0gg1l1u.apps.googleusercontent.com',
+      ).signIn();
       if (googleUser == null) {
         _isLoggingIn = false;
         return;

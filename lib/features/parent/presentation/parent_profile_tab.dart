@@ -40,7 +40,7 @@ class ParentProfileTab extends ConsumerWidget {
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         children: [
           // 1. Header (Avatar + Name)
           Center(
@@ -68,7 +68,7 @@ class ParentProfileTab extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           
           // 3. Navigation List
           _buildSettingsTile(LucideIcons.userPlus, 'parent.add_child'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
@@ -87,9 +87,9 @@ class ParentProfileTab extends ConsumerWidget {
             _showHelpDialog(context, isDark);
           }),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           _buildLogoutButton(context, ref, isDark).animate().fadeIn(duration: 400.ms),
-          const SizedBox(height: 140),
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -179,7 +179,7 @@ class ParentProfileTab extends ConsumerWidget {
 
   Widget _buildSettingsTile(IconData icon, String title, Color textColor, Color subColor, Color bg, Color border, VoidCallback onTap) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.transparent,
         child: Ink(

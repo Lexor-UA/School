@@ -77,7 +77,7 @@ class _ParentMainState extends ConsumerState<ParentMain> {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          margin: const EdgeInsets.only(left: 24, right: 24, bottom: 16),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
@@ -99,14 +99,14 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
                   child: GNav(
                     rippleColor: Colors.white.withValues(alpha: 0.1),
                     hoverColor: Colors.white.withValues(alpha: 0.1),
-                    gap: 8,
+                    gap: 6,
                     activeColor: Colors.white,
-                    iconSize: 24,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    iconSize: 22,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     duration: const Duration(milliseconds: 400),
                     tabBackgroundColor: AppTheme.accentTeal.withValues(alpha: 0.4),
                     color: Colors.white70,

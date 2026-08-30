@@ -19,10 +19,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   final _phoneController = TextEditingController();
-  final _childNameController = TextEditingController();
-  final _childAgeController = TextEditingController();
 
-  bool _addChild = false;
   bool _isLoading = false;
 
   @override
@@ -36,8 +33,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _childNameController.dispose();
-    _childAgeController.dispose();
     super.dispose();
   }
 
@@ -50,8 +45,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(authControllerProvider.notifier).completeOnboarding(
         _nameController.text.trim(),
         _phoneController.text.trim(),
-        childName: _addChild ? _childNameController.text.trim() : null,
-        childAge: _addChild ? _childAgeController.text.trim() : null,
       );
       if (mounted) {
         context.go('/parent');
@@ -159,60 +152,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
                             
                             const SizedBox(height: 24),
-                            
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(LucideIcons.baby, color: Colors.white, size: 20),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Text(
-                                      'onboarding.add_child'.tr(),
-                                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                  Switch(
-                                    value: _addChild,
-                                    activeColor: Colors.white,
-                                    activeTrackColor: Colors.blueAccent,
-                                    inactiveThumbColor: Colors.white70,
-                                    inactiveTrackColor: Colors.white24,
-                                    onChanged: (v) => setState(() => _addChild = v),
-                                  ),
-                                ],
-                              ),
-                            ).animate().fadeIn(delay: 600.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
-                            
-                            if (_addChild) ...[
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _childNameController,
-                                icon: LucideIcons.user,
-                                hint: 'onboarding.child_name_hint'.tr(),
-                                validator: (v) => v == null || v.isEmpty ? 'onboarding.child_name_error'.tr() : null,
-                              ).animate().fadeIn(duration: 400.ms),
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _childAgeController,
-                                icon: LucideIcons.calendar,
-                                hint: 'onboarding.child_age_hint'.tr(),
-                                keyboardType: TextInputType.number,
-                                validator: (v) => v == null || v.isEmpty ? 'onboarding.child_age_error'.tr() : null,
-                              ).animate().fadeIn(duration: 400.ms),
-                            ],
                             
                             const SizedBox(height: 40),
                             

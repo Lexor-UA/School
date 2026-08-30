@@ -41,7 +41,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           const SizedBox(height: 16),
           
           _buildCalendarHeader(isDark),
-          _buildCalendarGrid(isDark),
+          _buildCalendarGrid(isDark, ref),
           
           const SizedBox(height: 16),
           
@@ -162,7 +162,25 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     );
   }
 
-  Widget _buildCalendarGrid(bool isDark) {
+  Widget _buildCalendarGrid(bool isDark, WidgetRef ref) {
+    final scheduleAsync = ref.watch(scheduleControllerProvider);
+    final childrenAsync = ref.watch(childrenControllerProvider);
+    final user = ref.watch(authControllerProvider);
+
+    final children = childrenAsync.value ?? [];
+    final allClasses = scheduleAsync.value ?? [];
+
+    var enrolledClasses = allClasses.where((c) {
+      return c.enrolledChildIds.any((enrolledId) => 
+        (user != null && user.id == enrolledId) || 
+        children.any((child) => child.id == enrolledId)
+      );
+    }).toList();
+
+    if (selectedChildId != null && selectedChildId != 'all') {
+      enrolledClasses = enrolledClasses.where((c) => c.enrolledChildIds.contains(selectedChildId)).toList();
+    }
+
     final daysInMonth = DateUtils.getDaysInMonth(selectedDate.year, selectedDate.month);
     final firstDayOffset = DateTime(selectedDate.year, selectedDate.month, 1).weekday - 1;
     final totalCells = ((daysInMonth + firstDayOffset) / 7).ceil() * 7;
@@ -198,6 +216,12 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               final day = index - firstDayOffset + 1;
               final isSelected = selectedDate.day == day;
               final isToday = DateTime.now().year == selectedDate.year && DateTime.now().month == selectedDate.month && DateTime.now().day == day;
+              
+              final currentCellDate = DateTime(selectedDate.year, selectedDate.month, day);
+              final hasClasses = enrolledClasses.any((c) => 
+                  c.startTime.year == currentCellDate.year && 
+                  c.startTime.month == currentCellDate.month && 
+                  c.startTime.day == currentCellDate.day);
 
               return GestureDetector(
                 onTap: () {
@@ -212,11 +236,35 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                         : (isToday ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.1)) : Colors.transparent),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(
-                    child: Text('$day', style: TextStyle(
-                      color: isSelected ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white : Colors.black),
-                      fontWeight: (isSelected || isToday) ? FontWeight.bold : FontWeight.normal,
-                    )),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Text('$day', style: TextStyle(
+                        color: isSelected ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white : Colors.black),
+                        fontWeight: (isSelected || isToday) ? FontWeight.bold : FontWeight.normal,
+                      )),
+                      if (hasClasses)
+                        Positioned(
+                          bottom: 6,
+                          child: Container(
+                            width: 14,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                  ? (isDark ? Colors.black.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.7)) 
+                                  : (isDark ? Colors.cyanAccent : AppTheme.primaryBlue),
+                              borderRadius: BorderRadius.circular(2),
+                              boxShadow: isSelected ? null : [
+                                BoxShadow(
+                                  color: (isDark ? Colors.cyanAccent : AppTheme.primaryBlue).withValues(alpha: 0.5),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               );

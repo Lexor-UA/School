@@ -96,84 +96,11 @@ class ParentProfileTab extends ConsumerWidget {
   }
 
   void _showAddChildDialog(BuildContext context, WidgetRef ref, bool isDark) {
-    final nameController = TextEditingController();
-    final ageController = TextEditingController();
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              top: 24,
-              left: 24,
-              right: 24,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('parent.add_child'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 24),
-                
-                TextField(
-                  controller: nameController,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  decoration: InputDecoration(
-                    labelText: "parent.child_name".tr(),
-                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                    filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                TextField(
-                  controller: ageController,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "parent.child_age".tr(),
-                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                    filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (nameController.text.trim().isNotEmpty) {
-                        final age = int.tryParse(ageController.text.trim());
-                        ref.read(childrenControllerProvider.notifier).addChild(nameController.text.trim(), age);
-                        Navigator.pop(ctx);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Text('parent.save'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      builder: (ctx) => _AddChildSheet(isDark: isDark),
     );
   }
 
@@ -301,6 +228,191 @@ class ParentProfileTab extends ConsumerWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Закрити'),
           )
+        ],
+      ),
+    );
+  }
+}
+
+class _AddChildSheet extends ConsumerStatefulWidget {
+  final bool isDark;
+  const _AddChildSheet({required this.isDark});
+
+  @override
+  ConsumerState<_AddChildSheet> createState() => _AddChildSheetState();
+}
+
+class _AddChildSheetState extends ConsumerState<_AddChildSheet> {
+  int _childCount = 1;
+  final List<TextEditingController> _nameControllers = [TextEditingController()];
+  final List<TextEditingController> _ageControllers = [TextEditingController()];
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    for (var c in _nameControllers) {
+      c.dispose();
+    }
+    for (var c in _ageControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addChild() {
+    setState(() {
+      _childCount++;
+      _nameControllers.add(TextEditingController());
+      _ageControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeChild() {
+    if (_childCount > 1) {
+      setState(() {
+        _childCount--;
+        _nameControllers.last.dispose();
+        _ageControllers.last.dispose();
+        _nameControllers.removeLast();
+        _ageControllers.removeLast();
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _isLoading = true);
+    final futures = <Future>[];
+    for (int i = 0; i < _childCount; i++) {
+      final name = _nameControllers[i].text.trim();
+      if (name.isNotEmpty) {
+        final age = int.tryParse(_ageControllers[i].text.trim());
+        futures.add(ref.read(childrenControllerProvider.notifier).addChild(name, age));
+      }
+    }
+    
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        top: 24,
+        left: 24,
+        right: 24,
+      ),
+      decoration: BoxDecoration(
+        color: widget.isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'parent.add_child'.tr(),
+                style: TextStyle(color: widget.isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(LucideIcons.minusCircle, color: widget.isDark ? Colors.white70 : Colors.black87),
+                    onPressed: _removeChild,
+                  ),
+                  Text(
+                    '$_childCount',
+                    style: TextStyle(color: widget.isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: Icon(LucideIcons.plusCircle, color: widget.isDark ? Colors.white70 : Colors.black87),
+                    onPressed: _addChild,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: _childCount,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: widget.isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Дитина ${index + 1}',
+                        style: TextStyle(
+                          color: widget.isDark ? Colors.white70 : Colors.black87,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _nameControllers[index],
+                        style: TextStyle(color: widget.isDark ? Colors.white : Colors.black),
+                        decoration: InputDecoration(
+                          labelText: "parent.child_name".tr(),
+                          labelStyle: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54),
+                          filled: true,
+                          fillColor: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _ageControllers[index],
+                        style: TextStyle(color: widget.isDark ? Colors.white : Colors.black),
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: "parent.child_age".tr(),
+                          labelStyle: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54),
+                          filled: true,
+                          fillColor: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.cyanAccent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: _isLoading
+                  ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                  : Text('parent.save'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
         ],
       ),
     );

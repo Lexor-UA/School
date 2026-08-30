@@ -31,8 +31,8 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     {'name': 'Абонемент на 12 тренуваннь', 'price': '2600 грн', 'classes': 12, 'validityDays': 30},
     {'name': 'Разове тренування у групі', 'price': '500 грн', 'classes': 1, 'validityDays': 1},
     {'name': 'Разове відвідування/доросла група', 'price': '600 грн', 'classes': 1, 'validityDays': 2},
-    {'name': 'Абонемент на 4 тренування(ДОРОСЛА ГРУПА)', 'price': '1600 грн', 'classes': 4, 'validityDays': 30},
-    {'name': 'Абонемент на 8 тренувань(ДОРОСЛА ГРУПА)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30},
+    {'name': 'Абонемент на 4 тренування (ДОРОСЛА ГРУПА)', 'price': '1600 грн', 'classes': 4, 'validityDays': 30},
+    {'name': 'Абонемент на 8 тренувань (ДОРОСЛА ГРУПА)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30},
   ];
 
   void _payForSubscription(String userId, String owner, String selectedService) async {
@@ -418,29 +418,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             const SizedBox(height: 24),
 
             // Action Button
-            if (activeSubs.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(LucideIcons.info, color: Colors.orangeAccent),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'У цього профілю вже є активний абонемент. Використайте його перед покупкою нового.',
-                        style: TextStyle(color: Colors.orangeAccent, fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(delay: 500.ms)
-            else
+
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8.0),
                 width: double.infinity,

@@ -42,8 +42,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     {'name': 'Абонемент на 12 тренуваннь', 'classes': 12, 'validityDays': 30},
     {'name': 'Разове тренування у групі', 'classes': 1, 'validityDays': 1},
     {'name': 'Разове відвідування/доросла група', 'classes': 1, 'validityDays': 2},
-    {'name': 'Абонемент на 4 тренування(ДОРОСЛА ГРУПА)', 'classes': 4, 'validityDays': 30},
-    {'name': 'Абонемент на 8 тренувань(ДОРОСЛА ГРУПА)', 'classes': 8, 'validityDays': 30},
+    {'name': 'Абонемент на 4 тренування (ДОРОСЛА ГРУПА)', 'classes': 4, 'validityDays': 30},
+    {'name': 'Абонемент на 8 тренувань (ДОРОСЛА ГРУПА)', 'classes': 8, 'validityDays': 30},
   ];
 
   @override

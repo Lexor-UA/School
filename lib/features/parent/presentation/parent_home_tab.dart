@@ -10,6 +10,10 @@ import 'dart:ui';
 import 'package:swimming_school_app/features/parent/presentation/pool_map_screen.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription.dart';
+import 'package:swimming_school_app/shared/widgets/subscription_front_card.dart';
+import 'package:swimming_school_app/shared/widgets/subscription_qr_card.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_progress_tab.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
@@ -135,6 +139,21 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
 
     bool hasClassesToday = todaysUpcomingClasses.isNotEmpty;
 
+    // Fetch active subscription for the main user (or default)
+    final allSubs = user != null ? ref.watch(subscriptionControllerProvider.notifier).getSubscriptionsForUser(user.id) : <Subscription>[];
+    final activeSubs = allSubs.where((s) => s.isActive).toList();
+    
+    // Sort so primary user's sub comes first if available, else first active
+    activeSubs.sort((a, b) {
+      if (user != null) {
+        if (a.ownerName == user.name && b.ownerName != user.name) return -1;
+        if (a.ownerName != user.name && b.ownerName == user.name) return 1;
+      }
+      return 0;
+    });
+    
+    final currentSub = activeSubs.isNotEmpty ? activeSubs.first : null;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24.0, 60.0, 24.0, 24.0),
@@ -205,6 +224,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
           
           const SizedBox(height: 24),
 
+          // 3. PROGRESS ROW
           _buildActionRow(
             context: context,
             title: 'parent.progress'.tr(),
@@ -220,8 +240,26 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
           ),
           const SizedBox(height: 32),
 
-          // 5. 3D POOL SIMPLIFIED BUTTON
+          // 4. 3D POOL SIMPLIFIED BUTTON
           _build3DPoolButton(context, isDark, accentColor),
+          
+          const SizedBox(height: 32),
+
+          // 5. SUBSCRIPTION CARD
+          SubscriptionFrontCard(
+            currentSub: currentSub,
+            onTap: () {
+              ref.read(parentTabProvider.notifier).setTab(2); // Navigate to Subscription tab
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // 6. QR CODE CARD
+          SubscriptionQrCard(
+            currentSub: currentSub,
+            isDark: isDark,
+          ),
 
           const SizedBox(height: 140), // Space for bottom nav
         ],

@@ -303,7 +303,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         borderRadius: BorderRadius.circular(24),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(24),
@@ -326,7 +326,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     child: Icon(icon, color: accentColor, size: 28),
                   ),
                   const SizedBox(height: 12),
-                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  ),
                 ],
               ),
             ),

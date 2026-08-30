@@ -169,12 +169,12 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                   data['id'] = d.id;
                   return GroupClass.fromJson(data);
                 }).where((c) {
-                  final d1 = c.date;
+                  final d1 = c.startTime;
                   final d2 = _selectedDate;
                   return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
                 }).toList();
                 
-                classes.sort((a, b) => a.date.compareTo(b.date));
+                classes.sort((a, b) => a.startTime.compareTo(b.startTime));
                 
                 if (classes.isEmpty) {
                   return const Center(child: Text('Немає занять на цей день', style: TextStyle(color: Colors.white54)));
@@ -203,7 +203,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${c.time} - ${c.category}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                Text('${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')} - ${c.category}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
                                 Text(c.lane.isNotEmpty ? c.lane : 'Основний басейн', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                               ],

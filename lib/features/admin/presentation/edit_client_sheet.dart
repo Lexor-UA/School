@@ -501,7 +501,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   return GroupClass.fromJson(data);
                 }).toList();
                 
-                classes.sort((a, b) => a.date.compareTo(b.date));
+                classes.sort((a, b) => a.startTime.compareTo(b.startTime));
 
                 return Column(
                   children: classes.map((session) {
@@ -522,7 +522,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${DateFormat('dd.MM.yyyy').format(session.date)} о ${session.time}',
+                                  '${DateFormat('dd.MM.yyyy').format(session.startTime)} о ${session.startTime.hour.toString().padLeft(2, '0')}:${session.startTime.minute.toString().padLeft(2, '0')}',
                                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                 ),
                               ),

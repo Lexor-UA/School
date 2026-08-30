@@ -30,6 +30,21 @@
     "login_action": "ANMELDEN",
     "login_error": "Anmeldefehler: {}"
   },
+  "onboarding": {
+    "welcome": "Willkommen!",
+    "tell_about_yourself": "Erzählen Sie etwas über sich",
+    "name_hint": "Ihr Vor- und Nachname",
+    "name_error": "Geben Sie Ihren Namen ein",
+    "phone_hint": "Telefonnummer",
+    "phone_error": "Geben Sie Ihre Telefonnummer ein",
+    "add_child": "Ein Kind hinzufügen?",
+    "child_name_hint": "Name des Kindes",
+    "child_name_error": "Geben Sie den Namen des Kindes ein",
+    "child_age_hint": "Alter des Kindes (Jahre)",
+    "child_age_error": "Geben Sie das Alter ein",
+    "complete_registration": "Registrierung abschließen",
+    "registration_error": "Registrierungsfehler: {}"
+  },
   "coach.status_expected": "Erwartet",
   "coach.status_present_f": "Anwesend",
   "coach.level_beginner": "Anfänger",

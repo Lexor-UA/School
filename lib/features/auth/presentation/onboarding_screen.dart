@@ -6,6 +6,7 @@ import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'dart:ui';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -58,7 +59,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Помилка реєстрації: $e')),
+          SnackBar(content: Text('onboarding.registration_error'.tr(args: [e.toString()]))),
         );
         setState(() => _isLoading = false);
       }
@@ -119,10 +120,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
-                              'Вітаємо!',
+                            Text(
+                              'onboarding.welcome'.tr(),
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
@@ -131,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0),
                             const SizedBox(height: 8),
                             Text(
-                              'Розкажіть трохи про себе',
+                              'onboarding.tell_about_yourself'.tr(),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.7),
@@ -143,8 +144,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             _buildTextField(
                               controller: _nameController,
                               icon: LucideIcons.user,
-                              hint: 'Ваше ім\'я та прізвище',
-                              validator: (v) => v == null || v.isEmpty ? 'Введіть ім\'я' : null,
+                              hint: 'onboarding.name_hint'.tr(),
+                              validator: (v) => v == null || v.isEmpty ? 'onboarding.name_error'.tr() : null,
                             ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
                             
                             const SizedBox(height: 16),
@@ -152,9 +153,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             _buildTextField(
                               controller: _phoneController,
                               icon: LucideIcons.phone,
-                              hint: 'Номер телефону',
+                              hint: 'onboarding.phone_hint'.tr(),
                               keyboardType: TextInputType.phone,
-                              validator: (v) => v == null || v.isEmpty ? 'Введіть телефон' : null,
+                              validator: (v) => v == null || v.isEmpty ? 'onboarding.phone_error'.tr() : null,
                             ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
                             
                             const SizedBox(height: 24),
@@ -171,21 +172,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(alpha: 0.15),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(LucideIcons.baby, color: AppTheme.primaryBlue, size: 20),
+                                    child: const Icon(LucideIcons.baby, color: Colors.white, size: 20),
                                   ),
                                   const SizedBox(width: 16),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
-                                      'Додати дитину?',
-                                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      'onboarding.add_child'.tr(),
+                                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                                     ),
                                   ),
                                   Switch(
                                     value: _addChild,
-                                    activeColor: AppTheme.primaryBlue,
+                                    activeColor: Colors.white,
+                                    activeTrackColor: Colors.blueAccent,
+                                    inactiveThumbColor: Colors.white70,
+                                    inactiveTrackColor: Colors.white24,
                                     onChanged: (v) => setState(() => _addChild = v),
                                   ),
                                 ],
@@ -197,16 +201,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               _buildTextField(
                                 controller: _childNameController,
                                 icon: LucideIcons.user,
-                                hint: 'Ім\'я дитини',
-                                validator: (v) => v == null || v.isEmpty ? 'Введіть ім\'я дитини' : null,
+                                hint: 'onboarding.child_name_hint'.tr(),
+                                validator: (v) => v == null || v.isEmpty ? 'onboarding.child_name_error'.tr() : null,
                               ).animate().fadeIn(duration: 400.ms),
                               const SizedBox(height: 16),
                               _buildTextField(
                                 controller: _childAgeController,
                                 icon: LucideIcons.calendar,
-                                hint: 'Вік дитини (років)',
+                                hint: 'onboarding.child_age_hint'.tr(),
                                 keyboardType: TextInputType.number,
-                                validator: (v) => v == null || v.isEmpty ? 'Введіть вік' : null,
+                                validator: (v) => v == null || v.isEmpty ? 'onboarding.child_age_error'.tr() : null,
                               ).animate().fadeIn(duration: 400.ms),
                             ],
                             
@@ -231,9 +235,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         width: 24,
                                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                       )
-                                    : const Text(
-                                        'Завершити реєстрацію',
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                                    : Text(
+                                        'onboarding.complete_registration'.tr(),
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
                                       ),
                               ),
                             ).animate().fadeIn(delay: 800.ms, duration: 600.ms).slideY(begin: 0.2, end: 0),

@@ -30,6 +30,21 @@
     "login_action": "УВІЙТИ",
     "login_error": "Помилка входу: {}"
   },
+  "onboarding": {
+    "welcome": "Вітаємо!",
+    "tell_about_yourself": "Розкажіть трохи про себе",
+    "name_hint": "Ваше ім'я та прізвище",
+    "name_error": "Введіть ім'я",
+    "phone_hint": "Номер телефону",
+    "phone_error": "Введіть телефон",
+    "add_child": "Додати дитину?",
+    "child_name_hint": "Ім'я дитини",
+    "child_name_error": "Введіть ім'я дитини",
+    "child_age_hint": "Вік дитини (років)",
+    "child_age_error": "Введіть вік",
+    "complete_registration": "Завершити реєстрацію",
+    "registration_error": "Помилка реєстрації: {}"
+  },
   "coach.status_expected": "Очікується",
   "coach.status_present_f": "Присутня",
   "coach.level_beginner": "Початківець",

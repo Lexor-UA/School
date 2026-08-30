@@ -30,6 +30,21 @@
     "login_action": "ВОЙТИ",
     "login_error": "Ошибка входа: {}"
   },
+  "onboarding": {
+    "welcome": "Добро пожаловать!",
+    "tell_about_yourself": "Расскажите немного о себе",
+    "name_hint": "Ваше имя и фамилия",
+    "name_error": "Введите имя",
+    "phone_hint": "Номер телефона",
+    "phone_error": "Введите телефон",
+    "add_child": "Добавить ребенка?",
+    "child_name_hint": "Имя ребенка",
+    "child_name_error": "Введите имя ребенка",
+    "child_age_hint": "Возраст ребенка (лет)",
+    "child_age_error": "Введите возраст",
+    "complete_registration": "Завершить регистрацию",
+    "registration_error": "Ошибка регистрации: {}"
+  },
   "coach.status_expected": "Ожидается",
   "coach.status_present_f": "Присутствует",
   "coach.level_beginner": "Начинающий",

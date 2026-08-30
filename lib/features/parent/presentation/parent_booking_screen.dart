@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
@@ -8,6 +9,8 @@ import 'package:swimming_school_app/features/parent/controllers/children_control
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 
 class ParentBookingScreen extends ConsumerStatefulWidget {
   final DateTime date;
@@ -20,7 +23,7 @@ class ParentBookingScreen extends ConsumerStatefulWidget {
 
 class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   GroupClass? selectedClass;
-  Child? selectedChild;
+  String? selectedUserId;
   bool isBooking = false;
   bool showSuccess = false;
 
@@ -35,7 +38,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : AppTheme.backgroundGrey,
       appBar: AppBar(
-        title: const Text('Запис на заняття', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('parent.class_booking'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: Icon(LucideIcons.chevronLeft, color: isDark ? Colors.white : Colors.black),
           onPressed: () => context.pop(),
@@ -49,7 +52,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               children: [
                 if (selectedClass == null) ...[
                   Text(
-                    'Доступні заняття на ${_formatDate(widget.date)}',
+                    'parent.available_classes_for'.tr(args: [_formatDate(widget.date)]),
                     style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -58,10 +61,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Обране заняття', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text('parent.selected_class'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
                       TextButton(
-                        onPressed: () => setState(() { selectedClass = null; selectedChild = null; }),
-                        child: const Text('Змінити', style: TextStyle(color: Colors.cyanAccent)),
+                        onPressed: () => setState(() { selectedClass = null; selectedUserId = null; }),
+                        child: Text('parent.change'.tr(), style: const TextStyle(color: Colors.cyanAccent)),
                       ),
                     ],
                   ),
@@ -69,7 +72,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   const SizedBox(height: 32),
                   
                   // Step 2: Select Child (Real data from Firebase)
-                  Text('Для кого?', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text('parent.for_whom'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   _buildChildSelectionList(isDark),
                 ]
@@ -78,7 +81,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           ),
 
           // Step 3: Confirm Button
-          if (selectedClass != null && selectedChild != null)
+          if (selectedClass != null && selectedUserId != null)
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: SizedBox(
@@ -93,7 +96,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   ),
                   child: isBooking
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 3))
-                      : const Text('Підтвердити запис', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      : Text('parent.confirm_record'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ).animate().slideY(begin: 0.2, end: 0).fadeIn(),
             )
@@ -115,7 +118,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 children: [
                   Icon(LucideIcons.calendarOff, size: 48, color: isDark ? Colors.white54 : Colors.black54),
                   const SizedBox(height: 16),
-                  Text('На цей день немає вільних занять', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                  Text('parent.no_classes_this_day'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
                 ],
               ),
             ),
@@ -170,14 +173,14 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                     Text(c.title, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(
-                      '${c.maxCapacity - c.enrolledChildIds.length} місць вільних · ${c.lane.isNotEmpty ? c.lane : 'Басейн'}',
+                      'parent.places_left'.tr(args: [(c.maxCapacity - c.enrolledChildIds.length).toString()]) + ' · ' + (c.lane.isNotEmpty ? c.lane : 'parent.main_pool'.tr()),
                       style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13),
                     ),
                   ],
                 ),
               ),
               if (isFull)
-                const Text('Заповнено', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12))
+                Text('parent.full'.tr(), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12))
               else
                 Icon(LucideIcons.chevronRight, color: isDark ? Colors.cyanAccent : AppTheme.primaryBlue),
             ],
@@ -222,7 +225,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             children: [
               Icon(LucideIcons.mapPin, color: isDark ? Colors.white54 : Colors.black54, size: 16),
               const SizedBox(width: 8),
-              Text(c.lane.isNotEmpty ? c.lane : 'Основний басейн', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+              Text(c.lane.isNotEmpty ? c.lane : 'parent.main_pool'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
             ],
           ),
         ],
@@ -231,13 +234,16 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   }
 
   Widget _buildChildSelectionList(bool isDark) {
+    final user = ref.watch(authControllerProvider);
+    
     return ref.watch(childrenControllerProvider).when(
       data: (children) {
-        if (children.isEmpty) {
-          return const Text('У вашому профілі ще немає доданих дітей.', style: TextStyle(color: Colors.redAccent));
-        }
         return Column(
-          children: children.map((child) => _buildChildSelectionCard(child, isDark)).toList(),
+          children: [
+            if (user != null)
+              _buildSelectionCard(user.id, user.name, Colors.blue, isDark, true),
+            ...children.map((child) => _buildSelectionCard(child.id, child.name, Color(int.tryParse(child.colorHex) ?? 0xFF000000), isDark, false)),
+          ],
         );
       },
       loading: () => const CircularProgressIndicator(),
@@ -245,12 +251,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     );
   }
 
-  Widget _buildChildSelectionCard(Child child, bool isDark) {
-    final bool isSelected = selectedChild?.id == child.id;
-    final color = Color(int.tryParse(child.colorHex) ?? 0xFF000000);
+  Widget _buildSelectionCard(String id, String name, Color color, bool isDark, bool isParent) {
+    final bool isSelected = selectedUserId == id;
 
     return GestureDetector(
-      onTap: () => setState(() => selectedChild = child),
+      onTap: () => setState(() => selectedUserId = id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -264,15 +269,31 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.8), shape: BoxShape.circle),
-              child: Center(child: Text(child.name.isNotEmpty ? child.name[0] : '?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))),
-            ),
+            if (!isParent) ...[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold))),
+              ),
+            ] else ...[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(child: Icon(LucideIcons.user, color: Colors.blue, size: 24)),
+              ),
+            ],
             const SizedBox(width: 16),
-            Text(child.name, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-            const Spacer(),
+            Expanded(
+              child: Text(name, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),const Spacer(),
             if (isSelected)
               Icon(LucideIcons.checkCircle2, color: color)
             else
@@ -291,10 +312,49 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   }
 
   Future<void> _confirmBooking() async {
-    setState(() => isBooking = true);
+    if (selectedClass == null || selectedUserId == null) return;
     
-    // Use the real schedule controller method to book
-    bool success = await ref.read(scheduleControllerProvider.notifier).bookClass(selectedClass!.id, selectedChild!.id);
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+    
+    String ownerName = user.name;
+    if (selectedUserId != user.id) {
+       final childrenAsync = ref.read(childrenControllerProvider);
+       final children = childrenAsync.value ?? [];
+       try {
+         ownerName = children.firstWhere((c) => c.id == selectedUserId).name;
+       } catch (e) {}
+    }
+    
+    final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
+    final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName);
+    
+    if (subscription == null || subscription.remainingClasses <= 0) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1E293B),
+            title: const Text('Немає абонемента', style: TextStyle(color: Colors.white)),
+            content: Text('Для запису необхідно мати оплачений абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?', style: const TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Close booking modal
+                },
+                child: const Text('Зрозуміло', style: TextStyle(color: Colors.cyanAccent)),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => isBooking = true);
+    final success = await ref.read(scheduleControllerProvider.notifier).bookClass(selectedClass!.id, selectedUserId!);
     
     if (mounted) {
       if (success) {
@@ -305,7 +365,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       } else {
         setState(() => isBooking = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Помилка запису. Можливо немає місць або абонемент неактивний.')),
+          SnackBar(content: Text('parent.booking_error_msg'.tr())),
         );
       }
     }
@@ -330,12 +390,12 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
               const SizedBox(height: 32),
               Text(
-                'Готово!',
+                'parent.done'.tr(),
                 style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 32, fontWeight: FontWeight.bold),
               ).animate().fadeIn(delay: 200.ms),
               const SizedBox(height: 16),
               Text(
-                '${selectedChild?.name ?? 'Дитину'} записано на тренування ${_formatDate(widget.date)} о ${selectedClass?.startTime.hour.toString().padLeft(2, '0')}:00',
+                'parent.child_enrolled_time'.tr(args: ['Запис', _formatDate(widget.date), selectedClass?.startTime.hour.toString().padLeft(2, '0') ?? '']),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16, height: 1.5),
               ).animate().fadeIn(delay: 400.ms),
@@ -350,7 +410,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('Добре', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text('parent.ok'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ).animate().fadeIn(delay: 600.ms),
             ],

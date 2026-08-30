@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Subscription {
 
- String get id; String get userId; int get totalClasses; int get remainingClasses; bool get isActive;
+ String get id; String get userId; int get totalClasses; int get remainingClasses; bool get isActive; String? get serviceName; DateTime? get expiryDate; String? get ownerName;
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SubscriptionCopyWith<Subscription> get copyWith => _$SubscriptionCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive);
+int get hashCode => Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName);
 
 @override
 String toString() {
-  return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive)';
+  return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SubscriptionCopyWith<$Res>  {
   factory $SubscriptionCopyWith(Subscription value, $Res Function(Subscription) _then) = _$SubscriptionCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, int totalClasses, int remainingClasses, bool isActive
+ String id, String userId, int totalClasses, int remainingClasses, bool isActive, String? serviceName, DateTime? expiryDate, String? ownerName
 });
 
 
@@ -65,14 +65,17 @@ class _$SubscriptionCopyWithImpl<$Res>
 
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,totalClasses: null == totalClasses ? _self.totalClasses : totalClasses // ignore: cast_nullable_to_non_nullable
 as int,remainingClasses: null == remainingClasses ? _self.remainingClasses : remainingClasses // ignore: cast_nullable_to_non_nullable
 as int,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,serviceName: freezed == serviceName ? _self.serviceName : serviceName // ignore: cast_nullable_to_non_nullable
+as String?,expiryDate: freezed == expiryDate ? _self.expiryDate : expiryDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,ownerName: freezed == ownerName ? _self.ownerName : ownerName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -157,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Subscription() when $default != null:
-return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive);case _:
+return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName);case _:
   return orElse();
 
 }
@@ -178,10 +181,10 @@ return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName)  $default,) {final _that = this;
 switch (_that) {
 case _Subscription():
-return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive);case _:
+return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +201,10 @@ return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName)?  $default,) {final _that = this;
 switch (_that) {
 case _Subscription() when $default != null:
-return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive);case _:
+return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName);case _:
   return null;
 
 }
@@ -213,7 +216,7 @@ return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,
 @JsonSerializable()
 
 class _Subscription implements Subscription {
-  const _Subscription({required this.id, required this.userId, required this.totalClasses, required this.remainingClasses, required this.isActive});
+  const _Subscription({required this.id, required this.userId, required this.totalClasses, required this.remainingClasses, required this.isActive, this.serviceName, this.expiryDate, this.ownerName});
   factory _Subscription.fromJson(Map<String, dynamic> json) => _$SubscriptionFromJson(json);
 
 @override final  String id;
@@ -221,6 +224,9 @@ class _Subscription implements Subscription {
 @override final  int totalClasses;
 @override final  int remainingClasses;
 @override final  bool isActive;
+@override final  String? serviceName;
+@override final  DateTime? expiryDate;
+@override final  String? ownerName;
 
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive);
+int get hashCode => Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName);
 
 @override
 String toString() {
-  return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive)';
+  return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName)';
 }
 
 
@@ -255,7 +261,7 @@ abstract mixin class _$SubscriptionCopyWith<$Res> implements $SubscriptionCopyWi
   factory _$SubscriptionCopyWith(_Subscription value, $Res Function(_Subscription) _then) = __$SubscriptionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, int totalClasses, int remainingClasses, bool isActive
+ String id, String userId, int totalClasses, int remainingClasses, bool isActive, String? serviceName, DateTime? expiryDate, String? ownerName
 });
 
 
@@ -272,14 +278,17 @@ class __$SubscriptionCopyWithImpl<$Res>
 
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,}) {
   return _then(_Subscription(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,totalClasses: null == totalClasses ? _self.totalClasses : totalClasses // ignore: cast_nullable_to_non_nullable
 as int,remainingClasses: null == remainingClasses ? _self.remainingClasses : remainingClasses // ignore: cast_nullable_to_non_nullable
 as int,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,serviceName: freezed == serviceName ? _self.serviceName : serviceName // ignore: cast_nullable_to_non_nullable
+as String?,expiryDate: freezed == expiryDate ? _self.expiryDate : expiryDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,ownerName: freezed == ownerName ? _self.ownerName : ownerName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

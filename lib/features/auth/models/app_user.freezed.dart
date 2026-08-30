@@ -290,7 +290,7 @@ as bool,
 /// @nodoc
 mixin _$AppUser {
 
- String get id; String get name; UserRole get role; int get level; int get xp; int get maxXp; List<Achievement> get achievements; String get avatarUrl;@JsonKey(includeFromJson: false, includeToJson: false) Uint8List? get avatarBytes;
+ String get id; String get name; UserRole get role; String? get phone; String? get loginId; int get level; int get xp; int get maxXp; List<Achievement> get achievements; String get avatarUrl;@JsonKey(includeFromJson: false, includeToJson: false) Uint8List? get avatarBytes;
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -303,16 +303,16 @@ $AppUserCopyWith<AppUser> get copyWith => _$AppUserCopyWithImpl<AppUser>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.loginId, loginId) || other.loginId == loginId)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,role,level,xp,maxXp,const DeepCollectionEquality().hash(achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
+int get hashCode => Object.hash(runtimeType,id,name,role,phone,loginId,level,xp,maxXp,const DeepCollectionEquality().hash(achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
 
 @override
 String toString() {
-  return 'AppUser(id: $id, name: $name, role: $role, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
+  return 'AppUser(id: $id, name: $name, role: $role, phone: $phone, loginId: $loginId, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
 }
 
 
@@ -323,7 +323,7 @@ abstract mixin class $AppUserCopyWith<$Res>  {
   factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) _then) = _$AppUserCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, UserRole role, int level, int xp, int maxXp, List<Achievement> achievements, String avatarUrl,@JsonKey(includeFromJson: false, includeToJson: false) Uint8List? avatarBytes
+ String id, String name, UserRole role, String? phone, String? loginId, int level, int xp, int maxXp, List<Achievement> achievements, String avatarUrl,@JsonKey(includeFromJson: false, includeToJson: false) Uint8List? avatarBytes
 });
 
 
@@ -340,12 +340,14 @@ class _$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? role = null,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,Object? avatarUrl = null,Object? avatarBytes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? role = null,Object? phone = freezed,Object? loginId = freezed,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,Object? avatarUrl = null,Object? avatarBytes = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as UserRole,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
+as UserRole,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,loginId: freezed == loginId ? _self.loginId : loginId // ignore: cast_nullable_to_non_nullable
+as String?,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
 as int,xp: null == xp ? _self.xp : xp // ignore: cast_nullable_to_non_nullable
 as int,maxXp: null == maxXp ? _self.maxXp : maxXp // ignore: cast_nullable_to_non_nullable
 as int,achievements: null == achievements ? _self.achievements : achievements // ignore: cast_nullable_to_non_nullable
@@ -436,10 +438,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  UserRole role,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String avatarUrl, @JsonKey(includeFromJson: false, includeToJson: false)  Uint8List? avatarBytes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  UserRole role,  String? phone,  String? loginId,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String avatarUrl, @JsonKey(includeFromJson: false, includeToJson: false)  Uint8List? avatarBytes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.id,_that.name,_that.role,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.avatarUrl,_that.avatarBytes);case _:
+return $default(_that.id,_that.name,_that.role,_that.phone,_that.loginId,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.avatarUrl,_that.avatarBytes);case _:
   return orElse();
 
 }
@@ -457,10 +459,10 @@ return $default(_that.id,_that.name,_that.role,_that.level,_that.xp,_that.maxXp,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  UserRole role,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String avatarUrl, @JsonKey(includeFromJson: false, includeToJson: false)  Uint8List? avatarBytes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  UserRole role,  String? phone,  String? loginId,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String avatarUrl, @JsonKey(includeFromJson: false, includeToJson: false)  Uint8List? avatarBytes)  $default,) {final _that = this;
 switch (_that) {
 case _AppUser():
-return $default(_that.id,_that.name,_that.role,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.avatarUrl,_that.avatarBytes);case _:
+return $default(_that.id,_that.name,_that.role,_that.phone,_that.loginId,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.avatarUrl,_that.avatarBytes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -477,10 +479,10 @@ return $default(_that.id,_that.name,_that.role,_that.level,_that.xp,_that.maxXp,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  UserRole role,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String avatarUrl, @JsonKey(includeFromJson: false, includeToJson: false)  Uint8List? avatarBytes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  UserRole role,  String? phone,  String? loginId,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String avatarUrl, @JsonKey(includeFromJson: false, includeToJson: false)  Uint8List? avatarBytes)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.id,_that.name,_that.role,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.avatarUrl,_that.avatarBytes);case _:
+return $default(_that.id,_that.name,_that.role,_that.phone,_that.loginId,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.avatarUrl,_that.avatarBytes);case _:
   return null;
 
 }
@@ -492,12 +494,14 @@ return $default(_that.id,_that.name,_that.role,_that.level,_that.xp,_that.maxXp,
 @JsonSerializable()
 
 class _AppUser implements AppUser {
-  const _AppUser({required this.id, required this.name, required this.role, this.level = 1, this.xp = 0, this.maxXp = 100, final  List<Achievement> achievements = const [], this.avatarUrl = 'https://ui-avatars.com/api/?name=User', @JsonKey(includeFromJson: false, includeToJson: false) this.avatarBytes}): _achievements = achievements;
+  const _AppUser({required this.id, required this.name, required this.role, this.phone, this.loginId, this.level = 1, this.xp = 0, this.maxXp = 100, final  List<Achievement> achievements = const [], this.avatarUrl = 'https://ui-avatars.com/api/?name=User', @JsonKey(includeFromJson: false, includeToJson: false) this.avatarBytes}): _achievements = achievements;
   factory _AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  UserRole role;
+@override final  String? phone;
+@override final  String? loginId;
 @override@JsonKey() final  int level;
 @override@JsonKey() final  int xp;
 @override@JsonKey() final  int maxXp;
@@ -524,16 +528,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other._achievements, _achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.loginId, loginId) || other.loginId == loginId)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other._achievements, _achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,role,level,xp,maxXp,const DeepCollectionEquality().hash(_achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
+int get hashCode => Object.hash(runtimeType,id,name,role,phone,loginId,level,xp,maxXp,const DeepCollectionEquality().hash(_achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
 
 @override
 String toString() {
-  return 'AppUser(id: $id, name: $name, role: $role, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
+  return 'AppUser(id: $id, name: $name, role: $role, phone: $phone, loginId: $loginId, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
 }
 
 
@@ -544,7 +548,7 @@ abstract mixin class _$AppUserCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   factory _$AppUserCopyWith(_AppUser value, $Res Function(_AppUser) _then) = __$AppUserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, UserRole role, int level, int xp, int maxXp, List<Achievement> achievements, String avatarUrl,@JsonKey(includeFromJson: false, includeToJson: false) Uint8List? avatarBytes
+ String id, String name, UserRole role, String? phone, String? loginId, int level, int xp, int maxXp, List<Achievement> achievements, String avatarUrl,@JsonKey(includeFromJson: false, includeToJson: false) Uint8List? avatarBytes
 });
 
 
@@ -561,12 +565,14 @@ class __$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? role = null,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,Object? avatarUrl = null,Object? avatarBytes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? role = null,Object? phone = freezed,Object? loginId = freezed,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,Object? avatarUrl = null,Object? avatarBytes = freezed,}) {
   return _then(_AppUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as UserRole,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
+as UserRole,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,loginId: freezed == loginId ? _self.loginId : loginId // ignore: cast_nullable_to_non_nullable
+as String?,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
 as int,xp: null == xp ? _self.xp : xp // ignore: cast_nullable_to_non_nullable
 as int,maxXp: null == maxXp ? _self.maxXp : maxXp // ignore: cast_nullable_to_non_nullable
 as int,achievements: null == achievements ? _self._achievements : achievements // ignore: cast_nullable_to_non_nullable

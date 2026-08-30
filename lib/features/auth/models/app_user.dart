@@ -25,6 +25,8 @@ abstract class AppUser with _$AppUser {
     required String id,
     required String name,
     required UserRole role,
+    String? phone,
+    String? loginId,
     @Default(1) int level,
     @Default(0) int xp,
     @Default(100) int maxXp,

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -73,7 +74,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         }
 
         if (authenticated) {
-          if (mounted) _navigateBasedOnRole(targetRole);
+          if (mounted) _navigateBasedOnRole(targetRole, authState);
         } else {
           // User cancelled biometrics or it failed. 
           // Show the login buttons so they can log in manually.
@@ -90,7 +91,12 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     });
   }
 
-  void _navigateBasedOnRole(UserRole role) {
+  void _navigateBasedOnRole(UserRole role, [AppUser? user]) {
+    if (role == UserRole.parent && user != null && user.phone == null) {
+      context.go('/onboarding');
+      return;
+    }
+
     switch (role) {
       case UserRole.parent:
         context.go('/parent');
@@ -115,6 +121,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
     ref.listen(authControllerProvider, (previous, next) {
       if (next != null) {
+        if (next.role == UserRole.parent && next.phone == null) {
+          context.go('/onboarding');
+          return;
+        }
+
         switch (next.role) {
           case UserRole.parent:
             context.go('/parent');
@@ -580,28 +591,28 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   const SizedBox(height: 24),
                   _buildLangItem(
                     context,
-                    'auth.languages.uk'.tr(),
+                    'Ukrainian',
                     'UKR',
                     const Locale('uk'),
                     currentLocale == 'uk',
                   ),
                   _buildLangItem(
                     context,
-                    'auth.languages.en'.tr(),
+                    'English',
                     'ENG',
                     const Locale('en'),
                     currentLocale == 'en',
                   ),
                   _buildLangItem(
                     context,
-                    'auth.languages.ru'.tr(),
+                    'Russian',
                     'RUS',
                     const Locale('ru'),
                     currentLocale == 'ru',
                   ),
                   _buildLangItem(
                     context,
-                    'auth.languages.de'.tr(),
+                    'German',
                     'DEU',
                     const Locale('de'),
                     currentLocale == 'de',
@@ -696,11 +707,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(30),
+                        top: Radius.circular(24),
                       ),
                       border: Border(
                         top: BorderSide(
@@ -715,35 +726,37 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                         Container(
                           width: 40,
                           height: 4,
-                          margin: const EdgeInsets.only(bottom: 24),
+                          margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const Text(
-                          'АВТОРИЗАЦІЯ',
-                          style: TextStyle(
+                        Text(
+                          'auth.authorization'.tr(),
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         TextField(
                           controller: emailController,
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
-                            hintText: 'Email / Логін',
+                            hintText: 'auth.email_login'.tr(),
                             hintStyle: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                             ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             filled: true,
                             fillColor: Colors.black.withValues(alpha: 0.2),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
                             prefixIcon: const Icon(
@@ -752,20 +765,22 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         TextField(
                           controller: passwordController,
                           obscureText: true,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            hintText: 'Пароль',
+                            hintText: 'auth.password'.tr(),
                             hintStyle: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                             ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             filled: true,
                             fillColor: Colors.black.withValues(alpha: 0.2),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
                             prefixIcon: const Icon(
@@ -774,12 +789,12 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         Container(
                               width: double.infinity,
-                              height: 55,
+                              height: 48,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 gradient: const LinearGradient(
                                   colors: [
                                     Color(0xFF00C9FF),
@@ -803,7 +818,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                                 onPressed: isModalLoading
@@ -822,19 +837,15 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               .text
                                               .trim();
 
-                                          // Спочатку закриваємо модалку, щоб не конфліктувати з GoRouter
-                                          if (modalContext.mounted) {
-                                            Navigator.pop(modalContext);
-                                          }
-
-                                          if (context.mounted) {
-                                            setState(() => _isLoading = true);
-                                          }
-
                                           await notifier.signInWithEmail(
                                             email,
                                             password,
                                           );
+                                          
+                                          // Якщо успішно, закриваємо модалку
+                                          if (modalContext.mounted) {
+                                            Navigator.pop(modalContext);
+                                          }
                                         } catch (e) {
                                           if (modalContext.mounted) {
                                             setModalState(
@@ -847,8 +858,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                             ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  'Помилка входу: $e',
+                                                  'auth.login_error'.tr(args: [e.toString()]),
                                                 ),
+                                                backgroundColor: Colors.redAccent,
                                               ),
                                             );
                                           }
@@ -859,9 +871,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                         size: 26,
                                         color: Colors.white,
                                       )
-                                    : const Text(
-                                        'УВІЙТИ',
-                                        style: TextStyle(
+                                    : Text(
+                                        'auth.login_action'.tr(),
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800,

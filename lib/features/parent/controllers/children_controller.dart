@@ -23,7 +23,7 @@ class ChildrenController extends _$ChildrenController {
     });
   }
 
-  Future<void> addChild(String name, String colorHex) async {
+  Future<void> addChild(String name, int? age) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return;
 
@@ -32,7 +32,7 @@ class ChildrenController extends _$ChildrenController {
       id: docRef.id,
       parentId: user.id,
       name: name,
-      colorHex: colorHex,
+      age: age,
     );
 
     await docRef.set(newChild.toJson());

@@ -7,7 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_home_tab.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_calendar_tab.dart';
-import 'package:swimming_school_app/features/parent/presentation/parent_progress_tab.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_profile_tab.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
@@ -34,7 +34,7 @@ class _ParentMainState extends ConsumerState<ParentMain> {
   final List<Widget> _tabs = const [
     ParentHomeTab(),
     ParentCalendarTab(),
-    ParentProgressTab(),
+    ParentSubscriptionTab(),
     ParentProfileTab(),
   ];
 
@@ -113,7 +113,7 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     tabs: [
                       GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
                       GButton(icon: LucideIcons.calendarDays, text: 'Календар'),
-                      GButton(icon: LucideIcons.trendingUp, text: 'Прогрес'),
+                      GButton(icon: LucideIcons.creditCard, text: 'Абонемент'),
                       GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
                     ],
                     selectedIndex: selectedIndex,

@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,6 +12,7 @@ import 'package:swimming_school_app/features/parent/presentation/trophy_room_scr
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_progress_tab.dart';
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -18,6 +20,8 @@ class ParentProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
+    final childrenAsync = ref.watch(childrenControllerProvider);
+    final hasChildren = (childrenAsync.value?.isNotEmpty ?? false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     final textColor = isDark ? Colors.white : const Color(0xFF0A2540);
@@ -50,15 +54,15 @@ class ParentProfileTab extends ConsumerWidget {
                       BoxShadow(color: accentColor.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2),
                     ],
                   ),
-                  child: const AvatarPicker(heroTag: 'hero_avatar_profile', radius: 46),
+                  child: const AvatarPicker(heroTag: 'hero_avatar_profile', radius: 40),
                 ).animate().scale(duration: 400.ms),
                 const SizedBox(height: 16),
                 Text(
                   user?.name ?? 'Андрій',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 200.ms),
                 Text(
-                  'Батьківський акаунт',
+                  hasChildren ? 'Батьківський акаунт' : 'Клієнт',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: accentColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 300.ms),
               ],
@@ -67,28 +71,25 @@ class ParentProfileTab extends ConsumerWidget {
           const SizedBox(height: 32),
           
           // 3. Navigation List
-          _buildSettingsTile(LucideIcons.userPlus, 'Додати дитину', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+          _buildSettingsTile(LucideIcons.userPlus, 'parent.add_child'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
             _showAddChildDialog(context, ref, isDark);
           }),
-          _buildSettingsTile(LucideIcons.trendingUp, 'Мій прогрес', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+          _buildSettingsTile(LucideIcons.trendingUp, 'parent.progress'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
             ref.read(parentTabProvider.notifier).setTab(2);
           }),
-          _buildSettingsTile(LucideIcons.trophy, 'Мої досягнення', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+          _buildSettingsTile(LucideIcons.trophy, 'parent.my_achievements'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
             Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen()));
           }),
-          _buildSettingsTile(LucideIcons.creditCard, 'Абонемент', textColor, textSubColor, cardBgColor, cardBorderColor, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Керування абонементом буде доступне незабаром')));
+          _buildSettingsTile(LucideIcons.settings, 'parent.settings'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            _showSettingsDialog(context, isDark);
           }),
-          _buildSettingsTile(LucideIcons.settings, 'Налаштування', textColor, textSubColor, cardBgColor, cardBorderColor, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Налаштування в розробці')));
-          }),
-          _buildSettingsTile(LucideIcons.helpCircle, 'Допомога', textColor, textSubColor, cardBgColor, cardBorderColor, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Допомога в розробці')));
+          _buildSettingsTile(LucideIcons.helpCircle, 'parent.help'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            _showHelpDialog(context, isDark);
           }),
           
           const SizedBox(height: 32),
           _buildLogoutButton(context, ref, isDark).animate().fadeIn(duration: 400.ms),
-          const SizedBox(height: 100),
+          const SizedBox(height: 140),
         ],
       ),
     );
@@ -96,15 +97,7 @@ class ParentProfileTab extends ConsumerWidget {
 
   void _showAddChildDialog(BuildContext context, WidgetRef ref, bool isDark) {
     final nameController = TextEditingController();
-    String selectedColor = '0xFF40C4FF'; // Default Cyan
-    final colors = {
-      '0xFF40C4FF': Colors.cyanAccent,
-      '0xFF448AFF': Colors.blueAccent,
-      '0xFFE040FB': Colors.purpleAccent,
-      '0xFFFF4081': Colors.pinkAccent,
-      '0xFF69F0AE': Colors.greenAccent,
-      '0xFFFFAB40': Colors.orangeAccent,
-    };
+    final ageController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -127,14 +120,14 @@ class ParentProfileTab extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Додати дитину', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
+                Text('parent.add_child'.tr(), style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24),
                 
                 TextField(
                   controller: nameController,
                   style: TextStyle(color: isDark ? Colors.white : Colors.black),
                   decoration: InputDecoration(
-                    labelText: "Ім'я дитини",
+                    labelText: "parent.child_name".tr(),
                     labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                     filled: true,
                     fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
@@ -143,28 +136,17 @@ class ParentProfileTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                Text('Колір профілю', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: colors.entries.map((entry) {
-                    final isSelected = selectedColor == entry.key;
-                    return GestureDetector(
-                      onTap: () => setModalState(() => selectedColor = entry.key),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: entry.value,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected ? (isDark ? Colors.white : Colors.black) : Colors.transparent,
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                TextField(
+                  controller: ageController,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "parent.child_age".tr(),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  ),
                 ),
                 const SizedBox(height: 32),
 
@@ -173,7 +155,8 @@ class ParentProfileTab extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       if (nameController.text.trim().isNotEmpty) {
-                        ref.read(childrenControllerProvider.notifier).addChild(nameController.text.trim(), selectedColor);
+                        final age = int.tryParse(ageController.text.trim());
+                        ref.read(childrenControllerProvider.notifier).addChild(nameController.text.trim(), age);
                         Navigator.pop(ctx);
                       }
                     },
@@ -183,7 +166,7 @@ class ParentProfileTab extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('Зберегти', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text('parent.save'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -235,18 +218,90 @@ class ParentProfileTab extends ConsumerWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            ref.read(parentTabProvider.notifier).setTab(0);
             ref.read(authControllerProvider.notifier).logout();
             context.go('/');
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(LucideIcons.logOut, color: textCol),
+              Icon(LucideIcons.logOut, color: textCol, size: 20),
               const SizedBox(width: 8),
-              Text('Вийти', style: TextStyle(color: textCol, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('parent.logout_short'.tr(), style: TextStyle(color: textCol, fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showSettingsDialog(BuildContext context, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Налаштування', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              title: Text('Сповіщення', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+              value: true,
+              onChanged: (v) {},
+              activeColor: AppTheme.accentTeal,
+            ),
+            SwitchListTile(
+              title: Text('Темна тема', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+              value: true,
+              onChanged: (v) {},
+              activeColor: AppTheme.accentTeal,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Закрити'),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Допомога', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.messageCircle, color: Colors.blueAccent),
+              title: Text('Написати в підтримку', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Відкриття чату підтримки...')));
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.bookOpen, color: Colors.greenAccent),
+              title: Text('Поширені запитання', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+              onTap: () {
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Закрити'),
+          )
+        ],
       ),
     );
   }

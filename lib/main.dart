@@ -75,6 +75,21 @@ class SwimmingSchoolApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark, // Force dark mode
       scrollBehavior: CustomScrollBehavior(),
+      builder: (context, child) {
+        final mediaQueryData = MediaQuery.of(context);
+        // Base width on a standard device (e.g., iPhone 12/13/14 is ~390 logical pixels)
+        double scale = mediaQueryData.size.width / 390.0;
+        
+        // Clamp scale to prevent text from being microscopic on extremely small devices or huge on tablets
+        scale = scale.clamp(0.8, 1.05);
+
+        return MediaQuery(
+          data: mediaQueryData.copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: child!,
+        );
+      },
       routerConfig: router,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,

@@ -16,7 +16,9 @@ class SubscriptionController extends _$SubscriptionController {
   void _listenToSubscriptions() {
     FirebaseFirestore.instance.collection('subscriptions').snapshots().listen((snapshot) {
       final subs = snapshot.docs.map((doc) {
-        return Subscription.fromJson(doc.data());
+        final data = Map<String, dynamic>.from(doc.data() as Map);
+        data['id'] = doc.id;
+        return Subscription.fromJson(data);
       }).toList();
       state = subs;
     });
@@ -24,10 +26,30 @@ class SubscriptionController extends _$SubscriptionController {
 
   Subscription? getSubscriptionForUser(String userId) {
     try {
-      return state.firstWhere((sub) => sub.userId == userId);
+      return state.firstWhere((sub) => sub.userId == userId && sub.isActive);
     } catch (e) {
       return null;
     }
+  }
+
+  Subscription? getSubscriptionForOwner(String userId, String ownerName) {
+    try {
+      return state.firstWhere((sub) => sub.userId == userId && sub.ownerName == ownerName && sub.isActive);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Subscription? getAnySubscriptionForOwner(String userId, String ownerName) {
+    try {
+      return state.firstWhere((sub) => sub.userId == userId && sub.ownerName == ownerName);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  List<Subscription> getSubscriptionsForUser(String userId) {
+    return state.where((sub) => sub.userId == userId).toList();
   }
 
   Future<bool> deductClass(String userId) async {

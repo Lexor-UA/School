@@ -14,6 +14,7 @@ import 'payment_sheet.dart';
 import 'booking_sheet.dart';
 import 'chat_sheet.dart';
 import 'create_class_sheet.dart';
+import 'admin_clients_screen.dart';
 
 class AdminMain extends ConsumerStatefulWidget {
   const AdminMain({super.key});
@@ -69,6 +70,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
                               builder: (context) => const CreateClassSheet(),
+                            );
+                          })),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildActionCard(LucideIcons.users, 'Всі клієнти', Colors.blueAccent, 400, () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AdminClientsScreen()),
                             );
                           })),
                         ],

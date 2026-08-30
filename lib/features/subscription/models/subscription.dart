@@ -11,6 +11,9 @@ abstract class Subscription with _$Subscription {
     required int totalClasses,
     required int remainingClasses,
     required bool isActive,
+    String? serviceName,
+    DateTime? expiryDate,
+    String? ownerName,
   }) = _Subscription;
 
   factory Subscription.fromJson(Map<String, dynamic> json) => _$SubscriptionFromJson(json);

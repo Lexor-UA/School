@@ -9,6 +9,7 @@ abstract class Child with _$Child {
     required String id,
     required String parentId,
     required String name,
+    int? age,
     @Default('0xFF40C4FF') String colorHex, // Default cyan-ish
     @Default(1) int level,
     @Default(0) int xp,

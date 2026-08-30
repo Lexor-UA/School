@@ -98,12 +98,12 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                       children: [
                         Text(
                           'parent.anatomy_progress_upper'.tr(),
-                          style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2.5),
+                          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                         ).animate().fadeIn().slideX(begin: -0.1),
                         const SizedBox(height: 8),
                         Text(
                           'parent.biometric_analysis'.tr(),
-                          style: TextStyle(color: Colors.cyanAccent, fontSize: 12, letterSpacing: 4, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                          style: TextStyle(color: Colors.cyanAccent, fontSize: 10, letterSpacing: 2, fontFamily: 'monospace', fontWeight: FontWeight.bold),
                         ).animate().fadeIn(delay: 200.ms).then().shimmer(duration: 2000.ms, color: Colors.white),
                       ],
                     ),
@@ -111,11 +111,12 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                   const SizedBox(height: 24),
                   
                   // Style Selector (Tech Tabs)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Row(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.center,
                       children: _styleMuscles.keys.map((style) => _buildTechTab(style)).toList(),
                     ),
                   ).animate().fadeIn(delay: 400.ms),
@@ -128,8 +129,8 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                       borderRadius: BorderRadius.circular(20),
                       child: Image.asset(
                         'assets/images/sci_fi_swimmer_anatomy.jpg',
-                        width: 350,
-                        height: 350,
+                        width: MediaQuery.of(context).size.width * 0.85,
+                        height: MediaQuery.of(context).size.width * 0.85,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -165,8 +166,7 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
       onTap: () => setState(() => _selectedStyle = style),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.15) : Colors.transparent,
           border: Border.all(color: isSelected ? Colors.cyanAccent : Colors.white.withValues(alpha: 0.2), width: isSelected ? 2 : 1),
@@ -356,12 +356,7 @@ class HUDPainter extends CustomPainter {
     // Top Right
     canvas.drawLine(Offset(size.width - 20, 20), Offset(size.width - 20 - bLen, 20), bracketPaint);
     canvas.drawLine(Offset(size.width - 20, 20), Offset(size.width - 20, 20 + bLen), bracketPaint);
-    // Bottom Left
-    canvas.drawLine(Offset(20, size.height - 20), Offset(20 + bLen, size.height - 20), bracketPaint);
-    canvas.drawLine(Offset(20, size.height - 20), Offset(20, size.height - 20 - bLen), bracketPaint);
-    // Bottom Right
-    canvas.drawLine(Offset(size.width - 20, size.height - 20), Offset(size.width - 20 - bLen, size.height - 20), bracketPaint);
-    canvas.drawLine(Offset(size.width - 20, size.height - 20), Offset(size.width - 20, size.height - 20 - bLen), bracketPaint);
+
 
   }
 

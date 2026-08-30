@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import 'dart:ui';
 
 class SubscriptionFlipCard extends StatefulWidget {
   final dynamic currentSub;
@@ -39,6 +42,43 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
       _controller.reverse();
     }
     _isFront = !_isFront;
+  }
+
+  void _showFullScreenQr(BuildContext context, String qrData) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: QrImageView(
+                  data: qrData,
+                  version: QrVersions.auto,
+                  size: 280.0,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Закрити', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -189,49 +229,9 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                         
                         const Spacer(),
                         
-                        const Text(
-                          'Aqua Pro Elite',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.0,
-                            shadows: [Shadow(color: Colors.black54, blurRadius: 10)],
-                          ),
-                        ),
+
                         
-                        const SizedBox(height: 8),
-                        
-                        // Remaining Classes
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '${widget.currentSub?.remainingClasses ?? 8}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 48,
-                                height: 1.0,
-                                fontWeight: FontWeight.w900,
-                                shadows: [Shadow(color: Colors.black45, blurRadius: 8, offset: Offset(2, 2))],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '/ ${widget.currentSub?.totalClasses ?? 10} занять',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                                shadows: const [Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(1, 1))],
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const Spacer(),
+
                         
                         // Bottom row: Valid until
                         Row(
@@ -248,18 +248,19 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                                     fontSize: 9,
                                     letterSpacing: 2.0,
                                     fontWeight: FontWeight.w800,
-                                    shadows: const [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))],
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                const Text(
-                                  '15 ЛИСТ 2026',
-                                  style: TextStyle(
+                                Text(
+                                  widget.currentSub?.expiryDate != null 
+                                      ? DateFormat('dd.MM.yyyy').format(widget.currentSub!.expiryDate!) 
+                                      : '00.00.0000',
+                                  style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.5,
-                                    shadows: [Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(1, 1))],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2.0,
+                                    shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
                                   ),
                                 ),
                               ],
@@ -279,6 +280,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
   }
 
   Widget _buildBack() {
+    final qrData = widget.currentSub?.userId ?? 'Unknown_User_ID';
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
@@ -300,7 +302,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
               child: Stack(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -314,37 +316,30 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                         
                         const Spacer(),
                         
-                        Container(
-                          width: double.infinity,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            // Barcode simulation
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(35, (index) => Container(
-                                width: index % 4 == 0 ? 3 : (index % 3 == 0 ? 2 : (index % 5 == 0 ? 5 : 1)),
-                                height: 45,
-                                margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                                color: Colors.black,
-                              )),
+                        Center(
+                          child: GestureDetector(
+                            onTap: () => _showFullScreenQr(context, qrData),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 10, spreadRadius: 2)],
+                              ),
+                              child: QrImageView(
+                                data: qrData,
+                                version: QrVersions.auto,
+                                size: 90.0,
+                                backgroundColor: Colors.white,
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Center(
-                          child: Text('9283 4812 0001 8421', 
-                            style: TextStyle(color: Colors.white, fontSize: 14, letterSpacing: 4.0, fontFamily: 'monospace', fontWeight: FontWeight.w600)
                           ),
                         ),
                         
                         const Spacer(),
                         
                         const Text(
-                          'Ця картка є власністю City Swim і не підлягає передачі третім особам. При знахідці або втраті зверніться до адміністратора клубу.',
+                          'Ця віртуальна картка є власністю City Swim і не підлягає передачі третім особам.',
                           style: TextStyle(color: Colors.white70, fontSize: 9, height: 1.4, shadows: [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))]),
                           textAlign: TextAlign.center,
                         ),

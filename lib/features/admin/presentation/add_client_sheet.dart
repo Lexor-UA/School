@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddClientSheet extends StatefulWidget {
   const AddClientSheet({super.key});
@@ -13,8 +14,12 @@ class AddClientSheet extends StatefulWidget {
 class _AddClientSheetState extends State<AddClientSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _childNameController = TextEditingController();
   String _selectedGroup = 'Юніори (Батерфляй)';
   bool _isSuccess = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+  String? _generatedLogin;
 
   final List<String> _groups = [
     'Юніори (Батерфляй)',
@@ -23,18 +28,68 @@ class _AddClientSheetState extends State<AddClientSheet> {
     'Дорослі',
   ];
 
-  void _submit() {
-    if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
+  Future<void> _submit() async {
+    if (_nameController.text.isEmpty || _phoneController.text.isEmpty || _childNameController.text.isEmpty) {
       return;
     }
     setState(() {
-      _isSuccess = true;
+      _isLoading = true;
+      _errorMessage = null;
     });
-    Future.delayed(const Duration(seconds: 2), () {
+
+    try {
+      // Generate ClientX login
+      final usersSnap = await FirebaseFirestore.instance.collection('users')
+          .where('role', isEqualTo: 'parent')
+          .get()
+          .timeout(const Duration(seconds: 5));
+          
+      final clientCount = usersSnap.docs.length + 1;
+      final generatedLogin = 'client$clientCount';
+
+      final userRef = FirebaseFirestore.instance.collection('users').doc();
+      final childRef = FirebaseFirestore.instance.collection('children').doc();
+
+      await userRef.set({
+        'id': userRef.id,
+        'name': _nameController.text,
+        'role': 'parent',
+        'phone': _phoneController.text,
+        'loginId': generatedLogin,
+        'avatarUrl': '',
+      }).timeout(const Duration(seconds: 5));
+
+      await childRef.set({
+        'id': childRef.id,
+        'parentId': userRef.id,
+        'name': _childNameController.text,
+        'colorHex': '0xFF40C4FF',
+        'level': 1,
+        'xp': 0,
+        'maxXp': 100,
+      }).timeout(const Duration(seconds: 5));
+
       if (mounted) {
-        Navigator.pop(context);
+        setState(() {
+          _isLoading = false;
+          _isSuccess = true;
+          _generatedLogin = 'Client$clientCount';
+        });
+
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -79,9 +134,26 @@ class _AddClientSheetState extends State<AddClientSheet> {
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 8),
         Text(
-          '${_nameController.text} ($_selectedGroup)',
+          '${_nameController.text} та дитина ${_childNameController.text}',
           style: const TextStyle(color: Colors.white70, fontSize: 16),
         ).animate().fadeIn(delay: 400.ms),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.cyanAccent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              const Text('Дані для входу клієнта:', style: TextStyle(color: Colors.white54, fontSize: 14)),
+              const SizedBox(height: 4),
+              Text('Логін: ${_generatedLogin ?? ""}', style: const TextStyle(color: Colors.cyanAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Пароль: 1', style: TextStyle(color: Colors.cyanAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ).animate().fadeIn(delay: 600.ms),
         const SizedBox(height: 40),
       ],
     );
@@ -111,6 +183,8 @@ class _AddClientSheetState extends State<AddClientSheet> {
         _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
         const SizedBox(height: 16),
         _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
+        const SizedBox(height: 16),
+        _buildTextField('Ім\'я дитини', LucideIcons.baby, _childNameController),
         const SizedBox(height: 24),
         const Text('Група', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
@@ -141,6 +215,21 @@ class _AddClientSheetState extends State<AddClientSheet> {
           }).toList(),
         ),
         const SizedBox(height: 32),
+        if (_errorMessage != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              'Помилка: $_errorMessage',
+              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         SizedBox(
           width: double.infinity,
           height: 56,
@@ -152,8 +241,10 @@ class _AddClientSheetState extends State<AddClientSheet> {
               elevation: 10,
               shadowColor: Colors.cyanAccent.withValues(alpha: 0.5),
             ),
-            onPressed: _submit,
-            child: const Text('Зберегти', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            onPressed: _isLoading ? null : _submit,
+            child: _isLoading 
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                : const Text('Зберегти', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
           ),
         ),
       ],

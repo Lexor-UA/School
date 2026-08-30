@@ -121,7 +121,7 @@ class ParentDashboard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '${currentSub?.remainingClasses ?? 0}/${currentSub?.totalClasses ?? 0}',
+                    '${currentSub?.remainingClasses ?? 0}/${(currentSub?.totalClasses ?? 0) > 0 ? currentSub!.totalClasses : (currentSub?.remainingClasses ?? 0)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 40,

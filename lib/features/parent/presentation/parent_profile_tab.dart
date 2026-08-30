@@ -62,7 +62,7 @@ class ParentProfileTab extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 200.ms),
                 Text(
-                  hasChildren ? 'Батьківський акаунт' : 'Клієнт',
+                  hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: accentColor, fontWeight: FontWeight.bold),
                 ).animate().fadeIn(delay: 300.ms),
               ],
@@ -75,7 +75,7 @@ class ParentProfileTab extends ConsumerWidget {
             _showAddChildDialog(context, ref, isDark);
           }),
           _buildSettingsTile(LucideIcons.trendingUp, 'parent.progress'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
-            ref.read(parentTabProvider.notifier).setTab(2);
+            ref.read(parentTabProvider.notifier).setTab(0);
           }),
           _buildSettingsTile(LucideIcons.trophy, 'parent.my_achievements'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
             Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen()));

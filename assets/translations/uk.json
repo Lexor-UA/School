@@ -273,5 +273,9 @@
   "parent.payment_success": "Абонементи успішно оплачено!",
   "parent.payment_error": "Помилка оплати: {}",
   "parent.processing": "Обробка...",
-  "parent.today_capitalized": "Сьогодні"
+  "parent.today_capitalized": "Сьогодні",
+  "parent.child_name": "Ім'я дитини",
+  "parent.child_age": "Вік дитини",
+  "parent.save": "Зберегти",
+  "parent.client_account": "Клієнт"
 }

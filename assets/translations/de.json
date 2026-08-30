@@ -273,5 +273,9 @@
   "parent.payment_success": "Abonnements erfolgreich bezahlt!",
   "parent.payment_error": "Zahlungsfehler: {}",
   "parent.processing": "Verarbeitung...",
-  "parent.today_capitalized": "Heute"
+  "parent.today_capitalized": "Heute",
+  "parent.child_name": "Name des Kindes",
+  "parent.child_age": "Alter des Kindes",
+  "parent.save": "Speichern",
+  "parent.client_account": "Kundenkonto"
 }

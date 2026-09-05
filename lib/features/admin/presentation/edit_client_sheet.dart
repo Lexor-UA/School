@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -16,14 +18,18 @@ class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
   final String initialName;
   final String initialPhone;
+  final int? initialAge;
   final String initialLoginId;
+  final String? initialPassword;
 
   const EditClientSheet({
     super.key,
     required this.clientId,
     required this.initialName,
     required this.initialPhone,
+    this.initialAge,
     required this.initialLoginId,
+    this.initialPassword,
   });
 
   @override
@@ -33,7 +39,10 @@ class EditClientSheet extends ConsumerStatefulWidget {
 class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  late TextEditingController _ageController;
   late TextEditingController _loginIdController;
+  late TextEditingController _passwordController;
+  bool _obscurePassword = false;
   bool _isLoading = false;
   String? _errorMessage;
   bool _isSuccess = false;
@@ -53,20 +62,93 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _phoneController = TextEditingController(text: widget.initialPhone);
+    _ageController = TextEditingController(text: widget.initialAge?.toString() ?? '');
     _loginIdController = TextEditingController(text: widget.initialLoginId);
+    _passwordController = TextEditingController(text: widget.initialPassword ?? '1');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _ageController.dispose();
     _loginIdController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
+  void _resetPasswordToDefault() {
+    setState(() {
+      _passwordController.text = '1';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(LucideIcons.checkCircle2, color: Colors.greenAccent, size: 18),
+            SizedBox(width: 8),
+            Text('Пароль скинуто до стандартного: 1', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1E293B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _generateRandomPin() {
+    final randomPin = (100000 + Random().nextInt(900000)).toString();
+    setState(() {
+      _passwordController.text = randomPin;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(LucideIcons.sparkles, color: Color(0xFF00E5FF), size: 18),
+            const SizedBox(width: 8),
+            Text('Згенеровано новий PIN: $randomPin', style: const TextStyle(color: Colors.white)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1E293B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _copyCredentials() {
+    final login = _loginIdController.text.trim();
+    final pass = _passwordController.text.trim();
+    Clipboard.setData(ClipboardData(
+      text: 'Логін: $login\nПароль: $pass',
+    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(LucideIcons.copy, color: Color(0xFF38BDF8), size: 18),
+            SizedBox(width: 8),
+            Text('Дані для входу скопійовано в буфер обміну!', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1E293B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _submit() async {
-    if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty || _loginIdController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Заповніть всі поля');
+    if (_nameController.text.trim().isEmpty || 
+        _phoneController.text.trim().isEmpty || 
+        _loginIdController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Заповніть всі поля, включаючи пароль');
       return;
     }
 
@@ -76,16 +158,23 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     });
 
     try {
-      await FirebaseFirestore.instance.collection('users').doc(widget.clientId).update({
+      final age = int.tryParse(_ageController.text.trim());
+      final updateData = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'loginId': _loginIdController.text.trim(),
-      }).timeout(const Duration(seconds: 5));
+        'password': _passwordController.text.trim(),
+      };
+      if (age != null) {
+        updateData['age'] = age;
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(widget.clientId).update(updateData).timeout(const Duration(seconds: 5));
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Оновлено дані клієнта "${_nameController.text.trim()}"', admin.id);
+          await logAdminAction('Оновлено дані та пароль клієнта "${_nameController.text.trim()}"', admin.id);
         }
         
         setState(() {
@@ -107,6 +196,222 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         });
       }
     }
+  }
+
+  void _showAddChildDialog() {
+    final nameCtrl = TextEditingController();
+    final ageCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 22),
+            SizedBox(width: 8),
+            Text('Додати дитину', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Ім'я дитини",
+                labelStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ageCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Вік дитини (років)',
+                labelStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: const Icon(LucideIcons.calendarDays, color: Color(0xFF00E5FF), size: 18),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              final age = int.tryParse(ageCtrl.text.trim());
+              if (name.isEmpty) return;
+              Navigator.pop(ctx);
+              try {
+                final childRef = FirebaseFirestore.instance.collection('children').doc();
+                final childData = <String, dynamic>{
+                  'id': childRef.id,
+                  'parentId': widget.clientId,
+                  'name': name,
+                  'colorHex': '0xFF40C4FF',
+                  'level': 1,
+                  'xp': 0,
+                  'maxXp': 100,
+                  'notes': age != null ? 'Вік: $age' : '',
+                };
+                if (age != null) {
+                  childData['age'] = age;
+                }
+                await childRef.set(childData);
+                final admin = ref.read(authControllerProvider);
+                if (admin != null) {
+                  await logAdminAction('Додано дитину "$name" для клієнта "${widget.initialName}"', admin.id);
+                }
+              } catch (e) {
+                debugPrint('Error adding child: $e');
+              }
+            },
+            child: const Text('Додати', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditChildDialog(String childId, String currentName, int? currentAge) {
+    final nameCtrl = TextEditingController(text: currentName);
+    final ageCtrl = TextEditingController(text: currentAge?.toString() ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 20),
+            SizedBox(width: 8),
+            Text('Редагувати дитину', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Ім'я дитини",
+                labelStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF38BDF8), size: 18),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ageCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Вік дитини (років)',
+                labelStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: const Icon(LucideIcons.calendarDays, color: Color(0xFF38BDF8), size: 18),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF38BDF8),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              final age = int.tryParse(ageCtrl.text.trim());
+              if (name.isEmpty) return;
+              Navigator.pop(ctx);
+              try {
+                await FirebaseFirestore.instance.collection('children').doc(childId).update({
+                  'name': name,
+                  'age': age,
+                  'notes': age != null ? 'Вік: $age' : '',
+                });
+                final admin = ref.read(authControllerProvider);
+                if (admin != null) {
+                  await logAdminAction('Оновлено дані дитини "$name" клієнта "${widget.initialName}"', admin.id);
+                }
+              } catch (e) {
+                debugPrint('Error updating child: $e');
+              }
+            },
+            child: const Text('Зберегти', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteChild(String childId, String childName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Видалити дитину?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text('Ви дійсно бажаєте видалити дані дитини "$childName"?', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await FirebaseFirestore.instance.collection('children').doc(childId).delete();
+                final admin = ref.read(authControllerProvider);
+                if (admin != null) {
+                  await logAdminAction('Видалено дитину "$childName" клієнта "${widget.initialName}"', admin.id);
+                }
+              } catch (e) {
+                debugPrint('Error deleting child: $e');
+              }
+            },
+            child: const Text('Видалити'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _updateSubscriptionClasses(Subscription sub, int delta) async {
@@ -336,10 +641,26 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         const SizedBox(height: 16),
 
         _buildTextField(
+          controller: _ageController,
+          label: 'Вік клієнта (років)',
+          icon: LucideIcons.calendar,
+          keyboardType: TextInputType.number,
+        ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1),
+        const SizedBox(height: 16),
+
+        _buildTextField(
           controller: _loginIdController,
           label: '${'admin.clients_login_label'.tr()} (Client1)',
           icon: LucideIcons.key,
         ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+        const SizedBox(height: 16),
+
+        // Password & Access Management Section
+        _buildPasswordSection().animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
+        const SizedBox(height: 32),
+
+        // CHILDREN MANAGEMENT
+        _buildChildrenSection().animate().fadeIn(delay: 380.ms),
         const SizedBox(height: 32),
 
         // SUBSCRIPTION MANAGEMENT
@@ -692,13 +1013,18 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   Widget _buildSuccessState() {
+    final trText = 'admin.edit_client_success'.tr();
+    final displayText = (trText == 'admin.edit_client_success' || trText.isEmpty)
+        ? 'Дані клієнта оновлено!'
+        : trText;
     return Column(
       children: [
         const Icon(LucideIcons.checkCircle, color: Colors.greenAccent, size: 64).animate().scale().fadeIn(),
         const SizedBox(height: 24),
         Text(
-          'admin.edit_coach_success'.tr(),
+          displayText,
           style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 40),
       ],
@@ -734,6 +1060,261 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           borderSide: const BorderSide(color: Colors.blueAccent),
         ),
       ),
+    );
+  }
+
+  Widget _buildPasswordSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+          width: 1.1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              fontSize: 15,
+            ),
+            decoration: InputDecoration(
+              labelText: 'admin.clients_password_label'.tr().replaceAll(':', '').trim().isEmpty
+                  ? 'Пароль клієнта'
+                  : 'admin.clients_password_label'.tr().replaceAll(':', '').trim(),
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+              prefixIcon: const Icon(LucideIcons.keyRound, color: Color(0xFFF59E0B), size: 20),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                  color: Colors.white60,
+                  size: 20,
+                ),
+                tooltip: _obscurePassword ? 'Показати пароль' : 'Приховати пароль',
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+              filled: false,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildPasswordActionButton(
+                      icon: LucideIcons.rotateCcw,
+                      label: 'Скинути на "1"',
+                      color: const Color(0xFFF59E0B),
+                      onTap: _resetPasswordToDefault,
+                    ),
+                    _buildPasswordActionButton(
+                      icon: LucideIcons.sparkles,
+                      label: 'Згенерувати PIN',
+                      color: const Color(0xFF00E5FF),
+                      onTap: _generateRandomPin,
+                    ),
+                    _buildPasswordActionButton(
+                      icon: LucideIcons.copy,
+                      label: 'Копіювати',
+                      color: const Color(0xFF38BDF8),
+                      onTap: _copyCredentials,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(LucideIcons.info, size: 12, color: Colors.white.withValues(alpha: 0.40)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'Збережіть зміни, щоб оновити пароль у базі даних',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.35), width: 0.9),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 13),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChildrenSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.baby, color: Color(0xFF38BDF8), size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'admin.add_client_children_title'.tr(),
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: _showAddChildDialog,
+              icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
+              label: const Text(
+                'Додати',
+                style: TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w700),
+              ),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                child: Center(
+                  child: Text(
+                    'admin.clients_no_children'.tr(),
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ),
+              );
+            }
+
+            final children = snapshot.data!.docs;
+            return Column(
+              children: children.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final cId = doc.id;
+                final cName = data['name'] ?? 'Дитина';
+                final cAge = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text('🏊', style: TextStyle(fontSize: 16)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cName,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              cAge != null ? '$cAge ${'admin.years_short'.tr()}' : 'Вік не вказано',
+                              style: TextStyle(
+                                color: cAge != null ? const Color(0xFF00E5FF) : Colors.white38,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 16),
+                        tooltip: 'Редагувати',
+                        onPressed: () => _showEditChildDialog(cId, cName, cAge),
+                      ),
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 16),
+                        tooltip: 'Видалити',
+                        onPressed: () => _deleteChild(cId, cName),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 }

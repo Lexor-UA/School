@@ -15,10 +15,25 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
+class _ChildEntry {
+  final TextEditingController nameController;
+  final TextEditingController ageController;
+  _ChildEntry({String? name, String? age})
+      : nameController = TextEditingController(text: name),
+        ageController = TextEditingController(text: age);
+
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+  }
+}
+
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   final _phoneController = TextEditingController();
+  final _ageController = TextEditingController();
+  final List<_ChildEntry> _children = [];
 
   bool _isLoading = false;
 
@@ -33,11 +48,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _ageController.dispose();
+    for (var child in _children) {
+      child.dispose();
+    }
     super.dispose();
+  }
+
+  void _addChild() {
+    setState(() {
+      _children.add(_ChildEntry());
+    });
+  }
+
+  void _removeChild(int index) {
+    setState(() {
+      _children[index].dispose();
+      _children.removeAt(index);
+    });
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final clientAge = int.tryParse(_ageController.text.trim());
+    final childrenData = _children
+        .where((c) => c.nameController.text.trim().isNotEmpty)
+        .map((c) => {
+              'name': c.nameController.text.trim(),
+              'age': int.tryParse(c.ageController.text.trim()),
+            })
+        .toList();
 
     setState(() => _isLoading = true);
 
@@ -45,6 +86,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(authControllerProvider.notifier).completeOnboarding(
         _nameController.text.trim(),
         _phoneController.text.trim(),
+        age: clientAge,
+        children: childrenData.isNotEmpty ? childrenData : null,
       );
       if (mounted) {
         context.go('/parent');
@@ -138,7 +181,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               controller: _nameController,
                               icon: LucideIcons.user,
                               hint: 'onboarding.name_hint'.tr(),
-                              validator: (v) => v == null || v.isEmpty ? 'onboarding.name_error'.tr() : null,
+                              validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.name_error'.tr() : null,
                             ).animate().fadeIn(delay: 400.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
                             
                             const SizedBox(height: 16),
@@ -148,12 +191,142 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               icon: LucideIcons.phone,
                               hint: 'onboarding.phone_hint'.tr(),
                               keyboardType: TextInputType.phone,
-                              validator: (v) => v == null || v.isEmpty ? 'onboarding.phone_error'.tr() : null,
+                              validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.phone_error'.tr() : null,
                             ).animate().fadeIn(delay: 500.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
                             
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
+
+                            _buildTextField(
+                              controller: _ageController,
+                              icon: LucideIcons.calendar,
+                              hint: 'onboarding.age_hint'.tr(),
+                              keyboardType: TextInputType.number,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'onboarding.age_error'.tr();
+                                final age = int.tryParse(v.trim());
+                                if (age == null || age < 14 || age > 110) return 'onboarding.age_error'.tr();
+                                return null;
+                              },
+                            ).animate().fadeIn(delay: 550.ms, duration: 600.ms).slideX(begin: 0.1, end: 0),
                             
-                            const SizedBox(height: 40),
+                            const SizedBox(height: 24),
+
+                            // Children Section
+                            if (_children.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'onboarding.children_title'.tr(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ...List.generate(_children.length, (index) {
+                                final child = _children[index];
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 14),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            '${'parent.child_name'.tr().replaceAll("Ім'я дитини", "Дитина")} ${index + 1}',
+                                            style: const TextStyle(
+                                              color: Color(0xFF00E5FF),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 18),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: () => _removeChild(index),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _buildTextField(
+                                        controller: child.nameController,
+                                        icon: LucideIcons.baby,
+                                        hint: 'onboarding.child_name_hint'.tr(),
+                                        validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.child_name_error'.tr() : null,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _buildTextField(
+                                        controller: child.ageController,
+                                        icon: LucideIcons.calendarDays,
+                                        hint: 'onboarding.child_age_hint'.tr(),
+                                        keyboardType: TextInputType.number,
+                                        validator: (v) {
+                                          if (v == null || v.trim().isEmpty) return 'onboarding.child_age_error'.tr();
+                                          final a = int.tryParse(v.trim());
+                                          if (a == null || a < 1 || a > 25) return 'onboarding.child_age_error'.tr();
+                                          return null;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+
+                            // Add Child Button
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _addChild,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                      width: 1.1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _children.isEmpty
+                                            ? 'onboarding.add_child_btn'.tr()
+                                            : 'onboarding.add_more_child_btn'.tr(),
+                                        style: const TextStyle(
+                                          color: Color(0xFF00E5FF),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ).animate().fadeIn(delay: 600.ms, duration: 600.ms),
+
+                            const SizedBox(height: 32),
                             
                             SizedBox(
                               height: 56,
@@ -179,7 +352,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
                                       ),
                               ),
-                            ).animate().fadeIn(delay: 800.ms, duration: 600.ms).slideY(begin: 0.2, end: 0),
+                            ).animate().fadeIn(delay: 700.ms, duration: 600.ms).slideY(begin: 0.2, end: 0),
                           ],
                         ),
                       ),
@@ -189,22 +362,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
             Positioned(
-                  top: 16,
-                  left: 16,
-                  child: IconButton(
-                    icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 28),
-                    onPressed: () async {
-                      await ref.read(authControllerProvider.notifier).logout();
-                      if (mounted) context.go('/');
-                    },
-                  ),
-                ),
-              ],
+              top: 16,
+              left: 16,
+              child: IconButton(
+                icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 28),
+                onPressed: () async {
+                  final router = GoRouter.of(context);
+                  await ref.read(authControllerProvider.notifier).logout();
+                  if (mounted) router.go('/');
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
+    ],
+  ),
+);
   }
 
   Widget _buildTextField({

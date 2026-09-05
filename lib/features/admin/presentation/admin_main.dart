@@ -364,10 +364,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Flexible(
+                            const Flexible(
                               child: Text(
-                                'CitySwim Admin · ${'admin.online_status'.tr()}',
-                                style: const TextStyle(
+                                'CitySwim Admin',
+                                style: TextStyle(
                                   color: Color(0xFF38BDF8),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -476,10 +476,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'admin.search_hint'.tr(),
+                      'admin.search_hint'.tr().replaceFirst('групи чи ', '').replaceFirst('группы или ', '').replaceFirst('group or ', '').replaceFirst('Gruppe oder ', ''),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 14,
+                        fontSize: 13,
                         letterSpacing: 0.2,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -518,6 +518,27 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         ),
       ),
     );
+  }
+
+  String _formatPulseBeaconTitle(bool isSessionActive) {
+    if (isSessionActive) {
+      return 'admin.live_beacon_active'.tr();
+    }
+    final raw = 'admin.live_beacon_idle'.tr();
+    final upper = raw.toUpperCase();
+    if (upper.contains('ПУЛЬС КЛУБУ')) {
+      return 'ПУЛЬС КЛУБУ';
+    }
+    if (upper.contains('ПУЛЬС КЛУБА')) {
+      return 'ПУЛЬС КЛУБА';
+    }
+    if (upper.contains('CLUB PULSE')) {
+      return 'CLUB PULSE';
+    }
+    if (upper.contains('CLUB-PULS')) {
+      return 'CLUB-PULS';
+    }
+    return raw.split(RegExp(r'[\s·•\-\|\:\.]+онлайн|online', caseSensitive: false)).first.trim();
   }
 
   // ==========================================
@@ -602,7 +623,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                isSessionActive ? 'admin.live_beacon_active'.tr() : 'admin.live_beacon_idle'.tr(),
+                                _formatPulseBeaconTitle(isSessionActive),
                                 style: TextStyle(
                                   color: isSessionActive ? const Color(0xFF10B981) : Colors.white,
                                   fontSize: 11,
@@ -761,9 +782,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       Expanded(
                         child: Text(
                           isSessionActive
-                              ? 'admin.in_pool_now_desc'.tr(args: [state.ongoingClasses.first.title, state.ongoingClientsCount.toString()])
+                              ? 'admin.in_pool_now_desc'.tr(args: [
+                                  _formatCompactClassTitle(state.ongoingClasses.first.title),
+                                  state.ongoingClientsCount.toString(),
+                                ])
                               : (state.nearestClass != null
-                                  ? 'admin.nearest_class_at'.tr(args: [DateFormat('HH:mm').format(state.nearestClass!.startTime), state.nearestClass!.title])
+                                  ? 'admin.nearest_class_at'.tr(args: [
+                                      DateFormat('HH:mm').format(state.nearestClass!.startTime),
+                                      _formatCompactClassTitle(state.nearestClass!.title),
+                                    ])
                                   : 'admin.normal_mode'.tr()),
                           style: const TextStyle(
                             color: Colors.white,
@@ -812,6 +839,32 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         ),
       ),
     );
+  }
+
+  String _formatCompactClassTitle(String title) {
+    var cleaned = title.trim();
+    if (cleaned.toLowerCase().contains('доросла') || cleaned.toLowerCase().contains('дорослих')) {
+      return 'Доросла група';
+    }
+    if (cleaned.toLowerCase().contains('дитяч') || cleaned.toLowerCase().contains('дітей')) {
+      return 'Дитяча група';
+    }
+    cleaned = cleaned.replaceFirst(RegExp(r'^(Групові|Індивідуальні)\s+заняття\s+(для\s+)?', caseSensitive: false), '');
+    cleaned = cleaned.replaceFirst(RegExp(r'^(Групове|Індивідуальне)\s+тренування\s+(для\s+)?', caseSensitive: false), '');
+    if (cleaned.isNotEmpty) {
+      cleaned = cleaned[0].toUpperCase() + cleaned.substring(1);
+    }
+    return cleaned.isEmpty ? title : cleaned;
+  }
+
+  String _cleanCoachDisplay(String coachName) {
+    var name = coachName.trim();
+    if (name.toLowerCase().startsWith('тренер ')) {
+      name = name.substring(7).trim();
+    } else if (name.toLowerCase().startsWith('coach ')) {
+      name = name.substring(6).trim();
+    }
+    return name.isEmpty ? coachName : name;
   }
 
   Widget _buildTelemetryGauge({
@@ -1039,60 +1092,16 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            if (hasUnread) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                margin: const EdgeInsets.only(right: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: const Color(0xFF38BDF8).withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF38BDF8),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'admin.new_sms'.tr(),
-                                      style: const TextStyle(
-                                        color: Color(0xFF38BDF8),
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.6,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            Expanded(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'admin.support_center'.tr(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          'admin.support_center'.tr(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -1439,7 +1448,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
+          // Header Row: Time + Compact Category Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1468,57 +1477,76 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               const SizedBox(width: 8),
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    nearest.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _formatCompactClassTitle(nearest.title),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Location and Coach
-          Row(
+          // Location and Coach (Adaptive Wrap with zero ellipsis!)
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Icon(LucideIcons.mapPin, color: Colors.white, size: 15),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  nearest.lane.isNotEmpty ? 'Басейн · ${nearest.lane}' : 'Басейн · Всі доріжки',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(LucideIcons.mapPin, color: Colors.white, size: 13.5),
+                    const SizedBox(width: 5),
+                    Text(
+                      nearest.lane.isNotEmpty ? nearest.lane : 'Всі доріжки',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              const Icon(LucideIcons.user, color: Colors.white70, size: 15),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  '${'admin.class_coach'.tr()}: ${nearest.coachName}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(LucideIcons.user, color: Colors.white70, size: 13.5),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${'admin.class_coach'.tr()}: ${_cleanCoachDisplay(nearest.coachName)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

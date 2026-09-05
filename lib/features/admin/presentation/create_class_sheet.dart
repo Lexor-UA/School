@@ -2,24 +2,26 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'widgets/apple_time_wheel_picker.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
-  final AppUser? defaultCoach;
+  final GroupClass? classToEdit;
   
-  const CreateClassSheet({super.key, this.initialDate, this.defaultCoach});
+  const CreateClassSheet({super.key, this.initialDate, this.classToEdit});
 
   @override
   ConsumerState<CreateClassSheet> createState() => _CreateClassSheetState();
 }
 
 class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
-  final _titleController = TextEditingController(text: 'Junior Pro');
+  late final TextEditingController _titleController;
   
   late DateTime _selectedDate;
   TimeOfDay _selectedTime = const TimeOfDay(hour: 16, minute: 0);
@@ -34,6 +36,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   final List<String> _categories = ['Плавання', 'Стрибки', 'Аквааеробіка'];
 
   bool _isSaving = false;
+
+  bool get _isEditing => widget.classToEdit != null;
 
   String _getLaneLabel(String lane) {
     switch (lane) {
@@ -68,7 +72,21 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialDate ?? DateTime.now();
+    if (_isEditing) {
+      final c = widget.classToEdit!;
+      _titleController = TextEditingController(text: c.title);
+      _selectedDate = c.startTime;
+      _selectedTime = TimeOfDay(hour: c.startTime.hour, minute: c.startTime.minute);
+      _maxCapacity = c.maxCapacity;
+      _selectedCategory = c.category;
+      _selectedLane = c.lane.isNotEmpty ? c.lane : 'Доріжка 1';
+    } else {
+      _titleController = TextEditingController(text: 'Junior Pro');
+      _selectedDate = widget.initialDate ?? DateTime.now();
+      if (widget.initialDate != null) {
+        _selectedTime = TimeOfDay(hour: widget.initialDate!.hour, minute: widget.initialDate!.minute);
+      }
+    }
   }
 
   @override
@@ -105,32 +123,6 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     }
   }
 
-  Future<void> _selectTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF00E5FF),
-              onPrimary: Colors.black,
-              surface: Color(0xFF13233C),
-              onSurface: Colors.white,
-            ),
-            timePickerTheme: const TimePickerThemeData(
-              backgroundColor: Color(0xFF13233C),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() => _selectedTime = picked);
-    }
-  }
-
   Future<void> _save() async {
     if (_titleController.text.trim().isEmpty || _selectedCoach == null) return;
 
@@ -146,21 +138,44 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     
     final endTime = startTime.add(const Duration(hours: 1));
 
-    final success = await ref.read(scheduleControllerProvider.notifier).createClass(
-      title: _titleController.text.trim(),
-      startTime: startTime,
-      endTime: endTime,
-      coachId: _selectedCoach!.id,
-      coachName: _selectedCoach!.name,
-      maxCapacity: _maxCapacity,
-      category: _selectedCategory,
-      lane: _selectedLane,
-    );
+    bool success = false;
+    if (_isEditing) {
+      success = await ref.read(scheduleControllerProvider.notifier).updateClass(
+        classId: widget.classToEdit!.id,
+        title: _titleController.text.trim(),
+        startTime: startTime,
+        endTime: endTime,
+        coachId: _selectedCoach!.id,
+        coachName: _selectedCoach!.name,
+        maxCapacity: _maxCapacity,
+        category: _selectedCategory,
+        lane: _selectedLane,
+      );
 
-    if (success) {
-      final admin = ref.read(authControllerProvider);
-      if (admin != null) {
-        await logAdminAction('Створено заняття "${_titleController.text.trim()}"', admin.id);
+      if (success) {
+        final admin = ref.read(authControllerProvider);
+        if (admin != null) {
+          final timeFmt = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+          await logAdminAction('Оновлено заняття "${_titleController.text.trim()}" на $timeFmt', admin.id);
+        }
+      }
+    } else {
+      success = await ref.read(scheduleControllerProvider.notifier).createClass(
+        title: _titleController.text.trim(),
+        startTime: startTime,
+        endTime: endTime,
+        coachId: _selectedCoach!.id,
+        coachName: _selectedCoach!.name,
+        maxCapacity: _maxCapacity,
+        category: _selectedCategory,
+        lane: _selectedLane,
+      );
+
+      if (success) {
+        final admin = ref.read(authControllerProvider);
+        if (admin != null) {
+          await logAdminAction('Створено заняття "${_titleController.text.trim()}"', admin.id);
+        }
       }
     }
 
@@ -240,22 +255,28 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [Color(0xFF10B981), Color(0xFF047857)],
+                            colors: _isEditing
+                                ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                                : const [Color(0xFF10B981), Color(0xFF047857)],
                           ),
                           borderRadius: BorderRadius.circular(13),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.45),
+                              color: (_isEditing ? const Color(0xFF00E5FF) : const Color(0xFF10B981)).withValues(alpha: 0.45),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Icon(LucideIcons.calendarPlus, color: Colors.white, size: 21),
+                        child: Center(
+                          child: Icon(
+                            _isEditing ? LucideIcons.pencil : LucideIcons.calendarPlus,
+                            color: Colors.white,
+                            size: 21,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -264,7 +285,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'admin.class_create_title'.tr(),
+                              _isEditing ? 'Редагувати заняття' : 'admin.class_create_title'.tr(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
@@ -274,7 +295,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'admin.class_create_subtitle'.tr(),
+                              _isEditing ? 'Зміна часу та параметрів тренування' : 'admin.class_create_subtitle'.tr(),
                               style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
@@ -346,13 +367,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                 if (_selectedCoach == null) {
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     if (mounted) {
-                                      final matched = widget.defaultCoach != null
-                                          ? coachesList.firstWhere(
-                                              (c) => c.id == widget.defaultCoach!.id || c.name.toLowerCase() == widget.defaultCoach!.name.toLowerCase(),
-                                              orElse: () => coachesList.first,
-                                            )
-                                          : coachesList.first;
-                                      setState(() => _selectedCoach = matched);
+                                      if (_isEditing) {
+                                        final target = coachesList.firstWhere(
+                                          (c) => c.id == widget.classToEdit!.coachId || c.name.toLowerCase() == widget.classToEdit!.coachName.toLowerCase(),
+                                          orElse: () => coachesList.first,
+                                        );
+                                        setState(() => _selectedCoach = target);
+                                      } else {
+                                        setState(() => _selectedCoach = coachesList.first);
+                                      }
                                     }
                                   });
                                 }
@@ -375,91 +398,50 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Date & Time Interactive Cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  // Date Picker Card
+                  _buildLabel('admin.class_date'.tr()),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _selectDate,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                        ),
+                        child: Row(
                           children: [
-                            _buildLabel('admin.class_date'.tr()),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _selectDate,
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.07),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF38BDF8).withValues(alpha: 0.20),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Icon(LucideIcons.calendar, color: Color(0xFF00E5FF), size: 16),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}', 
-                                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF38BDF8).withValues(alpha: 0.20),
+                                borderRadius: BorderRadius.circular(8),
                               ),
+                              child: const Icon(LucideIcons.calendar, color: Color(0xFF00E5FF), size: 16),
                             ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}', 
+                              style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w700),
+                            ),
+                            const Spacer(),
+                            const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 16),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel('admin.class_start_time'.tr()),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _selectTime,
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.07),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF38BDF8).withValues(alpha: 0.20),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Icon(LucideIcons.clock, color: Color(0xFF00E5FF), size: 16),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}', 
-                                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Apple Alarm-style Time Drum Wheel Picker
+                  AppleTimeWheelPicker(
+                    initialTime: _selectedTime,
+                    onTimeChanged: (newTime) {
+                      setState(() => _selectedTime = newTime);
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -597,10 +579,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                               : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(LucideIcons.sparkles, color: Colors.white, size: 18),
+                                    Icon(_isEditing ? LucideIcons.check : LucideIcons.sparkles, color: Colors.white, size: 18),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'admin.class_create_btn'.tr(),
+                                      _isEditing ? 'Зберегти зміни' : 'admin.class_create_btn'.tr(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 15.5,

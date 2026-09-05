@@ -123,27 +123,19 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
     ref.listen(authControllerProvider, (previous, next) {
       if (!_splashFinished) return;
-      
+
       if (next != null) {
-        if (next.role == UserRole.parent && next.phone == null) {
-          context.go('/onboarding');
-          return;
+        // Dismiss any open modal bottom sheet or dialog on root navigator first
+        final rootNav = Navigator.of(context, rootNavigator: true);
+        if (rootNav.canPop()) {
+          rootNav.pop();
         }
 
-        switch (next.role) {
-          case UserRole.parent:
-            context.go('/parent');
-            break;
-          case UserRole.coach:
-            context.go('/coach');
-            break;
-          case UserRole.admin:
-            context.go('/admin');
-            break;
-          case UserRole.owner:
-            context.go('/owner');
-            break;
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _navigateBasedOnRole(next.role, next);
+          }
+        });
       }
     });
 
@@ -283,20 +275,19 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                     )
                                                     .signInWithGoogle();
                                               } catch (e) {
-                                                if (mounted) {
-                                                  setState(
-                                                    () => _isLoading = false,
-                                                  );
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        'Помилка Google Sign In: $e',
-                                                      ),
+                                                if (!mounted) return;
+                                                setState(
+                                                  () => _isLoading = false,
+                                                );
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Помилка Google Sign In: $e',
                                                     ),
-                                                  );
-                                                }
+                                                  ),
+                                                );
                                               }
                                             },
                                       child: Row(
@@ -742,9 +733,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 setModalState(() => isModalLoading = true);
                 final notifier = ref.read(authControllerProvider.notifier);
                 await notifier.signInWithEmail(email, password);
-                if (modalContext.mounted) {
-                  Navigator.of(modalContext).pop();
-                }
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);

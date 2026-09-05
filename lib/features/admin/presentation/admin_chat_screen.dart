@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:go_router/go_router.dart';
@@ -119,44 +120,281 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final userRoles = ref.watch(usersRoleMapProvider).value ?? {};
+
+    String role = 'parent';
+    final idLower = widget.clientId.toLowerCase();
+    final nameLower = widget.clientName.toLowerCase();
+    if (idLower.startsWith('recovery_') || nameLower.contains('відновлення') || nameLower.contains('🔑')) {
+      role = 'recovery';
+    } else if (userRoles[widget.clientId] == 'coach' ||
+               userRoles['name_${widget.clientName}'] == 'coach' ||
+               nameLower.contains('антон') ||
+               nameLower.contains('тренер')) {
+      role = 'coach';
+    }
+
+    final isRecovery = role == 'recovery';
+    final isCoach = role == 'coach';
+
+    String displayName = widget.clientName;
+    if (isRecovery && displayName.startsWith('🔑')) {
+      displayName = displayName.replaceFirst('🔑', '').trim();
+    }
+
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        color: const Color(0xFF07152B).withValues(alpha: 0.85),
+        border: Border(
+          bottom: BorderSide(
+            color: isRecovery
+                ? const Color(0xFFF59E0B).withValues(alpha: 0.3)
+                : (isCoach
+                    ? const Color(0xFF10B981).withValues(alpha: 0.25)
+                    : Colors.white.withValues(alpha: 0.08)),
+          ),
+        ),
       ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
             onPressed: () => context.pop(),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            padding: EdgeInsets.zero,
           ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: Colors.orangeAccent.withValues(alpha: 0.2),
-            child: Text(widget.clientName.isNotEmpty ? widget.clientName[0] : '?', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 6),
+          // Role-specific avatar
+          if (isRecovery)
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: const Color(0xFFFDE68A), width: 1.8),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text('🔑', style: TextStyle(fontSize: 20)),
+              ),
+            )
+          else
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isCoach
+                      ? const Color(0xFF10B981).withValues(alpha: 0.7)
+                      : const Color(0xFF38BDF8).withValues(alpha: 0.6),
+                  width: 1.8,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isCoach ? const Color(0xFF10B981) : const Color(0xFF38BDF8))
+                        .withValues(alpha: 0.3),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(widget.clientId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final data = snapshot.data?.data() as Map<String, dynamic>?;
+                  final avatarUrl = data?['avatarUrl'] as String?;
+                  if (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+                    return CircleAvatar(
+                      radius: 20,
+                      backgroundImage: NetworkImage(avatarUrl),
+                      backgroundColor: Colors.white12,
+                    );
+                  }
+
+                  return CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.transparent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: isCoach
+                              ? const [Color(0xFF10B981), Color(0xFF0284C7)]
+                              : const [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  widget.clientName,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                    SizedBox(width: 4),
-                    Text('В мережі', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Role Badge
+                    if (isRecovery)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.55),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('🔑 ', style: TextStyle(fontSize: 8.5)),
+                            Text(
+                              'ВІДНОВЛЕННЯ',
+                              style: TextStyle(
+                                color: Color(0xFFFBBF24),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (isCoach)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.55),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('🏊 ', style: TextStyle(fontSize: 8.5)),
+                            Text(
+                              'ТРЕНЕР',
+                              style: TextStyle(
+                                color: Color(0xFF34D399),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('👤 ', style: TextStyle(fontSize: 8.5)),
+                            Text(
+                              'КЛІЄНТ',
+                              style: TextStyle(
+                                color: Color(0xFF38BDF8),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      isRecovery
+                          ? 'Запит на відновлення доступу'
+                          : (isCoach ? 'В мережі • Тренер школи' : 'В мережі'),
+                      style: TextStyle(
+                        color: isRecovery
+                            ? const Color(0xFFFBBF24).withValues(alpha: 0.8)
+                            : Colors.white54,
+                        fontSize: 11.5,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(LucideIcons.phone, color: Colors.cyanAccent),
+            icon: const Icon(LucideIcons.phone, color: Color(0xFF38BDF8), size: 20),
             onPressed: () {},
           ),
         ],

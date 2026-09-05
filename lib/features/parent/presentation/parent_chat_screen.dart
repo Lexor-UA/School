@@ -7,10 +7,13 @@ import 'package:swimming_school_app/shared/widgets/animated_water_background.dar
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 
 class ParentChatScreen extends ConsumerStatefulWidget {
-  const ParentChatScreen({super.key});
+  final String? title;
+  final String? subtitle;
+  const ParentChatScreen({super.key, this.title, this.subtitle});
 
   @override
   ConsumerState<ParentChatScreen> createState() => _ParentChatScreenState();
@@ -32,8 +35,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       dialogId: user.id, // Client ID is used as Dialog ID
       clientId: user.id,
       clientName: user.name,
-      clientAvatar: '', // Or appropriate avatar
+      clientAvatar: user.avatarUrl,
       senderId: user.id,
+      clientRole: user.role == UserRole.coach ? 'coach' : 'parent',
       text: text,
     );
 
@@ -67,7 +71,6 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     final user = ref.watch(authControllerProvider);
     final dialogId = user?.id ?? '';
     final messagesAsync = ref.watch(chatMessagesStreamProvider(dialogId));
-    final isDark = true; // Match admin UI for consistency, or we could pass it
 
     return Scaffold(
       backgroundColor: const Color(0xFF030D1B),
@@ -144,19 +147,22 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
             child: const Icon(LucideIcons.headset, color: Colors.cyanAccent),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Підтримка CitySwim',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  widget.title ?? 'Підтримка CitySwim',
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Row(
                   children: [
-                    Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                    SizedBox(width: 4),
-                    Text('Онлайн', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.subtitle ?? 'Онлайн',
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
                   ],
                 ),
               ],

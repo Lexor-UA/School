@@ -16,10 +16,20 @@ class AddClientSheet extends ConsumerStatefulWidget {
   ConsumerState<AddClientSheet> createState() => _AddClientSheetState();
 }
 
+class _ChildInputEntry {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+  }
+}
+
 class _AddClientSheetState extends ConsumerState<AddClientSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final List<TextEditingController> _childrenControllers = [];
+  final _ageController = TextEditingController();
+  final List<_ChildInputEntry> _childrenEntries = [];
   
   bool _isSuccess = false;
   bool _isLoading = false;
@@ -30,27 +40,28 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    for (var controller in _childrenControllers) {
-      controller.dispose();
+    _ageController.dispose();
+    for (var entry in _childrenEntries) {
+      entry.dispose();
     }
     super.dispose();
   }
 
   void _addChildField() {
     setState(() {
-      _childrenControllers.add(TextEditingController());
+      _childrenEntries.add(_ChildInputEntry());
     });
   }
 
   void _removeChildField(int index) {
     setState(() {
-      _childrenControllers[index].dispose();
-      _childrenControllers.removeAt(index);
+      _childrenEntries[index].dispose();
+      _childrenEntries.removeAt(index);
     });
   }
 
   Future<void> _submit() async {
-    final validChildren = _childrenControllers.where((c) => c.text.trim().isNotEmpty).toList();
+    final validChildren = _childrenEntries.where((c) => c.nameController.text.trim().isNotEmpty).toList();
     if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
       setState(() {
         _errorMessage = 'admin.add_client_fill_required'.tr();
@@ -64,6 +75,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     });
 
     try {
+      final clientAge = int.tryParse(_ageController.text.trim());
+
       // Generate ClientX login
       final usersSnap = await FirebaseFirestore.instance.collection('users')
           .where('role', isEqualTo: 'parent')
@@ -75,26 +88,38 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
 
       final userRef = FirebaseFirestore.instance.collection('users').doc();
 
-      await userRef.set({
+      final userData = <String, dynamic>{
         'id': userRef.id,
         'name': _nameController.text.trim(),
         'role': 'parent',
         'phone': _phoneController.text.trim(),
         'loginId': generatedLogin,
+        'password': '1',
         'avatarUrl': '',
-      }).timeout(const Duration(seconds: 5));
+      };
+      if (clientAge != null) {
+        userData['age'] = clientAge;
+      }
 
-      for (var childController in validChildren) {
+      await userRef.set(userData).timeout(const Duration(seconds: 5));
+
+      for (var entry in validChildren) {
         final childRef = FirebaseFirestore.instance.collection('children').doc();
-        await childRef.set({
+        final childAge = int.tryParse(entry.ageController.text.trim());
+        final childData = <String, dynamic>{
           'id': childRef.id,
           'parentId': userRef.id,
-          'name': childController.text.trim(),
+          'name': entry.nameController.text.trim(),
           'colorHex': '0xFF40C4FF',
           'level': 1,
           'xp': 0,
           'maxXp': 100,
-        }).timeout(const Duration(seconds: 5));
+          'notes': childAge != null ? 'Вік: $childAge' : '',
+        };
+        if (childAge != null) {
+          childData['age'] = childAge;
+        }
+        await childRef.set(childData).timeout(const Duration(seconds: 5));
       }
 
       if (mounted) {
@@ -362,9 +387,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
           const SizedBox(height: 14),
           _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
+          const SizedBox(height: 14),
+          _buildTextField('Вік клієнта (років)', LucideIcons.calendar, _ageController, isNumber: true),
           const SizedBox(height: 20),
           
-          if (_childrenControllers.isNotEmpty) ...[
+          if (_childrenEntries.isNotEmpty) ...[
             Row(
               children: [
                 const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
@@ -375,13 +402,20 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             const SizedBox(height: 10),
           ],
           
-          ...List.generate(_childrenControllers.length, (index) {
+          ...List.generate(_childrenEntries.length, (index) {
+            final entry = _childrenEntries[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: 10.0),
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.baby, _childrenControllers[index]),
+                    flex: 3,
+                    child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: _buildTextField('Вік (р.)', LucideIcons.calendarDays, entry.ageController, isNumber: true),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -409,7 +443,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               onPressed: _addChildField,
               icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
               label: Text(
-                _childrenControllers.isEmpty ? 'admin.add_client_add_child'.tr() : 'admin.add_client_add_more_child'.tr(),
+                _childrenEntries.isEmpty ? 'admin.add_client_add_child'.tr() : 'admin.add_client_add_more_child'.tr(),
                 style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),

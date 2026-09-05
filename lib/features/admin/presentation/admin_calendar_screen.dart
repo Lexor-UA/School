@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,25 +65,26 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // 1. Full-vibrancy animated water
-          const RepaintBoundary(child: AnimatedWaterBackground()),
+          // 1. Full-fidelity animated water ripples and particles (matching other screens)
+          const Positioned.fill(
+            child: RepaintBoundary(child: AnimatedWaterBackground()),
+          ),
           const Positioned.fill(
             child: RepaintBoundary(child: WaterParticles()),
           ),
 
-          // 2. Liquid gradient atmosphere overlay
+          // 2. Fluid aquatic gradient overlay (harmonized across app)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF00B4DB).withValues(alpha: 0.20),
+                    const Color(0xFF0284C7).withValues(alpha: 0.12),
+                    const Color(0xFF0F172A).withValues(alpha: 0.72),
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF0369A1).withValues(alpha: 0.12),
-                    const Color(0xFF0284C7).withValues(alpha: 0.06),
-                    const Color(0xFF09182B).withValues(alpha: 0.92),
-                  ],
-                  stops: const [0.0, 0.45, 1.0],
                 ),
               ),
             ),
@@ -136,34 +136,32 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.90),
-            const Color(0xFF0A1422).withValues(alpha: 0.95),
+            Color(0xFF0E1F35),
+            Color(0xFF081424),
           ],
         ),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1.0,
+          color: const Color(0xFF1E3552),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.50),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-            child: Column(
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Month Switcher
@@ -295,18 +293,18 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.white.withValues(alpha: 0.8)
+                              ? Colors.white.withValues(alpha: 0.9)
                               : (isToday
-                                  ? const Color(0xFF38BDF8).withValues(alpha: 0.6)
+                                  ? const Color(0xFF38BDF8)
                                   : Colors.transparent),
-                          width: isSelected ? 1.4 : 1,
+                          width: isSelected ? 1.2 : 1,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF00D2FF).withValues(alpha: 0.45),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
+                                  color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
                                 ),
                               ]
                             : null,
@@ -355,9 +353,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildMonthNavButton({required IconData icon, required VoidCallback onTap}) {
     return Material(
@@ -386,34 +383,32 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.90),
-            const Color(0xFF0A1422).withValues(alpha: 0.96),
+            Color(0xFF0E1F35),
+            Color(0xFF081424),
           ],
         ),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1.0,
+          color: const Color(0xFF1E3552),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.50),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-            child: Column(
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Section Header Row
@@ -551,8 +546,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildEmptyDayState(String dateStr) {
@@ -845,7 +839,16 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
                 ),
                 onSelected: (value) async {
-                  if (value == 'delete') {
+                  if (value == 'edit') {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => CreateClassSheet(
+                        classToEdit: c,
+                      ),
+                    );
+                  } else if (value == 'delete') {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -882,6 +885,23 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   }
                 },
                 itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.pencil, size: 16, color: Color(0xFF00E5FF)),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Редагувати заняття',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   PopupMenuItem(
                     value: 'delete',
                     child: Row(

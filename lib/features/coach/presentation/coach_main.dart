@@ -52,60 +52,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
               ),
             ),
 
-            // 3. Volumetric ambient depth orbs
-            Positioned(
-              top: -60,
-              right: -50,
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF00E5FF).withValues(alpha: 0.20),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 320,
-              left: -70,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF0284C7).withValues(alpha: 0.16),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 120,
-              right: -60,
-              child: Container(
-                width: 260,
-                height: 260,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF10B981).withValues(alpha: 0.12),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // 4. Main Tab Body
+            // 3. Main Tab Body
             SafeArea(
               bottom: false,
               child: IndexedStack(
@@ -173,7 +120,9 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     _buildDockItem(
                       index: 2,
                       icon: LucideIcons.users,
-                      label: 'coach.nav_swimmers'.tr(),
+                      label: 'coach.nav_swimmers'.tr() == 'Учні'
+                          ? 'Плавці'
+                          : ('coach.nav_swimmers'.tr() == 'Ученики' ? 'Пловцы' : 'coach.nav_swimmers'.tr()),
                       isSelected: selectedTab == 2,
                     ),
                     _buildDockItem(

@@ -520,6 +520,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 name: d['name'] ?? 'Клієнт',
                 phone: d['phone'] ?? '',
                 loginId: d['loginId'] ?? '',
+                password: (d['password'] as String?) ?? '1',
               );
             }),
           ],
@@ -667,6 +668,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               name: d['name'] ?? 'Клієнт',
               phone: d['phone'] ?? '',
               loginId: d['loginId'] ?? '',
+              password: (d['password'] as String?) ?? '1',
             );
           }),
           const SizedBox(height: 14),
@@ -757,6 +759,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     required String name,
     required String phone,
     required String loginId,
+    String password = '1',
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -809,6 +812,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     initialName: name,
                     initialPhone: phone,
                     initialLoginId: loginId,
+                    initialPassword: password,
                   ),
                 );
               },

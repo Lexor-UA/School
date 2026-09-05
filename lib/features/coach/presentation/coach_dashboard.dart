@@ -13,6 +13,9 @@ import 'package:swimming_school_app/features/schedule/controllers/schedule_contr
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'coach_journal_screen.dart';
+import 'coach_changes_banner.dart';
+import 'coach_class_attendees_sheet.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class SelectedCoachClassIdNotifier extends Notifier<String?> {
@@ -39,6 +42,23 @@ class CoachTabNotifier extends Notifier<int> {
 /// Provider for active coach tab
 final coachTabProvider = NotifierProvider<CoachTabNotifier, int>(CoachTabNotifier.new);
 
+/// Safe translation helper that always provides clean Ukrainian fallbacks
+/// even if asset bundles were not reloaded during hot reload.
+String _coachTr(String key, String fallback, {List<String>? args}) {
+  final val = args != null ? key.tr(args: args) : key.tr();
+  if (val == key || val.isEmpty) {
+    if (args != null && args.isNotEmpty) {
+      String res = fallback;
+      for (int i = 0; i < args.length; i++) {
+        res = res.replaceAll('{$i}', args[i]);
+      }
+      return res;
+    }
+    return fallback;
+  }
+  return val;
+}
+
 // ============================================================================
 // TAB 1: COACH SCHEDULE & SHIFT (Розклад та Зміна)
 // ============================================================================
@@ -57,6 +77,24 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
     final scheduleAsync = ref.watch(scheduleControllerProvider);
+    final allClasses = scheduleAsync.value ?? [];
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayClasses = allClasses.where((c) {
+      final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
+      if (!classDate.isAtSameMomentAs(today)) return false;
+      final isMock = user?.id == 'mock_coach';
+      final matchesId = c.coachId == user?.id;
+      final matchesName = user != null &&
+          user.name.isNotEmpty &&
+          c.coachName.toLowerCase().contains(user.name.toLowerCase());
+      return matchesId || matchesName || isMock;
+    }).toList();
+
+    final int totalKidsToday = todayClasses.fold<int>(0, (acc, c) => acc + c.enrolledChildIds.length);
+    final int totalCapToday = todayClasses.fold<int>(0, (acc, c) => acc + (c.maxCapacity > 0 ? c.maxCapacity : 8));
+    final int totalFreeToday = (totalCapToday - totalKidsToday).clamp(0, 9999);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -143,59 +181,67 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                           ],
                         ),
                       ),
-                      // Quick QR action button
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                      // Quick QR Scanner Action Button (Icon-only cyber-luxe badge)
+                      Tooltip(
+                        message: _coachTr('coach.scan_qr_pass', 'Сканувати перепустку'),
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const QrScannerScreen()),
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(LucideIcons.scanLine, color: Colors.white, size: 16),
-                              SizedBox(width: 6),
-                              Text(
-                                'QR',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 13,
-                                  letterSpacing: 0.5,
-                                ),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            ],
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.45),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.qr_code_scanner_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       // Quick Logout button
-                      GestureDetector(
-                        onTap: () => _confirmCoachLogout(context, ref),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.18),
+                      Tooltip(
+                        message: 'Вийти з кабінету',
+                        child: GestureDetector(
+                          onTap: () => _confirmCoachLogout(context, ref),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(LucideIcons.logOut, color: Colors.white70, size: 18),
                             ),
                           ),
-                          child: const Icon(LucideIcons.logOut, color: Colors.white70, size: 16),
                         ),
                       ),
                     ],
@@ -207,6 +253,22 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   _buildShiftTelemetryCard(),
 
                   const SizedBox(height: 14),
+
+                  // Changes & Activity Feed Banner
+                  const CoachChangesBanner(),
+
+                  const SizedBox(height: 14),
+
+                  // Daily Headcount & Capacity Summary
+                  if (todayClasses.isNotEmpty) ...[
+                    _buildDailyHeadcountCard(
+                      totalKidsToday,
+                      todayClasses.length,
+                      totalFreeToday,
+                      totalCapToday,
+                    ),
+                    const SizedBox(height: 14),
+                  ],
 
                   // Quick Attendance Journal Action Button
                   GestureDetector(
@@ -380,9 +442,9 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               if (displayClasses.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 140),
+                    child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -406,14 +468,14 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                             style: const TextStyle(color: Colors.white54, fontSize: 13),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 20),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.18),
                               foregroundColor: const Color(0xFF00E5FF),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                             ),
                             onPressed: () {
                               ref.read(coachTabProvider.notifier).setTab(1);
@@ -432,7 +494,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -547,12 +609,89 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
   }
 
 
+  Widget _buildDailyHeadcountCard(int totalKids, int totalClasses, int freeSlots, int totalCapacity) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+          width: 1.1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: const Icon(LucideIcons.users, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'НА СЬОГОДНІ: ',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    Text(
+                      '$totalKids дітей у $totalClasses ${totalClasses == 1 ? "групі" : "групах"}',
+                      style: const TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  freeSlots > 0
+                      ? 'Вільних місць: $freeSlots (з $totalCapacity місць)'
+                      : 'Всі групи заповнені ($totalCapacity місць)',
+                  style: TextStyle(
+                    color: freeSlots > 0 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildClassCard(GroupClass gClass, int index) {
     final startTimeStr = '${gClass.startTime.hour.toString().padLeft(2, '0')}:${gClass.startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${gClass.endTime.hour.toString().padLeft(2, '0')}:${gClass.endTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = gClass.enrolledChildIds.length;
     final attendedCount = gClass.attendedChildIds.length;
     final maxCap = gClass.maxCapacity > 0 ? gClass.maxCapacity : 8;
+    final freeSlots = (maxCap - enrolledCount).clamp(0, maxCap);
     final fillFraction = (enrolledCount / maxCap).clamp(0.0, 1.0);
 
     return Container(
@@ -578,7 +717,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Category pill, Lane Badge & Time
+                // Top Row: Category pill, Lane Badge & Free Spots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -620,6 +759,48 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                 ),
                               ),
                             ),
+                          // Free slots indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: freeSlots == 0
+                                  ? const Color(0xFFEF4444).withValues(alpha: 0.16)
+                                  : (freeSlots <= 2
+                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.16)
+                                      : const Color(0xFF10B981).withValues(alpha: 0.16)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: freeSlots == 0
+                                    ? const Color(0xFFEF4444).withValues(alpha: 0.45)
+                                    : (freeSlots <= 2
+                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
+                                        : const Color(0xFF10B981).withValues(alpha: 0.45)),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  freeSlots == 0 ? LucideIcons.alertCircle : LucideIcons.checkCircle2,
+                                  size: 11,
+                                  color: freeSlots == 0
+                                      ? const Color(0xFFEF4444)
+                                      : (freeSlots <= 2 ? const Color(0xFFF59E0B) : const Color(0xFF10B981)),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
+                                  style: TextStyle(
+                                    color: freeSlots == 0
+                                        ? const Color(0xFFEF4444)
+                                        : (freeSlots <= 2 ? const Color(0xFFF59E0B) : const Color(0xFF10B981)),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -681,7 +862,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   children: [
                     Flexible(
                       child: Text(
-                        'coach.students_telemetry'.tr(args: ['$enrolledCount', '$maxCap', '$attendedCount']),
+                        'Записано: $enrolledCount з $maxCap учнів (присутні: $attendedCount)',
                         style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -689,7 +870,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'coach.spots_occupied'.tr(args: ['${(fillFraction * 100).toInt()}%']),
+                      '${(fillFraction * 100).toInt()}%',
                       style: TextStyle(
                         color: fillFraction > 0.85 ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                         fontSize: 12,
@@ -711,50 +892,43 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Action: Open Journal
+                // Action Button: Attendee Roster (Option A)
                 GestureDetector(
-                  onTap: () {
-                    ref.read(selectedCoachClassIdProvider.notifier).setClassId(gClass.id);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
-                    );
-                  },
+                  onTap: () => showCoachClassAttendeesSheet(context, gClass),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                          const Color(0xFF0284C7).withValues(alpha: 0.25),
-                        ],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.45)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.clipboardList, color: Colors.white, size: 16),
+                        const Icon(LucideIcons.users, color: Colors.white, size: 17),
                         const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'coach.open_journal'.tr(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          'Склад групи ($enrolledCount)',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(LucideIcons.chevronRight, color: Color(0xFF00E5FF), size: 16),
                       ],
                     ),
                   ),
@@ -766,6 +940,881 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
       ),
     ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.1, end: 0);
   }
+}
+
+// ============================================================================
+// SHARED COACH ACTIONS: MEDALS, XP, NOTES & SWIMMER PROFILE
+// ============================================================================
+
+Future<void> quickAddChildXp(BuildContext context, Child child, int amount) async {
+  var newXp = child.xp + amount;
+  var newLevel = child.level;
+  var newMaxXp = child.maxXp > 0 ? child.maxXp : 100;
+  bool leveledUp = false;
+  while (newXp >= newMaxXp) {
+    newXp -= newMaxXp;
+    newLevel += 1;
+    newMaxXp = (newMaxXp * 1.25).toInt();
+    leveledUp = true;
+  }
+
+  try {
+    await FirebaseFirestore.instance.collection('children').doc(child.id).update({
+      'xp': newXp,
+      'level': newLevel,
+      'maxXp': newMaxXp,
+    });
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.zap, color: Color(0xFF00E5FF), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  leveledUp
+                      ? '+$amount XP для ${child.name}! 🎉 Новий рівень $newLevel!'
+                      : '+$amount XP успішно нараховано плавцю ${child.name}! 🚀',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF0284C7),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error updating XP: $e');
+  }
+}
+
+Widget _buildMedalTile(BuildContext context, Child child, String id, String name, String desc, String icon) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+    ),
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+          ),
+          child: Center(child: Text(icon, style: const TextStyle(fontSize: 22))),
+        ),
+        title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        subtitle: Text(desc, style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
+        trailing: const Icon(LucideIcons.chevronRight, color: Color(0xFF00E5FF), size: 18),
+        onTap: () async {
+          Navigator.pop(context);
+          final achievement = Achievement(
+            id: id,
+            name: name,
+            description: desc,
+            iconType: icon,
+            isUnlocked: true,
+          );
+          final newAchievements = List<Achievement>.from(child.achievements)..add(achievement);
+
+          var newXp = child.xp + 25;
+          var newLevel = child.level;
+          var newMaxXp = child.maxXp > 0 ? child.maxXp : 100;
+          bool leveledUp = false;
+          while (newXp >= newMaxXp) {
+            newXp -= newMaxXp;
+            newLevel += 1;
+            newMaxXp = (newMaxXp * 1.25).toInt();
+            leveledUp = true;
+          }
+
+          try {
+            await FirebaseFirestore.instance.collection('children').doc(child.id).update({
+              'achievements': newAchievements.map((a) => a.toJson()).toList(),
+              'xp': newXp,
+              'level': newLevel,
+              'maxXp': newMaxXp,
+            });
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Text(icon, style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          leveledUp
+                              ? '${_coachTr('coach.medal_awarded', 'Нагороду "{0}" успішно вручено плавцю {1}!', args: [name, child.name])} 🎉 Новий рівень $newLevel!'
+                              : _coachTr('coach.medal_awarded', 'Нагороду "{0}" успішно вручено плавцю {1}!', args: [name, child.name]),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF0284C7),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          } catch (e) {
+            debugPrint('Error awarding medal: $e');
+          }
+        },
+      ),
+    ),
+  );
+}
+
+void showAwardMedalSheet(BuildContext context, Child child) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF09182B).withValues(alpha: 0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(ctx).height * 0.82,
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      _coachTr('coach.award_title', 'Вручити нагороду'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _coachTr('coach.award_select_for', 'Оберіть відзнаку для плавця {0}', args: [child.name]),
+                      style: const TextStyle(color: Colors.white60, fontSize: 13),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildMedalTile(
+                      context,
+                      child,
+                      'champion',
+                      _coachTr('coach.medal_champion_name', 'Чемпіон дня'),
+                      _coachTr('coach.medal_champion_desc', 'За найкраще старання та витривалість'),
+                      '🏆',
+                    ),
+                    _buildMedalTile(
+                      context,
+                      child,
+                      'dolphin',
+                      _coachTr('coach.medal_dolphin_name', 'Дельфін'),
+                      _coachTr('coach.medal_dolphin_desc', 'Ідеальне ковзання та техніка гребка'),
+                      '🐬',
+                    ),
+                    _buildMedalTile(
+                      context,
+                      child,
+                      'torpedo',
+                      _coachTr('coach.medal_torpedo_name', 'Швидкісна торпеда'),
+                      _coachTr('coach.medal_torpedo_desc', 'За швидкість та реакцію на старті'),
+                      '⚡',
+                    ),
+                    _buildMedalTile(
+                      context,
+                      child,
+                      'superstar',
+                      _coachTr('coach.medal_superstar_name', 'Супер Зірка'),
+                      _coachTr('coach.medal_superstar_desc', 'За дисципліну та командну підтримку'),
+                      '⭐',
+                    ),
+                    _buildMedalTile(
+                      context,
+                      child,
+                      'diver',
+                      _coachTr('coach.medal_diver_name', 'Майстер занурення'),
+                      _coachTr('coach.medal_diver_desc', 'Впевнене плавання під водою'),
+                      '🤿',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+void showCoachNoteDialog(BuildContext context, Child child) {
+  final textController = TextEditingController();
+  FirebaseFirestore.instance.collection('children').doc(child.id).get().then((doc) {
+    if (doc.exists && doc.data() != null && doc.data()!['notes'] != null) {
+      textController.text = doc.data()!['notes'].toString();
+    }
+  });
+
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      scrollable: true,
+      backgroundColor: const Color(0xFF09182B),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+      ),
+      title: Text(
+        _coachTr('coach.note_for', 'Нотатка про плавця {0}', args: [child.name]),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      content: TextField(
+        controller: textController,
+        style: const TextStyle(color: Colors.white),
+        maxLines: 3,
+        decoration: InputDecoration(
+          hintText: _coachTr('coach.note_hint', 'Наприклад: Відпрацювати вдих під праву руку...'),
+          hintStyle: const TextStyle(color: Colors.white38),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(_coachTr('coach.btn_cancel', 'Скасувати'), style: const TextStyle(color: Colors.white54)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00E5FF),
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () async {
+            final note = textController.text.trim();
+            await FirebaseFirestore.instance.collection('children').doc(child.id).update({
+              'notes': note,
+            });
+            if (ctx.mounted) Navigator.pop(ctx);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_coachTr('coach.save_success', 'Нотатку збережено!'))),
+              );
+            }
+          },
+          child: Text(_coachTr('admin.save', 'Зберегти'), style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
+
+void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('children').doc(initialChild.id).snapshots(),
+        builder: (bottomSheetContext, snapshot) {
+          final child = (snapshot.hasData && snapshot.data != null && snapshot.data!.exists)
+              ? Child.fromJson({'id': snapshot.data!.id, ...snapshot.data!.data() as Map<String, dynamic>})
+              : initialChild;
+
+          String? note;
+          if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
+            final data = snapshot.data!.data() as Map<String, dynamic>?;
+            if (data != null && data['notes'] != null) {
+              note = data['notes'].toString();
+            }
+          }
+
+          final double progress = child.maxXp > 0
+              ? (child.xp / child.maxXp).clamp(0.0, 1.0)
+              : 0.0;
+          final int xpLeft = (child.maxXp - child.xp).clamp(0, 99999);
+
+          final standardMedals = [
+            {
+              'id': 'champion',
+              'name': _coachTr('coach.medal_champion_name', 'Чемпіон дня'),
+              'desc': _coachTr('coach.medal_champion_desc', 'За найкраще старання та витривалість'),
+              'icon': '🏆'
+            },
+            {
+              'id': 'dolphin',
+              'name': _coachTr('coach.medal_dolphin_name', 'Дельфін'),
+              'desc': _coachTr('coach.medal_dolphin_desc', 'Ідеальне ковзання та техніка гребка'),
+              'icon': '🐬'
+            },
+            {
+              'id': 'torpedo',
+              'name': _coachTr('coach.medal_torpedo_name', 'Швидкісна торпеда'),
+              'desc': _coachTr('coach.medal_torpedo_desc', 'За швидкість та реакцію на старті'),
+              'icon': '⚡'
+            },
+            {
+              'id': 'superstar',
+              'name': _coachTr('coach.medal_superstar_name', 'Супер Зірка'),
+              'desc': _coachTr('coach.medal_superstar_desc', 'За дисципліну та командну підтримку'),
+              'icon': '⭐'
+            },
+            {
+              'id': 'diver',
+              'name': _coachTr('coach.medal_diver_name', 'Майстер занурення'),
+              'desc': _coachTr('coach.medal_diver_desc', 'Впевнене плавання під водою'),
+              'icon': '🤿'
+            },
+          ];
+
+          return Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF09182B).withValues(alpha: 0.96),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  spreadRadius: -4,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(ctx).height * 0.88,
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top drag bar & close button
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _coachTr('coach.swimmer_details_title', 'ПРОФІЛЬ ТА ДОСЯГНЕННЯ ПЛАВЦЯ'),
+                              style: const TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.4,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(LucideIcons.x, color: Colors.white60, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Swimmer Hero Card
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                                const Color(0xFF0284C7).withValues(alpha: 0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
+                                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      child.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                                          ),
+                                          child: Text(
+                                            '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
+                                            style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w800),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${child.xp}/${child.maxXp} XP',
+                                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // XP Progress Card
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${_coachTr('coach.level_label', 'Рівень').toUpperCase()} ${child.level}',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                                  ),
+                                  Text(
+                                    _coachTr('coach.to_next_level', 'До наст. рівня: {0} XP', args: ['$xpLeft']),
+                                    style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  height: 10,
+                                  width: double.infinity,
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: FractionallySizedBox(
+                                      widthFactor: progress,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+                                              blurRadius: 8,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Action Buttons Hub - Perfectly Responsive, Zero Overflows!
+                        Row(
+                          children: [
+                            // 1. Award Medal Button
+                            Expanded(
+                              flex: 3,
+                              child: GestureDetector(
+                                onTap: () => showAwardMedalSheet(context, child),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text('🏅', style: TextStyle(fontSize: 16)),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            _coachTr('coach.award_medal_btn', 'Вручити нагороду'),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // 2. +25 XP Bonus Button
+                            Expanded(
+                              flex: 2,
+                              child: GestureDetector(
+                                onTap: () => quickAddChildXp(context, child, 25),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(LucideIcons.zap, color: Colors.white, size: 15),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            _coachTr('coach.bonus_xp_btn', '+25 XP Бонус'),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // 3. Note button
+                            GestureDetector(
+                              onTap: () => showCoachNoteDialog(context, child),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                                ),
+                                child: const Icon(LucideIcons.fileText, color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Note Preview if exists
+                        if (note != null && note.trim().isNotEmpty) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF38BDF8).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(LucideIcons.notepadText, color: Color(0xFF38BDF8), size: 18),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _coachTr('coach.coach_note_label', 'Нотатка тренера:'),
+                                        style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        note,
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(LucideIcons.pencil, color: Colors.white60, size: 15),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => showCoachNoteDialog(context, child),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+
+                        // Awards Collection Shelf
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${_coachTr('coach.swimmer_collection_title', 'КОЛЕКЦІЯ НАГОРОД')} (${child.achievements.length})',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => showAwardMedalSheet(context, child),
+                              child: Text(
+                                '+ ${_coachTr('coach.award_action', 'Вручити')}',
+                                style: const TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // List of medals
+                        ...standardMedals.map((m) {
+                          final count = child.achievements.where((a) => a.id == m['id']).length;
+                          final isUnlocked = count > 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isUnlocked
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.08)
+                                  : Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isUnlocked
+                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
+                                    : Colors.white.withValues(alpha: 0.08),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isUnlocked
+                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                                        : Colors.white.withValues(alpha: 0.06),
+                                    shape: BoxShape.circle,
+                                    border: isUnlocked
+                                        ? Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5))
+                                        : null,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      m['icon']!,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        color: isUnlocked ? null : Colors.white38,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        m['name']!,
+                                        style: TextStyle(
+                                          color: isUnlocked ? Colors.white : Colors.white60,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        m['desc']!,
+                                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (isUnlocked)
+                                  GestureDetector(
+                                    onTap: () {
+                                      showAwardMedalSheet(context, child);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                      ),
+                                      child: Text(
+                                        count > 1 ? '${_coachTr('coach.awarded_status', 'Здобуто ✓')} ($count)' : _coachTr('coach.awarded_status', 'Здобуто ✓'),
+                                        style: const TextStyle(
+                                          color: Color(0xFF10B981),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  GestureDetector(
+                                    onTap: () {
+                                      showAwardMedalSheet(context, child);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '+ ${_coachTr('coach.award_action', 'Вручити')}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }
 
 // ============================================================================
@@ -837,198 +1886,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
     }
   }
 
-  void _awardMedal(Child child) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF09182B).withValues(alpha: 0.95),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(ctx).height * 0.82,
-                ),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'coach.award_title'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'coach.award_select_for'.tr(args: [child.name]),
-                        style: const TextStyle(color: Colors.white60, fontSize: 13),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildMedalTile(child, 'champion', 'coach.medal_champion_name'.tr(), 'coach.medal_champion_desc'.tr(), '🏆'),
-                      _buildMedalTile(child, 'dolphin', 'coach.medal_dolphin_name'.tr(), 'coach.medal_dolphin_desc'.tr(), '🐬'),
-                      _buildMedalTile(child, 'torpedo', 'coach.medal_torpedo_name'.tr(), 'coach.medal_torpedo_desc'.tr(), '⚡'),
-                      _buildMedalTile(child, 'superstar', 'coach.medal_superstar_name'.tr(), 'coach.medal_superstar_desc'.tr(), '⭐'),
-                      _buildMedalTile(child, 'diver', 'coach.medal_diver_name'.tr(), 'coach.medal_diver_desc'.tr(), '🤿'),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMedalTile(Child child, String id, String name, String desc, String icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: ListTile(
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-          ),
-          child: Center(child: Text(icon, style: const TextStyle(fontSize: 22))),
-        ),
-        title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Text(desc, style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
-        trailing: const Icon(LucideIcons.chevronRight, color: Color(0xFF00E5FF), size: 18),
-        onTap: () async {
-          Navigator.pop(context);
-          final achievement = Achievement(
-            id: id,
-            name: name,
-            description: desc,
-            iconType: icon,
-            isUnlocked: true,
-          );
-          final newAchievements = List<Achievement>.from(child.achievements)..add(achievement);
-          final newXp = child.xp + 25;
-
-          await FirebaseFirestore.instance.collection('children').doc(child.id).update({
-            'achievements': newAchievements.map((a) => a.toJson()).toList(),
-            'xp': newXp,
-          });
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Text(icon, style: const TextStyle(fontSize: 20)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text('coach.medal_awarded'.tr(args: [name, child.name])),
-                    ),
-                  ],
-                ),
-                backgroundColor: const Color(0xFF0284C7),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        },
-      ),
-    ),
-  );
-}
-
-  void _showNoteDialog(Child child) {
-    final textController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        scrollable: true,
-        backgroundColor: const Color(0xFF09182B),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
-        ),
-        title: Text(
-          'coach.note_for'.tr(args: [child.name]),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: TextField(
-          controller: textController,
-          style: const TextStyle(color: Colors.white),
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'coach.note_hint'.tr(),
-            hintStyle: const TextStyle(color: Colors.white38),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('coach.btn_cancel'.tr(), style: const TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              final note = textController.text.trim();
-              if (note.isNotEmpty) {
-                await FirebaseFirestore.instance.collection('children').doc(child.id).update({
-                  'notes': note,
-                });
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('coach.save_success'.tr())),
-                );
-              }
-            },
-            child: Text('admin.save'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
+  void _awardMedal(Child child) => showAwardMedalSheet(context, child);
+  void _showNoteDialog(Child child) => showCoachNoteDialog(context, child);
 
   @override
   Widget build(BuildContext context) {
@@ -1079,80 +1938,256 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'coach.journal_heading'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'coach.journal_subheading'.tr(),
-                        style: const TextStyle(color: Colors.white54, fontSize: 12.5),
+                      // 1. Header Bar: Frosted back button + Live status badge + Title
+                      Row(
+                        children: [
+                          if (Navigator.canPop(context)) ...[
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 42,
+                                height: 42,
+                                margin: const EdgeInsets.only(right: 14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
+                                ),
+                              ),
+                            ),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF10B981).withValues(alpha: 0.8),
+                                            blurRadius: 6,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      'ТРЕНЕРСЬКИЙ ЖУРНАЛ',
+                                      style: TextStyle(
+                                        color: Color(0xFF00E5FF),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  _coachTr('coach.journal_heading', 'Відвідуваність та нагороди'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
 
-                      // Class selection horizontal chips
-                      SizedBox(
-                        height: 44,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: classes.length,
-                          itemBuilder: (context, i) {
-                            final c = classes[i];
+                      // 2. Full-Width Segmented Class Selector (Zero horizontal scroll)
+                      Builder(
+                        builder: (context) {
+                          Widget buildClassCard(GroupClass c, {bool isExpanded = false}) {
                             final isSel = c.id == activeClass.id;
                             final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
-                            return GestureDetector(
+                            final isGym = c.category.toLowerCase().contains('gym') || c.title.toLowerCase().contains('gym') || c.title.toLowerCase().contains('зал');
+                            final sportIcon = isGym ? '🏋️' : '🏊';
+                            final count = c.enrolledChildIds.length;
+
+                            final card = GestureDetector(
                               onTap: () {
                                 ref.read(selectedCoachClassIdProvider.notifier).setClassId(c.id);
                                 _fetchChildren(c.enrolledChildIds);
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                 decoration: BoxDecoration(
-                                  color: isSel ? const Color(0xFF00E5FF).withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.06),
+                                  gradient: isSel
+                                      ? LinearGradient(
+                                          colors: [
+                                            const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                                            const Color(0xFF0284C7).withValues(alpha: 0.18),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : null,
+                                  color: isSel ? null : Colors.white.withValues(alpha: 0.06),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: isSel ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.12),
-                                    width: isSel ? 1.4 : 1,
+                                    width: isSel ? 1.6 : 1,
                                   ),
+                                  boxShadow: isSel
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : [],
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      timeStr,
-                                      style: TextStyle(
-                                        color: isSel ? const Color(0xFF00E5FF) : Colors.white70,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(sportIcon, style: const TextStyle(fontSize: 16)),
+                                        const SizedBox(width: 7),
+                                        Text(
+                                          timeStr,
+                                          style: TextStyle(
+                                            color: isSel ? const Color(0xFF00E5FF) : Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 14,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        if (isSel)
+                                          Container(
+                                            width: 7,
+                                            height: 7,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF00E5FF),
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
+                                                  blurRadius: 6,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      c.title,
-                                      style: TextStyle(
-                                        color: isSel ? Colors.white : Colors.white60,
-                                        fontSize: 13,
-                                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                      ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            c.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: isSel ? Colors.white : Colors.white70,
+                                              fontSize: 12.5,
+                                              fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: isSel
+                                                ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                                                : Colors.white.withValues(alpha: 0.08),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: isSel
+                                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                                  : Colors.white.withValues(alpha: 0.08),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                LucideIcons.users,
+                                                size: 10.5,
+                                                color: isSel ? const Color(0xFF00E5FF) : Colors.white60,
+                                              ),
+                                              const SizedBox(width: 3.5),
+                                              Text(
+                                                '$count',
+                                                style: TextStyle(
+                                                  color: isSel ? const Color(0xFF00E5FF) : Colors.white70,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
                             );
-                          },
-                        ),
+
+                            return isExpanded ? Expanded(child: card) : card;
+                          }
+
+                          if (classes.length == 1) {
+                            return buildClassCard(classes.first);
+                          } else if (classes.length == 2) {
+                            return Row(
+                              children: [
+                                buildClassCard(classes[0], isExpanded: true),
+                                const SizedBox(width: 10),
+                                buildClassCard(classes[1], isExpanded: true),
+                              ],
+                            );
+                          } else {
+                            return LayoutBuilder(
+                              builder: (context, constraints) {
+                                final cardWidth = (constraints.maxWidth - 10) / 2;
+                                return Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: classes.map((c) {
+                                    final isLastOdd = classes.length % 2 != 0 && c == classes.last;
+                                    return SizedBox(
+                                      width: isLastOdd ? constraints.maxWidth : cardWidth,
+                                      child: buildClassCard(c),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            );
+                          }
+                        },
                       ),
+                      const SizedBox(height: 16),
 
-                      const SizedBox(height: 18),
-
-                      // QR Scan Hero Button
+                      // 3. Cyber-Luxe Smart QR Scanner Card with modern QR code scanner icon
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
@@ -1160,52 +2195,102 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         ),
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
+                                blurRadius: 18,
+                                offset: const Offset(0, 5),
                               ),
                             ],
                           ),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(LucideIcons.scanLine, color: Colors.white, size: 22),
-                              const SizedBox(width: 12),
-                              Text(
-                                'coach.scan_qr_pass'.tr(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 15,
-                                  letterSpacing: 1.5,
+                              // Glowing modern QR Scanner Badge with viewfinder & laser beam
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  borderRadius: BorderRadius.circular(15),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.4),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.12),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 26),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+
+                              // Text hierarchy
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _coachTr('coach.scan_qr_pass', 'СКАНУВАТИ ПЕРЕПУСТКУ'),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 14.5,
+                                        letterSpacing: 1.1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Миттєва відмітка входу учня біля басейну',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.85),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Right arrow indicator circle
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: Icon(LucideIcons.chevronRight, color: Colors.white, size: 18),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 18),
 
-                      const SizedBox(height: 20),
-
-                      // Attendance count header
+                      // 4. Attendance count header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'coach.students_list_heading'.tr(args: ['${_enrolledChildren.length}']),
+                            'СПИСОК ПЛАВЦІВ (${_enrolledChildren.length})',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 1.5,
+                              letterSpacing: 1.4,
                             ),
                           ),
                           Container(
@@ -1214,14 +2299,27 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                               color: const Color(0xFF10B981).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              'coach.present_summary'.tr(args: ['$presentCount', '$enrolledCount']),
-                              style: const TextStyle(
-                                color: Color(0xFF10B981),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(LucideIcons.check, size: 13, color: Color(0xFF10B981)),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Присутні: $presentCount з $enrolledCount',
+                                  style: const TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -1245,16 +2343,43 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                 SliverToBoxAdapter(
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          const Icon(LucideIcons.users, color: Colors.white38, size: 48),
-                          const SizedBox(height: 12),
-                          Text(
-                            'coach.no_students_enrolled'.tr(),
-                            style: const TextStyle(color: Colors.white60, fontSize: 14),
-                          ),
-                        ],
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 60),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
+                                border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+                              ),
+                              child: const Center(
+                                child: Icon(LucideIcons.users, color: Color(0xFF00E5FF), size: 28),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'На це заняття ще немає записаних учнів',
+                              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Учні з\'являться тут автоматично після запису або сканування QR-перепустки',
+                              style: TextStyle(color: Colors.white54, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1496,7 +2621,11 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'coach.swimmers_heading'.tr(),
+                              'coach.swimmers_heading'.tr() == 'Мої учні'
+                                  ? 'Мої плавці'
+                                  : ('coach.swimmers_heading'.tr() == 'Мои ученики'
+                                      ? 'Мои пловцы'
+                                      : 'coach.swimmers_heading'.tr()),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 21,
@@ -1506,7 +2635,7 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'coach.swimmers_subheading'.tr(),
+                              'coach.swimmers_subheading'.tr().replaceAll('юних плавців', 'плавців'),
                               style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12.5,
@@ -1532,7 +2661,7 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
                       style: const TextStyle(color: Colors.white),
                       onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                       decoration: InputDecoration(
-                        hintText: 'coach.swimmers_search'.tr(),
+                        hintText: 'coach.swimmers_search'.tr().replaceAll('учня', 'плавця').replaceAll('ученика', 'пловца'),
                         hintStyle: const TextStyle(color: Colors.white38, fontSize: 13.5),
                         prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF00E5FF), size: 18),
                         border: InputBorder.none,
@@ -1565,13 +2694,16 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
                 return SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
-                    child: Text('coach.no_swimmers_found'.tr(), style: const TextStyle(color: Colors.white54)),
+                    child: Text(
+                      'coach.no_swimmers_found'.tr().replaceAll('Вихованців', 'Плавців').replaceAll('Учнів', 'Плавців'),
+                      style: const TextStyle(color: Colors.white54),
+                    ),
                   ),
                 );
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 110),
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 140),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -1590,6 +2722,8 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
   }
 
   Widget _buildSwimmerDirectoryCard(Child child, int index) {
+    final progress = child.maxXp > 0 ? (child.xp / child.maxXp).clamp(0.0, 1.0) : 0.0;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1597,83 +2731,242 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
-      child: ClipRRect(
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => showSwimmerDetailsSheet(context, child),
+          splashColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+          highlightColor: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.2),
-                      child: Text(
-                        child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
-                        style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            child.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    // Row 1: Header (Avatar + Name & Level/XP + Chevron)
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                                blurRadius: 10,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${'coach.level_label'.tr()} ${child.level}  •  ${child.xp}/${child.maxXp} XP',
-                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          child: Center(
+                            child: Text(
+                              child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
                           ),
-                        ],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                child.name,
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+                                    ),
+                                    child: Text(
+                                      '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
+                                      style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 10.5, fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${child.xp}/${child.maxXp} XP',
+                                    style: const TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(LucideIcons.chevronRight, color: Color(0xFF00E5FF), size: 16),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Full-width mini progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Container(
+                        height: 4,
+                        width: double.infinity,
+                        color: Colors.white.withValues(alpha: 0.08),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: progress,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        'coach.awards_badge'.tr(args: ['${child.achievements.length}']),
-                        style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w700),
-                      ),
+
+                    const SizedBox(height: 10),
+
+                    // Row 2: Actions - 100% responsive, never overflows
+                    Row(
+                      children: [
+                        // Medal Award button
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => showAwardMedalSheet(context, child),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                                    const Color(0xFFD97706).withValues(alpha: 0.18),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.45)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text('🏅', style: TextStyle(fontSize: 13)),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        child.achievements.isEmpty
+                                            ? _coachTr('coach.award_btn_short', 'Нагородити')
+                                            : '${_coachTr('coach.award_btn_short', 'Нагородити')} (${child.achievements.length})',
+                                        style: const TextStyle(
+                                          color: Color(0xFFFBBF24),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // +25 XP quick bonus button
+                        GestureDetector(
+                          onTap: () => quickAddChildXp(context, child, 25),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.zap, size: 13, color: Color(0xFF00E5FF)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '+25 XP',
+                                  style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11.5, fontWeight: FontWeight.w800),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Note button
+                        GestureDetector(
+                          onTap: () => showCoachNoteDialog(context, child),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                            ),
+                            child: const Icon(LucideIcons.fileText, color: Colors.white70, size: 15),
+                          ),
+                        ),
+                      ],
                     ),
+                    if (child.achievements.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: child.achievements.take(4).map((a) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(a.iconType, style: const TextStyle(fontSize: 12)),
+                                const SizedBox(width: 4),
+                                Text(a.name, style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
-                if (child.achievements.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: child.achievements.take(4).map((a) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(a.iconType, style: const TextStyle(fontSize: 12)),
-                            const SizedBox(width: 4),
-                            Text(a.name, style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
         ),
@@ -1734,7 +3027,7 @@ class CoachProfileTab extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 150),
         child: Column(
           children: [
             // Coach Identity Card
@@ -1837,80 +3130,48 @@ class CoachProfileTab extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Settings & Quick Support Actions
-            Material(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
-              shape: RoundedRectangleBorder(
+            // Support Action Card (Чат з Адміністратором)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  // App Language Selector
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(LucideIcons.globe, color: Color(0xFF00E5FF), size: 20),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
                     ),
-                    title: Text(
-                      'coach.language_settings'.tr(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    subtitle: Text(
-                      _getCurrentCoachLangName(context.locale.languageCode),
-                      style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11.5, fontWeight: FontWeight.w600),
-                    ),
-                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
-                    onTap: () => _showCoachLanguageSheet(context),
+                    child: const Icon(LucideIcons.messageSquare, color: Color(0xFF00E5FF), size: 20),
                   ),
-                  Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(LucideIcons.messageSquare, color: Color(0xFF00E5FF), size: 20),
-                    ),
-                    title: Text('coach.chat_admin'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('coach.chat_admin_desc'.tr(), style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
-                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('coach.chat_admin_desc'.tr())),
-                      );
-                    },
+                  title: Text(
+                    'coach.chat_admin'.tr(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5),
                   ),
-                  Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(LucideIcons.phoneCall, color: Colors.redAccent, size: 20),
-                    ),
-                    title: Text('coach.call_medical'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('coach.call_medical_desc'.tr(), style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
-                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('coach.call_medical_desc'.tr()),
-                          backgroundColor: Colors.redAccent,
+                  subtitle: Text(
+                    'coach.chat_admin_desc'.tr(),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                  ),
+                  trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ParentChatScreen(
+                          title: 'Чат з Адміністратором',
+                          subtitle: 'Онлайн',
                         ),
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 
@@ -1945,6 +3206,7 @@ class CoachProfileTab extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -1998,188 +3260,4 @@ class CoachProfileTab extends ConsumerWidget {
       ),
     );
   }
-}
-
-String _getCurrentCoachLangName(String code) {
-  switch (code) {
-    case 'uk':
-      return '🇺🇦 Українська';
-    case 'en':
-      return '🇬🇧 English';
-    case 'de':
-      return '🇩🇪 Deutsch';
-    case 'ru':
-      return '🇷🇺 Русский';
-    default:
-      return '🇺🇦 Українська';
-  }
-}
-
-void _showCoachLanguageSheet(BuildContext context) {
-  final currentLocale = context.locale.languageCode;
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (ctx) {
-      return Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        decoration: BoxDecoration(
-          color: const Color(0xFF09182B).withValues(alpha: 0.95),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 30,
-              offset: const Offset(0, -6),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(LucideIcons.globe, color: Color(0xFF00E5FF), size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        'coach.choose_language_title'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildCoachLangOption(ctx, '🇺🇦', 'Українська', 'UKR', const Locale('uk'), currentLocale == 'uk'),
-                _buildCoachLangOption(ctx, '🇬🇧', 'English', 'ENG', const Locale('en'), currentLocale == 'en'),
-                _buildCoachLangOption(ctx, '🇩🇪', 'Deutsch', 'DEU', const Locale('de'), currentLocale == 'de'),
-                _buildCoachLangOption(ctx, '🇷🇺', 'Русский', 'RUS', const Locale('ru'), currentLocale == 'ru'),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
-Widget _buildCoachLangOption(
-  BuildContext context,
-  String flag,
-  String title,
-  String code,
-  Locale locale,
-  bool isActive,
-) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(
-      color: isActive
-          ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-          : Colors.white.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: isActive
-            ? const Color(0xFF00E5FF).withValues(alpha: 0.6)
-            : Colors.white.withValues(alpha: 0.1),
-        width: isActive ? 1.5 : 1,
-      ),
-      boxShadow: isActive
-          ? [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ]
-          : [],
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: ListTile(
-        onTap: () async {
-          await context.setLocale(locale);
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
-        },
-        leading: Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            flag,
-            style: const TextStyle(fontSize: 20),
-          ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.white70,
-            fontSize: 15,
-            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                    : Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                code,
-                style: TextStyle(
-                  color: isActive ? const Color(0xFF00E5FF) : Colors.white38,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
-              const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
-            ],
-          ],
-        ),
-      ),
-    ),
-  );
 }

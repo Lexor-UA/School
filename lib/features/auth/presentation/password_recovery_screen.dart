@@ -116,6 +116,7 @@ class _PasswordRecoveryScreenState
         clientName: '🔑 Відновлення пароля: $clientIdentifier',
         clientAvatar: '',
         senderId: _dialogId, // sender is client
+        clientRole: 'recovery',
         text: text,
       );
 

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,9 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
-import 'package:swimming_school_app/features/admin/presentation/create_class_sheet.dart';
-import 'coach_dashboard.dart';
-import 'coach_journal_screen.dart';
+import 'coach_class_attendees_sheet.dart';
 
 class CoachCalendarTab extends ConsumerStatefulWidget {
   const CoachCalendarTab({super.key});
@@ -46,24 +43,20 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
           }).toList()
         : dayClassesAll;
 
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        // Month Header & Calendar Card
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildCalendarCard(allClasses),
-        ),
-        const SizedBox(height: 14),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Month Header & Calendar Card
+          _buildCalendarCard(allClasses),
+          const SizedBox(height: 14),
 
-        // Selected Day Schedule Section
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-            child: _buildDayScheduleSection(dayClasses, dayClassesAll.length),
-          ),
-        ),
-      ],
+          // Selected Day Schedule Section
+          _buildDayScheduleSection(dayClasses, dayClassesAll.length),
+        ],
+      ),
     );
   }
 
@@ -87,33 +80,31 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.90),
-            const Color(0xFF0A1422).withValues(alpha: 0.95),
+            Color(0xFF0F1E33),
+            Color(0xFF091422),
           ],
         ),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1.0,
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.50),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -305,7 +296,6 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -335,35 +325,37 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
     final user = ref.watch(authControllerProvider);
     final dateStr = DateFormat('d MMMM', context.locale.languageCode).format(_selectedDate);
 
+    final int totalKidsInDay = dayClasses.fold<int>(0, (sum, c) => sum + c.enrolledChildIds.length);
+    final int totalCapInDay = dayClasses.fold<int>(0, (sum, c) => sum + (c.maxCapacity > 0 ? c.maxCapacity : 8));
+    final int totalFreeInDay = (totalCapInDay - totalKidsInDay).clamp(0, 9999);
+
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.90),
-            const Color(0xFF0A1422).withValues(alpha: 0.96),
+            Color(0xFF0F1E33),
+            Color(0xFF091422),
           ],
         ),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1.0,
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.50),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -407,9 +399,9 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(8),
@@ -421,59 +413,8 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                         '${dayClasses.length}',
                         style: const TextStyle(
                           color: Color(0xFF38BDF8),
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // + Додати кнопка (Pre-selects current coach)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (context) => CreateClassSheet(
-                              initialDate: _selectedDate,
-                              defaultCoach: user,
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(LucideIcons.plus, color: Colors.white, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                'admin.cal_add_btn'.tr(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),
@@ -499,10 +440,40 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                 ),
                 const SizedBox(height: 10),
 
+                // Daily Headcount Summary
+                if (dayClasses.isNotEmpty) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.users, size: 15, color: Color(0xFF00E5FF)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Загалом на день: $totalKidsInDay учнів • ${totalFreeInDay > 0 ? "Вільних місць: $totalFreeInDay з $totalCapInDay" : "Всі місця зайняті"}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // List of Classes
-                Expanded(
-                  child: dayClasses.isEmpty
-                      ? Center(
+                dayClasses.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -528,12 +499,15 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                               ),
                             ],
                           ),
-                        )
-                      : ListView.separated(
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: dayClasses.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: dayClasses.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
                             final gClass = dayClasses[index];
                             final isMyClass = user != null &&
                                 (gClass.coachId == user.id ||
@@ -543,6 +517,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                             final endTimeStr = '${gClass.endTime.hour.toString().padLeft(2, '0')}:${gClass.endTime.minute.toString().padLeft(2, '0')}';
                             final enrolledCount = gClass.enrolledChildIds.length;
                             final maxCap = gClass.maxCapacity > 0 ? gClass.maxCapacity : 8;
+                            final freeSlots = (maxCap - enrolledCount).clamp(0, maxCap);
 
                             return Container(
                               padding: const EdgeInsets.all(12),
@@ -558,7 +533,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Time, lane, and category
+                                  // Time, lane, free slots, and category
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -592,6 +567,36 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                                 style: const TextStyle(color: Colors.white70, fontSize: 11),
                                               ),
                                             ),
+                                          const SizedBox(width: 6),
+                                          // Free slots badge
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                            decoration: BoxDecoration(
+                                              color: freeSlots == 0
+                                                  ? const Color(0xFFEF4444).withValues(alpha: 0.16)
+                                                  : (freeSlots <= 2
+                                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.16)
+                                                      : const Color(0xFF10B981).withValues(alpha: 0.16)),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: freeSlots == 0
+                                                    ? const Color(0xFFEF4444).withValues(alpha: 0.45)
+                                                    : (freeSlots <= 2
+                                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
+                                                        : const Color(0xFF10B981).withValues(alpha: 0.45)),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
+                                              style: TextStyle(
+                                                color: freeSlots == 0
+                                                    ? const Color(0xFFEF4444)
+                                                    : (freeSlots <= 2 ? const Color(0xFFF59E0B) : const Color(0xFF10B981)),
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       if (isMyClass)
@@ -619,7 +624,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
@@ -640,40 +645,35 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                       const Icon(LucideIcons.users, color: Colors.white54, size: 12),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '$enrolledCount/$maxCap',
+                                        'Записано: $enrolledCount/$maxCap',
                                         style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w600),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 10),
 
-                                  // Open Attendance Journal Button
+                                  // Action Button: Attendee Roster (Option A)
                                   GestureDetector(
-                                    onTap: () {
-                                      ref.read(selectedCoachClassIdProvider.notifier).setClassId(gClass.id);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
-                                      );
-                                    },
+                                    onTap: () => showCoachClassAttendeesSheet(context, gClass),
                                     child: Container(
                                       width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(vertical: 7),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                        ),
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
                                       ),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Icon(LucideIcons.clipboardCheck, color: Color(0xFF00E5FF), size: 13),
+                                          const Icon(LucideIcons.users, color: Colors.white, size: 14),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'coach.open_journal'.tr(),
+                                            'Склад ($enrolledCount)',
                                             style: const TextStyle(
-                                              color: Color(0xFF00E5FF),
-                                              fontSize: 11.5,
+                                              color: Colors.white,
+                                              fontSize: 12,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -686,12 +686,10 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                             );
                           },
                         ),
-                ),
               ],
             ),
           ),
         ),
-      ),
     );
   }
 

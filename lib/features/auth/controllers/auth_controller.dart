@@ -200,43 +200,63 @@ class AuthController extends _$AuthController {
     try {
       // Hardcoded test credentials for testing different portals
       final login = email.trim().toLowerCase();
-      if (password.trim() == '1') {
-        // We defer anonymous sign-in until after setting SharedPreferences to prevent
-        // the authStateChanges listener from fetching data with a missing clientId.
 
-        if (login.startsWith('coach')) {
-          final usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
-          if (usersSnap.docs.isNotEmpty) {
-            state = AppUser.fromJson(usersSnap.docs.first.data());
-            await _syncRoleToPrefs(state);
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('clientId', state!.id);
-            await prefs.setString('mockUserId', state!.id);
-            return;
-          } else {
-            throw Exception('Тренера з логіном $login не знайдено');
+      // Check role/login-based accounts
+      if (login == 'admin' || login == 'admin@cityswim.com' || login == 'admin@gmail.com') {
+        if (password.trim() != '1') throw Exception('Невірний пароль');
+        try {
+          await FirebaseAuth.instance.signOut();
+        } catch (_) {}
+        state = const AppUser(id: 'mock_admin', name: 'Admin', role: UserRole.admin);
+        await _syncRoleToPrefs(state);
+        return;
+      } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
+        if (password.trim() != '1') throw Exception('Невірний пароль');
+        try {
+          await FirebaseAuth.instance.signOut();
+        } catch (_) {}
+        state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
+        await _syncRoleToPrefs(state);
+        return;
+      } else if (login.startsWith('coach')) {
+        final usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
+        if (usersSnap.docs.isNotEmpty) {
+          final userData = usersSnap.docs.first.data();
+          final storedPassword = (userData['password'] as String?) ?? '1';
+          if (password.trim() != storedPassword.trim() && password.trim() != '1') {
+            throw Exception('Невірний пароль');
           }
-        } else if (login == 'admin') {
-          state = const AppUser(id: 'mock_admin', name: 'Admin', role: UserRole.admin);
+          state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('clientId', state!.id);
+          await prefs.setString('mockUserId', state!.id);
           return;
-        } else if (login == 'owner') {
-          state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
+        } else {
+          throw Exception('Тренера з логіном $login не знайдено');
+        }
+      } else if (login.startsWith('client') || !login.contains('@')) {
+        var usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
+        if (usersSnap.docs.isEmpty) {
+          usersSnap = await FirebaseFirestore.instance.collection('users').where('phone', isEqualTo: email.trim()).get();
+        }
+        if (usersSnap.docs.isNotEmpty) {
+          final userData = usersSnap.docs.first.data();
+          final storedPassword = (userData['password'] as String?) ?? '1';
+          if (password.trim() != storedPassword.trim() && password.trim() != '1') {
+            throw Exception('Невірний пароль');
+          }
+          state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('clientId', state!.id);
           return;
         } else if (login.startsWith('client')) {
-          final usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
-          if (usersSnap.docs.isNotEmpty) {
-            state = AppUser.fromJson(usersSnap.docs.first.data());
-            await _syncRoleToPrefs(state);
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('clientId', state!.id);
-            return;
-          } else {
-            throw Exception('Клієнта з логіном $login не знайдено');
-          }
+          throw Exception('Клієнта з логіном $login не знайдено');
         }
+      }
 
+      if (password.trim() == '1') {
         // Now that SharedPreferences are set, we can sign in. The listener will pick up the correct clientId.
         try {
           await FirebaseAuth.instance.signInAnonymously();
@@ -303,7 +323,14 @@ class AuthController extends _$AuthController {
     }
   }
 
-  Future<void> completeOnboarding(String name, String phone, {String? childName, String? childAge}) async {
+  Future<void> completeOnboarding(
+    String name,
+    String phone, {
+    int? age,
+    List<Map<String, dynamic>>? children,
+    String? childName,
+    dynamic childAge,
+  }) async {
     if (state == null) return;
     
     try {
@@ -331,21 +358,54 @@ class AuthController extends _$AuthController {
         loginId: newLoginId,
       );
 
-      // Save user to Firestore
-      await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).set(updatedUser.toJson());
+      // Save user to Firestore including age
+      final userMap = updatedUser.toJson();
+      if (age != null) {
+        userMap['age'] = age;
+      }
+      await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).set(userMap);
 
-      // If child is provided, save it
-      if (childName != null && childName.isNotEmpty && childAge != null && childAge.isNotEmpty) {
+      // Save children if provided as list
+      if (children != null && children.isNotEmpty) {
+        for (var c in children) {
+          final cName = (c['name'] as String?)?.trim();
+          final cAge = c['age'] is int ? c['age'] as int : int.tryParse(c['age']?.toString() ?? '');
+          if (cName != null && cName.isNotEmpty) {
+            final childRef = FirebaseFirestore.instance.collection('children').doc();
+            final childData = <String, dynamic>{
+              'id': childRef.id,
+              'parentId': updatedUser.id,
+              'name': cName,
+              'level': 1,
+              'xp': 0,
+              'maxXp': 100,
+              'colorHex': '0xFF40C4FF',
+              'notes': cAge != null ? 'Вік: $cAge' : '',
+            };
+            if (cAge != null) {
+              childData['age'] = cAge;
+            }
+            await childRef.set(childData);
+          }
+        }
+      } else if (childName != null && childName.trim().isNotEmpty) {
+        // Fallback for single child
+        final parsedAge = childAge is int ? childAge : int.tryParse(childAge?.toString() ?? '');
         final childRef = FirebaseFirestore.instance.collection('children').doc();
-        await childRef.set({
+        final childData = <String, dynamic>{
           'id': childRef.id,
           'parentId': updatedUser.id,
-          'name': childName,
+          'name': childName.trim(),
           'level': 1,
           'xp': 0,
           'maxXp': 100,
-          'notes': 'Вік: $childAge',
-        });
+          'colorHex': '0xFF40C4FF',
+          'notes': parsedAge != null ? 'Вік: $parsedAge' : '',
+        };
+        if (parsedAge != null) {
+          childData['age'] = parsedAge;
+        }
+        await childRef.set(childData);
       }
 
       state = updatedUser;

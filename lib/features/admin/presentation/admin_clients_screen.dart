@@ -33,8 +33,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     super.dispose();
   }
 
-  void _copyCredentials(String loginId, String name) {
-    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}1'));
+  void _copyCredentials(String loginId, String name, [String password = '1']) {
+    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}$password'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -354,6 +354,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           final name = data['name'] ?? 'Невідомо';
                           final phone = data['phone'] ?? 'Немає номеру';
                           final loginId = data['loginId'] ?? 'Не призначено';
+                          final password = (data['password'] as String?) ?? '1';
+                          final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
 
                           final userSubs = allSubscriptions.where((s) => s.userId == clientId).toList();
 
@@ -361,7 +363,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             clientId: clientId,
                             name: name,
                             phone: phone,
+                            age: age,
                             loginId: loginId,
+                            password: password,
                             subscriptions: userSubs,
                             index: index,
                           );
@@ -536,7 +540,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     required String clientId,
     required String name,
     required String phone,
+    int? age,
     required String loginId,
+    required String password,
     required List<dynamic> subscriptions,
     required int index,
   }) {
@@ -670,6 +676,32 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (age != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(LucideIcons.calendar, size: 10.5, color: Color(0xFF38BDF8)),
+                                const SizedBox(width: 3.5),
+                                Text(
+                                  '$age ${'admin.years_short'.tr()}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF38BDF8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -733,7 +765,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             clientId: clientId,
                             initialName: name,
                             initialPhone: phone,
+                            initialAge: age,
                             initialLoginId: loginId,
+                            initialPassword: password,
                           ),
                         );
                       },
@@ -807,9 +841,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           ),
                         ),
                         TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
-                        const TextSpan(
-                          text: '1',
-                          style: TextStyle(
+                        TextSpan(
+                          text: password,
+                          style: const TextStyle(
                             color: Color(0xFFF59E0B),
                             fontWeight: FontWeight.bold,
                             fontFamily: 'monospace',
@@ -820,7 +854,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => _copyCredentials(loginId, name),
+                  onTap: () => _copyCredentials(loginId, name, password),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -903,7 +937,6 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                       final cData = doc.data() as Map<String, dynamic>;
                       final cName = cData['name'] ?? 'Дитина';
                       final cAge = cData['age'];
-                      final cLevel = cData['level'] ?? 1;
 
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -913,7 +946,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           border: Border.all(color: const Color(0xFF00B4D8).withValues(alpha: 0.3)),
                         ),
                         child: Text(
-                          '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""} • ${'admin.level_label'.tr(args: [cLevel.toString()])}',
+                          '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
                           style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
                         ),
                       );

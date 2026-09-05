@@ -22,7 +22,7 @@ class ChatRepository {
 
   Stream<List<ChatMessage>> streamMessages(String dialogId) {
     return _chats.doc(dialogId).collection('messages').orderBy('timestamp', descending: false).snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => ChatMessage.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      return snapshot.docs.map((doc) => ChatMessage.fromJson(doc.data())).toList();
     });
   }
 
@@ -33,6 +33,7 @@ class ChatRepository {
     required String clientAvatar,
     required String senderId, // 'admin' or clientId
     required String text,
+    String? clientRole,
   }) async {
     final messageId = _chats.doc(dialogId).collection('messages').doc().id;
     final now = DateTime.now();
@@ -68,6 +69,7 @@ class ChatRepository {
       'updatedAt': Timestamp.fromDate(now),
       'unreadAdminCount': unreadAdminCount,
       'unreadClientCount': unreadClientCount,
+      if (clientRole != null) ...{'clientRole': clientRole},
     }, SetOptions(merge: true));
 
     await batch.commit();

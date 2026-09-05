@@ -20,6 +20,10 @@ workflows:
           flutter build apk --release
       - name: Build iOS Simulator (for Appetize.io)
         script: |
+          cd ios
+          pod deintegrate || true
+          rm -rf Podfile Podfile.lock Pods
+          cd ..
           flutter build ios --simulator
           cd build/ios/iphonesimulator
           zip -r app-simulator.zip Runner.app
@@ -44,6 +48,12 @@ workflows:
     scripts:
       - name: Get Flutter packages
         script: flutter packages pub get
+      - name: Prepare iOS dependencies (Clean CocoaPods & use SwiftPM)
+        script: |
+          cd ios
+          pod deintegrate || true
+          rm -rf Podfile Podfile.lock Pods
+          cd ..
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Build iOS (IPA)

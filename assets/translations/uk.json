@@ -25,10 +25,14 @@
     "feature_goals": "Досягнення\nцілей",
     "motto_bottom": "Мистецтво води. Ваш шлях до досконалості.",
     "authorization": "АВТОРИЗАЦІЯ",
+    "login_subtitle": "Введіть ваші дані для входу в кабінет",
     "email_login": "Email / Логін",
     "password": "Пароль",
+    "forgot_password": "Забули пароль?",
     "login_action": "УВІЙТИ",
-    "login_error": "Помилка входу: {}"
+    "login_error": "Помилка входу: {}",
+    "reset_password_sent": "Лист для відновлення паролю надіслано на вашу пошту",
+    "enter_email_for_reset": "Введіть Email у поле вище для скидання паролю"
   },
   "onboarding": {
     "welcome": "Вітаємо!",

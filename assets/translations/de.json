@@ -25,10 +25,14 @@
     "feature_goals": "Ziele\nerreichen",
     "motto_bottom": "Die Kunst des Wassers. Ihr Weg zur Perfektion.",
     "authorization": "AUTORISIERUNG",
+    "login_subtitle": "Geben Sie Ihre Daten ein, um sich anzumelden",
     "email_login": "E-Mail / Login",
     "password": "Passwort",
+    "forgot_password": "Passwort vergessen?",
     "login_action": "ANMELDEN",
-    "login_error": "Anmeldefehler: {}"
+    "login_error": "Anmeldefehler: {}",
+    "reset_password_sent": "Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail gesendet",
+    "enter_email_for_reset": "Geben Sie Ihre E-Mail oben ein, um das Passwort zurückzusetzen"
   },
   "onboarding": {
     "welcome": "Willkommen!",

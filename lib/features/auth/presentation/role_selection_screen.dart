@@ -3,9 +3,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -695,125 +695,441 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
       isScrollControlled: true,
       builder: (modalContext) {
         bool isModalLoading = false;
+        bool obscurePassword = true;
+        bool isResetLoading = false;
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
+            Future<void> submitLogin() async {
+              final email = emailController.text.trim();
+              final password = passwordController.text.trim();
+              if (email.isEmpty || password.isEmpty) return;
+
+              try {
+                setModalState(() => isModalLoading = true);
+                final notifier = ref.read(authControllerProvider.notifier);
+                await notifier.signInWithEmail(email, password);
+                if (modalContext.mounted) {
+                  Navigator.of(modalContext).pop();
+                }
+              } catch (e) {
+                if (modalContext.mounted) {
+                  setModalState(() => isModalLoading = false);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('auth.login_error'.tr(args: [e.toString()])),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              }
+            }
+
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(modalContext).viewInsets.bottom,
               ),
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
+                  top: Radius.circular(36),
                 ),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
                   child: Container(
-                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFF0F2642).withValues(alpha: 0.96),
+                          const Color(0xFF071220).withValues(alpha: 0.98),
+                        ],
+                      ),
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
+                        top: Radius.circular(36),
                       ),
                       border: Border(
                         top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
                           width: 1.5,
                         ),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                          blurRadius: 40,
+                          offset: const Offset(0, -10),
+                        ),
+                      ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        Text(
-                          'auth.authorization'.tr(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: emailController,
-                          style: const TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            hintText: 'auth.email_login'.tr(),
-                            hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                    child: SafeArea(
+                      top: false,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Glowing Drag Handle
+                            Center(
+                              child: Container(
+                                width: 46,
+                                height: 4.5,
+                                margin: const EdgeInsets.only(bottom: 20),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF00E5FF), Color(0xFF10B981)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(3),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            filled: true,
-                            fillColor: Colors.black.withValues(alpha: 0.2),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+
+                            // Header row with Icon Badge, Title + Subtitle, and Close button
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                                        const Color(0xFF0288D1).withValues(alpha: 0.08),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    border: Border.all(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                                        blurRadius: 12,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.shieldCheck,
+                                    color: Color(0xFF00E5FF),
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'auth.authorization'.tr(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        'auth.login_subtitle'.tr(),
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.65),
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(LucideIcons.x, size: 20, color: Colors.white70),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                                    shape: const CircleBorder(),
+                                    padding: const EdgeInsets.all(8),
+                                  ),
+                                  onPressed: () => Navigator.of(modalContext).pop(),
+                                ),
+                              ],
                             ),
-                            prefixIcon: const Icon(
-                              LucideIcons.mail,
-                              color: Colors.cyanAccent,
+
+                            const SizedBox(height: 24),
+
+                            // Email / Login input
+                            TextField(
+                              controller: emailController,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              autocorrect: false,
+                              textInputAction: TextInputAction.next,
+                              onChanged: (_) => setModalState(() {}),
+                              decoration: InputDecoration(
+                                hintText: 'auth.email_login'.tr(),
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  fontSize: 14,
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                filled: true,
+                                fillColor: const Color(0xFF091C30).withValues(alpha: 0.75),
+                                prefixIcon: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  margin: const EdgeInsets.only(left: 12, right: 10),
+                                  child: const Icon(
+                                    LucideIcons.mail,
+                                    color: Color(0xFF00E5FF),
+                                    size: 20,
+                                  ),
+                                ),
+                                suffixIcon: emailController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          LucideIcons.circleX,
+                                          color: Colors.white.withValues(alpha: 0.45),
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          emailController.clear();
+                                          setModalState(() {});
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF00E5FF),
+                                    width: 1.8,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: passwordController,
-                          obscureText: true,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'auth.password'.tr(),
-                            hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+
+                            const SizedBox(height: 14),
+
+                            // Password input
+                            TextField(
+                              controller: passwordController,
+                              obscureText: obscurePassword,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => submitLogin(),
+                              decoration: InputDecoration(
+                                hintText: 'auth.password'.tr(),
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  fontSize: 14,
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                filled: true,
+                                fillColor: const Color(0xFF091C30).withValues(alpha: 0.75),
+                                prefixIcon: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  margin: const EdgeInsets.only(left: 12, right: 10),
+                                  child: const Icon(
+                                    LucideIcons.lock,
+                                    color: Color(0xFF00E5FF),
+                                    size: 20,
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                                    color: Colors.white.withValues(alpha: 0.65),
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      obscurePassword = !obscurePassword;
+                                    });
+                                  },
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF00E5FF),
+                                    width: 1.8,
+                                  ),
+                                ),
+                              ),
                             ),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            filled: true,
-                            fillColor: Colors.black.withValues(alpha: 0.2),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+
+                            const SizedBox(height: 6),
+
+                            // Forgot Password Row
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFF00E5FF),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                onPressed: isResetLoading
+                                    ? null
+                                    : () async {
+                                        final email = emailController.text.trim();
+                                        if (email.isEmpty) {
+                                          if (modalContext.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Row(
+                                                  children: [
+                                                    const Icon(LucideIcons.info, color: Colors.white, size: 18),
+                                                    const SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'auth.enter_email_for_reset'.tr(),
+                                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                backgroundColor: const Color(0xFF0288D1),
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                            );
+                                          }
+                                          return;
+                                        }
+
+                                        try {
+                                          setModalState(() => isResetLoading = true);
+                                          await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Row(
+                                                  children: [
+                                                    const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
+                                                    const SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'auth.reset_password_sent'.tr(),
+                                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                backgroundColor: const Color(0xFF10B981),
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'auth.login_error'.tr(args: [e.toString()]),
+                                                ),
+                                                backgroundColor: Colors.redAccent,
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          if (modalContext.mounted) {
+                                            setModalState(() => isResetLoading = false);
+                                          }
+                                        }
+                                      },
+                                icon: isResetLoading
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFF00E5FF),
+                                        ),
+                                      )
+                                    : const Icon(LucideIcons.keyRound, size: 14),
+                                label: Text(
+                                  'auth.forgot_password'.tr(),
+                                  style: TextStyle(
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
                             ),
-                            prefixIcon: const Icon(
-                              LucideIcons.lock,
-                              color: Colors.cyanAccent,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
+
+                            const SizedBox(height: 14),
+
+                            // Submit Button
+                            Container(
                               width: double.infinity,
-                              height: 48,
+                              height: 52,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFF00C9FF),
-                                    Color(0xFF92FE9D),
-                                  ], // Premium fresh gradient
+                                    Color(0xFF00E5FF),
+                                    Color(0xFF0072FF),
+                                  ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(
-                                      0xFF00C9FF,
-                                    ).withValues(alpha: 0.4),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
@@ -822,75 +1138,47 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                onPressed: isModalLoading
-                                    ? null
-                                    : () async {
-                                        try {
-                                          setModalState(
-                                            () => isModalLoading = true,
-                                          );
-                                          final notifier = ref.read(
-                                            authControllerProvider.notifier,
-                                          );
-                                          final email = emailController.text
-                                              .trim();
-                                          final password = passwordController
-                                              .text
-                                              .trim();
-
-                                          await notifier.signInWithEmail(
-                                            email,
-                                            password,
-                                          );
-                                        } catch (e) {
-                                          if (modalContext.mounted) {
-                                            setModalState(
-                                              () => isModalLoading = false,
-                                            );
-                                          }
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'auth.login_error'.tr(args: [e.toString()]),
-                                                ),
-                                                backgroundColor: Colors.redAccent,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
+                                onPressed: isModalLoading ? null : submitLogin,
                                 child: isModalLoading
                                     ? const PremiumLoadingIndicator(
                                         size: 26,
                                         color: Colors.white,
                                       )
-                                    : Text(
-                                        'auth.login_action'.tr(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 2,
-                                        ),
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            LucideIcons.logIn,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'auth.login_action'.tr(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 2,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                               ),
                             )
                             .animate(
-                              onPlay: (controller) =>
-                                  controller.repeat(reverse: true),
+                              onPlay: (controller) => controller.repeat(reverse: true),
                             )
                             .shimmer(
                               duration: 2500.ms,
-                              color: Colors.white.withValues(alpha: 0.3),
+                              color: Colors.white.withValues(alpha: 0.25),
                             ),
-                        const SizedBox(height: 16),
-                      ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

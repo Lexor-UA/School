@@ -25,10 +25,14 @@
     "feature_goals": "Достижение\nцелей",
     "motto_bottom": "Искусство воды. Ваш путь к совершенству.",
     "authorization": "АВТОРИЗАЦИЯ",
+    "login_subtitle": "Введите ваши данные для входа в кабинет",
     "email_login": "Email / Логин",
     "password": "Пароль",
+    "forgot_password": "Забыли пароль?",
     "login_action": "ВОЙТИ",
-    "login_error": "Ошибка входа: {}"
+    "login_error": "Ошибка входа: {}",
+    "reset_password_sent": "Письмо для сброса пароля отправлено на вашу почту",
+    "enter_email_for_reset": "Введите Email в поле выше для сброса пароля"
   },
   "onboarding": {
     "welcome": "Добро пожаловать!",

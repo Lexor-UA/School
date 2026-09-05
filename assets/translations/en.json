@@ -25,10 +25,14 @@
     "feature_goals": "Achieve your\ngoals",
     "motto_bottom": "The art of water. Your path to perfection.",
     "authorization": "AUTHORIZATION",
+    "login_subtitle": "Enter your credentials to sign in",
     "email_login": "Email / Login",
     "password": "Password",
+    "forgot_password": "Forgot password?",
     "login_action": "LOG IN",
-    "login_error": "Login error: {}"
+    "login_error": "Login error: {}",
+    "reset_password_sent": "Password reset email sent to your address",
+    "enter_email_for_reset": "Enter your email in the field above to reset password"
   },
   "onboarding": {
     "welcome": "Welcome!",

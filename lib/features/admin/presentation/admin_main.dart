@@ -364,13 +364,17 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              'CitySwim Admin · ${'admin.online_status'.tr()}',
-                              style: const TextStyle(
-                                color: Color(0xFF38BDF8),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.4,
+                            Flexible(
+                              child: Text(
+                                'CitySwim Admin · ${'admin.online_status'.tr()}',
+                                style: const TextStyle(
+                                  color: Color(0xFF38BDF8),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.4,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -573,59 +577,70 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        // Live breathing neon beacon
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF)).withValues(alpha: 0.85),
-                                blurRadius: 8,
-                                spreadRadius: 2,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // Live breathing neon beacon
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF)).withValues(alpha: 0.85),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                isSessionActive ? 'admin.live_beacon_active'.tr() : 'admin.live_beacon_idle'.tr(),
+                                style: TextStyle(
+                                  color: isSessionActive ? const Color(0xFF10B981) : Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isSessionActive ? 'admin.live_beacon_active'.tr() : 'admin.live_beacon_idle'.tr(),
-                          style: TextStyle(
-                            color: isSessionActive ? const Color(0xFF10B981) : Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.20),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.40),
-                              width: 0.8,
                             ),
                           ),
-                          child: Text(
-                            'admin.live_badge'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF34D399),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                          if (isSessionActive) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.40),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                'admin.live_badge'.tr(),
+                                style: const TextStyle(
+                                  color: Color(0xFF34D399),
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(20),
@@ -637,15 +652,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.activity, color: Color(0xFF38BDF8), size: 12),
-                          const SizedBox(width: 5),
+                          const Icon(LucideIcons.activity, color: Color(0xFF38BDF8), size: 11),
+                          const SizedBox(width: 4),
                           Text(
                             'admin.realtime'.tr(),
                             style: const TextStyle(
                               color: Colors.white70,
-                              fontSize: 10,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
@@ -748,7 +763,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           isSessionActive
                               ? 'admin.in_pool_now_desc'.tr(args: [state.ongoingClasses.first.title, state.ongoingClientsCount.toString()])
                               : (state.nearestClass != null
-                                  ? 'admin.nearest_class_at'.tr(args: [state.nearestClass!.title, DateFormat('HH:mm').format(state.nearestClass!.startTime)])
+                                  ? 'admin.nearest_class_at'.tr(args: [DateFormat('HH:mm').format(state.nearestClass!.startTime), state.nearestClass!.title])
                                   : 'admin.normal_mode'.tr()),
                           style: const TextStyle(
                             color: Colors.white,
@@ -873,18 +888,20 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         ),
         const SizedBox(height: 2),
 
-        // Refined Live Status Subtitle (Non-button look)
-        Text(
-          status,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          style: TextStyle(
-            color: accentColor.withValues(alpha: 0.90),
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
+        // Refined Live Status Subtitle (Clean single line, fits any screen)
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            status,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: TextStyle(
+              color: accentColor.withValues(alpha: 0.90),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
           ),
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -1024,54 +1041,55 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: hasUnread
-                                    ? const Color(0xFF38BDF8).withValues(alpha: 0.25)
-                                    : const Color(0xFF10B981).withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: hasUnread
-                                      ? const Color(0xFF38BDF8).withValues(alpha: 0.6)
-                                      : const Color(0xFF10B981).withValues(alpha: 0.5),
+                            if (hasUnread) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF38BDF8).withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 5,
+                                      height: 5,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF38BDF8),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'admin.new_sms'.tr(),
+                                      style: const TextStyle(
+                                        color: Color(0xFF38BDF8),
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 5,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: hasUnread ? const Color(0xFF38BDF8) : const Color(0xFF34D399),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    hasUnread ? 'admin.new_sms'.tr() : 'admin.online'.tr(),
-                                    style: TextStyle(
-                                      color: hasUnread ? const Color(0xFF38BDF8) : const Color(0xFF34D399),
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            ],
                             Expanded(
-                              child: Text(
-                                'admin.support_center'.tr(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.2,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'admin.support_center'.tr(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.2,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -1447,18 +1465,23 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  nearest.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    nearest.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -1469,25 +1492,33 @@ class _AdminMainState extends ConsumerState<AdminMain> {
           // Location and Coach
           Row(
             children: [
-              const Icon(LucideIcons.mapPin, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                'Басейн · ${nearest.lane}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+              const Icon(LucideIcons.mapPin, color: Colors.white, size: 15),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  nearest.lane.isNotEmpty ? 'Басейн · ${nearest.lane}' : 'Басейн · Всі доріжки',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
-              const Icon(LucideIcons.user, color: Colors.white70, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                'Тренер: ${nearest.coachName}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(width: 10),
+              const Icon(LucideIcons.user, color: Colors.white70, size: 15),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  '${'admin.class_coach'.tr()}: ${nearest.coachName}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -1976,7 +2007,7 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
                 highlightColor: widget.accentColor.withValues(alpha: 0.12),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -2010,15 +2041,15 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
                     children: [
                       // Vibrant Glowing Jewel Emblem
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: effectiveGradient,
                           ),
-                          borderRadius: BorderRadius.circular(13),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
                               color: effectiveGradient.first.withValues(alpha: _isHovered ? 0.60 : 0.40),
@@ -2028,10 +2059,10 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
                           ],
                         ),
                         child: Center(
-                          child: Icon(widget.icon, color: Colors.white, size: 21),
+                          child: Icon(widget.icon, color: Colors.white, size: 19),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       // Titles
                       Expanded(
                         child: Column(
@@ -2046,18 +2077,18 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
                                 widget.label,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
+                                  fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.2,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 1.5),
                             Text(
                               widget.sublabel,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: _isHovered ? 0.90 : 0.70),
-                                fontSize: 11.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
@@ -2066,7 +2097,7 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Icon(
                         LucideIcons.chevronRight,
                         size: 14,

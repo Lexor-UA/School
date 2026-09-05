@@ -99,11 +99,11 @@ class _WaterPainter extends CustomPainter {
     path3.close();
 
     final paint1 = Paint()
-      ..color = AppTheme.accentTeal.withValues(alpha: 0.2)
+      ..color = const Color(0xFF0284C7).withValues(alpha: 0.16)
       ..style = PaintingStyle.fill;
 
     final paint2 = Paint()
-      ..color = AppTheme.accentTeal.withValues(alpha: 0.4)
+      ..color = const Color(0xFF0369A1).withValues(alpha: 0.20)
       ..style = PaintingStyle.fill;
       
     final paint3 = Paint()

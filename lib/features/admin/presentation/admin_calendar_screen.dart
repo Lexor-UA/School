@@ -80,9 +80,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF00B4DB).withValues(alpha: 0.15),
-                    const Color(0xFF0284C7).withValues(alpha: 0.10),
-                    const Color(0xFF09182B).withValues(alpha: 0.88),
+                    const Color(0xFF0369A1).withValues(alpha: 0.12),
+                    const Color(0xFF0284C7).withValues(alpha: 0.06),
+                    const Color(0xFF09182B).withValues(alpha: 0.92),
                   ],
                   stops: const [0.0, 0.45, 1.0],
                 ),
@@ -146,18 +146,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         ),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
-          width: 1.2,
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: Colors.black.withValues(alpha: 0.50),
             blurRadius: 24,
             offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: const Color(0xFF38BDF8).withValues(alpha: 0.06),
-            blurRadius: 28,
           ),
         ],
       ),
@@ -400,18 +396,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         ),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
-          width: 1.2,
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: Colors.black.withValues(alpha: 0.50),
             blurRadius: 24,
             offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: const Color(0xFF38BDF8).withValues(alpha: 0.06),
-            blurRadius: 28,
           ),
         ],
       ),
@@ -454,15 +446,18 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           ),
                           const SizedBox(width: 10),
                           Flexible(
-                            child: Text(
-                              'admin.cal_classes_for_date'.tr(args: [dateStr]),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'admin.cal_classes_for_date'.tr(args: [dateStr]),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),

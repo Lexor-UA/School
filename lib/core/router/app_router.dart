@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
+import '../../features/auth/presentation/password_recovery_screen.dart';
 import '../../features/parent/presentation/parent_main.dart';
 import '../../features/coach/presentation/coach_main.dart';
 import '../../features/admin/presentation/admin_main.dart';
@@ -23,6 +24,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const RoleSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/password-recovery',
+        builder: (context, state) {
+          final initialLogin = state.uri.queryParameters['initialLogin'] ?? '';
+          return PasswordRecoveryScreen(initialLogin: initialLogin);
+        },
       ),
       GoRoute(
         path: '/onboarding',

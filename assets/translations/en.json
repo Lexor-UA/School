@@ -32,7 +32,14 @@
     "login_action": "LOG IN",
     "login_error": "Login error: {}",
     "reset_password_sent": "Password reset email sent to your address",
-    "enter_email_for_reset": "Enter your email in the field above to reset password"
+    "enter_email_for_reset": "Enter your email in the field above to reset password",
+    "password_recovery_title": "Password Recovery",
+    "admin_support_subtitle": "Chat with Administrator",
+    "admin_online": "Online",
+    "recovery_info_card": "Provide your phone, email, or full name. The administrator will verify your profile and send login credentials right here.",
+    "back_to_login": "To Login",
+    "type_message_hint": "Message to administrator...",
+    "copied_to_clipboard": "Copied to clipboard"
   },
   "onboarding": {
     "welcome": "Welcome!",

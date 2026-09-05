@@ -32,7 +32,14 @@
     "login_action": "УВІЙТИ",
     "login_error": "Помилка входу: {}",
     "reset_password_sent": "Лист для відновлення паролю надіслано на вашу пошту",
-    "enter_email_for_reset": "Введіть Email у поле вище для скидання паролю"
+    "enter_email_for_reset": "Введіть Email у поле вище для скидання паролю",
+    "password_recovery_title": "Відновлення пароля",
+    "admin_support_subtitle": "Діалог з адміністратором",
+    "admin_online": "Онлайн",
+    "recovery_info_card": "Вкажіть ваш телефон, Email або ПІБ. Адміністратор перевірить профіль і надішле вам логін або відновить пароль прямо сюди.",
+    "back_to_login": "До входу",
+    "type_message_hint": "Повідомлення адміністратору...",
+    "copied_to_clipboard": "Скопійовано в буфер обміну"
   },
   "onboarding": {
     "welcome": "Вітаємо!",

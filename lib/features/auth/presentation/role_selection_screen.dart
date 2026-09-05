@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dart';
+import 'package:swimming_school_app/features/auth/presentation/password_recovery_screen.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
@@ -730,7 +730,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       builder: (modalContext) {
         bool isModalLoading = false;
         bool obscurePassword = true;
-        bool isResetLoading = false;
 
         return StatefulBuilder(
           builder: (BuildContext builderContext, StateSetter setModalState) {
@@ -1067,7 +1066,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                             const SizedBox(height: 6),
 
-                            // Forgot Password Row
+                            // Forgot Password Row -> Opens PasswordRecoveryScreen with Admin
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton.icon(
@@ -1076,102 +1075,16 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                                   visualDensity: VisualDensity.compact,
                                 ),
-                                onPressed: isResetLoading
-                                    ? null
-                                    : () async {
-                                        final email = emailController.text.trim();
-                                        if (email.isEmpty) {
-                                          if (modalContext.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Row(
-                                                  children: [
-                                                    const Icon(LucideIcons.info, color: Colors.white, size: 18),
-                                                    const SizedBox(width: 10),
-                                                    Expanded(
-                                                      child: Text(
-                                                        t(
-                                                          builderContext,
-                                                          'auth.enter_email_for_reset',
-                                                          uk: 'Введіть Email у поле вище для скидання паролю',
-                                                          en: 'Enter your email above to reset password',
-                                                          de: 'Geben Sie Ihre E-Mail oben ein, um das Passwort zurückzusetzen',
-                                                          ru: 'Введите Email в поле выше для сброса пароля',
-                                                        ),
-                                                        style: const TextStyle(fontWeight: FontWeight.w600),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                backgroundColor: const Color(0xFF0288D1),
-                                                behavior: SnackBarBehavior.floating,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                              ),
-                                            );
-                                          }
-                                          return;
-                                        }
-
-                                        try {
-                                          setModalState(() => isResetLoading = true);
-                                          await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Row(
-                                                  children: [
-                                                    const Icon(LucideIcons.checkCircle, color: Colors.white, size: 18),
-                                                    const SizedBox(width: 10),
-                                                    Expanded(
-                                                      child: Text(
-                                                        t(
-                                                          builderContext,
-                                                          'auth.reset_password_sent',
-                                                          uk: 'Лист для відновлення паролю надіслано на вашу пошту',
-                                                          en: 'Password reset link sent to your email',
-                                                          de: 'Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail gesendet',
-                                                          ru: 'Письмо для сброса пароля отправлено на вашу почту',
-                                                        ),
-                                                        style: const TextStyle(fontWeight: FontWeight.w600),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                backgroundColor: const Color(0xFF10B981),
-                                                behavior: SnackBarBehavior.floating,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'auth.login_error'.tr(args: [e.toString()]),
-                                                ),
-                                                backgroundColor: Colors.redAccent,
-                                                behavior: SnackBarBehavior.floating,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                              ),
-                                            );
-                                          }
-                                        } finally {
-                                          if (modalContext.mounted) {
-                                            setModalState(() => isResetLoading = false);
-                                          }
-                                        }
-                                      },
-                                icon: isResetLoading
-                                    ? const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Color(0xFF00E5FF),
-                                        ),
-                                      )
-                                    : const Icon(LucideIcons.keyRound, size: 14),
+                                onPressed: () {
+                                  final email = emailController.text.trim();
+                                  Navigator.of(modalContext).pop();
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PasswordRecoveryScreen(initialLogin: email),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(LucideIcons.keyRound, size: 14),
                                 label: Text(
                                   t(
                                     builderContext,

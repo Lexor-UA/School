@@ -32,7 +32,14 @@
     "login_action": "ANMELDEN",
     "login_error": "Anmeldefehler: {}",
     "reset_password_sent": "Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail gesendet",
-    "enter_email_for_reset": "Geben Sie Ihre E-Mail oben ein, um das Passwort zurückzusetzen"
+    "enter_email_for_reset": "Geben Sie Ihre E-Mail oben ein, um das Passwort zurückzusetzen",
+    "password_recovery_title": "Passwort-Wiederherstellung",
+    "admin_support_subtitle": "Chat mit Administrator",
+    "admin_online": "Online",
+    "recovery_info_card": "Geben Sie Telefon, E-Mail oder Namen an. Der Administrator prüft Ihr Profil und sendet Login-Daten direkt hierher.",
+    "back_to_login": "Zum Login",
+    "type_message_hint": "Nachricht an Administrator...",
+    "copied_to_clipboard": "In die Zwischenablage kopiert"
   },
   "onboarding": {
     "welcome": "Willkommen!",

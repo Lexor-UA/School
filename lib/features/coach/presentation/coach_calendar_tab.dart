@@ -465,7 +465,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                               const Icon(LucideIcons.plus, color: Colors.white, size: 14),
                               const SizedBox(width: 4),
                               Text(
-                                'admin.btn_add'.tr(),
+                                'admin.cal_add_btn'.tr(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12.5,
@@ -516,7 +516,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                'admin.no_classes_on_date'.tr(),
+                                'admin.cal_no_classes'.tr(),
                                 style: const TextStyle(color: Colors.white70, fontSize: 13.5, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),

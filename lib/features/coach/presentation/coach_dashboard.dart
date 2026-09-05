@@ -27,6 +27,18 @@ class SelectedCoachClassIdNotifier extends Notifier<String?> {
 /// Active class selected for the Coach Journal
 final selectedCoachClassIdProvider = NotifierProvider<SelectedCoachClassIdNotifier, String?>(SelectedCoachClassIdNotifier.new);
 
+class CoachTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setTab(int index) {
+    state = index;
+  }
+}
+
+/// Provider for active coach tab
+final coachTabProvider = NotifierProvider<CoachTabNotifier, int>(CoachTabNotifier.new);
+
 // ============================================================================
 // TAB 1: COACH SCHEDULE & SHIFT (Розклад та Зміна)
 // ============================================================================
@@ -39,7 +51,6 @@ class CoachScheduleTab extends ConsumerStatefulWidget {
 }
 
 class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
-  int _dateFilterIndex = 0; // 0: Сьогодні, 1: Завтра, 2: Цей тиждень
   bool _showAllPoolClassesFallback = false;
 
   @override
@@ -286,7 +297,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
 
                   const SizedBox(height: 18),
 
-                  // Section title & Date filter pills
+                  // Section title & Today Date Badge
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -306,15 +317,31 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildDatePill(0, 'coach.filter_today'.tr()),
-                          const SizedBox(width: 5),
-                          _buildDatePill(1, 'coach.filter_tomorrow'.tr()),
-                          const SizedBox(width: 5),
-                          _buildDatePill(2, 'coach.filter_week'.tr()),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(LucideIcons.calendar, size: 12, color: Color(0xFF00E5FF)),
+                            const SizedBox(width: 5),
+                            Text(
+                              DateFormat('d MMMM', context.locale.languageCode).format(DateTime.now()),
+                              style: const TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -323,24 +350,16 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
             ),
           ),
 
-          // Schedule list content
+          // Schedule list content (Today's classes only)
           scheduleAsync.when(
             data: (allClasses) {
               final now = DateTime.now();
               final today = DateTime(now.year, now.month, now.day);
-              final tomorrow = today.add(const Duration(days: 1));
 
-              // Filter by date
+              // Filter strictly by TODAY
               List<GroupClass> dateFiltered = allClasses.where((c) {
                 final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
-                if (_dateFilterIndex == 0) {
-                  return classDate.isAtSameMomentAs(today);
-                } else if (_dateFilterIndex == 1) {
-                  return classDate.isAtSameMomentAs(tomorrow);
-                } else {
-                  return classDate.isAfter(today.subtract(const Duration(days: 1))) &&
-                         classDate.isBefore(today.add(const Duration(days: 7)));
-                }
+                return classDate.isAtSameMomentAs(today);
               }).toList();
 
               // Filter by coach
@@ -354,7 +373,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 return matchesId || matchesName || isMock;
               }).toList();
 
-              // If specific coach has 0 classes, fall back smoothly to showing all pool sessions
+              // If specific coach has 0 classes, fall back smoothly to showing all pool sessions for today
               final bool isUsingFallback = coachClasses.isEmpty && dateFiltered.isNotEmpty;
               final displayClasses = isUsingFallback ? dateFiltered : coachClasses;
 
@@ -374,35 +393,36 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                             ),
-                            child: const Icon(LucideIcons.calendarX2, color: Colors.white54, size: 48),
+                            child: const Icon(LucideIcons.calendarCheck2, color: Color(0xFF00E5FF), size: 44),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'coach.no_classes_title'.tr(),
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                            'coach.no_classes_today_title'.tr(),
+                            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'coach.no_classes_desc'.tr(),
+                            'coach.no_classes_today_desc'.tr(),
                             style: const TextStyle(color: Colors.white54, fontSize: 13),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 18),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                              backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.18),
                               foregroundColor: const Color(0xFF00E5FF),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              side: const BorderSide(color: Color(0xFF00E5FF), width: 1),
+                              side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                             ),
                             onPressed: () {
-                              setState(() {
-                                _dateFilterIndex = 2; // Week
-                                _showAllPoolClassesFallback = true;
-                              });
+                              ref.read(coachTabProvider.notifier).setTab(1);
                             },
                             icon: const Icon(LucideIcons.calendarDays, size: 16),
-                            label: Text('coach.view_full_schedule'.tr()),
+                            label: Text(
+                              'coach.open_calendar'.tr(),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ],
                       ),
@@ -434,37 +454,6 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDatePill(int index, String label) {
-    final isSelected = _dateFilterIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _dateFilterIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00E5FF).withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF00E5FF).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.1),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? const Color(0xFF00E5FF) : Colors.white60,
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildShiftTelemetryCard() {
     return Container(

@@ -9,18 +9,6 @@ import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'coach_dashboard.dart';
 import 'coach_calendar_tab.dart';
 
-class CoachTabNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-
-  void setTab(int index) {
-    state = index;
-  }
-}
-
-/// Provider for active coach tab
-final coachTabProvider = NotifierProvider<CoachTabNotifier, int>(CoachTabNotifier.new);
-
 class CoachMain extends ConsumerStatefulWidget {
   const CoachMain({super.key});
 

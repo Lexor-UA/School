@@ -585,5 +585,12 @@
   "coach.qr_scan_sub": "Сканування перепустки учня біля басейну",
   "coach.qr_manual_heading": "РУЧНЕ ВВЕДЕННЯ НОМЕРА ПЕРЕПУСТКИ",
   "coach.qr_manual_hint": "ID учня або код абонемента...",
-  "coach.qr_enter": "Ввести"
+  "coach.qr_enter": "Ввести",
+  "coach.language_settings": "Мова додатку",
+  "coach.choose_language_title": "Оберіть мову додатку",
+  "coach.has_other_classes_pool": "У цей день є інші заняття в басейні",
+  "coach.no_classes_created_yet": "На цей день занять ще не створено",
+  "coach.my_badge": "Моє",
+  "coach.no_coach_assigned": "Тренер не призначений",
+  "coach.load_error": "Помилка завантаження: {}"
 }

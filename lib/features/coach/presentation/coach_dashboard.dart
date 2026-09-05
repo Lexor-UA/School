@@ -51,8 +51,6 @@ class CoachScheduleTab extends ConsumerStatefulWidget {
 }
 
 class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
-  bool _showAllPoolClassesFallback = false;
-
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
@@ -450,10 +448,14 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
             ),
             error: (e, _) => SliverFillRemaining(
               child: Center(
-                child: Text('Помилка завантаження: $e', style: const TextStyle(color: Colors.redAccent)),
+                child: Text('coach.load_error'.tr(args: ['$e']), style: const TextStyle(color: Colors.redAccent)),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildShiftTelemetryCard() {
     return Container(
@@ -578,45 +580,51 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
-                          ),
-                          child: Text(
-                            gClass.category.isNotEmpty ? gClass.category : 'parent.swimming'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF00E5FF),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (gClass.lane.isNotEmpty)
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
                             ),
                             child: Text(
-                              gClass.lane,
+                              gClass.category.isNotEmpty ? gClass.category : 'parent.swimming'.tr(),
                               style: const TextStyle(
-                                color: Colors.white70,
+                                color: Color(0xFF00E5FF),
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                      ],
+                          if (gClass.lane.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                gClass.lane,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     // Time indicator
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(LucideIcons.clock, color: Colors.white54, size: 14),
                         const SizedBox(width: 5),
@@ -644,15 +652,21 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.2,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     const Icon(LucideIcons.user, color: Colors.white54, size: 13),
                     const SizedBox(width: 6),
-                    Text(
-                      'coach.assigned_coach'.tr(args: [gClass.coachName.isNotEmpty ? gClass.coachName : 'coach.title'.tr()]),
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    Expanded(
+                      child: Text(
+                        'coach.assigned_coach'.tr(args: [gClass.coachName.isNotEmpty ? gClass.coachName : 'coach.title'.tr()]),
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
@@ -663,10 +677,15 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'coach.students_telemetry'.tr(args: ['$enrolledCount', '$maxCap', '$attendedCount']),
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                    Flexible(
+                      child: Text(
+                        'coach.students_telemetry'.tr(args: ['$enrolledCount', '$maxCap', '$attendedCount']),
+                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       'coach.spots_occupied'.tr(args: ['${(fillFraction * 100).toInt()}%']),
                       style: TextStyle(
@@ -719,13 +738,17 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       children: [
                         const Icon(LucideIcons.clipboardList, color: Colors.white, size: 16),
                         const SizedBox(width: 8),
-                        Text(
-                          'coach.open_journal'.tr(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
+                        Flexible(
+                          child: Text(
+                            'coach.open_journal'.tr(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -829,40 +852,48 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(ctx).height * 0.82,
+                ),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'coach.award_title'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'coach.award_select_for'.tr(args: [child.name]),
+                        style: const TextStyle(color: Colors.white60, fontSize: 13),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildMedalTile(child, 'champion', 'coach.medal_champion_name'.tr(), 'coach.medal_champion_desc'.tr(), '🏆'),
+                      _buildMedalTile(child, 'dolphin', 'coach.medal_dolphin_name'.tr(), 'coach.medal_dolphin_desc'.tr(), '🐬'),
+                      _buildMedalTile(child, 'torpedo', 'coach.medal_torpedo_name'.tr(), 'coach.medal_torpedo_desc'.tr(), '⚡'),
+                      _buildMedalTile(child, 'superstar', 'coach.medal_superstar_name'.tr(), 'coach.medal_superstar_desc'.tr(), '⭐'),
+                      _buildMedalTile(child, 'diver', 'coach.medal_diver_name'.tr(), 'coach.medal_diver_desc'.tr(), '🤿'),
+                      const SizedBox(height: 16),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'coach.award_title'.tr(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'coach.award_select_for'.tr(args: [child.name]),
-                    style: const TextStyle(color: Colors.white60, fontSize: 13),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildMedalTile(child, 'champion', 'coach.medal_champion_name'.tr(), 'coach.medal_champion_desc'.tr(), '🏆'),
-                  _buildMedalTile(child, 'dolphin', 'coach.medal_dolphin_name'.tr(), 'coach.medal_dolphin_desc'.tr(), '🐬'),
-                  _buildMedalTile(child, 'torpedo', 'coach.medal_torpedo_name'.tr(), 'coach.medal_torpedo_desc'.tr(), '⚡'),
-                  _buildMedalTile(child, 'superstar', 'coach.medal_superstar_name'.tr(), 'coach.medal_superstar_desc'.tr(), '⭐'),
-                  _buildMedalTile(child, 'diver', 'coach.medal_diver_name'.tr(), 'coach.medal_diver_desc'.tr(), '🤿'),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
             ),
           ),
@@ -940,6 +971,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         backgroundColor: const Color(0xFF09182B),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
@@ -1243,7 +1275,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF00E5FF))),
-        error: (e, _) => Center(child: Text('Помилка: $e', style: const TextStyle(color: Colors.white))),
+        error: (e, _) => Center(child: Text('coach.load_error'.tr(args: ['$e']), style: const TextStyle(color: Colors.white))),
       ),
     );
   }
@@ -1316,6 +1348,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Row(
@@ -1588,6 +1622,8 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
                           Text(
                             child.name,
                             style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -1648,6 +1684,7 @@ void _confirmCoachLogout(BuildContext context, WidgetRef ref) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
+      scrollable: true,
       backgroundColor: const Color(0xFF09182B),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
@@ -1798,7 +1835,7 @@ class CoachProfileTab extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Quick Support & Reception Actions
+            // Settings & Quick Support Actions
             Material(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(20),
@@ -1809,6 +1846,28 @@ class CoachProfileTab extends ConsumerWidget {
               clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
+                  // App Language Selector
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(LucideIcons.globe, color: Color(0xFF00E5FF), size: 20),
+                    ),
+                    title: Text(
+                      'coach.language_settings'.tr(),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      _getCurrentCoachLangName(context.locale.languageCode),
+                      style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11.5, fontWeight: FontWeight.w600),
+                    ),
+                    trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
+                    onTap: () => _showCoachLanguageSheet(context),
+                  ),
+                  Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -1937,4 +1996,188 @@ class CoachProfileTab extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _getCurrentCoachLangName(String code) {
+  switch (code) {
+    case 'uk':
+      return '🇺🇦 Українська';
+    case 'en':
+      return '🇬🇧 English';
+    case 'de':
+      return '🇩🇪 Deutsch';
+    case 'ru':
+      return '🇷🇺 Русский';
+    default:
+      return '🇺🇦 Українська';
+  }
+}
+
+void _showCoachLanguageSheet(BuildContext context) {
+  final currentLocale = context.locale.languageCode;
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        decoration: BoxDecoration(
+          color: const Color(0xFF09182B).withValues(alpha: 0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 30,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(LucideIcons.globe, color: Color(0xFF00E5FF), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        'coach.choose_language_title'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildCoachLangOption(ctx, '🇺🇦', 'Українська', 'UKR', const Locale('uk'), currentLocale == 'uk'),
+                _buildCoachLangOption(ctx, '🇬🇧', 'English', 'ENG', const Locale('en'), currentLocale == 'en'),
+                _buildCoachLangOption(ctx, '🇩🇪', 'Deutsch', 'DEU', const Locale('de'), currentLocale == 'de'),
+                _buildCoachLangOption(ctx, '🇷🇺', 'Русский', 'RUS', const Locale('ru'), currentLocale == 'ru'),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildCoachLangOption(
+  BuildContext context,
+  String flag,
+  String title,
+  String code,
+  Locale locale,
+  bool isActive,
+) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: isActive
+          ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+          : Colors.white.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: isActive
+            ? const Color(0xFF00E5FF).withValues(alpha: 0.6)
+            : Colors.white.withValues(alpha: 0.1),
+        width: isActive ? 1.5 : 1,
+      ),
+      boxShadow: isActive
+          ? [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ]
+          : [],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: ListTile(
+        onTap: () async {
+          await context.setLocale(locale);
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+        },
+        leading: Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            flag,
+            style: const TextStyle(fontSize: 20),
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.white70,
+            fontSize: 15,
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                    : Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                code,
+                style: TextStyle(
+                  color: isActive ? const Color(0xFF00E5FF) : Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(width: 8),
+              const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
 }

@@ -125,7 +125,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
       // 5. Floating Apple VisionOS Frosted Dock
       bottomNavigationBar: SafeArea(
         child: Container(
-          margin: const EdgeInsets.only(left: 18, right: 18, bottom: 18),
+          margin: const EdgeInsets.only(left: 14, right: 14, bottom: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
@@ -154,7 +154,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     width: 1.2,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -207,8 +207,8 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 10,
-          vertical: 9,
+          horizontal: isSelected ? 15 : 12,
+          vertical: 10,
         ),
         decoration: BoxDecoration(
           color: isSelected
@@ -241,13 +241,18 @@ class _CoachMainState extends ConsumerState<CoachMain> {
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  letterSpacing: 0.4,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
                 ),
               ).animate().fadeIn(duration: 180.ms).slideX(begin: -0.1, end: 0),
             ],

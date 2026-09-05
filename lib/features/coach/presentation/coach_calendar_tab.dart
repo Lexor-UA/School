@@ -392,7 +392,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Flexible(
+                    Expanded(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
@@ -426,7 +426,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     // + Додати кнопка (Pre-selects current coach)
                     Material(
                       color: Colors.transparent,
@@ -522,8 +522,8 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                               const SizedBox(height: 4),
                               Text(
                                 _onlyMyClasses && totalDayClassesCount > 0
-                                    ? 'У цей день є інші заняття в басейні'
-                                    : 'На цей день занять ще не створено',
+                                    ? 'coach.has_other_classes_pool'.tr()
+                                    : 'coach.no_classes_created_yet'.tr(),
                                 style: const TextStyle(color: Colors.white38, fontSize: 11.5),
                               ),
                             ],
@@ -602,9 +602,9 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                             borderRadius: BorderRadius.circular(6),
                                             border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
                                           ),
-                                          child: const Text(
-                                            'Моє',
-                                            style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
+                                          child: Text(
+                                            'coach.my_badge'.tr(),
+                                            style: const TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
                                           ),
                                         ),
                                     ],
@@ -631,7 +631,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
-                                          gClass.coachName.isNotEmpty ? gClass.coachName : 'Тренер не призначений',
+                                          gClass.coachName.isNotEmpty ? gClass.coachName : 'coach.no_coach_assigned'.tr(),
                                           style: const TextStyle(color: Colors.white54, fontSize: 11.5),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -664,14 +664,14 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
                                       ),
-                                      child: const Row(
+                                      child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Icon(LucideIcons.clipboardCheck, color: Color(0xFF00E5FF), size: 13),
-                                          SizedBox(width: 6),
+                                          const Icon(LucideIcons.clipboardCheck, color: Color(0xFF00E5FF), size: 13),
+                                          const SizedBox(width: 6),
                                           Text(
-                                            'Відкрити журнал відвідуваності',
-                                            style: TextStyle(
+                                            'coach.open_journal'.tr(),
+                                            style: const TextStyle(
                                               color: Color(0xFF00E5FF),
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.bold,

@@ -585,5 +585,12 @@
   "coach.qr_scan_sub": "Scannen des Schwimmerpasses am Pool",
   "coach.qr_manual_heading": "MANUELLE PASS-EINGABE",
   "coach.qr_manual_hint": "Schüler-ID oder Passcode...",
-  "coach.qr_enter": "Eingeben"
+  "coach.qr_enter": "Eingeben",
+  "coach.language_settings": "App-Sprache",
+  "coach.choose_language_title": "App-Sprache wählen",
+  "coach.has_other_classes_pool": "Heute gibt es andere Kurse im Schwimmbad",
+  "coach.no_classes_created_yet": "Für diesen Tag wurden noch keine Kurse erstellt",
+  "coach.my_badge": "Mein Kurs",
+  "coach.no_coach_assigned": "Trainer nicht zugewiesen",
+  "coach.load_error": "Ladefehler: {}"
 }

@@ -585,5 +585,12 @@
   "coach.qr_scan_sub": "Сканирование пропуска ученика возле бассейна",
   "coach.qr_manual_heading": "РУЧНОЙ ВВОД НОМЕРА ПРОПУСКА",
   "coach.qr_manual_hint": "ID ученика или код абонемента...",
-  "coach.qr_enter": "Ввести"
+  "coach.qr_enter": "Ввести",
+  "coach.language_settings": "Язык приложения",
+  "coach.choose_language_title": "Выберите язык приложения",
+  "coach.has_other_classes_pool": "В этот день есть другие занятия в бассейне",
+  "coach.no_classes_created_yet": "На этот день занятия еще не созданы",
+  "coach.my_badge": "Моё",
+  "coach.no_coach_assigned": "Тренер не назначен",
+  "coach.load_error": "Ошибка загрузки: {}"
 }

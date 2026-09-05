@@ -585,5 +585,12 @@
   "coach.qr_scan_sub": "Scanning swimmer pass poolside",
   "coach.qr_manual_heading": "MANUAL PASS ENTRY",
   "coach.qr_manual_hint": "Student ID or pass code...",
-  "coach.qr_enter": "Enter"
+  "coach.qr_enter": "Enter",
+  "coach.language_settings": "App Language",
+  "coach.choose_language_title": "Choose App Language",
+  "coach.has_other_classes_pool": "There are other classes in the pool on this day",
+  "coach.no_classes_created_yet": "No classes created for this day yet",
+  "coach.my_badge": "Mine",
+  "coach.no_coach_assigned": "Coach not assigned",
+  "coach.load_error": "Loading error: {}"
 }

@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:swimming_school_app/features/admin/presentation/admin_booking_sheet.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
+import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -81,6 +83,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       }).timeout(const Duration(seconds: 5));
 
       if (mounted) {
+        final admin = ref.read(authControllerProvider);
+        if (admin != null) {
+          await logAdminAction('Оновлено дані клієнта "${_nameController.text.trim()}"', admin.id);
+        }
+        
         setState(() {
           _isLoading = false;
           _isSuccess = true;
@@ -111,6 +118,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         'remainingClasses': newClasses,
         'isActive': newClasses > 0,
       });
+      
+      final admin = ref.read(authControllerProvider);
+      if (admin != null) {
+        await logAdminAction('Змінено залишок занять для "${widget.initialName}" (стало $newClasses)', admin.id);
+      }
     } catch (e) {
       debugPrint('Error updating subscription classes: $e');
     }
@@ -119,6 +131,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   void _deleteSubscription(Subscription sub) async {
     try {
       await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).delete();
+      
+      final admin = ref.read(authControllerProvider);
+      if (admin != null) {
+        await logAdminAction('Видалено абонемент клієнта "${widget.initialName}"', admin.id);
+      }
     } catch (e) {
       debugPrint('Error deleting subscription: $e');
     }
@@ -226,6 +243,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     
                     try {
                       await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
+                      
+                      final admin = ref.read(authControllerProvider);
+                      if (admin != null) {
+                        await logAdminAction('Призначено абонемент "${serviceDetails['name']}" для "$selectedOwner"', admin.id);
+                      }
                     } catch (e) {
                       debugPrint('Error assigning sub: $e');
                     }
@@ -243,6 +265,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.90,
+      ),
       decoration: const BoxDecoration(
         color: Color(0xFF0F172A), // Dark slate
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -549,16 +574,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                   Text(enrolledId == widget.clientId ? widget.initialName : 'Дитина', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                                   TextButton(
                                     onPressed: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
                                       try {
                                         final success = await ref.read(scheduleControllerProvider.notifier).cancelClass(session.id, enrolledId);
                                         if (success && mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          messenger.showSnackBar(
                                             const SnackBar(content: Text('Запис скасовано', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
                                           );
                                         }
                                       } catch (e) {
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          messenger.showSnackBar(
                                             SnackBar(content: Text('Помилка: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.redAccent),
                                           );
                                         }

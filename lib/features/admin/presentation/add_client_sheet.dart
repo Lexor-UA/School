@@ -1,17 +1,21 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
-class AddClientSheet extends StatefulWidget {
+class AddClientSheet extends ConsumerStatefulWidget {
   const AddClientSheet({super.key});
 
   @override
-  State<AddClientSheet> createState() => _AddClientSheetState();
+  ConsumerState<AddClientSheet> createState() => _AddClientSheetState();
 }
 
-class _AddClientSheetState extends State<AddClientSheet> {
+class _AddClientSheetState extends ConsumerState<AddClientSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final List<TextEditingController> _childrenControllers = [];
@@ -93,23 +97,22 @@ class _AddClientSheetState extends State<AddClientSheet> {
       }
 
       if (mounted) {
+        final admin = ref.read(authControllerProvider);
+        if (admin != null) {
+          await logAdminAction('Додано нового клієнта "${_nameController.text.trim()}" ($generatedLogin)', admin.id);
+        }
+        ref.invalidate(adminDashboardProvider);
         setState(() {
-          _isLoading = false;
           _isSuccess = true;
-          _generatedLogin = 'Client$clientCount';
-        });
-
-        Future.delayed(const Duration(seconds: 4), () {
-          if (mounted) {
-            Navigator.pop(context);
-          }
+          _isLoading = false;
+          _generatedLogin = generatedLogin;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          _errorMessage = 'Помилка збереження: $e';
         });
       }
     }
@@ -117,18 +120,49 @@ class _AddClientSheetState extends State<AddClientSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * 0.90,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF030D1B).withValues(alpha: 0.8),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF13233C).withValues(alpha: 0.98),
+            const Color(0xFF091424).withValues(alpha: 0.99),
+          ],
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.28),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.60),
+            blurRadius: 30,
+            offset: const Offset(0, -6),
+          ),
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+            blurRadius: 28,
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+            padding: EdgeInsets.fromLTRB(
+              22,
+              12,
+              22,
+              mediaQuery.viewInsets.bottom + 24,
+            ),
             child: _isSuccess ? _buildSuccessState() : _buildFormState(),
           ),
         ),
@@ -140,44 +174,101 @@ class _AddClientSheetState extends State<AddClientSheet> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 40),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.greenAccent.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.4), blurRadius: 30)],
-          ),
-          child: const Icon(LucideIcons.check, color: Colors.greenAccent, size: 60),
-        ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
         const SizedBox(height: 24),
+        Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF047857)],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF10B981).withValues(alpha: 0.50),
+                blurRadius: 24,
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(LucideIcons.check, color: Colors.white, size: 36),
+          ),
+        ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+        const SizedBox(height: 20),
         const Text(
-          'Клієнта додано!',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          'Клієнта успішно створено!',
+          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ).animate().fadeIn(delay: 200.ms),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           _nameController.text,
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
-        ).animate().fadeIn(delay: 400.ms),
-        const SizedBox(height: 16),
+          style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500),
+        ).animate().fadeIn(delay: 350.ms),
+        const SizedBox(height: 18),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.cyanAccent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.40)),
           ),
           child: Column(
             children: [
-              const Text('Дані для входу клієнта:', style: TextStyle(color: Colors.white54, fontSize: 14)),
-              const SizedBox(height: 4),
-              Text('Логін: ${_generatedLogin ?? ""}', style: const TextStyle(color: Colors.cyanAccent, fontSize: 18, fontWeight: FontWeight.bold)),
-              const Text('Пароль: 1', style: TextStyle(color: Colors.cyanAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Дані для входу в кабінет:', style: TextStyle(color: Colors.white60, fontSize: 12.5)),
+                  GestureDetector(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: 'Логін: ${_generatedLogin ?? ""}\nПароль: 1'));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Дані входу скопійовано!'), duration: Duration(seconds: 2)),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.copy, color: Color(0xFF00E5FF), size: 12),
+                          SizedBox(width: 4),
+                          Text('Копіювати', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Text('Логін: ${_generatedLogin ?? ""}', style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 16, fontWeight: FontWeight.bold)),
+                  Container(width: 1, height: 16, color: Colors.white24),
+                  const Text('Пароль: 1', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ],
           ),
-        ).animate().fadeIn(delay: 600.ms),
-        const SizedBox(height: 40),
+        ).animate().fadeIn(delay: 500.ms),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Готово', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+        ),
       ],
     );
   }
@@ -190,34 +281,102 @@ class _AddClientSheetState extends State<AddClientSheet> {
         children: [
           Center(
             child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              width: 44,
+              height: 5,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.userPlus, color: Colors.cyanAccent),
-              SizedBox(width: 12),
-              Text('Новий Клієнт', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(LucideIcons.userPlus, color: Colors.white, size: 21),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Новий Клієнт',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Швидка реєстрація батьків та учнів',
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(LucideIcons.x, color: Colors.white70, size: 17),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
           _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           
           if (_childrenControllers.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            const Text('Діти', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            const Row(
+              children: [
+                Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
+                SizedBox(width: 8),
+                Text('Діти / Учні', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              ],
+            ),
+            const SizedBox(height: 10),
           ],
           
           ...List.generate(_childrenControllers.length, (index) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
+              padding: const EdgeInsets.only(bottom: 10.0),
               child: Row(
                 children: [
                   Expanded(
@@ -225,12 +384,16 @@ class _AddClientSheetState extends State<AddClientSheet> {
                   ),
                   const SizedBox(width: 8),
                   Container(
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFFF43F5E).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
                     ),
                     child: IconButton(
-                      icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFF43F5E), size: 18),
                       onPressed: () => _removeChildField(index),
                     ),
                   ),
@@ -243,42 +406,87 @@ class _AddClientSheetState extends State<AddClientSheet> {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: _addChildField,
-              icon: const Icon(LucideIcons.plus, color: Colors.cyanAccent, size: 18),
-              label: Text(_childrenControllers.isEmpty ? 'Додати дитину' : 'Додати ще дитину', style: const TextStyle(color: Colors.cyanAccent)),
+              icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
+              label: Text(
+                _childrenControllers.isEmpty ? 'Додати дитину' : 'Додати ще дитину',
+                style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w600, fontSize: 13),
+              ),
             ),
           ),
 
-          const SizedBox(height: 32),
           if (_errorMessage != null) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withValues(alpha: 0.1),
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.40)),
               ),
-              child: Text(
-                'Помилка: $_errorMessage',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.alertTriangle, color: Color(0xFFF43F5E), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Color(0xFFF43F5E), fontSize: 12.5),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ],
-          SizedBox(
+
+          const SizedBox(height: 12),
+          Container(
             width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyanAccent,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 10,
-                shadowColor: Colors.cyanAccent.withValues(alpha: 0.5),
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
               ),
-              onPressed: _isLoading ? null : _submit,
-              child: _isLoading 
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                  : const Text('Зберегти', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.40),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isLoading ? null : _submit,
+                borderRadius: BorderRadius.circular(16),
+                child: Center(
+                  child: _isLoading 
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2))
+                      : const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.userCheck, color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Зберегти клієнта',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
             ),
           ),
         ],
@@ -289,23 +497,22 @@ class _AddClientSheetState extends State<AddClientSheet> {
   Widget _buildTextField(String hint, IconData icon, TextEditingController controller, {bool isNumber = false}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
       ),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.cyanAccent.withValues(alpha: 0.7)),
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13.5),
+          prefixIcon: Icon(icon, color: const Color(0xFF00E5FF), size: 18),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
       ),
     );
   }
 }
-

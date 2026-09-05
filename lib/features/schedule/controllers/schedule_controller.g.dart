@@ -34,7 +34,7 @@ final class ScheduleControllerProvider
 }
 
 String _$scheduleControllerHash() =>
-    r'39ff512a14079c692915aaff1b0c4adc314cd11a';
+    r'1916f5d976a46d225fe8e63c4a68f6ff9b68de8b';
 
 abstract class _$ScheduleController extends $StreamNotifier<List<GroupClass>> {
   Stream<List<GroupClass>> build();

@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,11 +46,28 @@ class AuthController extends _$AuthController {
                   avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
                 );
               }
+            } else if (savedRoleString == 'coach') {
+              // Real coach session restoration from Firestore
+              final coachId = mockUserId ?? prefs.getString('clientId');
+              if (coachId != null && coachId != 'mock_coach') {
+                try {
+                  final doc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
+                  if (doc.exists) {
+                    state = AppUser.fromJson(doc.data()!);
+                    return;
+                  }
+                } catch (_) {}
+              }
+              // If it was mock_coach or coach was not found, cleanly reset session
+              state = null;
+              await _syncRoleToPrefs(null);
+              await prefs.remove('mockUserId');
+              await prefs.remove('clientId');
             } else {
               final role = UserRole.values.firstWhere((e) => e.name == savedRoleString);
               state = AppUser(
                 id: 'mock_$savedRoleString',
-                name: role == UserRole.admin ? 'Admin' : (role == UserRole.coach ? 'Coach' : 'Owner'),
+                name: role == UserRole.admin ? 'Admin' : 'Owner',
                 role: role,
               );
             }
@@ -188,10 +204,18 @@ class AuthController extends _$AuthController {
         // We defer anonymous sign-in until after setting SharedPreferences to prevent
         // the authStateChanges listener from fetching data with a missing clientId.
 
-        if (login == 'coach') {
-          state = const AppUser(id: 'mock_coach', name: 'Coach', role: UserRole.coach);
-          await _syncRoleToPrefs(state);
-          return;
+        if (login.startsWith('coach')) {
+          final usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
+          if (usersSnap.docs.isNotEmpty) {
+            state = AppUser.fromJson(usersSnap.docs.first.data());
+            await _syncRoleToPrefs(state);
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('clientId', state!.id);
+            await prefs.setString('mockUserId', state!.id);
+            return;
+          } else {
+            throw Exception('Тренера з логіном $login не знайдено');
+          }
         } else if (login == 'admin') {
           state = const AppUser(id: 'mock_admin', name: 'Admin', role: UserRole.admin);
           await _syncRoleToPrefs(state);
@@ -345,7 +369,9 @@ class AuthController extends _$AuthController {
         try {
           final oldRef = FirebaseStorage.instance.ref().child('avatars/${user.id}.jpg');
           await oldRef.delete();
-        } catch (e) {}
+        } catch (_) {
+          // Ignore if old avatar file does not exist
+        }
       }
 
       await FirebaseFirestore.instance.collection('users').doc(user.id).update({

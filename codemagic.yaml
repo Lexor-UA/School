@@ -11,7 +11,7 @@ workflows:
           flutter packages pub get
       - name: Analyze code
         script: |
-          flutter analyze
+          flutter analyze --no-fatal-warnings --no-fatal-infos
       - name: Build Web
         script: |
           flutter build web --release

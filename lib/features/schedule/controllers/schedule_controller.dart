@@ -237,4 +237,13 @@ class ScheduleController extends _$ScheduleController {
       return false;
     }
   }
+
+  Future<bool> deleteClass(String classId) async {
+    try {
+      await FirebaseFirestore.instance.collection('classes').doc(classId).delete();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

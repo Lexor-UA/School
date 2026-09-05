@@ -879,7 +879,10 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: ListTile(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
         leading: Container(
           width: 44,
           height: 44,
@@ -928,8 +931,9 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
           }
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showNoteDialog(Child child) {
     final textController = TextEditingController();
@@ -1795,12 +1799,14 @@ class CoachProfileTab extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Quick Support & Reception Actions
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+            Material(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(

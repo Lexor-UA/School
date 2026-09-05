@@ -51,6 +51,8 @@ class CoachScheduleTab extends ConsumerStatefulWidget {
 }
 
 class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
+  final bool _showAllPoolClassesFallback = false;
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);

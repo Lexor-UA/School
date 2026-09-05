@@ -692,6 +692,36 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
 
+    String t(
+      BuildContext ctx,
+      String key, {
+      required String uk,
+      required String en,
+      required String de,
+      required String ru,
+    }) {
+      final res = key.tr();
+      if (res != key && !res.startsWith('auth.')) {
+        return res;
+      }
+      try {
+        final lang = ctx.locale.languageCode;
+        switch (lang) {
+          case 'en':
+            return en;
+          case 'de':
+            return de;
+          case 'ru':
+            return ru;
+          case 'uk':
+          default:
+            return uk;
+        }
+      } catch (_) {
+        return uk;
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -703,7 +733,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         bool isResetLoading = false;
 
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
+          builder: (BuildContext builderContext, StateSetter setModalState) {
             Future<void> submitLogin() async {
               final email = emailController.text.trim();
               final password = passwordController.text.trim();
@@ -721,9 +751,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   setModalState(() => isModalLoading = false);
                 }
                 if (context.mounted) {
+                  final errStr = 'auth.login_error'.tr(args: [e.toString()]);
+                  final displayErr = errStr.startsWith('auth.') ? 'Помилка входу: $e' : errStr;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('auth.login_error'.tr(args: [e.toString()])),
+                      content: Text(displayErr),
                       backgroundColor: Colors.redAccent,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -839,7 +871,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'auth.authorization'.tr(),
+                                        t(
+                                          builderContext,
+                                          'auth.authorization',
+                                          uk: 'АВТОРИЗАЦІЯ',
+                                          en: 'AUTHORIZATION',
+                                          de: 'AUTORISIERUNG',
+                                          ru: 'АВТОРИЗАЦИЯ',
+                                        ),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
@@ -849,7 +888,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
-                                        'auth.login_subtitle'.tr(),
+                                        t(
+                                          builderContext,
+                                          'auth.login_subtitle',
+                                          uk: 'Введіть ваші дані для входу в кабінет',
+                                          en: 'Enter your credentials to log in',
+                                          de: 'Geben Sie Ihre Daten ein, um sich anzumelden',
+                                          ru: 'Введите ваши данные для входа в кабинет',
+                                        ),
                                         style: TextStyle(
                                           color: Colors.white.withValues(alpha: 0.65),
                                           fontSize: 12.5,
@@ -886,7 +932,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               textInputAction: TextInputAction.next,
                               onChanged: (_) => setModalState(() {}),
                               decoration: InputDecoration(
-                                hintText: 'auth.email_login'.tr(),
+                                hintText: t(
+                                  builderContext,
+                                  'auth.email_login',
+                                  uk: 'Email / Логін',
+                                  en: 'Email / Login',
+                                  de: 'E-Mail / Login',
+                                  ru: 'Email / Логин',
+                                ),
                                 hintStyle: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.4),
                                   fontSize: 14,
@@ -953,7 +1006,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               textInputAction: TextInputAction.done,
                               onSubmitted: (_) => submitLogin(),
                               decoration: InputDecoration(
-                                hintText: 'auth.password'.tr(),
+                                hintText: t(
+                                  builderContext,
+                                  'auth.password',
+                                  uk: 'Пароль',
+                                  en: 'Password',
+                                  de: 'Passwort',
+                                  ru: 'Пароль',
+                                ),
                                 hintStyle: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.4),
                                   fontSize: 14,
@@ -1030,7 +1090,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                     const SizedBox(width: 10),
                                                     Expanded(
                                                       child: Text(
-                                                        'auth.enter_email_for_reset'.tr(),
+                                                        t(
+                                                          builderContext,
+                                                          'auth.enter_email_for_reset',
+                                                          uk: 'Введіть Email у поле вище для скидання паролю',
+                                                          en: 'Enter your email above to reset password',
+                                                          de: 'Geben Sie Ihre E-Mail oben ein, um das Passwort zurückzusetzen',
+                                                          ru: 'Введите Email в поле выше для сброса пароля',
+                                                        ),
                                                         style: const TextStyle(fontWeight: FontWeight.w600),
                                                       ),
                                                     ),
@@ -1057,7 +1124,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                     const SizedBox(width: 10),
                                                     Expanded(
                                                       child: Text(
-                                                        'auth.reset_password_sent'.tr(),
+                                                        t(
+                                                          builderContext,
+                                                          'auth.reset_password_sent',
+                                                          uk: 'Лист для відновлення паролю надіслано на вашу пошту',
+                                                          en: 'Password reset link sent to your email',
+                                                          de: 'Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail gesendet',
+                                                          ru: 'Письмо для сброса пароля отправлено на вашу почту',
+                                                        ),
                                                         style: const TextStyle(fontWeight: FontWeight.w600),
                                                       ),
                                                     ),
@@ -1099,7 +1173,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       )
                                     : const Icon(LucideIcons.keyRound, size: 14),
                                 label: Text(
-                                  'auth.forgot_password'.tr(),
+                                  t(
+                                    builderContext,
+                                    'auth.forgot_password',
+                                    uk: 'Забули пароль?',
+                                    en: 'Forgot password?',
+                                    de: 'Passwort vergessen?',
+                                    ru: 'Забыли пароль?',
+                                  ),
                                   style: TextStyle(
                                     color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
                                     fontSize: 13,
@@ -1157,7 +1238,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                           ),
                                           const SizedBox(width: 10),
                                           Text(
-                                            'auth.login_action'.tr(),
+                                            t(
+                                              builderContext,
+                                              'auth.login_action',
+                                              uk: 'УВІЙТИ',
+                                              en: 'LOG IN',
+                                              de: 'ANMELDEN',
+                                              ru: 'ВОЙТИ',
+                                            ),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 15,

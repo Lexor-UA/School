@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'coach_dashboard.dart';
+import 'coach_calendar_tab.dart';
 
 class CoachTabNotifier extends Notifier<int> {
   @override
@@ -123,7 +124,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                 index: selectedTab,
                 children: const [
                   CoachScheduleTab(),
-                  CoachJournalTab(),
+                  CoachCalendarTab(),
                   CoachSwimmersTab(),
                   CoachProfileTab(),
                 ],
@@ -177,8 +178,8 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     ),
                     _buildDockItem(
                       index: 1,
-                      icon: LucideIcons.clipboardCheck,
-                      label: 'coach.nav_journal'.tr(),
+                      icon: LucideIcons.calendarDays,
+                      label: 'coach.nav_calendar'.tr(),
                       isSelected: selectedTab == 1,
                     ),
                     _buildDockItem(

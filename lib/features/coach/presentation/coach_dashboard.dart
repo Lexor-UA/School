@@ -12,7 +12,7 @@ import 'package:swimming_school_app/features/coach/presentation/qr_scanner_scree
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
-import 'package:swimming_school_app/features/coach/presentation/coach_main.dart';
+import 'coach_journal_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class SelectedCoachClassIdNotifier extends Notifier<String?> {
@@ -86,16 +86,18 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'coach.greeting'.tr(args: [user?.name ?? 'coach.title'.tr()]),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'coach.greeting'.tr(args: [user?.name ?? 'coach.title'.tr()]),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 3),
                             Row(
@@ -193,22 +195,114 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   // Shift telemetry card
                   _buildShiftTelemetryCard(),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
+
+                  // Quick Attendance Journal Action Button
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                            const Color(0xFF0077B6).withValues(alpha: 0.22),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                          width: 1.1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.30),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Icon(LucideIcons.clipboardCheck, color: Colors.white, size: 19),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'coach.quick_attendance'.tr(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14.5,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'coach.quick_attendance_sub'.tr(),
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(LucideIcons.chevronRight, color: Color(0xFF00E5FF), size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
 
                   // Section title & Date filter pills
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'coach.schedule_today'.tr(),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'coach.schedule_today'.tr(),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -322,15 +416,6 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      if (index == 0 && isUsingFallback) {
-                        return Column(
-                          children: [
-                            _buildDemoBanner(),
-                            const SizedBox(height: 12),
-                            _buildClassCard(displayClasses[index], index),
-                          ],
-                        );
-                      }
                       return _buildClassCard(displayClasses[index], index);
                     },
                     childCount: displayClasses.length,
@@ -468,28 +553,6 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
     );
   }
 
-  Widget _buildDemoBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          const Icon(LucideIcons.info, color: Color(0xFF38BDF8), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'coach.review_mode_banner'.tr(),
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildClassCard(GroupClass gClass, int index) {
     final startTimeStr = '${gClass.startTime.hour.toString().padLeft(2, '0')}:${gClass.startTime.minute.toString().padLeft(2, '0')}';
@@ -644,7 +707,10 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 GestureDetector(
                   onTap: () {
                     ref.read(selectedCoachClassIdProvider.notifier).setClassId(gClass.id);
-                    ref.read(coachTabProvider.notifier).setTab(1); // Go to Journal tab
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
+                    );
                   },
                   child: Container(
                     width: double.infinity,
@@ -1371,21 +1437,59 @@ class _CoachSwimmersTabState extends State<CoachSwimmersTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'coach.swimmers_heading'.tr(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(LucideIcons.users, color: Colors.white, size: 22),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'coach.swimmers_heading'.tr(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 21,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'coach.swimmers_subheading'.tr(),
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'coach.swimmers_subheading'.tr(),
-                    style: const TextStyle(color: Colors.white54, fontSize: 12.5),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   // Search Bar
                   Container(
@@ -1756,7 +1860,7 @@ class CoachProfileTab extends ConsumerWidget {
 
             const SizedBox(height: 28),
 
-            // Logout / End Shift Button
+            // Logout Button
             GestureDetector(
               onTap: () => _confirmCoachLogout(context, ref),
               child: Container(
@@ -1776,9 +1880,9 @@ class CoachProfileTab extends ConsumerWidget {
                       'coach.end_shift_btn'.tr(),
                       style: const TextStyle(
                         color: Colors.redAccent,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],

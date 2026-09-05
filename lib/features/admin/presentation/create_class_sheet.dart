@@ -10,8 +10,9 @@ import 'package:easy_localization/easy_localization.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
+  final AppUser? defaultCoach;
   
-  const CreateClassSheet({super.key, this.initialDate});
+  const CreateClassSheet({super.key, this.initialDate, this.defaultCoach});
 
   @override
   ConsumerState<CreateClassSheet> createState() => _CreateClassSheetState();
@@ -345,7 +346,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                 if (_selectedCoach == null) {
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     if (mounted) {
-                                      setState(() => _selectedCoach = coachesList.first);
+                                      final matched = widget.defaultCoach != null
+                                          ? coachesList.firstWhere(
+                                              (c) => c.id == widget.defaultCoach!.id || c.name.toLowerCase() == widget.defaultCoach!.name.toLowerCase(),
+                                              orElse: () => coachesList.first,
+                                            )
+                                          : coachesList.first;
+                                      setState(() => _selectedCoach = matched);
                                     }
                                   });
                                 }

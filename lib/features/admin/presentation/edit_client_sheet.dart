@@ -3,9 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
-import 'package:intl/intl.dart';
 import 'package:swimming_school_app/features/admin/presentation/admin_booking_sheet.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
@@ -218,7 +218,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+                  child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
@@ -297,9 +297,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               children: [
                 const Icon(LucideIcons.edit2, color: Colors.blueAccent),
                 const SizedBox(width: 12),
-                const Text(
-                  'Редагувати клієнта',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                Text(
+                  'admin.edit_client_title'.tr(),
+                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -322,14 +322,14 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       children: [
         _buildTextField(
           controller: _nameController,
-          label: 'Ім\'я та Прізвище',
+          label: 'admin.add_client_name_hint'.tr(),
           icon: LucideIcons.user,
         ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
         const SizedBox(height: 16),
         
         _buildTextField(
           controller: _phoneController,
-          label: 'Номер телефону',
+          label: 'admin.add_client_phone_hint'.tr(),
           icon: LucideIcons.phone,
           keyboardType: TextInputType.phone,
         ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
@@ -337,15 +337,15 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
 
         _buildTextField(
           controller: _loginIdController,
-          label: 'Логін для входу (наприклад, Client1)',
+          label: '${'admin.clients_login_label'.tr()} (Client1)',
           icon: LucideIcons.key,
         ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
         const SizedBox(height: 32),
 
         // SUBSCRIPTION MANAGEMENT
-        const Align(
+        Align(
           alignment: Alignment.centerLeft,
-          child: Text('Управління абонементами', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text('admin.sub_management'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         ).animate().fadeIn(delay: 350.ms),
         const SizedBox(height: 12),
         
@@ -369,8 +369,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Center(
-                      child: Text('У клієнта немає абонементів', style: TextStyle(color: Colors.white54)),
+                    child: Center(
+                      child: Text('admin.clients_no_subs'.tr(), style: const TextStyle(color: Colors.white54)),
                     ),
                   )
                 else
@@ -392,7 +392,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  sub.serviceName ?? 'Абонемент',
+                                  sub.serviceName ?? 'admin.cat_subscriptions'.tr(),
                                   style: TextStyle(color: isActive ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 14),
                                 ),
                               ),
@@ -403,7 +403,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  isActive ? 'Активний' : 'Неактивний',
+                                  isActive ? 'admin.clients_status_active'.tr() : 'admin.clients_status_unpaid'.tr(),
                                   style: TextStyle(color: isActive ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -433,7 +433,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Залишилось: ${sub.remainingClasses} / ${sub.totalClasses}', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                              Text('${'parent.sub_left'.tr(args: ['${sub.remainingClasses}'])} (${sub.totalClasses})', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                               Row(
                                 children: [
                                   IconButton(
@@ -454,7 +454,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                   IconButton(
                                     icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
                                     onPressed: () => _deleteSubscription(sub),
-                                    tooltip: 'Видалити абонемент',
+                                    tooltip: 'admin.delete'.tr(),
                                   ),
                                 ],
                               ),
@@ -485,9 +485,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         ),
         
         const SizedBox(height: 32),
-        const Align(
+        Align(
           alignment: Alignment.centerLeft,
-          child: Text('Заняття клієнта', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text('admin.client_classes'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         ).animate().fadeIn(delay: 400.ms),
         const SizedBox(height: 12),
         
@@ -683,7 +683,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
             ),
             child: _isLoading
                 ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Зберегти зміни профілю', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                : Text('admin.add_client_save_btn'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.9, 0.9)),
         const SizedBox(height: 40),
@@ -696,9 +696,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       children: [
         const Icon(LucideIcons.checkCircle, color: Colors.greenAccent, size: 64).animate().scale().fadeIn(),
         const SizedBox(height: 24),
-        const Text(
-          'Дані оновлено!',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+        Text(
+          'admin.edit_coach_success'.tr(),
+          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 40),
       ],

@@ -665,9 +665,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Каса & Абонементи',
-                      style: TextStyle(
+                    Text(
+                      'admin.payment_title'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -676,7 +676,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Контроль занять, термінів дії та неоплачених клієнтів',
+                      'admin.payment_subtitle'.tr(),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.55),
                         fontSize: 12,
@@ -723,7 +723,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           Expanded(
             child: _buildTelemetryCard(
               count: '$activeCount',
-              label: 'Активні',
+              label: 'admin.tab_active'.tr(),
               color: const Color(0xFF10B981),
               icon: LucideIcons.circleCheck,
               isSelected: _selectedTab == 0 && !_onlyExpiringSoon,
@@ -739,7 +739,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           Expanded(
             child: _buildTelemetryCard(
               count: '$expiringCount',
-              label: 'Закінчуються',
+              label: 'admin.tab_expiring'.tr(),
               color: const Color(0xFFF59E0B),
               icon: LucideIcons.hourglass,
               isSelected: _selectedTab == 0 && _onlyExpiringSoon,
@@ -755,7 +755,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           Expanded(
             child: _buildTelemetryCard(
               count: '$unpaidCount',
-              label: 'Не оплатили',
+              label: 'admin.tab_unpaid'.tr(),
               color: const Color(0xFFF43F5E),
               icon: LucideIcons.alertCircle,
               isSelected: _selectedTab == 1,
@@ -878,7 +878,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             Expanded(
               child: _buildTabButton(
                 index: 0,
-                title: 'Активні',
+                title: 'admin.tab_active'.tr(),
                 badge: '$activeCount',
                 accentColor: const Color(0xFF10B981),
               ),
@@ -886,7 +886,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             Expanded(
               child: _buildTabButton(
                 index: 1,
-                title: 'Не оплатили',
+                title: 'admin.tab_unpaid'.tr(),
                 badge: '$unpaidCount',
                 accentColor: const Color(0xFFF43F5E),
               ),
@@ -894,7 +894,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             Expanded(
               child: _buildTabButton(
                 index: 2,
-                title: '⚡ Каса',
+                title: 'admin.tab_cash'.tr(),
                 badge: null,
                 accentColor: const Color(0xFF00D2FF),
               ),

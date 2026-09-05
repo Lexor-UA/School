@@ -6,6 +6,7 @@ import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_c
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
@@ -32,6 +33,36 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   final List<String> _categories = ['Плавання', 'Стрибки', 'Аквааеробіка'];
 
   bool _isSaving = false;
+
+  String _getLaneLabel(String lane) {
+    switch (lane) {
+      case 'Доріжка 1':
+        return 'admin.lane_1'.tr();
+      case 'Доріжка 2':
+        return 'admin.lane_2'.tr();
+      case 'Доріжка 3':
+        return 'admin.lane_3'.tr();
+      case 'Басейн':
+        return 'admin.lane_pool'.tr();
+      case 'Дитячий басейн':
+        return 'admin.lane_kids_pool'.tr();
+      default:
+        return lane;
+    }
+  }
+
+  String _getCategoryLabel(String cat) {
+    switch (cat) {
+      case 'Плавання':
+        return 'admin.cat_swimming'.tr();
+      case 'Стрибки':
+        return 'admin.cat_diving'.tr();
+      case 'Аквааеробіка':
+        return 'admin.cat_aqua'.tr();
+      default:
+        return cat;
+    }
+  }
 
   @override
   void initState() {
@@ -227,23 +258,23 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Створити заняття',
-                              style: TextStyle(
+                              'admin.class_create_title'.tr(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.3,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Додавання тренування у розклад басейну',
-                              style: TextStyle(
+                              'admin.class_create_subtitle'.tr(),
+                              style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
                               ),
@@ -272,11 +303,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   const SizedBox(height: 22),
 
                   // Title input
-                  _buildLabel('Назва заняття'),
+                  _buildLabel('admin.class_name'.tr()),
                   TextField(
                     controller: _titleController,
                     style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                    decoration: _inputDecoration(hint: 'Наприклад: Junior Pro, Дорослі, Персональне'),
+                    decoration: _inputDecoration(hint: 'admin.class_name_hint'.tr()),
                   ),
                   const SizedBox(height: 16),
 
@@ -287,7 +318,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Категорія'),
+                            _buildLabel('admin.class_category'.tr()),
                             _buildDropdown(_selectedCategory, _categories, (v) => setState(() => _selectedCategory = v!)),
                           ],
                         ),
@@ -297,7 +328,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Тренер'),
+                            _buildLabel('admin.class_coach'.tr()),
                             coachesAsync.when(
                               data: (coachesList) {
                                 if (coachesList.isEmpty) {
@@ -308,7 +339,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                                     ),
-                                    child: const Text('Немає тренерів', style: TextStyle(color: Color(0xFFF43F5E), fontSize: 13)),
+                                    child: Text('admin.class_no_coaches'.tr(), style: const TextStyle(color: Color(0xFFF43F5E), fontSize: 13)),
                                   );
                                 }
                                 if (_selectedCoach == null) {
@@ -328,7 +359,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                 ),
                                 child: const Center(child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)))),
                               ),
-                              error: (err, stack) => const Text('Помилка', style: TextStyle(color: Colors.red)),
+                              error: (err, stack) => Text('admin.class_error'.tr(), style: const TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
@@ -344,7 +375,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Дата'),
+                            _buildLabel('admin.class_date'.tr()),
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
@@ -385,7 +416,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Час початку'),
+                            _buildLabel('admin.class_start_time'.tr()),
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
@@ -426,7 +457,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   const SizedBox(height: 16),
 
                   // Lane selection chips
-                  _buildLabel('Доріжка / Місце'),
+                  _buildLabel('admin.class_lane_place'.tr()),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -467,7 +498,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                       : null,
                                 ),
                                 child: Text(
-                                  lane,
+                                  _getLaneLabel(lane),
                                   style: TextStyle(
                                     color: isSelected ? Colors.white : Colors.white70,
                                     fontSize: 13,
@@ -487,7 +518,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildLabel('Ліміт учнів на занятті'),
+                      _buildLabel('admin.class_students_limit'.tr()),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
@@ -496,7 +527,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.40)),
                         ),
                         child: Text(
-                          '$_maxCapacity місць',
+                          'admin.class_spots_count'.tr(args: ['$_maxCapacity']),
                           style: const TextStyle(
                             color: Color(0xFF00E5FF),
                             fontSize: 12,
@@ -556,14 +587,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Center(
                           child: _isSaving
                               ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2))
-                              : const Row(
+                              : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(LucideIcons.sparkles, color: Colors.white, size: 18),
-                                    SizedBox(width: 8),
+                                    const Icon(LucideIcons.sparkles, color: Colors.white, size: 18),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      'Створити заняття',
-                                      style: TextStyle(
+                                      'admin.class_create_btn'.tr(),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 15.5,
                                         fontWeight: FontWeight.w700,
@@ -633,7 +664,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           dropdownColor: const Color(0xFF13233C),
           style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           icon: Icon(LucideIcons.chevronDown, color: Colors.white.withValues(alpha: 0.60), size: 18),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+          items: items.map((i) => DropdownMenuItem(value: i, child: Text(_getCategoryLabel(i)))).toList(),
           onChanged: onChanged,
         ),
       ),

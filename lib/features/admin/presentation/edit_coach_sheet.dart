@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
@@ -46,7 +47,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
   Future<void> _submit() async {
     if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
       setState(() {
-        _errorMessage = 'Будь ласка, заповніть ім\'я та телефон.';
+        _errorMessage = 'admin.add_client_fill_required'.tr();
       });
       return;
     }
@@ -71,7 +72,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
 
         navigator.pop();
         messenger.showSnackBar(
-          const SnackBar(content: Text('Дані тренера оновлено!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+          SnackBar(content: Text('admin.edit_coach_success'.tr(), style: const TextStyle(color: Colors.white)), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
@@ -114,17 +115,17 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Row(
+                  Row(
                     children: [
-                      Icon(LucideIcons.edit2, color: Colors.blueAccent),
-                      SizedBox(width: 12),
-                      Text('Редагувати тренера', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const Icon(LucideIcons.edit2, color: Colors.blueAccent),
+                      const SizedBox(width: 12),
+                      Text('admin.edit_coach_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
+                  _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
                   const SizedBox(height: 16),
-                  _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
+                  _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
                   const SizedBox(height: 32),
                   
                   if (_errorMessage != null) ...[
@@ -156,7 +157,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                       onPressed: _isLoading ? null : _submit,
                       child: _isLoading 
                           ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Зберегти зміни', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                          : Text('admin.add_coach_save_btn'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
                     ),
                   ),
                 ],

@@ -364,9 +364,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              'CitySwim Admin · Онлайн',
-                              style: TextStyle(
+                            Text(
+                              'CitySwim Admin · ${'admin.online_status'.tr()}',
+                              style: const TextStyle(
                                 color: Color(0xFF38BDF8),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -746,9 +746,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       Expanded(
                         child: Text(
                           isSessionActive
-                              ? 'Зараз у басейні: ${state.ongoingClasses.first.title} (${state.ongoingClientsCount} учнів на доріжках)'
+                              ? 'admin.in_pool_now_desc'.tr(args: [state.ongoingClasses.first.title, state.ongoingClientsCount.toString()])
                               : (state.nearestClass != null
-                                  ? 'Найближче заняття: ${state.nearestClass!.title} о ${DateFormat('HH:mm').format(state.nearestClass!.startTime)}'
+                                  ? 'admin.nearest_class_at'.tr(args: [state.nearestClass!.title, DateFormat('HH:mm').format(state.nearestClass!.startTime)])
                                   : 'admin.normal_mode'.tr()),
                           style: const TextStyle(
                             color: Colors.white,
@@ -1079,7 +1079,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         const SizedBox(height: 4),
                         Text(
                           hasUnread
-                              ? '$unreadCount нов${unreadCount == 1 ? 'е' : 'их'} повідомлен${unreadCount == 1 ? 'ня' : 'ь'}'
+                              ? 'admin.new_messages_count'.tr(args: [unreadCount.toString()])
                               : 'admin.quick_answers'.tr(),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.75),

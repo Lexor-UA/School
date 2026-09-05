@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
@@ -33,7 +34,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
   Future<void> _submit() async {
     if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
       setState(() {
-        _errorMessage = 'Будь ласка, заповніть ім\'я та телефон.';
+        _errorMessage = 'admin.add_client_fill_required'.tr();
       });
       return;
     }
@@ -131,9 +132,9 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           child: const Icon(LucideIcons.check, color: Colors.greenAccent, size: 48),
         ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
         const SizedBox(height: 24),
-        const Text(
-          'Тренера додано!',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+        Text(
+          'admin.add_coach_success_title'.tr(),
+          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5),
         ).animate().fadeIn(delay: 100.ms),
         const SizedBox(height: 8),
         Text(
@@ -151,14 +152,14 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           ),
           child: Column(
             children: [
-              const Text('ДАНІ ДЛЯ ВХОДУ', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              Text('admin.add_client_credentials_title'.tr().toUpperCase(), style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(LucideIcons.user, color: Colors.cyanAccent, size: 18),
                   const SizedBox(width: 12),
-                  Text('Логін:', style: TextStyle(color: Colors.white54, fontSize: 16)),
+                  Text('admin.clients_login_label'.tr(), style: const TextStyle(color: Colors.white54, fontSize: 16)),
                   const SizedBox(width: 6),
                   Text(_generatedLogin ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
@@ -169,7 +170,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 children: [
                   const Icon(LucideIcons.key, color: Colors.cyanAccent, size: 18),
                   const SizedBox(width: 12),
-                  const Text('Пароль:', style: TextStyle(color: Colors.white54, fontSize: 16)),
+                  Text('admin.clients_password_label'.tr(), style: const TextStyle(color: Colors.white54, fontSize: 16)),
                   const SizedBox(width: 6),
                   const Text('1', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
@@ -196,17 +197,17 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.userPlus, color: Colors.cyanAccent),
-              SizedBox(width: 12),
-              Text('Новий Тренер', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              const Icon(LucideIcons.userPlus, color: Colors.cyanAccent),
+              const SizedBox(width: 12),
+              Text('admin.add_coach_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 24),
-          _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
+          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
           const SizedBox(height: 16),
-          _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
+          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
           const SizedBox(height: 32),
           
           if (_errorMessage != null) ...[
@@ -238,7 +239,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
               onPressed: _isLoading ? null : _submit,
               child: _isLoading 
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                  : const Text('Зберегти', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  : Text('admin.add_coach_save_btn'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
             ),
           ),
         ],

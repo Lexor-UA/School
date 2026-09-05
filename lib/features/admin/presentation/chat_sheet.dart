@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/features/chat/models/chat_dialog.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ChatSheet extends ConsumerStatefulWidget {
   const ChatSheet({super.key});
@@ -142,9 +143,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Центр підтримки',
-                                    style: TextStyle(
+                                  Text(
+                                    'admin.support_center'.tr(),
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 20,
                                       fontWeight: FontWeight.w800,
@@ -169,9 +170,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                         ),
                                       ),
                                       const SizedBox(width: 7),
-                                      const Text(
-                                        'Діалоги з клієнтами · Онлайн',
-                                        style: TextStyle(
+                                      Text(
+                                        'admin.chat_dialogs_online'.tr(),
+                                        style: const TextStyle(
                                           color: Color(0xFF38BDF8),
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -199,7 +200,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                   ),
                                 ),
                                 child: Text(
-                                  '$unreadCount нов${unreadCount == 1 ? 'е' : 'их'}',
+                                  '$unreadCount ${unreadCount == 1 ? 'admin.chat_new_one'.tr() : 'admin.chat_new_many'.tr()}',
                                   style: const TextStyle(
                                     color: Color(0xFF38BDF8),
                                     fontSize: 11,
@@ -242,7 +243,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                             onChanged: (val) => setState(() => _searchQuery = val),
                             style: const TextStyle(color: Colors.white, fontSize: 14),
                             decoration: InputDecoration(
-                              hintText: 'Пошук клієнта чи повідомлення...',
+                              hintText: 'admin.chat_search_hint'.tr(),
                               hintStyle: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.4),
                                 fontSize: 13,
@@ -268,14 +269,14 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                         Row(
                           children: [
                             _buildFilterChip(
-                              label: 'Всі діалоги',
+                              label: 'admin.chat_all_dialogs'.tr(),
                               count: dialogs.length,
                               isSelected: _selectedFilterIndex == 0,
                               onTap: () => setState(() => _selectedFilterIndex = 0),
                             ),
                             const SizedBox(width: 8),
                             _buildFilterChip(
-                              label: 'Непрочитані',
+                              label: 'admin.chat_unread'.tr(),
                               count: unreadCount,
                               isSelected: _selectedFilterIndex == 1,
                               accentColor: const Color(0xFF38BDF8),
@@ -422,9 +423,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Немає повідомлень',
-              style: TextStyle(
+            Text(
+              'admin.chat_no_messages'.tr(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -433,8 +434,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
             const SizedBox(height: 6),
             Text(
               _searchQuery.isNotEmpty
-                  ? 'За вашим запитом нічого не знайдено'
-                  : 'Всі звернення клієнтів опрацьовано',
+                  ? 'admin.chat_nothing_found'.tr()
+                  : 'admin.chat_all_processed'.tr(),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 13,
@@ -633,9 +634,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                     width: 0.8,
                                   ),
                                 ),
-                                child: const Text(
-                                  'КЛІЄНТ',
-                                  style: TextStyle(
+                                child: Text(
+                                  'admin.chat_client_badge'.tr(),
+                                  style: const TextStyle(
                                     color: Color(0xFF38BDF8),
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w700,
@@ -652,7 +653,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                           style: TextStyle(
                             color: isUnread ? const Color(0xFF38BDF8) : Colors.white38,
                             fontSize: 11.5,
-                            fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isUnread ? FontWeight.w700 : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -662,7 +663,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                       children: [
                         Expanded(
                           child: Text(
-                            dialog.lastMessage.isNotEmpty ? dialog.lastMessage : 'Повідомлень немає',
+                            dialog.lastMessage.isNotEmpty ? dialog.lastMessage : 'admin.chat_no_msgs_yet'.tr(),
                             style: TextStyle(
                               color: isUnread ? Colors.white.withValues(alpha: 0.95) : Colors.white60,
                               fontSize: 13,

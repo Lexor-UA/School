@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
@@ -30,14 +31,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   void _copyCredentials(String loginId, String name) {
-    Clipboard.setData(ClipboardData(text: 'Логін: $loginId\nПароль: 1'));
+    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}1'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
             const SizedBox(width: 10),
-            Expanded(child: Text('Дані входу для тренера "$name" скопійовано!')),
+            Expanded(child: Text('admin.coaches_copied_msg'.tr(args: [name]))),
           ],
         ),
         backgroundColor: const Color(0xFF10B981),
@@ -68,17 +69,17 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               child: const Icon(LucideIcons.alertTriangle, color: Color(0xFFF43F5E), size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('Видалити тренера?', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            Text('admin.coaches_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
-          'Ви впевнені, що хочете видалити тренера $name? Його доступ до системи буде скасовано.',
+          'admin.coaches_delete_confirm'.tr(args: [name]),
           style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -87,7 +88,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Видалити'),
+            child: Text('admin.delete'.tr()),
           ),
         ],
       ),
@@ -104,7 +105,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Тренера "$name" успішно видалено'),
+            content: Text('admin.clients_deleted_success'.tr(args: [name])),
             backgroundColor: const Color(0xFF10B981),
           ),
         );
@@ -136,7 +137,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
           foregroundColor: const Color(0xFF061426),
           elevation: 0,
           icon: const Icon(LucideIcons.userPlus, size: 18),
-          label: const Text('Додати тренера', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+          label: Text('admin.add_coach_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
           onPressed: () {
             showModalBottomSheet(
               context: context,
@@ -311,9 +312,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'Всі Тренери',
-                      style: TextStyle(
+                    Text(
+                      'admin.coaches_title'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -328,9 +329,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
                       ),
-                      child: const Text(
-                        'Команда',
-                        style: TextStyle(
+                      child: Text(
+                        'admin.coaches_team_badge'.tr(),
+                        style: const TextStyle(
                           color: Color(0xFF38BDF8),
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,
@@ -341,7 +342,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Керування тренерським складом та доступами',
+                  'admin.coaches_subtitle'.tr(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
@@ -367,7 +368,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         style: const TextStyle(color: Colors.white, fontSize: 13.5),
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         decoration: InputDecoration(
-          hintText: 'Пошук за ім\'ям, телефоном чи логіном...',
+          hintText: 'admin.coaches_search_hint'.tr(),
           hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
           prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 18),
           suffixIcon: _searchQuery.isNotEmpty
@@ -559,7 +560,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                     child: IconButton(
                       icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 16),
-                      tooltip: 'Видалити',
+                      tooltip: 'admin.delete'.tr(),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => _deleteCoach(coachId, name),
@@ -589,7 +590,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     text: TextSpan(
                       style: const TextStyle(fontSize: 12, color: Colors.white70),
                       children: [
-                        const TextSpan(text: 'Логін: '),
+                        TextSpan(text: 'admin.clients_login_label'.tr()),
                         TextSpan(
                           text: loginId,
                           style: const TextStyle(
@@ -598,7 +599,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                             fontFamily: 'monospace',
                           ),
                         ),
-                        const TextSpan(text: '   |   Пароль: '),
+                        TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
                         const TextSpan(
                           text: '1',
                           style: TextStyle(
@@ -619,14 +620,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.copy, color: Color(0xFF38BDF8), size: 12),
-                        SizedBox(width: 4),
+                        const Icon(LucideIcons.copy, color: Color(0xFF38BDF8), size: 12),
+                        const SizedBox(width: 4),
                         Text(
-                          'Копіювати',
-                          style: TextStyle(
+                          'admin.clients_copy'.tr(),
+                          style: const TextStyle(
                             color: Color(0xFF38BDF8),
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
@@ -651,9 +652,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         children: [
           Icon(LucideIcons.users, size: 50, color: Colors.white.withValues(alpha: 0.2)),
           const SizedBox(height: 16),
-          const Text('Немає зареєстрованих тренерів', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('admin.coaches_empty_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text('Натисніть кнопку нижче, щоб додати першого тренера', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
+          Text('admin.coaches_empty_desc'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
         ],
       ),
     );
@@ -666,9 +667,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         children: [
           Icon(LucideIcons.userX, size: 44, color: Colors.white.withValues(alpha: 0.2)),
           const SizedBox(height: 14),
-          const Text('Тренерів не знайдено', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          Text('admin.coaches_not_found'.tr(), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('Спробуйте змінити пошуковий запит', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12.5)),
+          Text('admin.coaches_not_found_desc'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12.5)),
         ],
       ),
     );

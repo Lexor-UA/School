@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
@@ -52,7 +53,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     final validChildren = _childrenControllers.where((c) => c.text.trim().isNotEmpty).toList();
     if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
       setState(() {
-        _errorMessage = 'Будь ласка, заповніть ім\'я та телефон.';
+        _errorMessage = 'admin.add_client_fill_required'.tr();
       });
       return;
     }
@@ -195,9 +196,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           ),
         ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
         const SizedBox(height: 20),
-        const Text(
-          'Клієнта успішно створено!',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        Text(
+          'admin.add_client_success_title'.tr(),
+          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 6),
         Text(
@@ -217,12 +218,12 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Дані для входу в кабінет:', style: TextStyle(color: Colors.white60, fontSize: 12.5)),
+                  Text('admin.add_client_credentials_title'.tr(), style: const TextStyle(color: Colors.white60, fontSize: 12.5)),
                   GestureDetector(
                     onTap: () {
-                      Clipboard.setData(ClipboardData(text: 'Логін: ${_generatedLogin ?? ""}\nПароль: 1'));
+                      Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}\n${'admin.clients_password_label'.tr()}1'));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Дані входу скопійовано!'), duration: Duration(seconds: 2)),
+                        SnackBar(content: Text('admin.add_client_copied'.tr()), duration: const Duration(seconds: 2)),
                       );
                     },
                     child: Container(
@@ -231,12 +232,12 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.copy, color: Color(0xFF00E5FF), size: 12),
-                          SizedBox(width: 4),
-                          Text('Копіювати', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                          const Icon(LucideIcons.copy, color: Color(0xFF00E5FF), size: 12),
+                          const SizedBox(width: 4),
+                          Text('admin.clients_copy'.tr(), style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -247,9 +248,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Text('Логін: ${_generatedLogin ?? ""}', style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}', style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 16, fontWeight: FontWeight.bold)),
                   Container(width: 1, height: 16, color: Colors.white24),
-                  const Text('Пароль: 1', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('${'admin.clients_password_label'.tr()}1', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -266,7 +267,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () => Navigator.pop(context),
-            child: const Text('Готово', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text('admin.done'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -315,23 +316,23 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Новий Клієнт',
-                      style: TextStyle(
+                      'admin.add_client_title'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.3,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Швидка реєстрація батьків та учнів',
-                      style: TextStyle(
+                      'admin.add_client_subtitle'.tr(),
+                      style: const TextStyle(
                         color: Colors.white60,
                         fontSize: 12,
                       ),
@@ -358,17 +359,17 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             ],
           ),
           const SizedBox(height: 22),
-          _buildTextField('Ім\'я та Прізвище', LucideIcons.user, _nameController),
+          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
           const SizedBox(height: 14),
-          _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true),
+          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
           const SizedBox(height: 20),
           
           if (_childrenControllers.isNotEmpty) ...[
-            const Row(
+            Row(
               children: [
-                Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
-                SizedBox(width: 8),
-                Text('Діти / Учні', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
+                const SizedBox(width: 8),
+                Text('admin.add_client_children_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 10),
@@ -380,7 +381,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildTextField('Ім\'я дитини', LucideIcons.baby, _childrenControllers[index]),
+                    child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.baby, _childrenControllers[index]),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -408,7 +409,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               onPressed: _addChildField,
               icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
               label: Text(
-                _childrenControllers.isEmpty ? 'Додати дитину' : 'Додати ще дитину',
+                _childrenControllers.isEmpty ? 'admin.add_client_add_child'.tr() : 'admin.add_client_add_more_child'.tr(),
                 style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
@@ -469,14 +470,14 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 child: Center(
                   child: _isLoading 
                       ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2))
-                      : const Row(
+                      : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.userCheck, color: Colors.white, size: 18),
-                            SizedBox(width: 8),
+                            const Icon(LucideIcons.userCheck, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
                             Text(
-                              'Зберегти клієнта',
-                              style: TextStyle(
+                              'admin.add_client_save_btn'.tr(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15.5,
                                 fontWeight: FontWeight.w700,

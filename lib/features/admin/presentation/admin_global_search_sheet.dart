@@ -35,13 +35,13 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   String _query = '';
   late int _selectedCategoryIndex;
 
-  final List<String> _categories = [
-    'Всі',
-    'Клієнти',
-    'Діти',
-    'Тренери',
-    'Заняття',
-    'Абонементи',
+  List<String> get _categories => [
+    'admin.cat_all'.tr(),
+    'admin.cat_clients'.tr(),
+    'admin.cat_children'.tr(),
+    'admin.cat_coaches'.tr(),
+    'admin.cat_classes'.tr(),
+    'admin.cat_subscriptions'.tr(),
   ];
 
   @override
@@ -257,12 +257,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     child: const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 18),
                   ),
                   const SizedBox(width: 12),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Розумний пошук',
-                        style: TextStyle(
+                        'admin.smart_search_title'.tr(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -270,8 +270,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                         ),
                       ),
                       Text(
-                        'Клієнти, діти, тренери, заняття та каса',
-                        style: TextStyle(color: Colors.white54, fontSize: 11.5),
+                        'admin.smart_search_subtitle'.tr(),
+                        style: const TextStyle(color: Colors.white54, fontSize: 11.5),
                       ),
                     ],
                   ),
@@ -324,7 +324,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         focusNode: _focusNode,
         style: const TextStyle(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
-          hintText: 'Введіть ім\'я, телефон, групу або логін...',
+          hintText: 'admin.smart_search_hint'.tr(),
           hintStyle: TextStyle(
             color: Colors.white.withValues(alpha: 0.38),
             fontSize: 13.5,

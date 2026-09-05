@@ -53,9 +53,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        title: const Text(
-          'Розклад та Календар',
-          style: TextStyle(
+        title: Text(
+          'admin.cal_title'.tr(),
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 19,
@@ -124,7 +124,15 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final daysInMonth = DateUtils.getDaysInMonth(_selectedDate.year, _selectedDate.month);
     final firstDayOffset = DateTime(_selectedDate.year, _selectedDate.month, 1).weekday - 1;
     final totalCells = ((daysInMonth + firstDayOffset) / 7).ceil() * 7;
-    final daysOfWeek = ['Пн', 'Вв', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+    final daysOfWeek = [
+      'admin.wd_mon'.tr(),
+      'admin.wd_tue'.tr(),
+      'admin.wd_wed'.tr(),
+      'admin.wd_thu'.tr(),
+      'admin.wd_fri'.tr(),
+      'admin.wd_sat'.tr(),
+      'admin.wd_sun'.tr(),
+    ];
 
     return Container(
       decoration: BoxDecoration(
@@ -217,18 +225,22 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
               // Days of week header
               Row(
-                children: daysOfWeek.map((d) => Expanded(
-                  child: Center(
-                    child: Text(
-                      d,
-                      style: TextStyle(
-                        color: (d == 'Сб' || d == 'Нд') ? const Color(0xFF38BDF8) : Colors.white70,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
+                children: daysOfWeek.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final d = entry.value;
+                  return Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          color: (idx == 5 || idx == 6) ? const Color(0xFF38BDF8) : Colors.white70,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                )).toList(),
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 8),
 
@@ -443,7 +455,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           const SizedBox(width: 10),
                           Flexible(
                             child: Text(
-                              'Заняття: $dateStr',
+                              'admin.cal_classes_for_date'.tr(args: [dateStr]),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16.5,
@@ -505,14 +517,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               ),
                             ],
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(LucideIcons.plus, color: Colors.white, size: 14),
-                              SizedBox(width: 5),
+                              const Icon(LucideIcons.plus, color: Colors.white, size: 14),
+                              const SizedBox(width: 5),
                               Text(
-                                'Додати',
-                                style: TextStyle(
+                                'admin.cal_add_btn'.tr(),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
@@ -587,9 +599,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              const Text(
-                'Немає запланованих занять',
-                style: TextStyle(
+              Text(
+                'admin.cal_no_classes'.tr(),
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16.5,
                   fontWeight: FontWeight.w800,
@@ -599,7 +611,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'На $dateStr ще не призначено жодних тренувань',
+                'admin.cal_no_classes_desc'.tr(args: [dateStr]),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 12.5,
@@ -610,7 +622,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
               // Quick template time chips
               Text(
-                'Швидке створення за шаблоном часу:',
+                'admin.cal_quick_templates'.tr(),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 11,
@@ -675,14 +687,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.plus, color: Colors.white, size: 16),
-                        SizedBox(width: 8),
+                        const Icon(LucideIcons.plus, color: Colors.white, size: 16),
+                        const SizedBox(width: 8),
                         Text(
-                          'Створити заняття на цю дату',
-                          style: TextStyle(
+                          'admin.cal_create_for_date'.tr(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 13.5,
@@ -844,12 +856,12 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       builder: (context) => AlertDialog(
                         backgroundColor: const Color(0xFF0F172A),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        title: const Text('Видалити заняття?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        content: Text('Ви впевнені, що хочете скасувати "${c.title}"?', style: const TextStyle(color: Colors.white70)),
+                        title: Text('admin.cal_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        content: Text('admin.cal_delete_confirm'.tr(args: [c.title]), style: const TextStyle(color: Colors.white70)),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false), 
-                            child: const Text('Ні', style: TextStyle(color: Colors.white54)),
+                            child: Text('admin.no'.tr(), style: const TextStyle(color: Colors.white54)),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -857,7 +869,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             onPressed: () => Navigator.pop(context, true), 
-                            child: const Text('Так, видалити', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: Text('admin.yes_delete'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -875,13 +887,13 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(LucideIcons.trash2, size: 16, color: Color(0xFFFF3B30)),
-                        SizedBox(width: 8),
-                        Text('Скасувати заняття', style: TextStyle(color: Color(0xFFFF3B30), fontSize: 13, fontWeight: FontWeight.w600)),
+                        const Icon(LucideIcons.trash2, size: 16, color: Color(0xFFFF3B30)),
+                        const SizedBox(width: 8),
+                        Text('admin.cal_cancel_class'.tr(), style: const TextStyle(color: Color(0xFFFF3B30), fontSize: 13, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -916,7 +928,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               const Icon(LucideIcons.users, color: Colors.white60, size: 13),
               const SizedBox(width: 4),
               Text(
-                '$enrolledCount / ${c.maxCapacity} місць',
+                '$enrolledCount / ${c.maxCapacity} ${'admin.spots_label'.tr()}',
                 style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
               ),
               const SizedBox(width: 8),

@@ -34,14 +34,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   }
 
   void _copyCredentials(String loginId, String name) {
-    Clipboard.setData(ClipboardData(text: 'Логін: $loginId\nПароль: 1'));
+    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}1'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
             const SizedBox(width: 10),
-            Expanded(child: Text('Дані входу для клієнта "$name" скопійовано!')),
+            Expanded(child: Text('admin.clients_copied_msg'.tr(args: [name]))),
           ],
         ),
         backgroundColor: const Color(0xFF10B981),
@@ -72,17 +72,17 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               child: const Icon(LucideIcons.alertTriangle, color: Color(0xFFF43F5E), size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('Видалити клієнта?', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            Text('admin.clients_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
-          'Ви впевнені, що хочете видалити клієнта $name та всі пов\'язані дані (дітей, абонементи)? Цю дію неможливо скасувати.',
+          'admin.clients_delete_confirm'.tr(args: [name]),
           style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -91,7 +91,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Видалити'),
+            child: Text('admin.delete'.tr()),
           ),
         ],
       ),
@@ -136,7 +136,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Клієнта "$name" успішно видалено'),
+            content: Text('admin.clients_deleted_success'.tr(args: [name])),
             backgroundColor: const Color(0xFF10B981),
           ),
         );
@@ -182,16 +182,16 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 builder: (context) => const AddClientSheet(),
               );
             },
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.userPlus, color: Colors.white, size: 19),
-                  SizedBox(width: 8),
+                  const Icon(LucideIcons.userPlus, color: Colors.white, size: 19),
+                  const SizedBox(width: 8),
                   Text(
-                    'Новий клієнт',
-                    style: TextStyle(
+                    'admin.clients_new_btn'.tr(),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -401,9 +401,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'База Клієнтів',
-                      style: TextStyle(
+                    Text(
+                      'admin.clients_title'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -418,9 +418,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
                       ),
-                      child: const Text(
-                        'Батьки та учні',
-                        style: TextStyle(
+                      child: Text(
+                        'admin.clients_parents_students'.tr(),
+                        style: const TextStyle(
                           color: Color(0xFF10B981),
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
@@ -431,7 +431,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Анкети, діти, активні абонементи та доступи',
+                  'admin.clients_subtitle'.tr(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 12,
@@ -457,7 +457,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         style: const TextStyle(color: Colors.white, fontSize: 13.5),
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         decoration: InputDecoration(
-          hintText: 'Пошук за ім\'ям, телефоном або логіном...',
+          hintText: 'admin.clients_search_hint'.tr(),
           hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
           prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 18),
           suffixIcon: _searchQuery.isNotEmpty
@@ -479,11 +479,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   Widget _buildFilterTabs() {
     return Row(
       children: [
-        _buildFilterPill(0, 'Всі клієнти'),
+        _buildFilterPill(0, 'admin.clients_filter_all'.tr()),
         const SizedBox(width: 8),
-        _buildFilterPill(1, '🟢 З абонементом'),
+        _buildFilterPill(1, 'admin.clients_filter_with_sub'.tr()),
         const SizedBox(width: 8),
-        _buildFilterPill(2, '🔴 Без абонемента'),
+        _buildFilterPill(2, 'admin.clients_filter_no_sub'.tr()),
       ],
     );
   }
@@ -646,7 +646,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             ),
                           ),
                           child: Text(
-                            hasActiveSubs ? 'АКТИВНИЙ' : 'БЕЗ ОПЛАТИ',
+                            hasActiveSubs ? 'admin.clients_status_active'.tr() : 'admin.clients_status_unpaid'.tr(),
                             style: TextStyle(
                               color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
                               fontSize: 9.5,
@@ -694,7 +694,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     ),
                     child: IconButton(
                       icon: const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 16),
-                      tooltip: 'Оплата / Каса',
+                      tooltip: 'admin.clients_tooltip_pay'.tr(),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
@@ -721,6 +721,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     ),
                     child: IconButton(
                       icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 15),
+                      tooltip: 'admin.clients_tooltip_edit'.tr(),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
@@ -766,7 +767,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     ),
                     child: IconButton(
                       icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 16),
-                      tooltip: 'Видалити',
+                      tooltip: 'admin.clients_tooltip_delete'.tr(),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => _deleteClient(clientId, name),
@@ -796,7 +797,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     text: TextSpan(
                       style: const TextStyle(fontSize: 12.5, color: Colors.white70),
                       children: [
-                        const TextSpan(text: 'Логін: '),
+                        TextSpan(text: 'admin.clients_login_label'.tr()),
                         TextSpan(
                           text: loginId,
                           style: const TextStyle(
@@ -805,7 +806,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             fontFamily: 'monospace',
                           ),
                         ),
-                        const TextSpan(text: '   |   Пароль: '),
+                        TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
                         const TextSpan(
                           text: '1',
                           style: TextStyle(
@@ -836,14 +837,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.copy, color: Colors.white, size: 12),
-                        SizedBox(width: 4),
+                        const Icon(LucideIcons.copy, color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
                         Text(
-                          'Копіювати',
-                          style: TextStyle(
+                          'admin.clients_copy'.tr(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
@@ -872,7 +873,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     Icon(LucideIcons.baby, size: 14, color: Colors.white.withValues(alpha: 0.35)),
                     const SizedBox(width: 6),
                     Text(
-                      'Немає доданих дітей',
+                      'admin.clients_no_children'.tr(),
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
                     ),
                   ],
@@ -889,7 +890,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                       const Icon(LucideIcons.baby, size: 14, color: Color(0xFF38BDF8)),
                       const SizedBox(width: 6),
                       Text(
-                        'Діти (${children.length}):',
+                        'admin.clients_children_count'.tr(args: [children.length.toString()]),
                         style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -912,7 +913,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           border: Border.all(color: const Color(0xFF00B4D8).withValues(alpha: 0.3)),
                         ),
                         child: Text(
-                          '🏊 $cName${cAge != null ? ", $cAge р." : ""} • Рівень $cLevel',
+                          '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""} • ${'admin.level_label'.tr(args: [cLevel.toString()])}',
                           style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
                         ),
                       );
@@ -933,9 +934,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 children: [
                   const Icon(LucideIcons.walletCards, size: 14, color: Color(0xFF10B981)),
                   const SizedBox(width: 6),
-                  const Text(
-                    'Абонементи:',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                  Text(
+                    'admin.clients_subscriptions_header'.tr(),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -948,14 +949,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.25)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(LucideIcons.alertCircle, color: Color(0xFFFDA4AF), size: 13),
-                      SizedBox(width: 6),
+                      const Icon(LucideIcons.alertCircle, color: Color(0xFFFDA4AF), size: 13),
+                      const SizedBox(width: 6),
                       Text(
-                        'Немає оформлених абонементів',
-                        style: TextStyle(color: Color(0xFFFDA4AF), fontSize: 11.5, fontWeight: FontWeight.w600),
+                        'admin.clients_no_subs'.tr(),
+                        style: const TextStyle(color: Color(0xFFFDA4AF), fontSize: 11.5, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -1010,7 +1011,10 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                 ),
                                 if (sub.expiryDate != null)
                                   Text(
-                                    'Діє до ${DateFormat('dd.MM.yyyy').format(sub.expiryDate!)}${daysLeft != null ? " • залишилось $daysLeft дн." : ""}',
+                                    'admin.clients_valid_until'.tr(args: [
+                                      DateFormat('dd.MM.yyyy').format(sub.expiryDate!),
+                                      daysLeft != null ? 'admin.clients_days_left'.tr(args: [daysLeft.toString()]) : '',
+                                    ]),
                                     style: TextStyle(
                                       color: isExpiring ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.45),
                                       fontSize: 11,
@@ -1032,7 +1036,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${sub.remainingClasses} з ${sub.totalClasses}',
+                              'admin.clients_sub_progress'.tr(args: ['${sub.remainingClasses}', '${sub.totalClasses}']),
                               style: TextStyle(
                                 color: isAct ? Colors.white : const Color(0xFFF43F5E),
                                 fontSize: 11,
@@ -1059,9 +1063,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         children: [
           Icon(LucideIcons.users, size: 50, color: Colors.white.withValues(alpha: 0.2)),
           const SizedBox(height: 16),
-          const Text('Немає зареєстрованих клієнтів', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('admin.clients_empty_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text('Натисніть кнопку нижче, щоб створити першу анкету', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
+          Text('admin.clients_empty_desc'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
         ],
       ),
     );
@@ -1074,9 +1078,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         children: [
           Icon(LucideIcons.userX, size: 44, color: Colors.white.withValues(alpha: 0.2)),
           const SizedBox(height: 14),
-          const Text('Клієнтів не знайдено', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          Text('admin.clients_not_found'.tr(), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('Спробуйте змінити пошуковий запит або фільтр', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12.5)),
+          Text('admin.clients_not_found_desc'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12.5)),
         ],
       ),
     );

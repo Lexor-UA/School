@@ -678,10 +678,11 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     Text(
                       'admin.payment_subtitle'.tr(),
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.60),
+                        fontSize: 11.5,
+                        height: 1.25,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -784,7 +785,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? LinearGradient(
@@ -815,17 +816,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           child: Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Icon(icon, color: color, size: 16),
+                  child: Icon(icon, color: color, size: 14),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -834,18 +835,19 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       count,
                       style: TextStyle(
                         color: color,
-                        fontSize: 16.5,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       label,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 10.5,
+                        color: Colors.white.withValues(alpha: 0.70),
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w600,
+                        height: 1.15,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -1347,18 +1349,22 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   child: Column(
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            sub.serviceName ?? 'Абонемент',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                          Expanded(
+                            child: Text(
+                              sub.serviceName ?? 'Абонемент',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                height: 1.25,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: accentColor.withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(8),

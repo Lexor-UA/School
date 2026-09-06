@@ -45,14 +45,23 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     });
 
     try {
-      // Generate coach login
       final usersSnap = await FirebaseFirestore.instance.collection('users')
           .where('role', isEqualTo: 'coach')
           .get()
           .timeout(const Duration(seconds: 5));
           
-      final coachCount = usersSnap.docs.length + 1;
-      final generatedLogin = 'coach$coachCount';
+      int maxCoachNum = 0;
+      for (var doc in usersSnap.docs) {
+        final loginId = doc.data()['loginId'] as String?;
+        if (loginId != null && loginId.startsWith('coach')) {
+          final numStr = loginId.replaceAll('coach', '');
+          final num = int.tryParse(numStr);
+          if (num != null && num > maxCoachNum) {
+            maxCoachNum = num;
+          }
+        }
+      }
+      final generatedLogin = 'coach${maxCoachNum + 1}';
 
       final userRef = FirebaseFirestore.instance.collection('users').doc();
 

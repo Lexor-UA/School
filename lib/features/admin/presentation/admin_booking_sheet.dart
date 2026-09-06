@@ -35,15 +35,28 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
     
     setState(() => _isBooking = true);
     
+    String? targetName;
+    if (_selectedChildId != null) {
+      final idx = widget.availableIds.indexOf(_selectedChildId!);
+      if (idx != -1 && idx < widget.availableNames.length) {
+        targetName = widget.availableNames[idx];
+      }
+    }
+
     try {
-      final success = await ref.read(scheduleControllerProvider.notifier).bookClass(_selectedClassId!, _selectedChildId!);
+      final result = await ref.read(scheduleControllerProvider.notifier).bookClass(
+        _selectedClassId!, 
+        _selectedChildId!,
+        targetUserId: widget.clientId,
+        targetOwnerName: targetName,
+      );
       
       if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Успішно записано!'), backgroundColor: Colors.green));
+        if (result.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message), backgroundColor: const Color(0xFF10B981)));
           Navigator.pop(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Не вдалося записати (можливо, немає місць або абонемента)'), backgroundColor: Colors.redAccent));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message), backgroundColor: const Color(0xFFEF4444)));
         }
       }
     } catch (e) {

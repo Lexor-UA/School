@@ -42,54 +42,121 @@ class SubscriptionController extends _$SubscriptionController {
     }
   }
 
-  Subscription? getSubscriptionForUser(String userId) {
-    try {
-      return state.firstWhere((sub) => sub.userId == userId && sub.isActive);
-    } catch (e) {
-      return null;
-    }
-  }
-
   Subscription? getSubscriptionForOwner(String userId, String ownerName) {
+    final userSubs = state.where((sub) => sub.userId == userId && sub.isActive && sub.remainingClasses > 0).toList();
+    if (userSubs.isEmpty) return null;
+
+    // 1. Direct owner match
     try {
-      return state.firstWhere((sub) => sub.userId == userId && sub.ownerName == ownerName && sub.isActive);
-    } catch (e) {
-      return null;
+      return userSubs.firstWhere((sub) => sub.ownerName == ownerName);
+    } catch (_) {}
+
+    // 2. Split or family subscription matching
+    try {
+      return userSubs.firstWhere((sub) {
+        final sName = sub.serviceName?.toLowerCase() ?? '';
+        final isSplit = sName.contains('спліт') || sName.contains('сім') || sName.contains('split');
+        final isGenericOwner = sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
+        return isSplit || isGenericOwner;
+      });
+    } catch (_) {}
+
+    // 3. If user has only 1 active subscription with remaining classes, use it as primary family sub
+    if (userSubs.length == 1) {
+      return userSubs.first;
     }
+
+    return null;
   }
 
   Subscription? getAnySubscriptionForOwner(String userId, String ownerName) {
+    final userSubs = state.where((sub) => sub.userId == userId).toList();
+    if (userSubs.isEmpty) return null;
+
+    // 1. Exact owner match
     try {
-      return state.firstWhere((sub) => sub.userId == userId && sub.ownerName == ownerName);
-    } catch (e) {
-      return null;
-    }
+      return userSubs.firstWhere((sub) => sub.ownerName == ownerName);
+    } catch (_) {}
+
+    // 2. Split or generic owner
+    try {
+      return userSubs.firstWhere((sub) {
+        final sName = sub.serviceName?.toLowerCase() ?? '';
+        return sName.contains('спліт') || sName.contains('сім') || sub.ownerName == null || sub.ownerName!.isEmpty;
+      });
+    } catch (_) {}
+
+    // 3. Fallback to any user sub
+    return userSubs.first;
   }
 
   List<Subscription> getSubscriptionsForUser(String userId) {
     return state.where((sub) => sub.userId == userId).toList();
   }
 
-  Future<bool> deductClass(String userId) async {
-    final subIndex = state.indexWhere((sub) => sub.userId == userId);
+  Future<bool> deductClass(String code) async {
+    final cleanCode = code.trim();
+    if (cleanCode.isEmpty) return false;
+
+    // 1. Direct search by userId or sub.id
+    int subIndex = state.indexWhere((sub) =>
+        (sub.userId == cleanCode || sub.id == cleanCode) && sub.isActive && sub.remainingClasses > 0);
+
+    // 2. Fallback smart lookup by loginId, phone, or child ID
+    if (subIndex == -1) {
+      try {
+        final usersByLogin = await FirebaseFirestore.instance
+            .collection('users')
+            .where('loginId', isEqualTo: cleanCode)
+            .limit(1)
+            .get();
+
+        String? resolvedUserId;
+        if (usersByLogin.docs.isNotEmpty) {
+          resolvedUserId = usersByLogin.docs.first.id;
+        } else {
+          final usersByPhone = await FirebaseFirestore.instance
+              .collection('users')
+              .where('phone', isEqualTo: cleanCode)
+              .limit(1)
+              .get();
+          if (usersByPhone.docs.isNotEmpty) {
+            resolvedUserId = usersByPhone.docs.first.id;
+          } else {
+            final childDoc = await FirebaseFirestore.instance
+                .collection('children')
+                .doc(cleanCode)
+                .get();
+            if (childDoc.exists) {
+              resolvedUserId = childDoc.data()?['parentId'] as String?;
+            }
+          }
+        }
+
+        if (resolvedUserId != null) {
+          subIndex = state.indexWhere((sub) =>
+              sub.userId == resolvedUserId && sub.isActive && sub.remainingClasses > 0);
+        }
+      } catch (e) {
+        debugPrint('Error looking up client in deductClass: $e');
+      }
+    }
+
     if (subIndex == -1) return false;
 
     final sub = state[subIndex];
-    if (sub.remainingClasses > 0 && sub.isActive) {
-      final newRemaining = sub.remainingClasses - 1;
-      final newIsActive = newRemaining > 0;
-      
-      try {
-        await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
-          'remainingClasses': newRemaining,
-          'isActive': newIsActive,
-        });
-        return true;
-      } catch (e) {
-        debugPrint('Error deducting class: $e');
-        return false;
-      }
+    final newRemaining = sub.remainingClasses - 1;
+    final newIsActive = newRemaining > 0;
+    
+    try {
+      await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
+        'remainingClasses': newRemaining,
+        'isActive': newIsActive,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error deducting class: $e');
+      return false;
     }
-    return false;
   }
 }

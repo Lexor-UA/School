@@ -1,6 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -13,7 +12,6 @@ import 'package:swimming_school_app/features/parent/presentation/parent_chat_scr
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
-import 'package:swimming_school_app/features/parent/presentation/parent_progress_tab.dart';
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -177,13 +175,13 @@ class ParentProfileTab extends ConsumerWidget {
               title: Text('Сповіщення', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
               value: true,
               onChanged: (v) {},
-              activeColor: AppTheme.accentTeal,
+              activeThumbColor: AppTheme.accentTeal,
             ),
             SwitchListTile(
               title: Text('Темна тема', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
               value: true,
               onChanged: (v) {},
-              activeColor: AppTheme.accentTeal,
+              activeThumbColor: AppTheme.accentTeal,
             ),
           ],
         ),
@@ -348,7 +346,7 @@ class _AddChildSheetState extends ConsumerState<_AddChildSheet> {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: _childCount,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              separatorBuilder: (_, _) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 return Container(
                   padding: const EdgeInsets.all(16),

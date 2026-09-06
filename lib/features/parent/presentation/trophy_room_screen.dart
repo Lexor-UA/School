@@ -61,9 +61,6 @@ class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with Ticker
   void initState() {
     super.initState();
     _rotationController = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat();
-    _rotationController.addListener(() {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
@@ -75,12 +72,12 @@ class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with Ticker
   @override
   Widget build(BuildContext context) {
     final childrenAsync = ref.watch(childrenControllerProvider);
-    List<Map<String, dynamic>> _trophies = [];
+    List<Map<String, dynamic>> trophies = [];
 
     if (childrenAsync.value != null) {
       for (var child in childrenAsync.value!) {
         for (var achievement in child.achievements) {
-          _trophies.add({
+          trophies.add({
             'title': achievement.name,
             'description': achievement.description,
             'date': child.name, // Display child name instead of date
@@ -92,11 +89,11 @@ class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with Ticker
       }
     }
     
-    if (_trophies.isEmpty) {
-      _trophies = _defaultTrophies;
+    if (trophies.isEmpty) {
+      trophies = _defaultTrophies;
     }
 
-    final int shelfCount = (_trophies.length / 2).ceil();
+    final int shelfCount = (trophies.length / 2).ceil();
 
     return Scaffold(
       backgroundColor: Colors.black, 
@@ -164,8 +161,8 @@ class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with Ticker
                       
                       return _buildShelf(
                         context,
-                        _trophies[firstIndex],
-                        secondIndex < _trophies.length ? _trophies[secondIndex] : null,
+                        trophies[firstIndex],
+                        secondIndex < trophies.length ? trophies[secondIndex] : null,
                         index
                       );
                     },
@@ -297,12 +294,14 @@ class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with Ticker
         mainAxisSize: MainAxisSize.min,
         children: [
           // Floating Trophy/Shield
-          Transform(
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001) // Perspective
-              ..rotateY(isUnlocked ? (math.sin((_rotationController.value * math.pi * 2) + (index * 0.5)) * 0.25) : 0),
-            alignment: Alignment.center,
-            child: SizedBox(
+          AnimatedBuilder(
+            animation: _rotationController,
+            builder: (context, _) => Transform(
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001) // Perspective
+                ..rotateY(isUnlocked ? (math.sin((_rotationController.value * math.pi * 2) + (index * 0.5)) * 0.25) : 0),
+              alignment: Alignment.center,
+              child: SizedBox(
               width: 140,
               height: 170,
               child: Stack(
@@ -421,6 +420,7 @@ class _TrophyRoomScreenState extends ConsumerState<TrophyRoomScreen> with Ticker
               ),
             ),
           ),
+        ),
           const SizedBox(height: 12),
           // Name Plate
           Container(

@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:go_router/go_router.dart';
-import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 class OwnerStaffScreen extends StatelessWidget {
   const OwnerStaffScreen({super.key});

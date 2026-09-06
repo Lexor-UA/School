@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:intl/intl.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
@@ -180,7 +179,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         disabledForegroundColor: Colors.white54,
                       ),
                       child: Text(
-                        totalPrice > 0 ? 'parent.pay_subscription'.tr() + ' $totalPrice грн' : 'parent.choose_subscription'.tr(), 
+                        totalPrice > 0 ? '${'parent.pay_subscription'.tr()} $totalPrice грн' : 'parent.choose_subscription'.tr(), 
                         style: TextStyle(
                           fontSize: 16, 
                           fontWeight: FontWeight.bold, 
@@ -205,7 +204,8 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     final childrenAsync = ref.watch(childrenControllerProvider);
     final children = childrenAsync.value ?? [];
 
-    final allSubs = user != null ? ref.read(subscriptionControllerProvider.notifier).getSubscriptionsForUser(user.id) : <Subscription>[];
+    final subscriptions = ref.watch(subscriptionControllerProvider);
+    final allSubs = user != null ? subscriptions.where((s) => s.userId == user.id).toList() : <Subscription>[];
     var activeSubs = allSubs.where((s) => s.isActive).toList();
     
     final filterOwners = [

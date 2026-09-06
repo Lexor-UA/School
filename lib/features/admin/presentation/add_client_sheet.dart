@@ -77,14 +77,23 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     try {
       final clientAge = int.tryParse(_ageController.text.trim());
 
-      // Generate ClientX login
       final usersSnap = await FirebaseFirestore.instance.collection('users')
           .where('role', isEqualTo: 'parent')
           .get()
           .timeout(const Duration(seconds: 5));
           
-      final clientCount = usersSnap.docs.length + 1;
-      final generatedLogin = 'client$clientCount';
+      int maxClientNum = 0;
+      for (var doc in usersSnap.docs) {
+        final loginId = doc.data()['loginId'] as String?;
+        if (loginId != null && loginId.startsWith('client')) {
+          final numStr = loginId.replaceAll('client', '');
+          final num = int.tryParse(numStr);
+          if (num != null && num > maxClientNum) {
+            maxClientNum = num;
+          }
+        }
+      }
+      final generatedLogin = 'client${maxClientNum + 1}';
 
       final userRef = FirebaseFirestore.instance.collection('users').doc();
 
@@ -182,15 +191,33 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              22,
-              12,
-              22,
-              mediaQuery.viewInsets.bottom + 24,
-            ),
-            child: _isSuccess ? _buildSuccessState() : _buildFormState(),
-          ),
+          child: _isSuccess
+              ? Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    22,
+                    12,
+                    22,
+                    mediaQuery.viewInsets.bottom + 24,
+                  ),
+                  child: _buildSuccessState(),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildHeader(context),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          22,
+                          16,
+                          22,
+                          mediaQuery.viewInsets.bottom + 24,
+                        ),
+                        child: _buildFormFields(),
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -299,23 +326,32 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     );
   }
 
-  Widget _buildFormState() {
-    return SingleChildScrollView(
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 14, 16, 14),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
               width: 44,
               height: 5,
-              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
+                color: Colors.white.withValues(alpha: 0.30),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
           ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Container(
@@ -365,25 +401,36 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   ],
                 ),
               ),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.18),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: const Icon(LucideIcons.x, color: Colors.white70, size: 18),
                   ),
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(LucideIcons.x, color: Colors.white70, size: 17),
-                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
           const SizedBox(height: 14),
           _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
@@ -525,8 +572,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildTextField(String hint, IconData icon, TextEditingController controller, {bool isNumber = false}) {

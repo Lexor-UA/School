@@ -361,7 +361,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                       child: Text(
                         ':',
                         style: TextStyle(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                         ),
@@ -387,7 +387,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                               child: Text(
                                 minute.toString().padLeft(2, '0'),
                                 style: TextStyle(
-                                  color: isSelected ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.35),
+                                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.35),
                                   fontSize: isSelected ? 22 : 17,
                                   fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
                                   letterSpacing: 0.5,

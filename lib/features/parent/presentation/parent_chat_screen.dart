@@ -155,15 +155,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   widget.title ?? 'Підтримка CitySwim',
                   style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Row(
-                  children: [
-                    const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.subtitle ?? 'Онлайн',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
-                  ],
+                Text(
+                  widget.subtitle ?? 'Служба турботи про клієнтів',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ],
             ),

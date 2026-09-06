@@ -275,7 +275,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                     )
                                                     .signInWithGoogle();
                                               } catch (e) {
-                                                if (!mounted) return;
+                                                if (!context.mounted) return;
                                                 setState(
                                                   () => _isLoading = false,
                                                 );

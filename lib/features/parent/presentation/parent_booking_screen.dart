@@ -6,7 +6,6 @@ import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
-import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -26,6 +25,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   String? selectedUserId;
   bool isBooking = false;
   bool showSuccess = false;
+  String bookedTargetName = '';
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +173,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                     Text(c.title, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(
-                      'parent.places_left'.tr(args: [(c.maxCapacity - c.enrolledChildIds.length).toString()]) + ' · ' + (c.lane.isNotEmpty ? c.lane : 'parent.main_pool'.tr()),
+                      '${'parent.places_left'.tr(args: [(c.maxCapacity - c.enrolledChildIds.length).toString()])} · ${c.lane.isNotEmpty ? c.lane : 'parent.main_pool'.tr()}',
                       style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13),
                     ),
                   ],
@@ -293,7 +293,8 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: Text(name, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-            ),const Spacer(),
+            ),
+            const SizedBox(width: 8),
             if (isSelected)
               Icon(LucideIcons.checkCircle2, color: color)
             else
@@ -323,7 +324,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
        final children = childrenAsync.value ?? [];
        try {
          ownerName = children.firstWhere((c) => c.id == selectedUserId).name;
-       } catch (e) {}
+       } catch (_) {
+         // Fallback to parent name if child not found
+       }
     }
     
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
@@ -354,18 +357,23 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     }
 
     setState(() => isBooking = true);
-    final success = await ref.read(scheduleControllerProvider.notifier).bookClass(selectedClass!.id, selectedUserId!);
+    final result = await ref.read(scheduleControllerProvider.notifier).bookClass(selectedClass!.id, selectedUserId!);
     
     if (mounted) {
-      if (success) {
+      if (result.isSuccess) {
         setState(() {
+          bookedTargetName = ownerName;
           isBooking = false;
           showSuccess = true;
         });
       } else {
         setState(() => isBooking = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('parent.booking_error_msg'.tr())),
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -394,11 +402,17 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 32, fontWeight: FontWeight.bold),
               ).animate().fadeIn(delay: 200.ms),
               const SizedBox(height: 16),
-              Text(
-                'parent.child_enrolled_time'.tr(args: ['Запис', _formatDate(widget.date), selectedClass?.startTime.hour.toString().padLeft(2, '0') ?? '']),
-                textAlign: TextAlign.center,
-                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16, height: 1.5),
-              ).animate().fadeIn(delay: 400.ms),
+              Builder(builder: (context) {
+                final formattedTime = selectedClass != null
+                    ? DateFormat('HH:mm').format(selectedClass!.startTime)
+                    : '';
+                final displayName = bookedTargetName.isNotEmpty ? bookedTargetName : 'Учня';
+                return Text(
+                  'parent.child_enrolled_time'.tr(args: [displayName, _formatDate(widget.date), formattedTime]),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 16, height: 1.5),
+                );
+              }).animate().fadeIn(delay: 400.ms),
               const SizedBox(height: 64),
               SizedBox(
                 width: double.infinity,

@@ -5,7 +5,6 @@ import 'package:swimming_school_app/features/parent/controllers/children_control
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
-import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 
 class CreateIndividualClassSheet extends ConsumerStatefulWidget {
   final DateTime selectedDate;
@@ -58,7 +57,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
        final children = childrenAsync.value ?? [];
        try {
          ownerName = children.firstWhere((c) => c.id == widget.selectedUserId).name;
-       } catch (e) {}
+       } catch (_) {
+         // Fallback to parent name if child not found
+       }
     }
     
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);

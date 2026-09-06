@@ -481,14 +481,18 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   }
 
   Widget _buildFilterTabs() {
-    return Row(
-      children: [
-        _buildFilterPill(0, 'admin.clients_filter_all'.tr()),
-        const SizedBox(width: 8),
-        _buildFilterPill(1, 'admin.clients_filter_with_sub'.tr()),
-        const SizedBox(width: 8),
-        _buildFilterPill(2, 'admin.clients_filter_no_sub'.tr()),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildFilterPill(0, 'admin.clients_filter_all'.tr()),
+          const SizedBox(width: 8),
+          _buildFilterPill(1, 'admin.clients_filter_with_sub'.tr()),
+          const SizedBox(width: 8),
+          _buildFilterPill(2, 'admin.clients_filter_no_sub'.tr()),
+        ],
+      ),
     );
   }
 
@@ -550,20 +554,20 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     final bool hasActiveSubs = activeSubs.isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.88),
-            const Color(0xFF0A1422).withValues(alpha: 0.94),
+            const Color(0xFF13233C).withValues(alpha: 0.90),
+            const Color(0xFF0A1422).withValues(alpha: 0.95),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: hasActiveSubs
-              ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
+              ? const Color(0xFF38BDF8).withValues(alpha: 0.35)
               : const Color(0xFFF43F5E).withValues(alpha: 0.25),
           width: 1.2,
         ),
@@ -584,9 +588,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Client Info & Action buttons
+          // 1. Client Identity Header (Clean, spacious, no bunching)
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Glowing Avatar with Initials
               Container(
                 width: 48,
                 height: 48,
@@ -621,11 +627,13 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
+              // Name, Status Badge, Phone & Age
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Row 1: Full Client Name + Status Badge
                     Row(
                       children: [
                         Expanded(
@@ -637,10 +645,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.2,
                             ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -651,35 +660,57 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                               width: 0.8,
                             ),
                           ),
-                          child: Text(
-                            hasActiveSubs ? 'admin.clients_status_active'.tr() : 'admin.clients_status_unpaid'.tr(),
-                            style: TextStyle(
-                              color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.4,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5.5,
+                                height: 5.5,
+                                decoration: BoxDecoration(
+                                  color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4.5),
+                              Text(
+                                hasActiveSubs ? 'admin.clients_status_active'.tr() : 'admin.clients_status_unpaid'.tr(),
+                                style: TextStyle(
+                                  color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    const SizedBox(height: 5),
+                    // Row 2: Phone number and Age pill (wrapped with spacing so they never collide)
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
-                        Icon(LucideIcons.phone, size: 12.5, color: Colors.white.withValues(alpha: 0.45)),
-                        const SizedBox(width: 5),
-                        Text(
-                          phone,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.phone, size: 12.5, color: Colors.white.withValues(alpha: 0.45)),
+                            const SizedBox(width: 4.5),
+                            Text(
+                              phone,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        if (age != null) ...[
-                          const SizedBox(width: 8),
+                        if (age != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
@@ -688,148 +719,45 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(LucideIcons.calendar, size: 10.5, color: Color(0xFF38BDF8)),
-                                const SizedBox(width: 3.5),
+                                const Icon(LucideIcons.calendar, size: 10, color: Color(0xFF38BDF8)),
+                                const SizedBox(width: 3),
                                 Text(
                                   '$age ${'admin.years_short'.tr()}',
                                   style: const TextStyle(
                                     color: Color(0xFF38BDF8),
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-
-              // Action Buttons (Payment, Edit, Delete)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 16),
-                      tooltip: 'admin.clients_tooltip_pay'.tr(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const PaymentSheet(initialTabIndex: 2),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 15),
-                      tooltip: 'admin.clients_tooltip_edit'.tr(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => EditClientSheet(
-                            clientId: clientId,
-                            initialName: name,
-                            initialPhone: phone,
-                            initialAge: age,
-                            initialLoginId: loginId,
-                            initialPassword: password,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFFFF3B30).withValues(alpha: 0.24),
-                          const Color(0xFFFF1744).withValues(alpha: 0.14),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFFF3B30).withValues(alpha: 0.60),
-                        width: 1.1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF3B30).withValues(alpha: 0.28),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 16),
-                      tooltip: 'admin.clients_tooltip_delete'.tr(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _deleteClient(clientId, name),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // 2. Credentials Box with Copy
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Row(
               children: [
-                const Icon(LucideIcons.keyRound, color: Color(0xFF38BDF8), size: 15),
-                const SizedBox(width: 10),
+                const Icon(LucideIcons.keyRound, color: Color(0xFF38BDF8), size: 14),
+                const SizedBox(width: 8),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
                       children: [
                         TextSpan(text: 'admin.clients_login_label'.tr()),
                         TextSpan(
@@ -856,31 +784,31 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 GestureDetector(
                   onTap: () => _copyCredentials(loginId, name, password),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(7),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00D2FF).withValues(alpha: 0.3),
-                          blurRadius: 6,
+                          color: const Color(0xFF00D2FF).withValues(alpha: 0.25),
+                          blurRadius: 5,
                         ),
                       ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(LucideIcons.copy, color: Colors.white, size: 12),
+                        const Icon(LucideIcons.copy, color: Colors.white, size: 11),
                         const SizedBox(width: 4),
                         Text(
                           'admin.clients_copy'.tr(),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10.5,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -892,9 +820,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ),
           ),
 
-          const SizedBox(height: 14),
-
-          // 3. Children Section
+          // 3. Children Section (Only displayed when there are children)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('children')
@@ -902,62 +828,56 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 .snapshots(),
             builder: (context, childSnap) {
               if (!childSnap.hasData || childSnap.data!.docs.isEmpty) {
-                return Row(
-                  children: [
-                    Icon(LucideIcons.baby, size: 14, color: Colors.white.withValues(alpha: 0.35)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'admin.clients_no_children'.tr(),
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
-                    ),
-                  ],
-                );
+                return const SizedBox.shrink();
               }
 
               final children = childSnap.data!.docs;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(LucideIcons.baby, size: 14, color: Color(0xFF38BDF8)),
-                      const SizedBox(width: 6),
-                      Text(
-                        'admin.clients_children_count'.tr(args: [children.length.toString()]),
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: children.map((doc) {
-                      final cData = doc.data() as Map<String, dynamic>;
-                      final cName = cData['name'] ?? 'Дитина';
-                      final cAge = cData['age'];
+              return Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.baby, size: 13.5, color: Color(0xFF38BDF8)),
+                        const SizedBox(width: 5),
+                        Text(
+                          'admin.clients_children_count'.tr(args: [children.length.toString()]),
+                          style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: children.map((doc) {
+                        final cData = doc.data() as Map<String, dynamic>;
+                        final cName = cData['name'] ?? 'Дитина';
+                        final cAge = cData['age'];
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00B4D8).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF00B4D8).withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
-                          style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00B4D8).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF00B4D8).withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               );
             },
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
           // 4. Subscriptions Section
           Column(
@@ -965,31 +885,31 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(LucideIcons.walletCards, size: 14, color: Color(0xFF10B981)),
-                  const SizedBox(width: 6),
+                  const Icon(LucideIcons.walletCards, size: 13.5, color: Color(0xFF10B981)),
+                  const SizedBox(width: 5),
                   Text(
                     'admin.clients_subscriptions_header'.tr(),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
               if (subscriptions.isEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF43F5E).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.25)),
+                    color: const Color(0xFFF43F5E).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(LucideIcons.alertCircle, color: Color(0xFFFDA4AF), size: 13),
-                      const SizedBox(width: 6),
+                      const Icon(LucideIcons.alertCircle, color: Color(0xFFFDA4AF), size: 12),
+                      const SizedBox(width: 5),
                       Text(
                         'admin.clients_no_subs'.tr(),
-                        style: const TextStyle(color: Color(0xFFFDA4AF), fontSize: 11.5, fontWeight: FontWeight.w600),
+                        style: const TextStyle(color: Color(0xFFFDA4AF), fontSize: 11, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -1003,7 +923,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                       decoration: BoxDecoration(
                         gradient: isAct
                             ? LinearGradient(
@@ -1014,7 +934,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                               )
                             : null,
                         color: isAct ? null : Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isAct
                               ? const Color(0xFF10B981).withValues(alpha: 0.35)
@@ -1025,10 +945,10 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         children: [
                           Icon(
                             isAct ? LucideIcons.circleCheck : LucideIcons.circleSlash,
-                            size: 15,
+                            size: 14,
                             color: isAct ? const Color(0xFF10B981) : Colors.white38,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1037,7 +957,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                   '${sub.serviceName ?? "Абонемент"} (${sub.ownerName ?? "Власник"})',
                                   style: TextStyle(
                                     color: isAct ? Colors.white : Colors.white60,
-                                    fontSize: 12.5,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -1050,7 +970,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                     ]),
                                     style: TextStyle(
                                       color: isExpiring ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.45),
-                                      fontSize: 11,
+                                      fontSize: 10.5,
                                       fontWeight: isExpiring ? FontWeight.w600 : FontWeight.normal,
                                     ),
                                   ),
@@ -1058,7 +978,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                             decoration: BoxDecoration(
                               gradient: isAct
                                   ? const LinearGradient(
@@ -1066,13 +986,13 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                     )
                                   : null,
                               color: isAct ? null : const Color(0xFFF43F5E).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(7),
                             ),
                             child: Text(
                               'admin.clients_sub_progress'.tr(args: ['${sub.remainingClasses}', '${sub.totalClasses}']),
                               style: TextStyle(
                                 color: isAct ? Colors.white : const Color(0xFFF43F5E),
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -1082,6 +1002,137 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     );
                   }).toList(),
                 ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+          Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+          const SizedBox(height: 8),
+
+          // 5. Dedicated Action Toolbar (Spacious, modern, thumb-friendly)
+          Row(
+            children: [
+              // Buy / Issue Subscription Button
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const PaymentSheet(initialTabIndex: 2),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            'admin.clients_tooltip_pay'.tr(),
+                            style: const TextStyle(
+                              color: Color(0xFFF59E0B),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Edit Client Button
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => EditClientSheet(
+                          clientId: clientId,
+                          initialName: name,
+                          initialPhone: phone,
+                          initialAge: age,
+                          initialLoginId: loginId,
+                          initialPassword: password,
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 13.5),
+                          const SizedBox(width: 6),
+                          Text(
+                            'admin.clients_tooltip_edit'.tr(),
+                            style: const TextStyle(
+                              color: Color(0xFF38BDF8),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Delete Client Icon Button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _deleteClient(clientId, name),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 36,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF3B30).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFFF3B30).withValues(alpha: 0.40),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 15),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],

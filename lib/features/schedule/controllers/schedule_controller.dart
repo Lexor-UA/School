@@ -26,13 +26,63 @@ final classActivitiesStreamProvider = StreamProvider<List<ClassActivity>>((ref) 
   });
 });
 
+enum BookingStatus {
+  success,
+  classFull,
+  noSubscription,
+  alreadyBooked,
+  error,
+}
+
+class BookingResult {
+  final bool isSuccess;
+  final String message;
+  final BookingStatus status;
+
+  const BookingResult({
+    required this.isSuccess,
+    required this.message,
+    required this.status,
+  });
+
+  static const success = BookingResult(
+    isSuccess: true,
+    message: 'Успішно записано на тренування!',
+    status: BookingStatus.success,
+  );
+
+  static const classFull = BookingResult(
+    isSuccess: false,
+    message: 'У цій групі вже немає вільних місць.',
+    status: BookingStatus.classFull,
+  );
+
+  static const noSubscription = BookingResult(
+    isSuccess: false,
+    message: 'Немає активного абонемента з доступними заняттями.',
+    status: BookingStatus.noSubscription,
+  );
+
+  static const alreadyBooked = BookingResult(
+    isSuccess: false,
+    message: 'Ви вже записані на це тренування.',
+    status: BookingStatus.alreadyBooked,
+  );
+
+  static const error = BookingResult(
+    isSuccess: false,
+    message: 'Помилка запису. Спробуйте пізніше.',
+    status: BookingStatus.error,
+  );
+}
+
 @riverpod
 class ScheduleController extends _$ScheduleController {
   @override
   Stream<List<GroupClass>> build() {
     return FirebaseFirestore.instance
         .collection('classes')
-        .where('startTime', isGreaterThanOrEqualTo: DateTime.now().subtract(const Duration(days: 1)).toIso8601String())
+        .where('startTime', isGreaterThanOrEqualTo: DateTime.now().subtract(const Duration(days: 45)).toIso8601String())
         .orderBy('startTime')
         .snapshots()
         .map((snapshot) {
@@ -44,12 +94,18 @@ class ScheduleController extends _$ScheduleController {
     });
   }
 
-  Future<bool> bookClass(String classId, String childId) async {
+  Future<BookingResult> bookClass(
+    String classId, 
+    String childId, {
+    String? targetUserId,
+    String? targetOwnerName,
+  }) async {
     final user = ref.read(authControllerProvider);
-    if (user == null) return false;
+    if (user == null) return BookingResult.error;
 
-    String ownerName = user.name;
-    if (childId != user.id) {
+    final effectiveUserId = targetUserId ?? user.id;
+    String ownerName = targetOwnerName ?? user.name;
+    if (targetOwnerName == null && childId != effectiveUserId) {
        final childrenAsync = ref.read(childrenControllerProvider);
        final children = childrenAsync.value ?? [];
        try {
@@ -59,27 +115,28 @@ class ScheduleController extends _$ScheduleController {
        }
     }
 
-    // Get the current user subscription
+    // Get the subscription for effective user
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-    final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName);
+    final subscription = subscriptionController.getSubscriptionForOwner(effectiveUserId, ownerName);
     
     if (subscription == null || subscription.remainingClasses <= 0 || !subscription.isActive) {
-      return false; // Not enough classes
+      return BookingResult.noSubscription;
     }
 
     try {
       final classRef = FirebaseFirestore.instance.collection('classes').doc(classId);
       final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subscription.id);
       
-      bool success = false;
-      
+      BookingResult result = BookingResult.error;
       GroupClass? bookedClass;
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final classDoc = await transaction.get(classRef);
         final subDoc = await transaction.get(subRef);
         
         if (!classDoc.exists || !subDoc.exists) {
-          return; // Document missing
+          result = BookingResult.error;
+          return;
         }
         
         final data = Map<String, dynamic>.from(classDoc.data()! as Map);
@@ -89,23 +146,35 @@ class ScheduleController extends _$ScheduleController {
         
         final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
         final remainingClasses = subData['remainingClasses'] as int;
-        
-        if (remainingClasses > 0 && groupClass.enrolledChildIds.length < groupClass.maxCapacity && !groupClass.enrolledChildIds.contains(childId)) {
-          // Both conditions met: class has space, user has remaining classes
-          List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..add(childId);
-          int newRemaining = remainingClasses - 1;
-          
-          transaction.update(classRef, {'enrolledChildIds': newEnrolled});
-          transaction.update(subRef, {
-            'remainingClasses': newRemaining,
-            'isActive': newRemaining > 0
-          });
-          
-          success = true;
+
+        if (groupClass.enrolledChildIds.contains(childId)) {
+          result = BookingResult.alreadyBooked;
+          return;
         }
+
+        if (groupClass.enrolledChildIds.length >= groupClass.maxCapacity) {
+          result = BookingResult.classFull;
+          return;
+        }
+
+        if (remainingClasses <= 0) {
+          result = BookingResult.noSubscription;
+          return;
+        }
+        
+        List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..add(childId);
+        int newRemaining = remainingClasses - 1;
+        
+        transaction.update(classRef, {'enrolledChildIds': newEnrolled});
+        transaction.update(subRef, {
+          'remainingClasses': newRemaining,
+          'isActive': newRemaining > 0
+        });
+        
+        result = BookingResult.success;
       });
       
-      if (success && bookedClass != null) {
+      if (result.isSuccess && bookedClass != null) {
         _logActivity(
           type: ClassActivityType.booking,
           classId: classId,
@@ -120,18 +189,25 @@ class ScheduleController extends _$ScheduleController {
         );
       }
 
-      return success;
+      return result;
     } catch (e) {
-      return false;
+      debugPrint('Error booking class: $e');
+      return BookingResult.error;
     }
   }
 
-  Future<bool> cancelClass(String classId, String childId) async {
+  Future<bool> cancelClass(
+    String classId, 
+    String childId, {
+    String? targetUserId,
+    String? targetOwnerName,
+  }) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return false;
 
-    String ownerName = user.name;
-    if (childId != user.id) {
+    final effectiveUserId = targetUserId ?? user.id;
+    String ownerName = targetOwnerName ?? user.name;
+    if (targetOwnerName == null && childId != effectiveUserId) {
        final childrenAsync = ref.read(childrenControllerProvider);
        final children = childrenAsync.value ?? [];
        try {
@@ -142,7 +218,7 @@ class ScheduleController extends _$ScheduleController {
     }
 
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-    final subscription = subscriptionController.getAnySubscriptionForOwner(user.id, ownerName);
+    final subscription = subscriptionController.getAnySubscriptionForOwner(effectiveUserId, ownerName);
     
     try {
       final classRef = FirebaseFirestore.instance.collection('classes').doc(classId);
@@ -335,12 +411,75 @@ class ScheduleController extends _$ScheduleController {
       String title = 'Заняття';
       String coachId = '';
       String coachName = '';
+      List<String> enrolledChildIds = [];
+
       if (doc.exists) {
         final data = doc.data()!;
         title = data['title'] as String? ?? title;
         coachId = data['coachId'] as String? ?? coachId;
         coachName = data['coachName'] as String? ?? coachName;
+        enrolledChildIds = List<String>.from(data['enrolledChildIds'] ?? []);
       }
+
+      // Auto-refund each enrolled attendee
+      if (enrolledChildIds.isNotEmpty) {
+        for (final childId in enrolledChildIds) {
+          try {
+            String? parentId;
+            String? ownerName;
+
+            final childDoc = await FirebaseFirestore.instance.collection('children').doc(childId).get();
+            if (childDoc.exists) {
+              final cData = childDoc.data()!;
+              parentId = cData['parentId'] as String?;
+              ownerName = cData['name'] as String?;
+            } else {
+              // Direct user
+              final userDoc = await FirebaseFirestore.instance.collection('users').doc(childId).get();
+              if (userDoc.exists) {
+                parentId = childId;
+                ownerName = userDoc.data()?['name'] as String?;
+              }
+            }
+
+            if (parentId != null) {
+              final subsSnap = await FirebaseFirestore.instance
+                  .collection('subscriptions')
+                  .where('userId', isEqualTo: parentId)
+                  .get();
+
+              DocumentSnapshot? targetSub;
+              if (subsSnap.docs.isNotEmpty) {
+                if (ownerName != null) {
+                  for (final sDoc in subsSnap.docs) {
+                    if (sDoc.data()['ownerName'] == ownerName) {
+                      targetSub = sDoc;
+                      break;
+                    }
+                  }
+                }
+                targetSub ??= subsSnap.docs.firstWhere(
+                  (sDoc) {
+                    final sName = (sDoc.data()['serviceName'] as String? ?? '').toLowerCase();
+                    return sName.contains('спліт') || sName.contains('сім');
+                  },
+                  orElse: () => subsSnap.docs.first,
+                );
+
+                final subData = targetSub.data() as Map<String, dynamic>;
+                final curRemaining = (subData['remainingClasses'] as int? ?? 0);
+                await targetSub.reference.update({
+                  'remainingClasses': curRemaining + 1,
+                  'isActive': true,
+                });
+              }
+            }
+          } catch (refundErr) {
+            debugPrint('Error refunding attendee $childId: $refundErr');
+          }
+        }
+      }
+
       await FirebaseFirestore.instance.collection('classes').doc(classId).delete();
       _logActivity(
         type: ClassActivityType.classCancelled,
@@ -348,7 +487,7 @@ class ScheduleController extends _$ScheduleController {
         classTitle: title,
         coachId: coachId,
         coachName: coachName,
-        message: 'Заняття «$title» скасовано адміністратором',
+        message: 'Заняття «$title» скасовано адміністратором${enrolledChildIds.isNotEmpty ? ' (повернено ${enrolledChildIds.length} занять учням)' : ''}',
       );
       return true;
     } catch (e) {

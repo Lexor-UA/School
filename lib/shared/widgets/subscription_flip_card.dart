@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:swimming_school_app/shared/widgets/subscription_front_card.dart';

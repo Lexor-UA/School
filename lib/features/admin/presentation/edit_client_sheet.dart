@@ -399,6 +399,20 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               Navigator.pop(ctx);
               try {
                 await FirebaseFirestore.instance.collection('children').doc(childId).delete();
+                try {
+                  final classesSnap = await FirebaseFirestore.instance
+                      .collection('classes')
+                      .where('enrolledChildIds', arrayContains: childId)
+                      .get();
+                  for (var doc in classesSnap.docs) {
+                    final enrolled = List<String>.from(doc.data()['enrolledChildIds'] ?? []);
+                    enrolled.remove(childId);
+                    await doc.reference.update({'enrolledChildIds': enrolled});
+                  }
+                } catch (err) {
+                  debugPrint('Error cleaning up classes for child: $err');
+                }
+
                 final admin = ref.read(authControllerProvider);
                 if (admin != null) {
                   await logAdminAction('Видалено дитину "$childName" клієнта "${widget.initialName}"', admin.id);
@@ -569,53 +583,127 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final maxHeight = mediaQuery.size.height * 0.90;
+
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.90,
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A), // Dark slate
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.60),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
+          ),
+        ],
       ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A), // Dark slate
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 24,
-        right: 24,
-        top: 16,
-      ),
-      child: SingleChildScrollView(
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle indicator
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
+            // Fixed Header (outside scroll view, full drag & dismiss zone)
+            _buildHeader(context),
+
+            // Scrollable Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  bottom: mediaQuery.viewInsets.bottom + 24,
+                  left: 24,
+                  right: 24,
+                  top: 16,
+                ),
+                child: _isSuccess ? _buildSuccessState() : _buildFormState(),
               ),
             ),
-            
-            Row(
-              children: [
-                const Icon(LucideIcons.edit2, color: Colors.blueAccent),
-                const SizedBox(width: 12),
-                Text(
-                  'admin.edit_client_title'.tr(),
-                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-
-            if (_isSuccess)
-              _buildSuccessState()
-            else
-              _buildFormState(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle indicator with generous touch footprint
+          Center(
+            child: Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.30),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                    ),
+                    child: const Icon(LucideIcons.edit2, color: Colors.blueAccent, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'admin.edit_client_title'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+              // Frosted glass close button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    ),
+                    child: const Icon(LucideIcons.x, color: Colors.white70, size: 18),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -816,8 +904,13 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
           builder: (context, childSnap) {
             List<String> allRelatedIds = [widget.clientId];
+            Map<String, String> idToName = {widget.clientId: widget.initialName};
             if (childSnap.hasData) {
-              allRelatedIds.addAll(childSnap.data!.docs.map((d) => d.id));
+              for (var doc in childSnap.data!.docs) {
+                allRelatedIds.add(doc.id);
+                final cData = doc.data() as Map<String, dynamic>;
+                idToName[doc.id] = (cData['name'] as String? ?? 'Дитина').trim();
+              }
             }
             
             if (allRelatedIds.isEmpty) return const SizedBox.shrink();
@@ -892,15 +985,21 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(enrolledId == widget.clientId ? widget.initialName : 'Дитина', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                  Text(idToName[enrolledId] ?? 'Дитина', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                                   TextButton(
                                     onPressed: () async {
                                       final messenger = ScaffoldMessenger.of(context);
                                       try {
-                                        final success = await ref.read(scheduleControllerProvider.notifier).cancelClass(session.id, enrolledId);
+                                        final targetName = idToName[enrolledId] ?? widget.initialName;
+                                        final success = await ref.read(scheduleControllerProvider.notifier).cancelClass(
+                                          session.id, 
+                                          enrolledId,
+                                          targetUserId: widget.clientId,
+                                          targetOwnerName: targetName,
+                                        );
                                         if (success && mounted) {
                                           messenger.showSnackBar(
-                                            const SnackBar(content: Text('Запис скасовано', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+                                            const SnackBar(content: Text('Запис скасовано, заняття повернено на абонемент', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
                                           );
                                         }
                                       } catch (e) {

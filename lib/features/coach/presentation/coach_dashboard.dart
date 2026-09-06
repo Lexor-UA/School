@@ -1840,12 +1840,40 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
 
     setState(() => _isLoadingChildren = true);
     try {
+      final idsToFetch = childIds.take(20).toList();
       final snapshot = await FirebaseFirestore.instance
           .collection('children')
-          .where(FieldPath.documentId, whereIn: childIds.take(20).toList())
+          .where(FieldPath.documentId, whereIn: idsToFetch)
           .get();
 
       final children = snapshot.docs.map((doc) => Child.fromJson({'id': doc.id, ...doc.data()})).toList();
+      final foundIds = children.map((c) => c.id).toSet();
+      final missingIds = idsToFetch.where((id) => !foundIds.contains(id)).toList();
+
+      if (missingIds.isNotEmpty) {
+        final userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: missingIds)
+            .get();
+
+        for (final doc in userSnapshot.docs) {
+          final data = doc.data();
+          children.add(
+            Child(
+              id: doc.id,
+              parentId: '',
+              name: (data['name'] as String?)?.trim().isNotEmpty == true
+                  ? (data['name'] as String).trim()
+                  : 'Клієнт',
+              level: (data['level'] as num?)?.toInt() ?? 1,
+              xp: (data['xp'] as num?)?.toInt() ?? 0,
+              maxXp: (data['maxXp'] as num?)?.toInt() ?? 100,
+              colorHex: '0xFF00E5FF',
+            ),
+          );
+        }
+      }
+
       if (mounted) {
         setState(() {
           _enrolledChildren = children;
@@ -3027,34 +3055,34 @@ class CoachProfileTab extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 150),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 95),
         child: Column(
           children: [
             // Coach Identity Card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                   child: Column(
                     children: [
                       // Avatar with glowing ring
                       Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: const LinearGradient(
@@ -3062,46 +3090,46 @@ class CoachProfileTab extends ConsumerWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                              blurRadius: 20,
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              blurRadius: 16,
                             ),
                           ],
                         ),
                         child: const AvatarPicker(
                           heroTag: 'hero_avatar_Тренерам_profile',
-                          radius: 46,
+                          radius: 34,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 8),
                       Text(
                         user?.name ?? 'coach.title'.tr(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 22,
+                          fontSize: 18,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'coach.pro_rank'.tr(),
                           style: const TextStyle(
                             color: Color(0xFF00E5FF),
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         'coach.login_prefix'.tr(args: [user?.loginId ?? 'coach', user?.phone ?? '+380 (50) 123-45-67']),
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(color: Colors.white54, fontSize: 11),
                       ),
                     ],
                   ),
@@ -3109,57 +3137,39 @@ class CoachProfileTab extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
             // Performance KPI Grid
             Row(
               children: [
                 Expanded(child: _buildKpiCard('48', 'coach.kpi_classes_month'.tr(), LucideIcons.calendarCheck, const Color(0xFF00E5FF))),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(child: _buildKpiCard('96%', 'coach.kpi_avg_attendance'.tr(), LucideIcons.trendingUp, const Color(0xFF10B981))),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(child: _buildKpiCard('34', 'coach.kpi_active_swimmers'.tr(), LucideIcons.users, const Color(0xFFF59E0B))),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(child: _buildKpiCard('5.0 ★', 'coach.kpi_coach_rating'.tr(), LucideIcons.award, const Color(0xFFEC4899))),
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
 
             // Support Action Card (Чат з Адміністратором)
             Container(
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
               ),
               child: Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 clipBehavior: Clip.antiAlias,
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(LucideIcons.messageSquare, color: Color(0xFF00E5FF), size: 20),
-                  ),
-                  title: Text(
-                    'coach.chat_admin'.tr(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5),
-                  ),
-                  subtitle: Text(
-                    'coach.chat_admin_desc'.tr(),
-                    style: const TextStyle(color: Colors.white54, fontSize: 11.5),
-                  ),
-                  trailing: const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
+                child: InkWell(
                   onTap: () {
                     Navigator.push(
                       context,
@@ -3171,33 +3181,66 @@ class CoachProfileTab extends ConsumerWidget {
                       ),
                     );
                   },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(LucideIcons.messageSquare, color: Color(0xFF00E5FF), size: 17),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'coach.chat_admin'.tr(),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                              ),
+                              Text(
+                                'coach.chat_admin_desc'.tr(),
+                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 16),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 10),
 
             // Logout Button
             GestureDetector(
               onTap: () => _confirmCoachLogout(context, ref),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 11),
                 decoration: BoxDecoration(
                   color: Colors.redAccent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.redAccent.withValues(alpha: 0.45)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(LucideIcons.logOut, color: Colors.redAccent, size: 20),
-                    const SizedBox(width: 10),
+                    const Icon(LucideIcons.logOut, color: Colors.redAccent, size: 17),
+                    const SizedBox(width: 8),
                     Text(
                       'coach.end_shift_btn'.tr(),
                       style: const TextStyle(
                         color: Colors.redAccent,
-                        fontSize: 15,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.3,
                       ),
@@ -3206,7 +3249,6 @@ class CoachProfileTab extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -3215,46 +3257,49 @@ class CoachProfileTab extends ConsumerWidget {
 
   Widget _buildKpiCard(String value, String label, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 18),
+                child: Icon(icon, color: color, size: 15),
               ),
-              Icon(LucideIcons.sparkles, color: color.withValues(alpha: 0.5), size: 14),
+              Icon(LucideIcons.sparkles, color: color.withValues(alpha: 0.5), size: 13),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 24,
+                fontSize: 19,
                 fontWeight: FontWeight.w900,
                 shadows: [Shadow(color: color.withValues(alpha: 0.5), blurRadius: 10)],
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(color: Colors.white60, fontSize: 11, height: 1.2),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white60, fontSize: 10.5, height: 1.2),
           ),
         ],
       ),

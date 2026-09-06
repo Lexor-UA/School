@@ -4,3 +4,5 @@
 - Do not hesitate to use heavy assets, videos, or high-resolution images.
 - Do not worry about performance or file size optimization during the development phase; focus strictly on visual excellence.
 - Always create an implementation plan and wait for the user's approval via the 'Proceed' button before executing any non-trivial changes, architecture modifications, or feature work. Include questions directly in the plan for user feedback.
+- НІКОЛИ не запускати порт 5000 чи dev-сервер/додаток самостійно без прямої команди користувача.
+- НІКОЛИ не робити git commit / git push у GitHub самостійно без прямої команди користувача.

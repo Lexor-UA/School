@@ -112,8 +112,8 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     color: Colors.white70,
                     tabs: [
                       GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
-                      GButton(icon: LucideIcons.calendarDays, text: 'Календар'),
-                      GButton(icon: LucideIcons.creditCard, text: 'Абонемент'),
+                      GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_calendar'.tr()),
+                      GButton(icon: LucideIcons.creditCard, text: 'parent.tab_pass'.tr()),
                       GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
                     ],
                     selectedIndex: selectedIndex,

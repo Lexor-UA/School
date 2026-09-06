@@ -190,9 +190,9 @@ class _PasswordRecoveryScreenState
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1828).withValues(alpha: 0.75),
+        color: const Color(0xFF0A1828).withValues(alpha: 0.85),
         border: Border(
           bottom: BorderSide(
             color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
@@ -211,110 +211,125 @@ class _PasswordRecoveryScreenState
         children: [
           // Back button
           IconButton(
-            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
             style: IconButton.styleFrom(
               backgroundColor: Colors.white.withValues(alpha: 0.08),
-              shape: const CircleBorder(),
+              padding: const EdgeInsets.all(8),
+              minimumSize: const Size(38, 38),
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
-          // Key badge
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                  const Color(0xFF0288D1).withValues(alpha: 0.1),
-                ],
-              ),
-              border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: const Icon(
-              LucideIcons.keyRound,
-              color: Color(0xFF00E5FF),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Title and status
+          // Key badge & Title column
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               children: [
-                Text(
-                  _t(
-                    'auth.password_recovery_title',
-                    uk: 'Відновлення пароля',
-                    en: 'Password Recovery',
-                    de: 'Passwort-Wiederherstellung',
-                    ru: 'Восстановление пароля',
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                        const Color(0xFF0288D1).withValues(alpha: 0.1),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+                  child: const Center(
+                    child: Icon(
+                      LucideIcons.keyRound,
+                      color: Color(0xFF00E5FF),
+                      size: 18,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF10B981),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF10B981),
-                            blurRadius: 6,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _t(
+                          'auth.password_recovery_title',
+                          uk: 'Відновлення пароля',
+                          en: 'Password Recovery',
+                          de: 'Passwort-Wiederherstellung',
+                          ru: 'Восстановление пароля',
+                        ),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Container(
+                            width: 6.5,
+                            height: 6.5,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF10B981),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF10B981),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              _t(
+                                'auth.admin_support_subtitle',
+                                uk: 'Чат з адміністратором',
+                                en: 'Chat with Admin',
+                                de: 'Chat mit Admin',
+                                ru: 'Чат с администратором',
+                              ),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.65),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _t(
-                        'auth.admin_support_subtitle',
-                        uk: 'Діалог з адміністратором',
-                        en: 'Chat with Administrator',
-                        de: 'Chat mit Administrator',
-                        ru: 'Диалог с администратором',
-                      ),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
 
           // Action to return to login directly
           TextButton.icon(
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF00E5FF),
               backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
@@ -331,7 +346,7 @@ class _PasswordRecoveryScreenState
                 de: 'Zum Login',
                 ru: 'Ко входу',
               ),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),

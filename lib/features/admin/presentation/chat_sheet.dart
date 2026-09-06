@@ -321,10 +321,11 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                         ),
                         const SizedBox(height: 12),
 
-                        // 3 Compact Equal Category Tabs on full width (Zero horizontal scroll)
+                        // 3 Compact Proportional Category Tabs on full width (Zero horizontal scroll, full labels)
                         Row(
                           children: [
                             Expanded(
+                              flex: 4,
                               child: _buildCategoryTab(
                                 label: 'Всі',
                                 count: dialogs.length,
@@ -332,8 +333,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 onTap: () => setState(() => _selectedCategoryIndex = 0),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
+                              flex: 7,
                               child: _buildCategoryTab(
                                 label: 'Тренери',
                                 icon: '🏊',
@@ -343,8 +345,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 onTap: () => setState(() => _selectedCategoryIndex = 1),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
+                              flex: 7,
                               child: _buildCategoryTab(
                                 label: 'Клієнти',
                                 icon: '👤',
@@ -515,7 +518,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8.5),
           decoration: BoxDecoration(
             color: isSelected
                 ? color.withValues(alpha: 0.2)
@@ -539,25 +542,28 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Text(icon, style: const TextStyle(fontSize: 13)),
-                const SizedBox(width: 5),
+                Text(icon, style: const TextStyle(fontSize: 12)),
+                const SizedBox(width: 3.5),
               ],
               Flexible(
                 child: Text(
                   label,
+                  maxLines: 1,
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.white70,
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    letterSpacing: -0.2,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? color.withValues(alpha: 0.35)

@@ -1,4 +1,3 @@
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -424,15 +423,6 @@ class AuthController extends _$AuthController {
       
       // Оптимістичне оновлення
       state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
-
-      if (user.avatarUrl.contains('firebasestorage.googleapis.com')) {
-        try {
-          final oldRef = FirebaseStorage.instance.ref().child('avatars/${user.id}.jpg');
-          await oldRef.delete();
-        } catch (_) {
-          // Ignore if old avatar file does not exist
-        }
-      }
 
       await FirebaseFirestore.instance.collection('users').doc(user.id).update({
         'avatarUrl': newUrl,

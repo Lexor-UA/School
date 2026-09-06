@@ -93,13 +93,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             data: (children) => children.map((c) => _buildChildChip(
               c.id, 
               c.name, 
-              Color(int.parse(c.colorHex)), 
+              Color(int.tryParse(c.colorHex) ?? 0xFF00E5FF), 
               selectedChildId == c.id, 
               isDark,
               false
             )).toList(),
             loading: () => [const Padding(padding: EdgeInsets.all(8.0), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))],
-            error: (_, __) => [const Text('Error loading children')],
+            error: (_, _) => [const Text('Error loading children')],
           ),
         ],
       ),
@@ -166,10 +166,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
   Widget _buildCalendarGrid(bool isDark, WidgetRef ref) {
     final scheduleAsync = ref.watch(scheduleControllerProvider);
-    final childrenAsync = ref.watch(childrenControllerProvider);
     final user = ref.watch(authControllerProvider);
 
-    final children = childrenAsync.value ?? [];
     final allClasses = scheduleAsync.value ?? [];
 
     final daysInMonth = DateUtils.getDaysInMonth(selectedDate.year, selectedDate.month);
@@ -398,10 +396,6 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
   }
 
   Widget _buildClassCard(GroupClass c, bool isEnrolled, String targetChildId, bool isDark, WidgetRef ref, AppUser? user, List<Child> children) {
-    final isParent = user != null && targetChildId == user.id;
-    final child = isParent ? Child(id: user.id, parentId: '', name: user.name, colorHex: '0xFF00BFFF') : children.firstWhere((ch) => ch.id == targetChildId, orElse: () => Child(id: '', parentId: '', name: 'Unknown', colorHex: '0xFFFFFFFF'));
-    final color = isParent ? (isDark ? Colors.cyanAccent : AppTheme.primaryBlue) : Color(int.tryParse(child.colorHex) ?? (isDark ? 0xFFFFFFFF : 0xFF000000));
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -466,10 +460,14 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  final success = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, targetChildId);
-                  if (!success && mounted) {
+                  final result = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, targetChildId);
+                  if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Не вдалося записатись. Перевірте кількість занять в абонементі.')),
+                      SnackBar(
+                        content: Text(result.message),
+                        backgroundColor: result.isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        behavior: SnackBarBehavior.floating,
+                      ),
                     );
                   }
                 },

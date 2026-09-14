@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'core/theme/theme.dart';
+import 'core/theme/app_theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -67,13 +67,14 @@ class SwimmingSchoolApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    final themeConfig = ref.watch(appThemeControllerProvider);
     
     return MaterialApp.router(
       title: 'CitySwim',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme, // Default to dark theme
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Force dark mode
+      theme: themeConfig.toThemeData(),
+      darkTheme: AppThemeConfig.darkOcean.toThemeData(),
+      themeMode: themeConfig.isDark ? ThemeMode.dark : ThemeMode.light,
       scrollBehavior: CustomScrollBehavior(),
       builder: (context, child) {
         final mediaQueryData = MediaQuery.of(context);

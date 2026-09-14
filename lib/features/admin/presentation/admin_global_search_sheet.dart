@@ -38,10 +38,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   List<String> get _categories => [
     'admin.cat_all'.tr(),
     'admin.cat_clients'.tr(),
+    'admin.cat_subscriptions'.tr(),
+    'admin.cat_groups'.tr(),
     'admin.cat_children'.tr(),
     'admin.cat_coaches'.tr(),
-    'admin.cat_classes'.tr(),
-    'admin.cat_subscriptions'.tr(),
   ];
 
   @override
@@ -165,10 +165,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   }).toList();
 
                   final totalResults = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1 ? matchingClients.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2 ? matchingChildren.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3 ? matchingCoaches.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4 ? matchingClasses.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5 ? matchingSubs.length : 0);
+                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2 ? matchingSubs.length : 0) +
+                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3 ? matchingClasses.length : 0) +
+                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4 ? matchingChildren.length : 0) +
+                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5 ? matchingCoaches.length : 0);
 
                   return Column(
                     children: [
@@ -384,10 +384,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (idx == 1) Icon(LucideIcons.user, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 2) Icon(LucideIcons.waves, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 3) Icon(LucideIcons.award, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 4) Icon(LucideIcons.calendar, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 5) Icon(LucideIcons.creditCard, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
+                    if (idx == 2) Icon(LucideIcons.creditCard, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
+                    if (idx == 3) Icon(LucideIcons.users, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
+                    if (idx == 4) Icon(LucideIcons.waves, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
+                    if (idx == 5) Icon(LucideIcons.award, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
                     if (idx > 0) const SizedBox(width: 5),
                     Text(
                       _categories[idx],
@@ -462,7 +462,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.creditCard,
-                  title: 'Каса & Оплата',
+                  title: 'Абонементи',
                   subtitle: 'Активні та боржники',
                   color: const Color(0xFF10B981),
                   onTap: () {
@@ -480,7 +480,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.calendar,
-                  title: 'Розклад занять',
+                  title: 'Розклад груп',
                   subtitle: 'Календар басейну',
                   color: const Color(0xFF38BDF8),
                   onTap: () {
@@ -635,10 +635,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     }
 
     final showClients = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1) && matchingClients.isNotEmpty;
-    final showChildren = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2) && matchingChildren.isNotEmpty;
-    final showCoaches = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3) && matchingCoaches.isNotEmpty;
-    final showClasses = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4) && matchingClasses.isNotEmpty;
-    final showSubs = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5) && matchingSubs.isNotEmpty;
+    final showSubs = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2) && matchingSubs.isNotEmpty;
+    final showClasses = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3) && matchingClasses.isNotEmpty;
+    final showChildren = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4) && matchingChildren.isNotEmpty;
+    final showCoaches = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5) && matchingCoaches.isNotEmpty;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -674,7 +674,21 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           const SizedBox(height: 14),
         ],
 
-        // 2. Діти
+        // 2. Абонементи
+        if (showSubs) ...[
+          _buildResultSectionHeader('Абонементи', LucideIcons.creditCard, const Color(0xFFF59E0B), matchingSubs.length),
+          ...matchingSubs.map((s) => _buildSubResultRow(s)),
+          const SizedBox(height: 14),
+        ],
+
+        // 3. Групи та розклад
+        if (showClasses) ...[
+          _buildResultSectionHeader('Групи та розклад', LucideIcons.users, const Color(0xFF10B981), matchingClasses.length),
+          ...matchingClasses.map((cl) => _buildClassResultRow(cl)),
+          const SizedBox(height: 14),
+        ],
+
+        // 4. Діти
         if (showChildren) ...[
           _buildResultSectionHeader('Діти / Учні', LucideIcons.waves, const Color(0xFF38BDF8), matchingChildren.length),
           ...matchingChildren.map((ch) {
@@ -691,7 +705,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           const SizedBox(height: 14),
         ],
 
-        // 3. Тренери
+        // 5. Тренери
         if (showCoaches) ...[
           _buildResultSectionHeader('Тренери клубу', LucideIcons.award, const Color(0xFF8B5CF6), matchingCoaches.length),
           ...matchingCoaches.map((co) {
@@ -703,20 +717,6 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               loginId: d['loginId'] ?? '',
             );
           }),
-          const SizedBox(height: 14),
-        ],
-
-        // 4. Заняття
-        if (showClasses) ...[
-          _buildResultSectionHeader('Заняття та розклад', LucideIcons.calendar, const Color(0xFF10B981), matchingClasses.length),
-          ...matchingClasses.map((cl) => _buildClassResultRow(cl)),
-          const SizedBox(height: 14),
-        ],
-
-        // 5. Абонементи
-        if (showSubs) ...[
-          _buildResultSectionHeader('Абонементи', LucideIcons.creditCard, const Color(0xFFF59E0B), matchingSubs.length),
-          ...matchingSubs.map((s) => _buildSubResultRow(s)),
           const SizedBox(height: 14),
         ],
       ],
@@ -787,14 +787,14 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           children: [
             IconButton(
               icon: const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 18),
-              tooltip: 'Каса / Оплата',
+              tooltip: 'Абонементи клієнта',
               onPressed: () {
                 Navigator.pop(context);
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (_) => const PaymentSheet(initialTabIndex: 2),
+                  builder: (_) => PaymentSheet(initialSearchQuery: name),
                 );
               },
             ),

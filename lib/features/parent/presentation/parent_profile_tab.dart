@@ -12,6 +12,9 @@ import 'package:swimming_school_app/features/parent/presentation/parent_chat_scr
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/theme_switcher_sheet.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -21,13 +24,14 @@ class ParentProfileTab extends ConsumerWidget {
     final user = ref.watch(authControllerProvider);
     final childrenAsync = ref.watch(childrenControllerProvider);
     final hasChildren = (childrenAsync.value?.isNotEmpty ?? false);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeConfig = ref.watch(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
     
-    final textColor = isDark ? Colors.white : const Color(0xFF0A2540);
-    final textSubColor = isDark ? Colors.white70 : const Color(0xFF4A6572);
-    final accentColor = isDark ? Colors.cyanAccent : AppTheme.primaryBlue;
-    final cardBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
-    final cardBorderColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1);
+    final textColor = themeConfig.textPrimary;
+    final textSubColor = themeConfig.textSecondary;
+    final accentColor = themeConfig.accentPrimary;
+    final cardBgColor = themeConfig.cardBg;
+    final cardBorderColor = themeConfig.cardBorder;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -36,6 +40,12 @@ class ParentProfileTab extends ConsumerWidget {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: ThemeHeaderButton(size: 38),
+          ),
+        ],
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
@@ -79,8 +89,11 @@ class ParentProfileTab extends ConsumerWidget {
           _buildSettingsTile(LucideIcons.trophy, 'parent.my_achievements'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
             Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen()));
           }),
+          _buildSettingsTile(LucideIcons.palette, 'Тема додатку (${themeConfig.title})', textColor, textSubColor, cardBgColor, cardBorderColor, () {
+            ThemeSwitcherSheet.show(context);
+          }),
           _buildSettingsTile(LucideIcons.settings, 'parent.settings'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
-            _showSettingsDialog(context, isDark);
+            _showSettingsDialog(context, isDark, themeConfig);
           }),
           _buildSettingsTile(LucideIcons.helpCircle, 'parent.help'.tr(), textColor, textSubColor, cardBgColor, cardBorderColor, () {
             _showHelpDialog(context, isDark);
@@ -161,27 +174,31 @@ class ParentProfileTab extends ConsumerWidget {
     );
   }
 
-  void _showSettingsDialog(BuildContext context, bool isDark) {
+  void _showSettingsDialog(BuildContext context, bool isDark, AppThemeConfig themeConfig) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text('Налаштування', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: Icon(LucideIcons.palette, color: themeConfig.accentPrimary),
+              title: Text('Тема додатку', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600)),
+              subtitle: Text(themeConfig.title, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+              trailing: const Icon(LucideIcons.chevronRight, size: 16),
+              onTap: () {
+                Navigator.pop(ctx);
+                ThemeSwitcherSheet.show(context);
+              },
+            ),
             SwitchListTile(
               title: Text('Сповіщення', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
               value: true,
               onChanged: (v) {},
-              activeThumbColor: AppTheme.accentTeal,
-            ),
-            SwitchListTile(
-              title: Text('Темна тема', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
-              value: true,
-              onChanged: (v) {},
-              activeThumbColor: AppTheme.accentTeal,
+              activeThumbColor: themeConfig.accentPrimary,
             ),
           ],
         ),

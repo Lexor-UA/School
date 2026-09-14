@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -14,10 +13,12 @@ import 'package:swimming_school_app/features/chat/repositories/chat_repository.d
 
 class PaymentSheet extends ConsumerStatefulWidget {
   final int initialTabIndex;
+  final String? initialSearchQuery;
 
   const PaymentSheet({
     super.key,
     this.initialTabIndex = 0,
+    this.initialSearchQuery,
   });
 
   @override
@@ -25,99 +26,20 @@ class PaymentSheet extends ConsumerStatefulWidget {
 }
 
 class _PaymentSheetState extends ConsumerState<PaymentSheet> {
-  late int _selectedTab; // 0: Активні, 1: Не оплатили / Закінчились, 2: Швидка каса
+  late int _selectedTab; // 0: Абонементи, 1: Не оплатили / Закінчились
+  int _activeFilterMode = 1; // 0: Всього, 1: Активні, 2: Закінчуються
   String _searchQuery = '';
-  bool _onlyExpiringSoon = false;
-
-  // Cashier State
-  String? _selectedClientId;
-  String? _selectedClientName;
-  String? _selectedOwnerName;
-  String _paymentMethod = 'Картка';
-  Map<String, dynamic>? _selectedPackage;
-  bool _isProcessing = false;
-  bool _isSuccess = false;
 
   final TextEditingController _searchController = TextEditingController();
-
-  final List<Map<String, dynamic>> _packages = [
-    {
-      'id': 'sub_8_kids',
-      'name': 'Абонемент на 8 тренуваннь',
-      'classes': 8,
-      'price': 1900,
-      'validityDays': 30,
-      'icon': LucideIcons.calendarDays,
-      'badge': 'Популярний',
-      'color': const Color(0xFF38BDF8),
-    },
-    {
-      'id': 'sub_12_kids',
-      'name': 'Абонемент на 12 тренуваннь',
-      'classes': 12,
-      'price': 2600,
-      'validityDays': 30,
-      'icon': LucideIcons.sparkles,
-      'badge': 'Вигідно',
-      'color': const Color(0xFF10B981),
-    },
-    {
-      'id': 'sub_4_kids',
-      'name': 'Абонемент на 4 тренування',
-      'classes': 4,
-      'price': 1200,
-      'validityDays': 30,
-      'icon': LucideIcons.calendar,
-      'badge': null,
-      'color': const Color(0xFF60A5FA),
-    },
-    {
-      'id': 'sub_single_group',
-      'name': 'Разове тренування у групі',
-      'classes': 1,
-      'price': 500,
-      'validityDays': 1,
-      'icon': LucideIcons.user,
-      'badge': 'Разове',
-      'color': const Color(0xFF06B6D4),
-    },
-    {
-      'id': 'sub_single_adult',
-      'name': 'Разове відвідування/доросла група',
-      'classes': 1,
-      'price': 600,
-      'validityDays': 2,
-      'icon': LucideIcons.users,
-      'badge': 'Дорослі',
-      'color': const Color(0xFF8B5CF6),
-    },
-    {
-      'id': 'sub_4_adult',
-      'name': 'Абонемент на 4 тренування (ДОРОСЛА ГРУПА)',
-      'classes': 4,
-      'price': 1600,
-      'validityDays': 30,
-      'icon': LucideIcons.calendarCheck,
-      'badge': 'Дорослі 4',
-      'color': const Color(0xFFA855F7),
-    },
-    {
-      'id': 'sub_8_adult',
-      'name': 'Абонемент на 8 тренувань (ДОРОСЛА ГРУПА)',
-      'classes': 8,
-      'price': 2900,
-      'validityDays': 30,
-      'icon': LucideIcons.award,
-      'badge': 'Дорослі 8',
-      'color': const Color(0xFFF59E0B),
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
-    _selectedTab = widget.initialTabIndex;
-    _selectedPackage = _packages[0];
+    _selectedTab = widget.initialTabIndex.clamp(0, 1);
+    if (widget.initialSearchQuery != null && widget.initialSearchQuery!.trim().isNotEmpty) {
+      _searchQuery = widget.initialSearchQuery!.trim().toLowerCase();
+      _searchController.text = widget.initialSearchQuery!.trim();
+    }
   }
 
   @override
@@ -143,102 +65,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       if (days <= 5) return true;
     }
     return false;
-  }
-
-  void _initiateRenewal({
-    required String clientId,
-    required String clientName,
-    required String ownerName,
-  }) {
-    setState(() {
-      _selectedClientId = clientId;
-      _selectedClientName = clientName;
-      _selectedOwnerName = ownerName;
-      _selectedTab = 2; // Switch to Cashier tab
-    });
-  }
-
-  String _formatClassesCount(int count) {
-    if (count == 1) return '1 заняття';
-    if (count >= 2 && count <= 4) return '$count заняття';
-    return '$count занять';
-  }
-
-  Future<void> _processPayment() async {
-    if (_selectedClientId == null || _selectedPackage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Будь ласка, оберіть клієнта та послугу'),
-          backgroundColor: Color(0xFFF43F5E),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isProcessing = true);
-
-    try {
-      final validityDays = _selectedPackage!['validityDays'] as int;
-      final classes = _selectedPackage!['classes'] as int;
-      final price = _selectedPackage!['price'] as int;
-      final serviceName = _selectedPackage!['name'] as String;
-      final expiry = DateTime.now().add(Duration(days: validityDays));
-      final owner = _selectedOwnerName ?? _selectedClientName ?? 'Клієнт';
-
-      final newSubId = 'sub_${DateTime.now().microsecondsSinceEpoch}_${owner.hashCode.abs()}';
-
-      final newSub = Subscription(
-        id: newSubId,
-        userId: _selectedClientId!,
-        totalClasses: classes,
-        remainingClasses: classes,
-        isActive: true,
-        serviceName: serviceName,
-        expiryDate: expiry,
-        ownerName: owner,
-      );
-
-      // 1. Write to Firestore
-      await FirebaseFirestore.instance
-          .collection('subscriptions')
-          .doc(newSub.id)
-          .set(newSub.toJson());
-
-      // 2. Log Admin action
-      final admin = ref.read(authControllerProvider);
-      if (admin != null) {
-        await logAdminAction(
-          'Оплачено $price ₴: "$serviceName" для "$owner" ($_paymentMethod)',
-          admin.id,
-        );
-      }
-
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          _isSuccess = true;
-        });
-
-        await Future.delayed(const Duration(milliseconds: 1600));
-
-        if (mounted) {
-          setState(() {
-            _isSuccess = false;
-            _selectedTab = 0; // Return to Active Tab
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Помилка проведення оплати: $e'),
-            backgroundColor: const Color(0xFFF43F5E),
-          ),
-        );
-      }
-    }
   }
 
   void _showReminderModal({
@@ -573,12 +399,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
               // 2. Executive Telemetry Bar (Зведена аналітика)
               _buildTelemetryKPIs(
+                totalCount: allSubs.length,
                 activeCount: activeSubs.length,
                 expiringCount: expiringSoonSubs.length,
                 unpaidCount: finalUnpaidList.length,
               ),
 
-              // 3. Segmented Tab Selector
+              // 3. Segmented Tab Selector (2 Tabs)
               _buildSegmentedTabs(
                 activeCount: activeSubs.length,
                 unpaidCount: finalUnpaidList.length,
@@ -586,25 +413,21 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
               const SizedBox(height: 10),
 
-              // 4. Search Bar (for tabs 0 and 1)
-              if (_selectedTab != 2)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  child: _buildSearchBar(),
-                ),
+              // 4. Search Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                child: _buildSearchBar(),
+              ),
 
               // 5. Active Tab View
               Expanded(
-                child: _isSuccess
-                    ? _buildSuccessView()
-                    : (_isProcessing
-                        ? _buildProcessingView()
-                        : _buildTabContent(
-                            activeSubs: activeSubs,
-                            expiringSoonSubs: expiringSoonSubs,
-                            unpaidList: finalUnpaidList,
-                            clientsMap: clientsMap,
-                          )),
+                child: _buildTabContent(
+                  allSubs: allSubs,
+                  activeSubs: activeSubs,
+                  expiringSoonSubs: expiringSoonSubs,
+                  unpaidList: finalUnpaidList,
+                  clientsMap: clientsMap,
+                ),
               ),
             ],
           ),
@@ -639,7 +462,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 height: 46,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                    colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -650,7 +473,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                      color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),
@@ -713,46 +536,70 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   // 2. EXECUTIVE TELEMETRY BAR
   // ==========================================
   Widget _buildTelemetryKPIs({
+    required int totalCount,
     required int activeCount,
     required int expiringCount,
     required int unpaidCount,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
         children: [
+          // 1. Всього
+          Expanded(
+            child: _buildTelemetryCard(
+              count: '$totalCount',
+              label: 'admin.tab_total'.tr(),
+              color: const Color(0xFF00E5FF),
+              icon: LucideIcons.layers,
+              isSelected: _selectedTab == 0 && _activeFilterMode == 0,
+              onTap: () {
+                setState(() {
+                  _selectedTab = 0;
+                  _activeFilterMode = 0;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+
+          // 2. Активні
           Expanded(
             child: _buildTelemetryCard(
               count: '$activeCount',
               label: 'admin.tab_active'.tr(),
               color: const Color(0xFF10B981),
               icon: LucideIcons.circleCheck,
-              isSelected: _selectedTab == 0 && !_onlyExpiringSoon,
+              isSelected: _selectedTab == 0 && _activeFilterMode == 1,
               onTap: () {
                 setState(() {
                   _selectedTab = 0;
-                  _onlyExpiringSoon = false;
+                  _activeFilterMode = 1;
                 });
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
+
+          // 3. Закінчуються
           Expanded(
             child: _buildTelemetryCard(
               count: '$expiringCount',
               label: 'admin.tab_expiring'.tr(),
               color: const Color(0xFFF59E0B),
               icon: LucideIcons.hourglass,
-              isSelected: _selectedTab == 0 && _onlyExpiringSoon,
+              isSelected: _selectedTab == 0 && _activeFilterMode == 2,
               onTap: () {
                 setState(() {
                   _selectedTab = 0;
-                  _onlyExpiringSoon = true;
+                  _activeFilterMode = 2;
                 });
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
+
+          // 4. Не оплатили
           Expanded(
             child: _buildTelemetryCard(
               count: '$unpaidCount',
@@ -782,15 +629,15 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      color.withValues(alpha: 0.25),
+                      color.withValues(alpha: 0.28),
                       color.withValues(alpha: 0.08),
                     ],
                     begin: Alignment.topLeft,
@@ -798,58 +645,62 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   )
                 : null,
             color: isSelected ? null : Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected ? color.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.10),
-              width: isSelected ? 1.3 : 1,
+              color: isSelected ? color.withValues(alpha: 0.75) : Colors.white.withValues(alpha: 0.10),
+              width: isSelected ? 1.4 : 1,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.2),
+                      color: color.withValues(alpha: 0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
                   ]
                 : null,
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(icon, color: color, size: 14),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.16),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(icon, color: color, size: 12),
+                    ),
+                  ),
+                  Text(
+                    count,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      count,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.70),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
-                        height: 1.15,
-                      ),
-                      maxLines: 2,
-                    ),
-                  ],
+              const SizedBox(height: 5),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75),
+                    fontSize: 10.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -860,7 +711,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   }
 
   // ==========================================
-  // 3. SEGMENTED TABS
+  // 3. SEGMENTED TABS (2 WIDE TABS)
   // ==========================================
   Widget _buildSegmentedTabs({
     required int activeCount,
@@ -880,9 +731,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             Expanded(
               child: _buildTabButton(
                 index: 0,
-                title: 'admin.tab_active'.tr(),
+                title: 'admin.tab_subs'.tr(),
                 badge: '$activeCount',
                 accentColor: const Color(0xFF10B981),
+                icon: LucideIcons.walletCards,
               ),
             ),
             Expanded(
@@ -891,14 +743,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 title: 'admin.tab_unpaid'.tr(),
                 badge: '$unpaidCount',
                 accentColor: const Color(0xFFF43F5E),
-              ),
-            ),
-            Expanded(
-              child: _buildTabButton(
-                index: 2,
-                title: 'admin.tab_cash'.tr(),
-                badge: null,
-                accentColor: const Color(0xFF00D2FF),
+                icon: LucideIcons.alertCircle,
               ),
             ),
           ],
@@ -912,21 +757,20 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     required String title,
     required String? badge,
     required Color accentColor,
+    required IconData icon,
   }) {
     final isSelected = _selectedTab == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedTab = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 9),
+        padding: const EdgeInsets.symmetric(vertical: 9.5),
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
-                  colors: index == 2
-                      ? [const Color(0xFF00D2FF), const Color(0xFF0077B6)]
-                      : (index == 0
-                          ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                          : [const Color(0xFFF43F5E), const Color(0xFFE11D48)]),
+                  colors: index == 0
+                      ? [const Color(0xFF10B981), const Color(0xFF059669)]
+                      : [const Color(0xFFF43F5E), const Color(0xFFE11D48)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -936,9 +780,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (index == 2
-                            ? const Color(0xFF00D2FF)
-                            : (index == 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E)))
+                    color: (index == 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E))
                         .withValues(alpha: 0.35),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
@@ -949,18 +791,24 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected ? Colors.white : Colors.white60,
+            ),
+            const SizedBox(width: 7),
             Text(
               title,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
             if (badge != null) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 1.5),
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.white.withValues(alpha: 0.25) : Colors.white12,
                   borderRadius: BorderRadius.circular(10),
@@ -1013,32 +861,39 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   }
 
   // ==========================================
-  // 4. TAB CONTENT SWITCHER
+  // 4. TAB CONTENT SWITCHER (2 TABS)
   // ==========================================
   Widget _buildTabContent({
+    required List<Subscription> allSubs,
     required List<Subscription> activeSubs,
     required List<Subscription> expiringSoonSubs,
     required List<_UnpaidClientItem> unpaidList,
     required Map<String, Map<String, dynamic>> clientsMap,
   }) {
     if (_selectedTab == 0) {
-      return _buildActiveSubsTab(activeSubs, expiringSoonSubs, clientsMap);
-    } else if (_selectedTab == 1) {
-      return _buildUnpaidSubsTab(unpaidList);
+      return _buildActiveSubsTab(allSubs, activeSubs, expiringSoonSubs, clientsMap);
     } else {
-      return _buildCashierTab(clientsMap);
+      return _buildUnpaidSubsTab(unpaidList);
     }
   }
 
   // ==========================================
-  // TAB 0: АКТИВНІ АБОНЕМЕНТИ
+  // TAB 0: АКТИВНІ ТА ВСІ АБОНЕМЕНТИ
   // ==========================================
   Widget _buildActiveSubsTab(
+    List<Subscription> allSubs,
     List<Subscription> activeSubs,
     List<Subscription> expiringSoonSubs,
     Map<String, Map<String, dynamic>> clientsMap,
   ) {
-    var displayList = _onlyExpiringSoon ? expiringSoonSubs : activeSubs;
+    List<Subscription> displayList;
+    if (_activeFilterMode == 0) {
+      displayList = allSubs;
+    } else if (_activeFilterMode == 2) {
+      displayList = expiringSoonSubs;
+    } else {
+      displayList = activeSubs;
+    }
 
     if (_searchQuery.isNotEmpty) {
       displayList = displayList.where((s) {
@@ -1055,35 +910,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
     return Column(
       children: [
-        // Sub-filter chip bar
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
-          child: Row(
-            children: [
-              _buildFilterChip(
-                label: 'Всі активні (${activeSubs.length})',
-                isSelected: !_onlyExpiringSoon,
-                onTap: () => setState(() => _onlyExpiringSoon = false),
-              ),
-              const SizedBox(width: 8),
-              _buildFilterChip(
-                label: '⚠️ Закінчуються скоро (${expiringSoonSubs.length})',
-                isSelected: _onlyExpiringSoon,
-                accentColor: const Color(0xFFF59E0B),
-                onTap: () => setState(() => _onlyExpiringSoon = true),
-              ),
-            ],
-          ),
-        ),
-
+        const SizedBox(height: 6),
         Expanded(
           child: displayList.isEmpty
               ? _buildEmptyState(
                   icon: LucideIcons.badgeCheck,
-                  title: 'Не знайдено активних абонементів',
-                  subtitle: _onlyExpiringSoon
+                  title: 'Не знайдено абонементів',
+                  subtitle: _activeFilterMode == 2
                       ? 'Чудово! У жодного клієнта абонемент не закінчується в найближчі 5 днів.'
-                      : 'Всі абонементи вичерпано або клієнти очікують поновлення.',
+                      : (_activeFilterMode == 0
+                          ? 'В системі ще не створено жодного абонемента.'
+                          : 'Всі абонементи вичерпано або клієнти очікують поновлення.'),
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
@@ -1109,36 +946,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFilterChip({
-    required String label,
-    required bool isSelected,
-    Color accentColor = const Color(0xFF10B981),
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? accentColor.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? accentColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white60,
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
     );
   }
 
@@ -1170,8 +977,30 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       }
     }
 
-    final accentColor = isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF10B981);
-    final secondaryAccent = isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00D2FF);
+    DateTime? purchaseDate;
+    final parts = sub.id.split('_');
+    if (parts.length > 1) {
+      final ts = int.tryParse(parts[1]);
+      if (ts != null) {
+        if (ts > 1000000000000000) {
+          purchaseDate = DateTime.fromMicrosecondsSinceEpoch(ts);
+        } else if (ts > 1000000000000) {
+          purchaseDate = DateTime.fromMillisecondsSinceEpoch(ts);
+        }
+      }
+    }
+    if (purchaseDate == null && sub.expiryDate != null) {
+      purchaseDate = sub.expiryDate!.subtract(const Duration(days: 30));
+    }
+    final purchaseStr = purchaseDate != null ? DateFormat('dd.MM.yyyy').format(purchaseDate) : null;
+
+    final isActive = _isSubActive(sub);
+    final accentColor = !isActive
+        ? const Color(0xFF64748B)
+        : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF10B981));
+    final secondaryAccent = !isActive
+        ? const Color(0xFF475569)
+        : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00D2FF));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1181,16 +1010,20 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            isExpiringSoon
-                ? const Color(0xFF281E15).withValues(alpha: 0.88)
-                : const Color(0xFF13233C).withValues(alpha: 0.88),
+            !isActive
+                ? const Color(0xFF1B232F).withValues(alpha: 0.88)
+                : (isExpiringSoon
+                    ? const Color(0xFF281E15).withValues(alpha: 0.88)
+                    : const Color(0xFF13233C).withValues(alpha: 0.88)),
             const Color(0xFF0A1422).withValues(alpha: 0.96),
           ],
         ),
         border: Border.all(
-          color: isExpiringSoon
-              ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.12),
+          color: !isActive
+              ? Colors.white.withValues(alpha: 0.08)
+              : (isExpiringSoon
+                  ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
+                  : Colors.white.withValues(alpha: 0.12)),
           width: isExpiringSoon ? 1.2 : 1,
         ),
         boxShadow: [
@@ -1266,7 +1099,27 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (isExpiringSoon)
+                              if (!isActive)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'НЕАКТИВНИЙ',
+                                    style: TextStyle(
+                                      color: Color(0xFF94A3B8),
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                )
+                              else if (isExpiringSoon)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
@@ -1411,34 +1264,62 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 6,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.calendarClock,
-                                size: 12.5,
-                                color: Colors.white.withValues(alpha: 0.45),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Діє до $expiryStr',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 11.5,
+                          if (purchaseStr != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.calendarPlus,
+                                  size: 12,
+                                  color: Colors.white.withValues(alpha: 0.5),
                                 ),
-                              ),
-                            ],
-                          ),
-                          if (daysLeftStr.isNotEmpty)
-                            Text(
-                              'Залишилось: $daysLeftStr',
-                              style: TextStyle(
-                                color: isExpiringSoon ? const Color(0xFFF59E0B) : Colors.white70,
-                                fontSize: 11.5,
-                                fontWeight: isExpiringSoon ? FontWeight.w800 : FontWeight.w600,
-                              ),
+                                const SizedBox(width: 4.5),
+                                Text(
+                                  'Придбано: $purchaseStr',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.65),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (sub.expiryDate != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.calendarClock,
+                                  size: 12,
+                                  color: isExpiringSoon ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(width: 4.5),
+                                Text(
+                                  'Діє до $expiryStr',
+                                  style: TextStyle(
+                                    color: isExpiringSoon ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.65),
+                                    fontSize: 11,
+                                    fontWeight: isExpiringSoon ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                                if (daysLeftStr.isNotEmpty) ...[
+                                  Text(' • ', style: TextStyle(color: Colors.white.withValues(alpha: 0.3))),
+                                  Text(
+                                    daysLeftStr,
+                                    style: TextStyle(
+                                      color: isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                         ],
                       ),
@@ -1448,42 +1329,45 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
                 const SizedBox(height: 12),
 
-                // Action button
+                // Action button: Send Reminder
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     InkWell(
-                      onTap: () => _initiateRenewal(
+                      onTap: () => _showReminderModal(
                         clientId: sub.userId,
                         clientName: clientName,
                         ownerName: ownerName,
+                        phone: phone != 'Немає номеру' ? phone : null,
+                        reason: isExpiringSoon
+                            ? 'Закінчується абонемент (залишилось $remaining занять)'
+                            : 'Інформація про абонемент',
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7.5),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF00D2FF).withValues(alpha: 0.16),
-                              const Color(0xFF0072FF).withValues(alpha: 0.22),
-                            ],
-                          ),
+                          color: (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF00D2FF).withValues(alpha: 0.45),
+                            color: (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.35),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.refreshCw, size: 13, color: Color(0xFF38BDF8)),
-                            SizedBox(width: 6),
+                            Icon(
+                              LucideIcons.bellRing,
+                              size: 13,
+                              color: isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                            ),
+                            const SizedBox(width: 6),
                             Text(
-                              'Продовжити',
+                              isExpiringSoon ? 'Нагадати клієнту' : 'Повідомлення клієнту',
                               style: TextStyle(
-                                color: Color(0xFF38BDF8),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                                color: isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -1669,590 +1553,54 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
                 const SizedBox(height: 14),
 
-                // Action buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _showReminderModal(
-                          clientId: item.clientId,
-                          clientName: item.clientName,
-                          ownerName: item.ownerName,
-                          phone: item.phone,
-                          reason: item.reason,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.bellRing, size: 14, color: Color(0xFF38BDF8)),
-                              SizedBox(width: 6),
-                              Text(
-                                'Нагадати',
-                                style: TextStyle(
-                                  color: Color(0xFF38BDF8),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                // Action button: Send Reminder
+                InkWell(
+                  onTap: () => _showReminderModal(
+                    clientId: item.clientId,
+                    clientName: item.clientName,
+                    ownerName: item.ownerName,
+                    phone: item.phone,
+                    reason: item.reason,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _initiateRenewal(
-                          clientId: item.clientId,
-                          clientName: item.clientName,
-                          ownerName: item.ownerName,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF10B981), Color(0xFF00D2FF)],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.creditCard, size: 14, color: Color(0xFF052317)),
-                              SizedBox(width: 6),
-                              Text(
-                                'Поновити',
-                                style: TextStyle(
-                                  color: Color(0xFF052317),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.bellRing, size: 15, color: Color(0xFF082F49)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Надіслати нагадування',
+                          style: TextStyle(
+                            color: Color(0xFF082F49),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  // ==========================================
-  // TAB 2: ШВИДКА КАСА (НОВА ОПЛАТА)
-  // ==========================================
-  Widget _buildCashierTab(Map<String, Map<String, dynamic>> clientsMap) {
-    final clientsList = clientsMap.entries.toList();
-
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Оберіть клієнта
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Text(
-                    '1',
-                    style: TextStyle(
-                      color: Color(0xFF38BDF8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Оберіть клієнта',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _selectedClientId != null
-                    ? const Color(0xFF38BDF8).withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.12),
-                width: 1.1,
-              ),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true,
-                dropdownColor: const Color(0xFF0D1B2D),
-                value: _selectedClientId,
-                hint: Row(
-                  children: [
-                    Icon(LucideIcons.user, color: Colors.white.withValues(alpha: 0.4), size: 16),
-                    const SizedBox(width: 10),
-                    const Text('Оберіть клієнта зі списку...', style: TextStyle(color: Colors.white54, fontSize: 13.5)),
-                  ],
-                ),
-                icon: const Icon(LucideIcons.chevronDown, color: Color(0xFF38BDF8), size: 18),
-                items: clientsList.map((e) {
-                  final name = e.value['name'] ?? 'Невідомо';
-                  final phone = e.value['phone'] ?? '';
-                  return DropdownMenuItem<String>(
-                    value: e.key,
-                    child: Text(
-                      '$name ${phone.isNotEmpty ? "($phone)" : ""}',
-                      style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedClientId = val;
-                      _selectedClientName = clientsMap[val]?['name'];
-                      _selectedOwnerName = _selectedClientName;
-                    });
-                  }
-                },
-              ),
-            ),
-          ),
-
-          if (_selectedClientId != null) ...[
-            const SizedBox(height: 10),
-            // Owner name input (e.g. child name)
-            TextFormField(
-              initialValue: _selectedOwnerName,
-              style: const TextStyle(color: Colors.white, fontSize: 13.5),
-              decoration: InputDecoration(
-                labelText: 'Ім\'я учня / власника абонемента',
-                labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.04),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF38BDF8), size: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 1.2),
-                ),
-              ),
-              onChanged: (val) => _selectedOwnerName = val,
-            ),
-          ],
-
-          const SizedBox(height: 22),
-
-          // 2. Оберіть абонемент / послугу
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Text(
-                    '2',
-                    style: TextStyle(
-                      color: Color(0xFF38BDF8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Оберіть послугу або абонемент',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.15,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: _packages.length,
-            itemBuilder: (ctx, idx) {
-              final pkg = _packages[idx];
-              final isSelected = _selectedPackage?['id'] == pkg['id'];
-              final color = pkg['color'] as Color;
-
-              return GestureDetector(
-                onTap: () => setState(() => _selectedPackage = pkg),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? LinearGradient(
-                            colors: [
-                              const Color(0xFF162E4A).withValues(alpha: 0.94),
-                              const Color(0xFF0E1C30).withValues(alpha: 0.98),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : LinearGradient(
-                            colors: [
-                              Colors.white.withValues(alpha: 0.06),
-                              Colors.white.withValues(alpha: 0.02),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isSelected ? color : Colors.white.withValues(alpha: 0.10),
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: color.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: color.withValues(alpha: 0.35),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(pkg['icon'] as IconData, color: color, size: 17),
-                            ),
-                          ),
-                          if (pkg['badge'] != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: color.withValues(alpha: 0.45),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                pkg['badge'],
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            pkg['name'],
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.85),
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                              height: 1.25,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            '${pkg['price']} ₴ • ${_formatClassesCount(pkg['classes'] as int)}',
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : color,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 22),
-
-          // 3. Метод оплати
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Text(
-                    '3',
-                    style: TextStyle(
-                      color: Color(0xFF38BDF8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Спосіб оплати',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          Row(
-            children: [
-              Expanded(child: _buildPaymentMethodPill('Картка', LucideIcons.creditCard)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildPaymentMethodPill('Готівка', LucideIcons.banknote)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildPaymentMethodPill('Термінал', LucideIcons.smartphoneNfc)),
-            ],
-          ),
-
-          const SizedBox(height: 26),
-
-          // 4. Кнопка проведення оплати
-          Container(
-            width: double.infinity,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF00D2FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.45),
-                  blurRadius: 18,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: _processPayment,
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.checkCheck, color: Colors.white, size: 20),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Сплатити ${_selectedPackage?['price'] ?? 0} ₴',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentMethodPill(String label, IconData icon) {
-    final isSelected = _paymentMethod == label;
-    return GestureDetector(
-      onTap: () => setState(() => _paymentMethod = label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    const Color(0xFF00D2FF).withValues(alpha: 0.25),
-                    const Color(0xFF0077B6).withValues(alpha: 0.15),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isSelected ? null : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF00D2FF) : Colors.white.withValues(alpha: 0.10),
-            width: isSelected ? 1.2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF00D2FF).withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: isSelected ? const Color(0xFF00D2FF) : Colors.white60),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==========================================
-  // STATES: PROCESSING & SUCCESS
-  // ==========================================
-  Widget _buildProcessingView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(
-          width: 50,
-          height: 50,
-          child: CircularProgressIndicator(color: Color(0xFF10B981), strokeWidth: 3),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Проведення платежу та реєстрація абонемента...',
-          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSuccessView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: const BoxDecoration(
-            color: Color(0xFF10B981),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: Color(0xFF10B981), blurRadius: 20, spreadRadius: 2),
-            ],
-          ),
-          child: const Icon(LucideIcons.check, color: Color(0xFF041C15), size: 40),
-        ).animate().scale(curve: Curves.elasticOut, duration: 600.ms),
-        const SizedBox(height: 20),
-        const Text(
-          'Оплату успішно зараховано!',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        ).animate().fadeIn(delay: 200.ms),
-        const SizedBox(height: 6),
-        Text(
-          'Абонемент для ${_selectedOwnerName ?? _selectedClientName} активовано',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ).animate().fadeIn(delay: 350.ms),
-      ],
     );
   }
 

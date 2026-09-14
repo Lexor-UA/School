@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
@@ -11,7 +14,14 @@ import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_c
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 class AdminCalendarScreen extends ConsumerStatefulWidget {
-  const AdminCalendarScreen({super.key});
+  final String? initialCoachId;
+  final String? initialCoachName;
+
+  const AdminCalendarScreen({
+    super.key,
+    this.initialCoachId,
+    this.initialCoachName,
+  });
 
   @override
   ConsumerState<AdminCalendarScreen> createState() => _AdminCalendarScreenState();
@@ -19,21 +29,41 @@ class AdminCalendarScreen extends ConsumerStatefulWidget {
 
 class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
   DateTime _selectedDate = DateTime.now();
+  String? _selectedCoachId;
+  String? _selectedCoachName;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCoachId = widget.initialCoachId;
+    _selectedCoachName = widget.initialCoachName;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final allClasses = scheduleAsync.value ?? [];
 
-    final dayClasses = allClasses.where((c) => 
-      c.startTime.year == _selectedDate.year && 
-      c.startTime.month == _selectedDate.month && 
-      c.startTime.day == _selectedDate.day
-    ).toList();
+    final dayClasses = allClasses.where((c) {
+      final matchesDate = c.startTime.year == _selectedDate.year && 
+        c.startTime.month == _selectedDate.month && 
+        c.startTime.day == _selectedDate.day;
+      if (!matchesDate) return false;
+
+      if (_selectedCoachId != null && _selectedCoachId!.isNotEmpty) {
+        final matchesId = c.coachId == _selectedCoachId;
+        final matchesName = _selectedCoachName != null && c.coachName.isNotEmpty &&
+            (c.coachName.toLowerCase().contains(_selectedCoachName!.toLowerCase()) ||
+             _selectedCoachName!.toLowerCase().contains(c.coachName.toLowerCase()));
+        return matchesId || matchesName;
+      }
+      return true;
+    }).toList();
     dayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF09182B),
+      backgroundColor: currentTheme.scaffoldBg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -42,52 +72,56 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+            color: currentTheme.glassCardBg,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+            border: Border.all(color: currentTheme.cardBorder),
           ),
           child: IconButton(
             padding: EdgeInsets.zero,
-            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 18),
+            icon: Icon(LucideIcons.arrowLeft, color: currentTheme.textPrimary, size: 18),
             onPressed: () => Navigator.pop(context),
           ),
         ),
         title: Text(
           'admin.cal_title'.tr(),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: currentTheme.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 19,
             letterSpacing: 0.3,
           ),
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 14),
+            child: ThemeHeaderButton(size: 38),
+          ),
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // 1. Full-fidelity animated water ripples and particles (matching other screens)
+          // 1. Full-fidelity animated water ripples
           const Positioned.fill(
             child: RepaintBoundary(child: AnimatedWaterBackground()),
           ),
-          const Positioned.fill(
-            child: RepaintBoundary(child: WaterParticles()),
-          ),
 
-          // 2. Fluid aquatic gradient overlay (harmonized across app)
+          // 2. Fluid aquatic gradient overlay
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF00B4DB).withValues(alpha: 0.20),
-                    const Color(0xFF0284C7).withValues(alpha: 0.12),
-                    const Color(0xFF0F172A).withValues(alpha: 0.72),
-                  ],
+                  colors: currentTheme.bgGradient,
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
             ),
+          ),
+
+          // 3. Theme-tailored 3D animated water bubbles
+          const Positioned.fill(
+            child: RepaintBoundary(child: WaterParticles()),
           ),
 
           // 3. Screen content
@@ -98,15 +132,20 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 // Month Header & Calendar Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildCalendarCard(allClasses),
+                  child: _buildCalendarCard(allClasses, currentTheme),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+
+                // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
+                _buildCoachFilterBar(currentTheme),
+
+                const SizedBox(height: 10),
 
                 // Selected Day Schedule Section (Directly on screen!)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: _buildDayScheduleSection(dayClasses),
+                    child: _buildDayScheduleSection(dayClasses, currentTheme),
                   ),
                 ),
               ],
@@ -117,7 +156,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     );
   }
 
-  Widget _buildCalendarCard(List<GroupClass> allClasses) {
+  Widget _buildCalendarCard(List<GroupClass> allClasses, AppThemeConfig currentTheme) {
     final monthName = DateFormat('LLLL yyyy', context.locale.languageCode).format(_selectedDate);
     final capitalizedMonth = monthName[0].toUpperCase() + monthName.substring(1);
 
@@ -136,22 +175,15 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0E1F35),
-            Color(0xFF081424),
-          ],
-        ),
+        color: currentTheme.cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF1E3552),
+          color: currentTheme.cardBorder,
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: currentTheme.cardShadow,
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -173,15 +205,15 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       Container(
                         padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                          gradient: LinearGradient(
+                            colors: currentTheme.accentGradient,
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                               blurRadius: 8,
                             ),
                           ],
@@ -191,8 +223,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       const SizedBox(width: 10),
                       Text(
                         capitalizedMonth,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: currentTheme.textPrimary,
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.2,
@@ -205,11 +237,13 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       _buildMonthNavButton(
                         icon: LucideIcons.chevronLeft,
                         onTap: () => setState(() => _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1, 1)),
+                        currentTheme: currentTheme,
                       ),
                       const SizedBox(width: 8),
                       _buildMonthNavButton(
                         icon: LucideIcons.chevronRight,
                         onTap: () => setState(() => _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1)),
+                        currentTheme: currentTheme,
                       ),
                     ],
                   ),
@@ -227,7 +261,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       child: Text(
                         d,
                         style: TextStyle(
-                          color: (idx == 5 || idx == 6) ? const Color(0xFF38BDF8) : Colors.white70,
+                          color: (idx == 5 || idx == 6) ? currentTheme.accentPrimary : currentTheme.textSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -277,32 +311,32 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       margin: const EdgeInsets.all(2.5),
                       decoration: BoxDecoration(
                         gradient: isSelected
-                            ? const LinearGradient(
-                                colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                            ? LinearGradient(
+                                colors: currentTheme.accentGradient,
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
                             : (isToday
                                 ? LinearGradient(
                                     colors: [
-                                      const Color(0xFF38BDF8).withValues(alpha: 0.22),
-                                      const Color(0xFF0077B6).withValues(alpha: 0.12),
+                                      currentTheme.accentPrimary.withValues(alpha: 0.22),
+                                      currentTheme.accentPrimary.withValues(alpha: 0.08),
                                     ],
                                   )
                                 : null),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.white.withValues(alpha: 0.9)
+                              ? currentTheme.accentPrimary
                               : (isToday
-                                  ? const Color(0xFF38BDF8)
+                                  ? currentTheme.accentPrimary.withValues(alpha: 0.6)
                                   : Colors.transparent),
                           width: isSelected ? 1.2 : 1,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                                  color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                                   blurRadius: 6,
                                   offset: const Offset(0, 1),
                                 ),
@@ -317,7 +351,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : (isToday ? const Color(0xFF38BDF8) : Colors.white),
+                                  : (isToday ? currentTheme.accentPrimary : currentTheme.textPrimary),
                               fontWeight: (isSelected || isToday) ? FontWeight.w800 : FontWeight.w500,
                               fontSize: 13.5,
                               height: 1.1,
@@ -356,7 +390,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     );
   }
 
-  Widget _buildMonthNavButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildMonthNavButton({required IconData icon, required VoidCallback onTap, required AppThemeConfig currentTheme}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -366,39 +400,161 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: currentTheme.glassCardBg,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: currentTheme.cardBorder),
           ),
           child: Center(
-            child: Icon(icon, color: Colors.white, size: 16),
+            child: Icon(icon, color: currentTheme.textPrimary, size: 16),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDayScheduleSection(List<GroupClass> dayClasses) {
+  Widget _buildCoachFilterBar(AppThemeConfig currentTheme) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'coach')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final coachDocs = snapshot.data!.docs;
+
+        return SizedBox(
+          height: 38,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              // All coaches chip
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedCoachId = null;
+                    _selectedCoachName = null;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: _selectedCoachId == null
+                        ? currentTheme.accentPrimary.withValues(alpha: 0.20)
+                        : currentTheme.chipBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _selectedCoachId == null
+                          ? currentTheme.accentPrimary
+                          : currentTheme.chipBorder,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        LucideIcons.users,
+                        size: 13,
+                        color: _selectedCoachId == null ? currentTheme.accentPrimary : currentTheme.textMuted,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Всі тренери',
+                        style: TextStyle(
+                          color: _selectedCoachId == null ? currentTheme.accentPrimary : currentTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: _selectedCoachId == null ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Individual coach chips
+              ...coachDocs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final cId = doc.id;
+                final cName = (data['name'] as String?) ?? 'Тренер';
+                final isSelected = _selectedCoachId == cId ||
+                    (_selectedCoachName != null && _selectedCoachName!.toLowerCase() == cName.toLowerCase());
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedCoachId = null;
+                        _selectedCoachName = null;
+                      } else {
+                        _selectedCoachId = cId;
+                        _selectedCoachName = cName;
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? currentTheme.accentPrimary.withValues(alpha: 0.20)
+                          : currentTheme.chipBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? currentTheme.accentPrimary
+                            : currentTheme.chipBorder,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.waves,
+                          size: 13,
+                          color: isSelected ? currentTheme.accentPrimary : currentTheme.accentSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          cName,
+                          style: TextStyle(
+                            color: isSelected ? currentTheme.accentPrimary : currentTheme.textSecondary,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 6),
+                          Icon(LucideIcons.x, size: 12, color: currentTheme.accentPrimary),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDayScheduleSection(List<GroupClass> dayClasses, AppThemeConfig currentTheme) {
     final dateStr = DateFormat('d MMMM', context.locale.languageCode).format(_selectedDate);
 
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0E1F35),
-            Color(0xFF081424),
-          ],
-        ),
+        color: currentTheme.cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF1E3552),
+          color: currentTheme.cardBorder,
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: currentTheme.cardShadow,
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -422,15 +578,15 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                              gradient: LinearGradient(
+                                colors: currentTheme.accentGradient,
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                                  color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                                   blurRadius: 8,
                                 ),
                               ],
@@ -446,8 +602,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'admin.cal_classes_for_date'.tr(args: [dateStr]),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.2,
@@ -459,21 +615,53 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
+                                color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                               ),
                             ),
                             child: Text(
                               '${dayClasses.length}',
-                              style: const TextStyle(
-                                color: Color(0xFF38BDF8),
+                              style: TextStyle(
+                                color: currentTheme.accentPrimary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
+                          if (_selectedCoachName != null) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCoachId = null;
+                                  _selectedCoachName = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: currentTheme.accentPrimary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: currentTheme.accentPrimary.withValues(alpha: 0.35)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(LucideIcons.userCheck, color: currentTheme.accentPrimary, size: 12),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _selectedCoachName!,
+                                      style: TextStyle(color: currentTheme.accentPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(LucideIcons.x, color: currentTheme.accentPrimary, size: 11),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -487,22 +675,26 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             context: context,
                             isScrollControlled: true,
                             backgroundColor: Colors.transparent,
-                            builder: (context) => CreateClassSheet(initialDate: _selectedDate),
+                            builder: (context) => CreateClassSheet(
+                              initialDate: _selectedDate,
+                              initialCoachId: _selectedCoachId,
+                              initialCoachName: _selectedCoachName,
+                            ),
                           );
                         },
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                            gradient: LinearGradient(
+                              colors: currentTheme.accentGradient,
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                                color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                                 blurRadius: 8,
                               ),
                             ],
@@ -532,13 +724,13 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 // Classes List or Empty State
                 Expanded(
                   child: dayClasses.isEmpty
-                      ? _buildEmptyDayState(dateStr)
+                      ? _buildEmptyDayState(dateStr, currentTheme)
                       : ListView.builder(
                           padding: const EdgeInsets.only(bottom: 10),
                           physics: const BouncingScrollPhysics(),
                           itemCount: dayClasses.length,
                           itemBuilder: (context, index) {
-                            return _buildAdminClassCard(dayClasses[index]);
+                            return _buildAdminClassCard(dayClasses[index], currentTheme);
                           },
                         ),
                 ),
@@ -549,7 +741,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
       );
   }
 
-  Widget _buildEmptyDayState(String dateStr) {
+  Widget _buildEmptyDayState(String dateStr, AppThemeConfig currentTheme) {
     return Center(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -565,33 +757,33 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF38BDF8).withValues(alpha: 0.22),
-                      const Color(0xFF0077B6).withValues(alpha: 0.10),
+                      currentTheme.accentPrimary.withValues(alpha: 0.22),
+                      currentTheme.accentSecondary.withValues(alpha: 0.10),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.45),
+                    color: currentTheme.accentPrimary.withValues(alpha: 0.45),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.20),
+                      color: currentTheme.accentPrimary.withValues(alpha: 0.20),
                       blurRadius: 16,
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(LucideIcons.calendarX2, color: Color(0xFF38BDF8), size: 26),
+                child: Center(
+                  child: Icon(LucideIcons.calendarX2, color: currentTheme.accentPrimary, size: 26),
                 ),
               ),
               const SizedBox(height: 14),
               Text(
                 'admin.cal_no_classes'.tr(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: currentTheme.textPrimary,
                   fontSize: 16.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
@@ -602,7 +794,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               Text(
                 'admin.cal_no_classes_desc'.tr(args: [dateStr]),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: currentTheme.textSecondary,
                   fontSize: 12.5,
                 ),
                 textAlign: TextAlign.center,
@@ -613,7 +805,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               Text(
                 'admin.cal_quick_templates'.tr(),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: currentTheme.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -629,18 +821,21 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     iconColor: const Color(0xFFFBBF24),
                     label: '09:00',
                     time: const TimeOfDay(hour: 9, minute: 0),
+                    currentTheme: currentTheme,
                   ),
                   _buildQuickTimeChip(
                     icon: LucideIcons.sun,
                     iconColor: const Color(0xFFF59E0B),
                     label: '14:00',
                     time: const TimeOfDay(hour: 14, minute: 0),
+                    currentTheme: currentTheme,
                   ),
                   _buildQuickTimeChip(
                     icon: LucideIcons.moon,
                     iconColor: const Color(0xFF818CF8),
                     label: '18:00',
                     time: const TimeOfDay(hour: 18, minute: 0),
+                    currentTheme: currentTheme,
                   ),
                 ],
               ),
@@ -662,15 +857,15 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                      gradient: LinearGradient(
+                        colors: currentTheme.accentGradient,
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
@@ -706,6 +901,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     required Color iconColor,
     required String label,
     required TimeOfDay time,
+    required AppThemeConfig currentTheme,
   }) {
     return Material(
       color: Colors.transparent,
@@ -729,10 +925,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: currentTheme.chipBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.14),
+              color: currentTheme.chipBorder,
             ),
           ),
           child: Row(
@@ -742,8 +938,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: currentTheme.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -755,7 +951,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     );
   }
 
-  Widget _buildAdminClassCard(GroupClass c) {
+  Widget _buildAdminClassCard(GroupClass c, AppThemeConfig currentTheme) {
     final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = c.enrolledChildIds.length;
@@ -765,22 +961,15 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.08),
-            Colors.white.withValues(alpha: 0.03),
-          ],
-        ),
+        color: currentTheme.cardBg,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: currentTheme.cardBorder,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: currentTheme.cardShadow,
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -795,8 +984,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8.5, vertical: 4),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                  gradient: LinearGradient(
+                    colors: currentTheme.accentGradient,
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -814,29 +1003,29 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
+                    color: currentTheme.glassCardBg,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                    border: Border.all(color: currentTheme.cardBorder),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(LucideIcons.waves, color: Color(0xFF38BDF8), size: 11),
+                      Icon(LucideIcons.waves, color: currentTheme.accentPrimary, size: 11),
                       const SizedBox(width: 4),
                       Text(
                         c.lane,
-                        style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: currentTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
                 ),
               const Spacer(),
               PopupMenuButton<String>(
-                icon: const Icon(LucideIcons.moreHorizontal, color: Colors.white70, size: 18),
-                color: const Color(0xFF13233C),
+                icon: Icon(LucideIcons.moreHorizontal, color: currentTheme.textSecondary, size: 18),
+                color: currentTheme.dialogBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+                  side: BorderSide(color: currentTheme.dialogBorder),
                 ),
                 onSelected: (value) async {
                   if (value == 'edit') {
@@ -852,14 +1041,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
-                        backgroundColor: const Color(0xFF0F172A),
+                        backgroundColor: currentTheme.dialogBg,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        title: Text('admin.cal_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        content: Text('admin.cal_delete_confirm'.tr(args: [c.title]), style: const TextStyle(color: Colors.white70)),
+                        title: Text('admin.cal_delete_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                        content: Text('admin.cal_delete_confirm'.tr(args: [c.title]), style: TextStyle(color: currentTheme.textSecondary)),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false), 
-                            child: Text('admin.no'.tr(), style: const TextStyle(color: Colors.white54)),
+                            child: Text('admin.no'.tr(), style: TextStyle(color: currentTheme.textMuted)),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -889,12 +1078,12 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     value: 'edit',
                     child: Row(
                       children: [
-                        const Icon(LucideIcons.pencil, size: 16, color: Color(0xFF00E5FF)),
+                        Icon(LucideIcons.pencil, size: 16, color: currentTheme.accentPrimary),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Редагувати заняття',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: currentTheme.textPrimary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -919,8 +1108,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           const SizedBox(height: 6),
           Text(
             c.title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: currentTheme.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.2,
@@ -932,19 +1121,19 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           Row(
             children: [
               if (c.coachName.isNotEmpty) ...[
-                const Icon(LucideIcons.award, color: Color(0xFF00E5FF), size: 13),
+                Icon(LucideIcons.award, color: currentTheme.accentPrimary, size: 13),
                 const SizedBox(width: 4),
                 Text(
                   c.coachName,
-                  style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: currentTheme.accentPrimary, fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 14),
               ],
-              const Icon(LucideIcons.users, color: Colors.white60, size: 13),
+              Icon(LucideIcons.users, color: currentTheme.textMuted, size: 13),
               const SizedBox(width: 4),
               Text(
                 '$enrolledCount / ${c.maxCapacity} ${'admin.spots_label'.tr()}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(color: currentTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -952,9 +1141,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    backgroundColor: currentTheme.chipBg,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      progress >= 1.0 ? const Color(0xFFF43F5E) : const Color(0xFF00E5FF),
+                      progress >= 1.0 ? const Color(0xFFF43F5E) : currentTheme.accentPrimary,
                     ),
                     minHeight: 4,
                   ),

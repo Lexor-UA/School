@@ -11,6 +11,8 @@ import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'add_client_sheet.dart';
 import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
@@ -53,40 +55,41 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
   void _deleteClient(String clientId, String name) async {
     final messenger = ScaffoldMessenger.of(context);
+    final currentTheme = ref.read(appThemeControllerProvider);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0F1A2C),
+        backgroundColor: currentTheme.dialogBg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.3)),
+          side: BorderSide(color: currentTheme.statusErrorBadgeText.withValues(alpha: 0.3)),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                color: currentTheme.statusErrorBadgeBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.alertTriangle, color: Color(0xFFF43F5E), size: 20),
+              child: Icon(LucideIcons.alertTriangle, color: currentTheme.statusErrorBadgeText, size: 20),
             ),
             const SizedBox(width: 12),
-            Text('admin.clients_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            Text('admin.clients_delete_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
           'admin.clients_delete_confirm'.tr(args: [name]),
-          style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
+          style: TextStyle(color: currentTheme.textSecondary, fontSize: 13.5, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+            child: Text('admin.cancel'.tr(), style: TextStyle(color: currentTheme.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF43F5E),
+              backgroundColor: currentTheme.statusErrorBadgeText,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -151,20 +154,21 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   @override
   Widget build(BuildContext context) {
     final allSubscriptions = ref.watch(subscriptionControllerProvider);
+    final currentTheme = ref.watch(appThemeControllerProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF09182B),
+      backgroundColor: currentTheme.scaffoldBg,
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF10B981), Color(0xFF059669)],
+          gradient: LinearGradient(
+            colors: currentTheme.accentGradient,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF10B981).withValues(alpha: 0.45),
+              color: currentTheme.accentPrimary.withValues(alpha: 0.45),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -206,12 +210,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
       ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack),
       body: Stack(
         children: [
-          // 1. Full-fidelity animated water ripples and particles (like in Client screen)
+          // 1. Full-fidelity animated water ripples
           const Positioned.fill(
             child: RepaintBoundary(child: AnimatedWaterBackground()),
-          ),
-          const Positioned.fill(
-            child: RepaintBoundary(child: WaterParticles()),
           ),
 
           // 2. Fluid aquatic gradient overlay (harmonized with Client screen)
@@ -219,16 +220,17 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF00B4DB).withValues(alpha: 0.20),
-                    const Color(0xFF0284C7).withValues(alpha: 0.12),
-                    const Color(0xFF0F172A).withValues(alpha: 0.72),
-                  ],
+                  colors: currentTheme.bgGradient,
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
             ),
+          ),
+
+          // 3. Theme-tailored 3D animated water bubbles
+          const Positioned.fill(
+            child: RepaintBoundary(child: WaterParticles()),
           ),
 
           // 3. Ambient volumetric glow orbs
@@ -242,7 +244,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF00B4D8).withValues(alpha: 0.22),
+                    currentTheme.orb1Color,
                     Colors.transparent,
                   ],
                 ),
@@ -259,7 +261,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF10B981).withValues(alpha: 0.15),
+                    currentTheme.orb2Color,
                     Colors.transparent,
                   ],
                 ),
@@ -271,18 +273,18 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             child: Column(
               children: [
                 // 1. Header
-                _buildHeader(context),
+                _buildHeader(context, currentTheme),
 
                 // 2. Search Bar
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
-                  child: _buildSearchBar(),
+                  child: _buildSearchBar(currentTheme),
                 ),
 
                 // 3. Filter Chips
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: _buildFilterTabs(),
+                  child: _buildFilterTabs(currentTheme),
                 ),
 
                 // 4. Clients List
@@ -368,6 +370,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             password: password,
                             subscriptions: userSubs,
                             index: index,
+                            currentTheme: currentTheme,
                           );
                         },
                       );
@@ -382,19 +385,25 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppThemeConfig currentTheme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: currentTheme.isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.05),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : currentTheme.cardBorder,
+              ),
             ),
             child: IconButton(
-              icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
+              icon: Icon(LucideIcons.arrowLeft, color: currentTheme.textPrimary, size: 20),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -407,8 +416,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   children: [
                     Text(
                       'admin.clients_title'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: currentTheme.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.2,
@@ -418,14 +427,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        color: currentTheme.statusActiveBadgeBg,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+                        border: Border.all(color: currentTheme.accentPrimary.withValues(alpha: 0.35)),
                       ),
                       child: Text(
                         'admin.clients_parents_students'.tr(),
-                        style: const TextStyle(
-                          color: Color(0xFF10B981),
+                        style: TextStyle(
+                          color: currentTheme.statusActiveBadgeText,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -437,36 +446,48 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 Text(
                   'admin.clients_subtitle'.tr(),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: currentTheme.textSecondary,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
+          const ThemeHeaderButton(size: 38),
         ],
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppThemeConfig currentTheme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : currentTheme.cardBorder,
+        ),
+        boxShadow: currentTheme.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: TextField(
         controller: _searchController,
-        style: const TextStyle(color: Colors.white, fontSize: 13.5),
+        style: TextStyle(color: currentTheme.textPrimary, fontSize: 13.5),
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         decoration: InputDecoration(
           hintText: 'admin.clients_search_hint'.tr(),
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
-          prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 18),
+          hintStyle: TextStyle(color: currentTheme.textMuted, fontSize: 13),
+          prefixIcon: Icon(LucideIcons.search, color: currentTheme.accentPrimary, size: 18),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(LucideIcons.x, color: Colors.white54, size: 16),
+                  icon: Icon(LucideIcons.x, color: currentTheme.textSecondary, size: 16),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -480,23 +501,23 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     );
   }
 
-  Widget _buildFilterTabs() {
+  Widget _buildFilterTabs(AppThemeConfig currentTheme) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildFilterPill(0, 'admin.clients_filter_all'.tr()),
+          _buildFilterPill(0, 'admin.clients_filter_all'.tr(), currentTheme),
           const SizedBox(width: 8),
-          _buildFilterPill(1, 'admin.clients_filter_with_sub'.tr()),
+          _buildFilterPill(1, 'admin.clients_filter_with_sub'.tr(), currentTheme),
           const SizedBox(width: 8),
-          _buildFilterPill(2, 'admin.clients_filter_no_sub'.tr()),
+          _buildFilterPill(2, 'admin.clients_filter_no_sub'.tr(), currentTheme),
         ],
       ),
     );
   }
 
-  Widget _buildFilterPill(int index, String label) {
+  Widget _buildFilterPill(int index, String label, AppThemeConfig currentTheme) {
     final isSelected = _selectedFilterIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedFilterIndex = index),
@@ -506,22 +527,23 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
-                  colors: [
-                    const Color(0xFF38BDF8).withValues(alpha: 0.25),
-                    const Color(0xFF0077B6).withValues(alpha: 0.15),
-                  ],
+                  colors: currentTheme.accentGradient,
                 )
               : null,
-          color: isSelected ? null : Colors.white.withValues(alpha: 0.04),
+          color: isSelected
+              ? null
+              : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.04) : currentTheme.chipBg),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF38BDF8).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.1),
+            color: isSelected
+                ? currentTheme.accentPrimary
+                : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.1) : currentTheme.chipBorder),
             width: 1.1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                    color: currentTheme.accentPrimary.withValues(alpha: 0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -531,7 +553,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white60,
+            color: isSelected
+                ? Colors.white
+                : (currentTheme.isDark ? Colors.white60 : currentTheme.textSecondary),
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
@@ -549,6 +573,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     required String password,
     required List<dynamic> subscriptions,
     required int index,
+    required AppThemeConfig currentTheme,
   }) {
     final activeSubs = subscriptions.where((s) => s.isActive && s.remainingClasses > 0).toList();
     final bool hasActiveSubs = activeSubs.isNotEmpty;
@@ -556,39 +581,48 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.90),
-            const Color(0xFF0A1422).withValues(alpha: 0.95),
-          ],
-        ),
+        color: currentTheme.isDark
+            ? const Color(0xFF13233C).withValues(alpha: 0.90)
+            : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: hasActiveSubs
-              ? const Color(0xFF38BDF8).withValues(alpha: 0.35)
-              : const Color(0xFFF43F5E).withValues(alpha: 0.25),
+              ? currentTheme.accentPrimary.withValues(alpha: currentTheme.isDark ? 0.35 : 0.40)
+              : currentTheme.statusErrorBadgeText.withValues(alpha: currentTheme.isDark ? 0.25 : 0.35),
           width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-          if (hasActiveSubs)
-            BoxShadow(
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 2),
-            ),
-        ],
+        boxShadow: currentTheme.isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+                if (hasActiveSubs)
+                  BoxShadow(
+                    color: currentTheme.accentPrimary.withValues(alpha: 0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 2),
+                  ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+                if (hasActiveSubs)
+                  BoxShadow(
+                    color: currentTheme.accentPrimary.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Client Identity Header (Clean, spacious, no bunching)
+          // 1. Client Identity Header
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -599,19 +633,19 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: hasActiveSubs
-                        ? [const Color(0xFF10B981), const Color(0xFF059669)]
+                        ? currentTheme.actionCardGradients.first
                         : [const Color(0xFF64748B), const Color(0xFF475569)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: Colors.white.withValues(alpha: 0.35),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFF64748B)).withValues(alpha: 0.35),
+                      color: (hasActiveSubs ? currentTheme.accentPrimary : const Color(0xFF64748B)).withValues(alpha: 0.35),
                       blurRadius: 10,
                     ),
                   ],
@@ -639,8 +673,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: currentTheme.textPrimary,
                               fontSize: 16.5,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.2,
@@ -653,10 +687,10 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: (hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.15),
+                            color: hasActiveSubs ? currentTheme.statusActiveBadgeBg : currentTheme.statusErrorBadgeBg,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: (hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.4),
+                              color: (hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText).withValues(alpha: 0.4),
                               width: 0.8,
                             ),
                           ),
@@ -667,7 +701,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                 width: 5.5,
                                 height: 5.5,
                                 decoration: BoxDecoration(
-                                  color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                                  color: hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -675,7 +709,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                               Text(
                                 hasActiveSubs ? 'admin.clients_status_active'.tr() : 'admin.clients_status_unpaid'.tr(),
                                 style: TextStyle(
-                                  color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                                  color: hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText,
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.4,
@@ -687,7 +721,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                       ],
                     ),
                     const SizedBox(height: 5),
-                    // Row 2: Phone number and Age pill (wrapped with spacing so they never collide)
+                    // Row 2: Phone number and Age pill
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 8,
@@ -696,12 +730,12 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.phone, size: 12.5, color: Colors.white.withValues(alpha: 0.45)),
+                            Icon(LucideIcons.phone, size: 12.5, color: currentTheme.textMuted),
                             const SizedBox(width: 4.5),
                             Text(
                               phone,
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.75),
+                                color: currentTheme.textSecondary,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -712,19 +746,19 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                              border: Border.all(color: currentTheme.accentPrimary.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(LucideIcons.calendar, size: 10, color: Color(0xFF38BDF8)),
+                                Icon(LucideIcons.calendar, size: 10, color: currentTheme.accentPrimary),
                                 const SizedBox(width: 3),
                                 Text(
                                   '$age ${'admin.years_short'.tr()}',
-                                  style: const TextStyle(
-                                    color: Color(0xFF38BDF8),
+                                  style: TextStyle(
+                                    color: currentTheme.accentPrimary,
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -746,24 +780,24 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.25),
+              color: currentTheme.isDark ? Colors.black.withValues(alpha: 0.25) : currentTheme.chipBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.08) : currentTheme.chipBorder),
             ),
             child: Row(
               children: [
-                const Icon(LucideIcons.keyRound, color: Color(0xFF38BDF8), size: 14),
+                Icon(LucideIcons.keyRound, color: currentTheme.accentPrimary, size: 14),
                 const SizedBox(width: 8),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      style: TextStyle(fontSize: 12, color: currentTheme.textSecondary),
                       children: [
                         TextSpan(text: 'admin.clients_login_label'.tr()),
                         TextSpan(
                           text: loginId,
-                          style: const TextStyle(
-                            color: Color(0xFF38BDF8),
+                          style: TextStyle(
+                            color: currentTheme.accentPrimary,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'monospace',
                           ),
@@ -772,7 +806,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         TextSpan(
                           text: password,
                           style: const TextStyle(
-                            color: Color(0xFFF59E0B),
+                            color: Color(0xFFD97706),
                             fontWeight: FontWeight.bold,
                             fontFamily: 'monospace',
                           ),
@@ -786,15 +820,15 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                      gradient: LinearGradient(
+                        colors: currentTheme.accentGradient,
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(7),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00D2FF).withValues(alpha: 0.25),
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.25),
                           blurRadius: 5,
                         ),
                       ],
@@ -820,7 +854,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ),
           ),
 
-          // 3. Children Section (Only displayed when there are children)
+          // 3. Children Section
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('children')
@@ -840,11 +874,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.baby, size: 13.5, color: Color(0xFF38BDF8)),
+                        Icon(LucideIcons.baby, size: 13.5, color: currentTheme.accentPrimary),
                         const SizedBox(width: 5),
                         Text(
                           'admin.clients_children_count'.tr(args: [children.length.toString()]),
-                          style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: currentTheme.textSecondary, fontSize: 11.5, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -860,13 +894,13 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00B4D8).withValues(alpha: 0.12),
+                            color: currentTheme.chipBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFF00B4D8).withValues(alpha: 0.3)),
+                            border: Border.all(color: currentTheme.chipBorder),
                           ),
                           child: Text(
                             '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: currentTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         );
                       }).toList(),
@@ -879,186 +913,67 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
           const SizedBox(height: 10),
 
-          // 4. Subscriptions Section
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          // 4. Quick Subscription Status Banner
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => PaymentSheet(initialSearchQuery: name),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (hasActiveSubs ? currentTheme.statusActiveBadgeBg : currentTheme.statusErrorBadgeBg),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: (hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText).withValues(alpha: 0.3),
+                  width: 0.9,
+                ),
+              ),
+              child: Row(
                 children: [
-                  const Icon(LucideIcons.walletCards, size: 13.5, color: Color(0xFF10B981)),
-                  const SizedBox(width: 5),
-                  Text(
-                    'admin.clients_subscriptions_header'.tr(),
-                    style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.bold),
+                  Icon(
+                    hasActiveSubs ? LucideIcons.walletCards : LucideIcons.alertCircle,
+                    size: 14,
+                    color: hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      hasActiveSubs
+                          ? '${activeSubs.first.serviceName ?? "Активний абонемент"} • ${activeSubs.first.remainingClasses} з ${activeSubs.first.totalClasses} занять'
+                          : 'admin.clients_no_subs'.tr(),
+                      style: TextStyle(
+                        color: hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    LucideIcons.chevronRight,
+                    size: 13,
+                    color: hasActiveSubs ? currentTheme.statusActiveBadgeText : currentTheme.statusErrorBadgeText,
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              if (subscriptions.isEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF43F5E).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(LucideIcons.alertCircle, color: Color(0xFFFDA4AF), size: 12),
-                      const SizedBox(width: 5),
-                      Text(
-                        'admin.clients_no_subs'.tr(),
-                        style: const TextStyle(color: Color(0xFFFDA4AF), fontSize: 11, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Column(
-                  children: subscriptions.map((sub) {
-                    final isAct = sub.isActive && sub.remainingClasses > 0;
-                    final daysLeft = sub.expiryDate?.difference(DateTime.now()).inDays;
-                    final isExpiring = isAct && daysLeft != null && daysLeft <= 5;
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                      decoration: BoxDecoration(
-                        gradient: isAct
-                            ? LinearGradient(
-                                colors: [
-                                  const Color(0xFF10B981).withValues(alpha: 0.12),
-                                  const Color(0xFF00B4D8).withValues(alpha: 0.05),
-                                ],
-                              )
-                            : null,
-                        color: isAct ? null : Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isAct
-                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
-                              : Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isAct ? LucideIcons.circleCheck : LucideIcons.circleSlash,
-                            size: 14,
-                            color: isAct ? const Color(0xFF10B981) : Colors.white38,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${sub.serviceName ?? "Абонемент"} (${sub.ownerName ?? "Власник"})',
-                                  style: TextStyle(
-                                    color: isAct ? Colors.white : Colors.white60,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (sub.expiryDate != null)
-                                  Text(
-                                    'admin.clients_valid_until'.tr(args: [
-                                      DateFormat('dd.MM.yyyy').format(sub.expiryDate!),
-                                      daysLeft != null ? 'admin.clients_days_left'.tr(args: [daysLeft.toString()]) : '',
-                                    ]),
-                                    style: TextStyle(
-                                      color: isExpiring ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.45),
-                                      fontSize: 10.5,
-                                      fontWeight: isExpiring ? FontWeight.w600 : FontWeight.normal,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              gradient: isAct
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                    )
-                                  : null,
-                              color: isAct ? null : const Color(0xFFF43F5E).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(7),
-                            ),
-                            child: Text(
-                              'admin.clients_sub_progress'.tr(args: ['${sub.remainingClasses}', '${sub.totalClasses}']),
-                              style: TextStyle(
-                                color: isAct ? Colors.white : const Color(0xFFF43F5E),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-            ],
+            ),
           ),
 
           const SizedBox(height: 10),
           Container(
             height: 1,
-            color: Colors.white.withValues(alpha: 0.06),
+            color: currentTheme.dividerColor,
           ),
           const SizedBox(height: 8),
 
-          // 5. Dedicated Action Toolbar (Spacious, modern, thumb-friendly)
+          // 5. Streamlined Action Toolbar
           Row(
             children: [
-              // Buy / Issue Subscription Button
-              Expanded(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => const PaymentSheet(initialTabIndex: 2),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 14),
-                          const SizedBox(width: 6),
-                          Text(
-                            'admin.clients_tooltip_pay'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFFF59E0B),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               // Edit Client Button
               Expanded(
                 child: Material(
@@ -1081,25 +996,25 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 8.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                        color: currentTheme.accentPrimary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                           width: 1,
                         ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 13.5),
+                          Icon(LucideIcons.pencil, color: currentTheme.accentPrimary, size: 13.5),
                           const SizedBox(width: 6),
                           Text(
                             'admin.clients_tooltip_edit'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF38BDF8),
-                              fontSize: 11.5,
+                            style: TextStyle(
+                              color: currentTheme.accentPrimary,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1117,18 +1032,18 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   onTap: () => _deleteClient(clientId, name),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    width: 36,
-                    height: 34,
+                    width: 38,
+                    height: 35,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF3B30).withValues(alpha: 0.12),
+                      color: currentTheme.statusErrorBadgeBg,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFFFF3B30).withValues(alpha: 0.40),
+                        color: currentTheme.statusErrorBadgeText.withValues(alpha: 0.40),
                         width: 1,
                       ),
                     ),
-                    child: const Center(
-                      child: Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 15),
+                    child: Center(
+                      child: Icon(LucideIcons.trash2, color: currentTheme.statusErrorBadgeText, size: 15),
                     ),
                   ),
                 ),

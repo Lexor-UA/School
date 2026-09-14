@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'coach_dashboard.dart';
 import 'coach_calendar_tab.dart';
 
@@ -20,10 +21,11 @@ class _CoachMainState extends ConsumerState<CoachMain> {
   @override
   Widget build(BuildContext context) {
     final selectedTab = ref.watch(coachTabProvider);
+    final themeConfig = ref.watch(appThemeControllerProvider);
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFF09182B),
+      backgroundColor: themeConfig.scaffoldBg,
       body: SizedBox.expand(
         child: Stack(
           children: [
@@ -31,25 +33,23 @@ class _CoachMainState extends ConsumerState<CoachMain> {
             const Positioned.fill(
               child: RepaintBoundary(child: AnimatedWaterBackground()),
             ),
-            const Positioned.fill(
-              child: RepaintBoundary(child: WaterParticles()),
-            ),
 
             // 2. Frosted fluid aquatic gradient
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF00B4DB).withValues(alpha: 0.18),
-                      const Color(0xFF0284C7).withValues(alpha: 0.10),
-                      const Color(0xFF0F172A).withValues(alpha: 0.78),
-                    ],
+                    colors: themeConfig.bgGradient,
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                 ),
               ),
+            ),
+
+            // 3. Theme-tailored 3D animated water bubbles
+            const Positioned.fill(
+              child: RepaintBoundary(child: WaterParticles()),
             ),
 
             // 3. Main Tab Body
@@ -77,15 +77,18 @@ class _CoachMainState extends ConsumerState<CoachMain> {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
+                color: themeConfig.isDark
+                    ? Colors.black.withValues(alpha: 0.45)
+                    : const Color(0xFF0F172A).withValues(alpha: 0.08),
                 blurRadius: 28,
                 offset: const Offset(0, 10),
               ),
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                blurRadius: 22,
-                spreadRadius: 1,
-              ),
+              if (themeConfig.isDark)
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                  blurRadius: 22,
+                  spreadRadius: 1,
+                ),
             ],
           ),
           child: ClipRRect(
@@ -94,10 +97,14 @@ class _CoachMainState extends ConsumerState<CoachMain> {
               filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B1B30).withValues(alpha: 0.78),
+                  color: themeConfig.isDark
+                      ? const Color(0xFF0B1B30).withValues(alpha: 0.78)
+                      : Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(32),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.16),
+                    color: themeConfig.isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : themeConfig.cardBorder,
                     width: 1.2,
                   ),
                 ),
@@ -110,26 +117,28 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                       icon: LucideIcons.calendarClock,
                       label: 'coach.nav_schedule'.tr(),
                       isSelected: selectedTab == 0,
+                      themeConfig: themeConfig,
                     ),
                     _buildDockItem(
                       index: 1,
                       icon: LucideIcons.calendarDays,
                       label: 'coach.nav_calendar'.tr(),
                       isSelected: selectedTab == 1,
+                      themeConfig: themeConfig,
                     ),
                     _buildDockItem(
                       index: 2,
                       icon: LucideIcons.users,
-                      label: 'coach.nav_swimmers'.tr() == 'Учні'
-                          ? 'Плавці'
-                          : ('coach.nav_swimmers'.tr() == 'Ученики' ? 'Пловцы' : 'coach.nav_swimmers'.tr()),
+                      label: 'Групи',
                       isSelected: selectedTab == 2,
+                      themeConfig: themeConfig,
                     ),
                     _buildDockItem(
                       index: 3,
                       icon: LucideIcons.userCheck,
                       label: 'coach.nav_cabinet'.tr(),
                       isSelected: selectedTab == 3,
+                      themeConfig: themeConfig,
                     ),
                   ],
                 ),
@@ -146,6 +155,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
     required IconData icon,
     required String label,
     required bool isSelected,
+    required AppThemeConfig themeConfig,
   }) {
     return GestureDetector(
       onTap: () {
@@ -161,19 +171,23 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+              ? (themeConfig.isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+                  : themeConfig.accentPrimary.withValues(alpha: 0.12))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                ? (themeConfig.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                    : themeConfig.accentPrimary.withValues(alpha: 0.40))
                 : Colors.transparent,
             width: 1.2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : themeConfig.accentPrimary).withValues(alpha: 0.20),
                     blurRadius: 14,
                     spreadRadius: -2,
                   )
@@ -186,7 +200,9 @@ class _CoachMainState extends ConsumerState<CoachMain> {
             Icon(
               icon,
               size: 20,
-              color: isSelected ? const Color(0xFF00E5FF) : Colors.white60,
+              color: isSelected
+                  ? (themeConfig.isDark ? const Color(0xFF00E5FF) : themeConfig.accentPrimary)
+                  : (themeConfig.isDark ? Colors.white60 : themeConfig.textMuted),
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
@@ -195,8 +211,8 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     label,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: themeConfig.isDark ? Colors.white : themeConfig.accentPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       letterSpacing: 0.4,

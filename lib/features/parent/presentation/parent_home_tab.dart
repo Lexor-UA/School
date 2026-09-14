@@ -18,6 +18,7 @@ import 'package:swimming_school_app/features/schedule/controllers/schedule_contr
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -180,7 +181,9 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
                 ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
+              const ThemeHeaderButton(size: 38),
+              const SizedBox(width: 8),
               Stack(
                 children: [
                   Container(

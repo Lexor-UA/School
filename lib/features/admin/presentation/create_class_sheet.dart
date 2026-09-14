@@ -13,8 +13,16 @@ import 'widgets/apple_time_wheel_picker.dart';
 class CreateClassSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
   final GroupClass? classToEdit;
+  final String? initialCoachId;
+  final String? initialCoachName;
   
-  const CreateClassSheet({super.key, this.initialDate, this.classToEdit});
+  const CreateClassSheet({
+    super.key,
+    this.initialDate,
+    this.classToEdit,
+    this.initialCoachId,
+    this.initialCoachName,
+  });
 
   @override
   ConsumerState<CreateClassSheet> createState() => _CreateClassSheetState();
@@ -27,8 +35,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   TimeOfDay _selectedTime = const TimeOfDay(hour: 16, minute: 0);
   
   int _maxCapacity = 8;
+  String _selectedPoolType = 'Спортивний басейн';
   String _selectedLane = 'Доріжка 1';
-  final List<String> _lanes = ['Доріжка 1', 'Доріжка 2', 'Доріжка 3', 'Басейн', 'Дитячий басейн'];
+  final List<String> _sportLanes = ['Доріжка 1', 'Доріжка 2', 'Доріжка 3', 'Доріжка 4', 'Весь басейн'];
 
   AppUser? _selectedCoach;
 
@@ -39,21 +48,36 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
 
   bool get _isEditing => widget.classToEdit != null;
 
-  String _getLaneLabel(String lane) {
-    switch (lane) {
-      case 'Доріжка 1':
-        return 'admin.lane_1'.tr();
-      case 'Доріжка 2':
-        return 'admin.lane_2'.tr();
-      case 'Доріжка 3':
-        return 'admin.lane_3'.tr();
-      case 'Басейн':
-        return 'admin.lane_pool'.tr();
-      case 'Дитячий басейн':
-        return 'admin.lane_kids_pool'.tr();
-      default:
-        return lane;
+  // Recurring schedule settings (regular group by default)
+  bool _isRecurring = true;
+  late Set<int> _selectedWeekdays;
+  int _durationWeeks = 52; // Default: 1 year (52 weeks)
+
+  int get _calculatedRecurringCount {
+    int count = 0;
+    final totalDays = _durationWeeks * 7;
+    final base = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    for (int i = 0; i < totalDays; i++) {
+      final d = base.add(Duration(days: i));
+      if (_selectedWeekdays.contains(d.weekday)) {
+        count++;
+      }
     }
+    return count;
+  }
+
+  String _getWeekdaysNamesSummary() {
+    final Map<int, String> names = {
+      1: 'понеділках',
+      2: 'вівторках',
+      3: 'середах',
+      4: 'четвергах',
+      5: 'п\'ятницях',
+      6: 'суботах',
+      7: 'неділях',
+    };
+    final sorted = _selectedWeekdays.toList()..sort();
+    return sorted.map((w) => names[w] ?? '').where((s) => s.isNotEmpty).join(', ');
   }
 
   String _getCategoryLabel(String cat) {
@@ -79,13 +103,23 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       _selectedTime = TimeOfDay(hour: c.startTime.hour, minute: c.startTime.minute);
       _maxCapacity = c.maxCapacity;
       _selectedCategory = c.category;
-      _selectedLane = c.lane.isNotEmpty ? c.lane : 'Доріжка 1';
+      if (c.lane == 'Дитячий басейн') {
+        _selectedPoolType = 'Дитячий басейн';
+        _selectedLane = 'Дитячий басейн';
+      } else {
+        _selectedPoolType = 'Спортивний басейн';
+        _selectedLane = c.lane.isNotEmpty ? c.lane : 'Доріжка 1';
+      }
+      _selectedWeekdays = {c.startTime.weekday};
     } else {
       _titleController = TextEditingController(text: 'Junior Pro');
       _selectedDate = widget.initialDate ?? DateTime.now();
       if (widget.initialDate != null) {
         _selectedTime = TimeOfDay(hour: widget.initialDate!.hour, minute: widget.initialDate!.minute);
       }
+      _selectedPoolType = 'Спортивний басейн';
+      _selectedLane = 'Доріжка 1';
+      _selectedWeekdays = {_selectedDate.weekday};
     }
   }
 
@@ -119,7 +153,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       },
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _selectedWeekdays.add(picked.weekday);
+      });
     }
   }
 
@@ -157,6 +194,54 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         if (admin != null) {
           final timeFmt = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
           await logAdminAction('Оновлено заняття "${_titleController.text.trim()}" на $timeFmt', admin.id);
+        }
+      }
+    } else if (_isRecurring) {
+      if (_selectedWeekdays.isEmpty) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Оберіть хоча б один день тижня')),
+        );
+        return;
+      }
+      final createdCount = await ref.read(scheduleControllerProvider.notifier).createRecurringClasses(
+        title: _titleController.text.trim(),
+        startDate: _selectedDate,
+        hour: _selectedTime.hour,
+        minute: _selectedTime.minute,
+        durationMinutes: 60,
+        weekdays: _selectedWeekdays,
+        durationWeeks: _durationWeeks,
+        coachId: _selectedCoach!.id,
+        coachName: _selectedCoach!.name,
+        maxCapacity: _maxCapacity,
+        category: _selectedCategory,
+        lane: _selectedLane,
+      );
+
+      success = createdCount > 0;
+      if (success) {
+        final admin = ref.read(authControllerProvider);
+        if (admin != null) {
+          await logAdminAction('Створено регулярну групу "${_titleController.text.trim()}" на $_durationWeeks тиж. ($createdCount занять)', admin.id);
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Групу "${_titleController.text.trim()}" успішно створено! Згенеровано $createdCount занять у розкладі.'),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF00B4D8),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          );
         }
       }
     } else {
@@ -273,7 +358,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         ),
                         child: Center(
                           child: Icon(
-                            _isEditing ? LucideIcons.pencil : LucideIcons.calendarPlus,
+                            _isEditing
+                                ? LucideIcons.pencil
+                                : (_isRecurring ? LucideIcons.users : LucideIcons.calendarPlus),
                             color: Colors.white,
                             size: 21,
                           ),
@@ -285,7 +372,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _isEditing ? 'Редагувати заняття' : 'admin.class_create_title'.tr(),
+                              _isEditing
+                                  ? 'Редагувати заняття'
+                                  : (_isRecurring
+                                      ? 'admin.group_create_title'.tr()
+                                      : 'admin.class_single_title'.tr()),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
@@ -295,7 +386,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _isEditing ? 'Зміна часу та параметрів тренування' : 'admin.class_create_subtitle'.tr(),
+                              _isEditing
+                                  ? 'Зміна часу та параметрів тренування'
+                                  : (_isRecurring
+                                      ? 'admin.group_create_subtitle'.tr()
+                                      : 'admin.class_single_subtitle'.tr()),
                               style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
@@ -324,12 +419,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 22),
 
-                  // Title input
-                  _buildLabel('admin.class_name'.tr()),
+                  // Title input (Group Name vs Class Title)
+                  _buildLabel(_isRecurring ? 'admin.group_name'.tr() : 'admin.class_name'.tr()),
                   TextField(
                     controller: _titleController,
                     style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                    decoration: _inputDecoration(hint: 'admin.class_name_hint'.tr()),
+                    decoration: _inputDecoration(
+                      hint: _isRecurring ? 'admin.group_name_hint'.tr() : 'admin.class_name_hint'.tr(),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -373,6 +470,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                           orElse: () => coachesList.first,
                                         );
                                         setState(() => _selectedCoach = target);
+                                      } else if (widget.initialCoachId != null || widget.initialCoachName != null) {
+                                        final target = coachesList.firstWhere(
+                                          (c) => (widget.initialCoachId != null && c.id == widget.initialCoachId) ||
+                                                 (widget.initialCoachName != null && c.name.toLowerCase() == widget.initialCoachName!.toLowerCase()),
+                                          orElse: () => coachesList.first,
+                                        );
+                                        setState(() => _selectedCoach = target);
                                       } else {
                                         setState(() => _selectedCoach = coachesList.first);
                                       }
@@ -398,8 +502,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 16),
 
+                  // Schedule Mode Selector (Single vs Recurring Year-long)
+                  if (!_isEditing) ...[
+                    _buildModeSelector(),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Date Picker Card
-                  _buildLabel('admin.class_date'.tr()),
+                  _buildLabel(_isRecurring ? 'Дата першого тренування (старт)' : 'admin.class_date'.tr()),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -434,6 +544,16 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       ),
                     ),
                   ),
+
+                  // Recurring Options: Weekdays, Duration, Preview Banner
+                  if (_isRecurring && !_isEditing) ...[
+                    const SizedBox(height: 16),
+                    _buildWeekdaysSelector(),
+                    const SizedBox(height: 16),
+                    _buildDurationSelector(),
+                    const SizedBox(height: 16),
+                    _buildRecurringBanner(),
+                  ],
                   const SizedBox(height: 16),
 
                   // Apple Alarm-style Time Drum Wheel Picker
@@ -445,69 +565,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Lane selection chips
-                  _buildLabel('admin.class_lane_place'.tr()),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _lanes.map((lane) {
-                        final isSelected = _selectedLane == lane;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => setState(() => _selectedLane = lane),
-                              borderRadius: BorderRadius.circular(20),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8.5),
-                                decoration: BoxDecoration(
-                                  gradient: isSelected
-                                      ? const LinearGradient(
-                                          colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
-                                        )
-                                      : null,
-                                  color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color(0xFF00E5FF)
-                                        : Colors.white.withValues(alpha: 0.16),
-                                    width: 1,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Text(
-                                  _getLaneLabel(lane),
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.white70,
-                                    fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+                  // Pool & Lane selection (Sport pool with lanes vs Kids pool)
+                  _buildPoolAndLaneSelector(),
                   const SizedBox(height: 16),
 
                   // Capacity Slider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildLabel('admin.class_students_limit'.tr()),
+                      _buildLabel(_isRecurring ? 'Місткість групи (кількість учнів)' : 'admin.class_students_limit'.tr()),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
@@ -575,14 +641,28 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         borderRadius: BorderRadius.circular(16),
                         child: Center(
                           child: _isSaving
-                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2))
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2)),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _isRecurring ? 'Створення групи та $_calculatedRecurringCount занять...' : 'Збереження...',
+                                      style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                )
                               : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(_isEditing ? LucideIcons.check : LucideIcons.sparkles, color: Colors.white, size: 18),
+                                    Icon(_isEditing ? LucideIcons.check : (_isRecurring ? LucideIcons.users : LucideIcons.sparkles), color: Colors.white, size: 18),
                                     const SizedBox(width: 8),
                                     Text(
-                                      _isEditing ? 'Зберегти зміни' : 'admin.class_create_btn'.tr(),
+                                      _isEditing
+                                          ? 'Зберегти зміни'
+                                          : (_isRecurring
+                                              ? 'Створити групу ($_calculatedRecurringCount занять)'
+                                              : 'admin.class_create_btn'.tr()),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 15.5,
@@ -679,6 +759,676 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           onChanged: onChanged,
         ),
       ),
+    );
+  }
+
+  Widget _buildModeSelector() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        children: [
+          // 1. Regular Group (Primary default)
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _isRecurring = true),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: _isRecurring
+                      ? const LinearGradient(
+                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        )
+                      : null,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _isRecurring
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.users,
+                      size: 15,
+                      color: _isRecurring ? Colors.white : const Color(0xFF00E5FF),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '👥 Постійна група',
+                      style: TextStyle(
+                        color: _isRecurring ? Colors.white : Colors.white,
+                        fontSize: 13,
+                        fontWeight: _isRecurring ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 2. Single Class (Alternative option)
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _isRecurring = false),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: !_isRecurring
+                      ? const LinearGradient(
+                          colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                        )
+                      : null,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: !_isRecurring
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.calendar,
+                      size: 15,
+                      color: !_isRecurring ? Colors.white : Colors.white60,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '⏱ Разове заняття',
+                      style: TextStyle(
+                        color: !_isRecurring ? Colors.white : Colors.white70,
+                        fontSize: 13,
+                        fontWeight: !_isRecurring ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeekdaysSelector() {
+    final days = [
+      {'id': 1, 'label': 'Пн'},
+      {'id': 2, 'label': 'Вт'},
+      {'id': 3, 'label': 'Ср'},
+      {'id': 4, 'label': 'Чт'},
+      {'id': 5, 'label': 'Пт'},
+      {'id': 6, 'label': 'Сб'},
+      {'id': 7, 'label': 'Нд'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildLabel('Дні тижня для регулярної групи'),
+            Text(
+              'Обрано: ${_selectedWeekdays.length}',
+              style: const TextStyle(
+                color: Color(0xFF00E5FF),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: days.map((d) {
+            final id = d['id'] as int;
+            final label = d['label'] as String;
+            final isSelected = _selectedWeekdays.contains(id);
+
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        if (_selectedWeekdays.length > 1) {
+                          _selectedWeekdays.remove(id);
+                        }
+                      } else {
+                        _selectedWeekdays.add(id);
+                      }
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                            )
+                          : null,
+                      color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF00E5FF)
+                            : Colors.white.withValues(alpha: 0.16),
+                        width: isSelected ? 1.2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.white70,
+                          fontSize: 13.5,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  String _getDurationPeriodSummary() {
+    switch (_durationWeeks) {
+      case 52:
+        return 'рік (52 тиж.)';
+      case 26:
+        return 'пів року (26 тиж.)';
+      case 13:
+        return '3 місяці (13 тиж.)';
+      case 4:
+        return '1 місяць (4 тиж.)';
+      default:
+        return '$_durationWeeks тиж.';
+    }
+  }
+
+  Widget _buildDurationSelector() {
+    final durations = [
+      {'weeks': 52, 'title': 'Рік', 'sub': '52 тиж.'},
+      {'weeks': 26, 'title': 'Пів року', 'sub': '26 тиж.'},
+      {'weeks': 13, 'title': '3 місяці', 'sub': '13 тиж.'},
+      {'weeks': 4, 'title': '1 місяць', 'sub': '4 тиж.'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('Період розкладу'),
+        const SizedBox(height: 6),
+        Row(
+          children: durations.map((dur) {
+            final w = dur['weeks'] as int;
+            final title = dur['title'] as String;
+            final sub = dur['sub'] as String;
+            final isSelected = _durationWeeks == w;
+
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: GestureDetector(
+                  onTap: () => setState(() => _durationWeeks = w),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            )
+                          : null,
+                      color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF00E5FF)
+                            : Colors.white.withValues(alpha: 0.16),
+                        width: isSelected ? 1.2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          sub,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white.withValues(alpha: 0.92) : Colors.white38,
+                            fontSize: 10,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecurringBanner() {
+    final count = _calculatedRecurringCount;
+    final timeStr = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+    final weekdaysSummary = _getWeekdaysNamesSummary();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00E5FF).withValues(alpha: 0.16),
+            const Color(0xFF0284C7).withValues(alpha: 0.10),
+            const Color(0xFF0F172A).withValues(alpha: 0.60),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+            blurRadius: 16,
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: const Icon(LucideIcons.users, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Розклад постійної групи',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.5)),
+                      ),
+                      child: Text(
+                        '$count занять',
+                        style: const TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Група займатиметься щотижня по $weekdaysSummary о $timeStr на «$_selectedLane». Буде автоматично згенеровано $count занять на ${_getDurationPeriodSummary()}.',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPoolAndLaneSelector() {
+    final isSport = _selectedPoolType == 'Спортивний басейн';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('Басейн та місце проведення'),
+        const SizedBox(height: 2),
+
+        // 1. Primary Pool Type Selector (Дитячий vs Спортивний)
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.14),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Спортивний басейн
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedPoolType = 'Спортивний басейн';
+                      if (_selectedLane == 'Дитячий басейн') {
+                        _selectedLane = 'Доріжка 1';
+                      }
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: isSport
+                          ? const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: isSport
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.waves,
+                          size: 16,
+                          color: isSport ? Colors.white : const Color(0xFF00E5FF),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Спортивний',
+                          style: TextStyle(
+                            color: isSport ? Colors.white : Colors.white70,
+                            fontSize: 13,
+                            fontWeight: isSport ? FontWeight.w800 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Дитячий басейн
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedPoolType = 'Дитячий басейн';
+                      _selectedLane = 'Дитячий басейн';
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: !isSport
+                          ? const LinearGradient(
+                              colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: !isSport
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF38BDF8).withValues(alpha: 0.40),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.baby,
+                          size: 16,
+                          color: !isSport ? Colors.white : Colors.amberAccent,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Дитячий басейн',
+                          style: TextStyle(
+                            color: !isSport ? Colors.white : Colors.white70,
+                            fontSize: 13,
+                            fontWeight: !isSport ? FontWeight.w800 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 2. Sub-section: Lanes for Спортивний басейн OR Info Card for Дитячий басейн
+        if (isSport) ...[
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Оберіть доріжку:',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.70),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _selectedLane,
+                  style: const TextStyle(
+                    color: Color(0xFF00E5FF),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _sportLanes.map((lane) {
+                final isSelected = _selectedLane == lane;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedLane = lane),
+                      borderRadius: BorderRadius.circular(20),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8.5),
+                        decoration: BoxDecoration(
+                          gradient: isSelected
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                                )
+                              : null,
+                          color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF00E5FF)
+                                : Colors.white.withValues(alpha: 0.16),
+                            width: 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isSelected) ...[
+                              const Icon(LucideIcons.check, size: 13, color: Colors.white),
+                              const SizedBox(width: 5),
+                            ],
+                            Text(
+                              lane,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.white70,
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.sparkles, color: Color(0xFF38BDF8), size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Дитячий басейн без поділу на доріжки (мала глибина для дітей)',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

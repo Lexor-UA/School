@@ -448,6 +448,38 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   void _deleteSubscription(Subscription sub) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+        ),
+        title: const Text('Видалити абонемент?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Ви дійсно бажаєте видалити абонемент "${sub.serviceName ?? 'Абонемент'}" для ${sub.ownerName ?? widget.initialName}?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF43F5E),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('admin.delete'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).delete();
       
@@ -787,39 +819,66 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     final isActive = sub.isActive;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isActive ? Colors.greenAccent.withValues(alpha: 0.3) : Colors.redAccent.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isActive
+                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                              : const Color(0xFFF43F5E).withValues(alpha: 0.35),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Text(
-                                  sub.serviceName ?? 'admin.cat_subscriptions'.tr(),
-                                  style: TextStyle(color: isActive ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      sub.serviceName ?? 'admin.cat_subscriptions'.tr(),
+                                      style: TextStyle(
+                                        color: isActive ? Colors.white : Colors.white70,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'Для: ${sub.ownerName ?? 'Не вказано'}',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.65),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: isActive ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.redAccent.withValues(alpha: 0.2),
+                                  color: (isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: (isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.4),
+                                  ),
                                 ),
                                 child: Text(
                                   isActive ? 'admin.clients_status_active'.tr() : 'admin.clients_status_unpaid'.tr(),
-                                  style: TextStyle(color: isActive ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Text('Для: ${sub.ownerName ?? 'Не вказано'}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                           
                           if (sub.expiryDate != null && sub.isActive)
                             Builder(
@@ -830,7 +889,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(
                                       '⚠️ Закінчується через $daysLeft ${daysLeft == 1 ? 'день' : 'днів'}',
-                                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold),
                                     ),
                                   );
                                 }
@@ -840,32 +899,68 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             
                           const SizedBox(height: 12),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('${'parent.sub_left'.tr(args: ['${sub.remainingClasses}'])} (${sub.totalClasses})', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(LucideIcons.minusCircle, color: Colors.orangeAccent),
-                                    onPressed: () => _updateSubscriptionClasses(sub, -1),
-                                    tooltip: 'Відняти 1 заняття',
+                              Expanded(
+                                child: Text(
+                                  '${'parent.sub_left'.tr(args: ['${sub.remainingClasses}'])} (${sub.totalClasses})',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  IconButton(
-                                    icon: const Icon(LucideIcons.plusCircle, color: Colors.cyanAccent),
-                                    onPressed: () => _updateSubscriptionClasses(sub, 1),
-                                    tooltip: 'Додати 1 заняття',
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(LucideIcons.refreshCw, color: Colors.yellowAccent),
-                                    onPressed: () => _updateSubscriptionClasses(sub, -sub.remainingClasses),
-                                    tooltip: 'Обнулити абонемент',
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
-                                    onPressed: () => _deleteSubscription(sub),
-                                    tooltip: 'admin.delete'.tr(),
-                                  ),
-                                ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                                      icon: const Icon(LucideIcons.minusCircle, color: Color(0xFFF59E0B), size: 18),
+                                      onPressed: () => _updateSubscriptionClasses(sub, -1),
+                                      tooltip: 'Відняти 1 заняття',
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                                      icon: const Icon(LucideIcons.plusCircle, color: Color(0xFF38BDF8), size: 18),
+                                      onPressed: () => _updateSubscriptionClasses(sub, 1),
+                                      tooltip: 'Додати 1 заняття',
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                                      icon: const Icon(LucideIcons.refreshCw, color: Color(0xFFFACC15), size: 16),
+                                      onPressed: () => _updateSubscriptionClasses(sub, -sub.remainingClasses),
+                                      tooltip: 'Обнулити абонемент',
+                                    ),
+                                    Container(
+                                      height: 16,
+                                      width: 1,
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFF43F5E), size: 16),
+                                      onPressed: () => _deleteSubscription(sub),
+                                      tooltip: 'admin.delete'.tr(),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

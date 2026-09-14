@@ -8,6 +8,8 @@ import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
 class OwnerMain extends ConsumerStatefulWidget {
   const OwnerMain({super.key});
@@ -31,8 +33,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
   @override
   Widget build(BuildContext context) {
+    final themeConfig = ref.watch(appThemeControllerProvider);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF030D1B),
+      backgroundColor: themeConfig.scaffoldBg,
       body: Stack(
         children: [
           const AnimatedWaterBackground(),
@@ -48,18 +52,28 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     delegate: SliverChildListDelegate([
                       Text(
                         'owner.business_overview'.tr(),
-                        style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
+                        style: TextStyle(
+                          color: themeConfig.isDark ? Colors.white70 : themeConfig.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
                       ).animate().fadeIn().slideX(begin: -0.1),
                       const SizedBox(height: 8),
                       Text(
                         'owner.financial_metrics'.tr(),
-                        style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        style: TextStyle(
+                          color: themeConfig.textPrimary,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
                       ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
                       
                       const SizedBox(height: 32),
                       
                       // Hero Metric
-                      _buildHeroMetricCard().animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+                      _buildHeroMetricCard(themeConfig).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
                       
                       const SizedBox(height: 24),
                       
@@ -71,15 +85,15 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           children: [
                             _buildQuickAction(LucideIcons.barChart2, 'owner.reports'.tr(), Colors.blueAccent, 250, () {
                               context.go('/owner/reports');
-                            }),
+                            }, themeConfig),
                             const SizedBox(width: 12),
                             _buildQuickAction(LucideIcons.users, 'owner.staff'.tr(), Colors.cyanAccent, 300, () {
                               context.go('/owner/staff');
-                            }),
+                            }, themeConfig),
                             const SizedBox(width: 12),
                             _buildQuickAction(LucideIcons.banknote, 'owner.payouts'.tr(), Colors.pinkAccent, 350, () {
                               context.go('/owner/payouts');
-                            }),
+                            }, themeConfig),
                           ],
                         ),
                       ).animate().fadeIn(delay: 250.ms).slideX(begin: 0.1),
@@ -89,16 +103,16 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       // KPI Grid
                       Row(
                         children: [
-                          Expanded(child: _buildGlassMetricCard(LucideIcons.users, '412', 'owner.clients'.tr(), Colors.cyanAccent, 300)),
+                          Expanded(child: _buildGlassMetricCard(LucideIcons.users, '412', 'owner.clients'.tr(), Colors.cyanAccent, 300, themeConfig)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildGlassMetricCard(LucideIcons.calendarCheck, '84%', 'owner.occupancy'.tr(), Colors.orangeAccent, 400)),
+                          Expanded(child: _buildGlassMetricCard(LucideIcons.calendarCheck, '84%', 'owner.occupancy'.tr(), Colors.orangeAccent, 400, themeConfig)),
                         ],
                       ),
                       
                       const SizedBox(height: 32),
                       
                       // Glowing Chart
-                      _buildGlowingChart().animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
+                      _buildGlowingChart(themeConfig).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
                       
                       const SizedBox(height: 32),
                       
@@ -107,13 +121,18 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         padding: const EdgeInsets.only(left: 2),
                         child: Text(
                           'owner.live_status'.tr(),
-                          style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2),
+                          style: TextStyle(
+                            color: themeConfig.isDark ? Colors.white70 : themeConfig.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
                         ),
                       ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 16),
-                      _buildActivityItem(LucideIcons.arrowDownCircle, 'owner.new_payment'.tr(), '+ ₴ 2,400', Colors.greenAccent, 700),
-                      _buildActivityItem(LucideIcons.userPlus, 'owner.new_client'.tr(), 'owner.today_time'.tr(), Colors.cyanAccent, 800),
-                      _buildActivityItem(LucideIcons.wallet, 'owner.salary_payout'.tr(), '- ₴ 12,000', Colors.pinkAccent, 900),
+                      _buildActivityItem(LucideIcons.arrowDownCircle, 'owner.new_payment'.tr(), '+ ₴ 2,400', Colors.greenAccent, 700, themeConfig),
+                      _buildActivityItem(LucideIcons.userPlus, 'owner.new_client'.tr(), 'owner.today_time'.tr(), Colors.cyanAccent, 800, themeConfig),
+                      _buildActivityItem(LucideIcons.wallet, 'owner.salary_payout'.tr(), '- ₴ 12,000', Colors.pinkAccent, 900, themeConfig),
                       
                       const SizedBox(height: 40),
                     ]),
@@ -129,6 +148,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
+    final themeConfig = ref.watch(appThemeControllerProvider);
+
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -141,7 +162,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15)],
+                      boxShadow: [BoxShadow(color: themeConfig.accentPrimary.withValues(alpha: 0.3), blurRadius: 15)],
                     ),
                     child: const AvatarPicker(
                       heroTag: 'hero_avatar_Власникам',
@@ -155,22 +176,29 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       children: [
                         Text(
                           '${'owner.hello'.tr()}, ${user?.name ?? "Власник"}',
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: themeConfig.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const Text('CitySwim CEO', style: TextStyle(color: Colors.cyanAccent, fontSize: 13, letterSpacing: 1)),
+                        Text('CitySwim CEO', style: TextStyle(color: themeConfig.accentPrimary, fontSize: 13, letterSpacing: 1)),
                       ],
                     ),
                   ),
                 ],
               ).animate().fadeIn(),
             ),
-            IconButton(
-              icon: const Icon(LucideIcons.logOut, color: Colors.white70),
-              onPressed: () {
-                ref.read(authControllerProvider.notifier).logout();
-                context.go('/');
-              },
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ThemeHeaderButton(size: 38),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(LucideIcons.logOut, color: themeConfig.textSecondary),
+                  onPressed: () {
+                    ref.read(authControllerProvider.notifier).logout();
+                    context.go('/');
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -178,75 +206,128 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     );
   }
 
-  Widget _buildHeroMetricCard() {
+  Widget _buildHeroMetricCard(AppThemeConfig themeConfig) {
+    final isDark = themeConfig.isDark;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.withValues(alpha: 0.2), Colors.cyanAccent.withValues(alpha: 0.05)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? null : Colors.white,
+        gradient: isDark
+            ? LinearGradient(
+                colors: [Colors.blue.withValues(alpha: 0.2), Colors.cyanAccent.withValues(alpha: 0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: isDark ? Colors.cyanAccent.withValues(alpha: 0.3) : themeConfig.cardBorder,
+          width: 1.1,
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.1), blurRadius: 30, spreadRadius: -5),
+          BoxShadow(
+            color: isDark
+                ? Colors.cyanAccent.withValues(alpha: 0.1)
+                : const Color(0xFF0F172A).withValues(alpha: 0.05),
+            blurRadius: 30,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: isDark ? null : Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.trendingUp, color: isDark ? Colors.greenAccent : const Color(0xFF059669), size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '+12.5%',
+                      style: TextStyle(
+                        color: isDark ? Colors.greenAccent : const Color(0xFF059669),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(LucideIcons.trendingUp, color: Colors.greenAccent, size: 16),
-                        const SizedBox(width: 4),
-                        const Text('+12.5%', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                  const Icon(LucideIcons.wallet, color: Colors.white54),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-              Text('owner.total_revenue'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('₴ 124,500', style: TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold, letterSpacing: -1)),
+              Icon(LucideIcons.wallet, color: isDark ? Colors.white54 : themeConfig.accentPrimary),
             ],
           ),
+          const SizedBox(height: 24),
+          Text(
+            'owner.total_revenue'.tr(),
+            style: TextStyle(
+              color: isDark ? Colors.white70 : themeConfig.textSecondary,
+              fontSize: 12,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '₴ 124,500',
+            style: TextStyle(
+              color: themeConfig.textPrimary,
+              fontSize: 42,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildGlassMetricCard(IconData icon, String value, String label, Color accentColor, int delay) {
+  Widget _buildGlassMetricCard(IconData icon, String value, String label, Color accentColor, int delay, AppThemeConfig themeConfig) {
+    final isDark = themeConfig.isDark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : themeConfig.cardBorder,
+          width: 1.1,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: accentColor, size: 28),
-              const SizedBox(height: 16),
-              Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(label, style: const TextStyle(color: Colors.white54, fontSize: 14)),
-            ],
-          ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accentColor, size: 28),
+          const SizedBox(height: 16),
+          Text(value, style: TextStyle(color: themeConfig.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(color: isDark ? Colors.white54 : themeConfig.textSecondary, fontSize: 14)),
+        ],
+      ),
     ).animate().fadeIn(delay: delay.ms).slideY(begin: 0.1);
   }
 
-  Widget _buildActivityItem(IconData icon, String title, String subtitle, Color color, int delay) {
+  Widget _buildActivityItem(IconData icon, String title, String subtitle, Color color, int delay, AppThemeConfig themeConfig) {
+    final isDark = themeConfig.isDark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -258,9 +339,21 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
+            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : themeConfig.cardBorder,
+              width: 1.1,
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Row(
             children: [
@@ -279,7 +372,14 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(left: 2),
-                      child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: themeConfig.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Padding(
@@ -296,7 +396,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     ).animate().fadeIn(delay: delay.ms).slideX(begin: 0.1);
   }
 
-  Widget _buildQuickAction(IconData icon, String label, Color color, int delay, VoidCallback onTap) {
+  Widget _buildQuickAction(IconData icon, String label, Color color, int delay, VoidCallback onTap, AppThemeConfig themeConfig) {
+    final isDark = themeConfig.isDark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -305,15 +407,33 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
+            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : themeConfig.cardBorder,
+              width: 1.1,
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Row(
             children: [
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 12),
-              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: themeConfig.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -321,18 +441,35 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     );
   }
 
-  Widget _buildGlowingChart() {
+  Widget _buildGlowingChart(AppThemeConfig themeConfig) {
+    final isDark = themeConfig.isDark;
+
     return Container(
       height: 260,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.withValues(alpha: 0.1), Colors.transparent],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+        color: isDark ? null : Colors.white,
+        gradient: isDark
+            ? LinearGradient(
+                colors: [Colors.blue.withValues(alpha: 0.1), Colors.transparent],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              )
+            : null,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : themeConfig.cardBorder,
+          width: 1.1,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,7 +480,16 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 2),
-                  child: Text('owner.profit_dynamics'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    'owner.profit_dynamics'.tr(),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : themeConfig.textSecondary,
+                      fontSize: 12,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -363,14 +509,22 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       margin: const EdgeInsets.only(left: 4),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.2) : Colors.transparent,
+                        color: isSelected
+                            ? (isDark ? Colors.cyanAccent.withValues(alpha: 0.2) : themeConfig.accentPrimary.withValues(alpha: 0.12))
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSelected ? Colors.cyanAccent : Colors.transparent),
+                        border: Border.all(
+                          color: isSelected
+                              ? (isDark ? Colors.cyanAccent : themeConfig.accentPrimary)
+                              : Colors.transparent,
+                        ),
                       ),
                       child: Text(
                         periodLabel,
                         style: TextStyle(
-                          color: isSelected ? Colors.cyanAccent : Colors.white54,
+                          color: isSelected
+                              ? (isDark ? Colors.cyanAccent : themeConfig.accentPrimary)
+                              : (isDark ? Colors.white54 : themeConfig.textMuted),
                           fontSize: 11,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),

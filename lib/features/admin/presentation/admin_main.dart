@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -23,6 +24,8 @@ import 'admin_coaches_screen.dart';
 import 'admin_global_search_sheet.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/admin/models/activity_log.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
 class AdminMain extends ConsumerStatefulWidget {
   const AdminMain({super.key});
@@ -36,34 +39,33 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   Widget build(BuildContext context) {
     final dashboardState = ref.watch(adminDashboardProvider);
     final unreadCount = ref.watch(unreadAdminChatBadgeProvider);
+    final currentTheme = ref.watch(appThemeControllerProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF09182B), // Rich Deep Ocean Slate
+      backgroundColor: currentTheme.scaffoldBg,
       body: Stack(
         children: [
-          // 1. Full-fidelity animated water ripples and particles (like in Client screen)
+          // 1. Full-fidelity animated water ripples
           const Positioned.fill(
             child: RepaintBoundary(child: AnimatedWaterBackground()),
           ),
-          const Positioned.fill(
-            child: RepaintBoundary(child: WaterParticles()),
-          ),
 
-          // 2. Fluid aquatic gradient overlay (seamlessly harmonized with Parent screen)
+          // 2. Fluid aquatic gradient overlay harmonized with active theme
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF00B4DB).withValues(alpha: 0.20), // Fresh cyan aqua top
-                    const Color(0xFF0284C7).withValues(alpha: 0.12), // Cerulean
-                    const Color(0xFF0F172A).withValues(alpha: 0.72), // Smooth eye-friendly slate base
-                  ],
+                  colors: currentTheme.bgGradient,
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
             ),
+          ),
+
+          // 3. Theme-tailored 3D animated water bubbles
+          const Positioned.fill(
+            child: RepaintBoundary(child: WaterParticles()),
           ),
 
           // 3. Ambient volumetric glow orbs for soft, eye-friendly depth
@@ -77,7 +79,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF38BDF8).withValues(alpha: 0.22),
+                    currentTheme.orb1Color,
                     Colors.transparent,
                   ],
                 ),
@@ -94,7 +96,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF00B4D8).withValues(alpha: 0.18),
+                    currentTheme.orb2Color,
                     Colors.transparent,
                   ],
                 ),
@@ -111,7 +113,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF818CF8).withValues(alpha: 0.14),
+                    currentTheme.orb3Color,
                     Colors.transparent,
                   ],
                 ),
@@ -137,11 +139,18 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   padding: const EdgeInsets.all(24.0),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      // 1. Live Status Telemetry Bar (Ізюминка адмінки: витончений статус-бар)
-                      _buildLivePulseBar(dashboardState).animate().fadeIn(delay: 200.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 18),
+                      // 1. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок під пошуком)
+                      _buildSectionTitle(
+                        'admin.quick_actions'.tr(),
+                        LucideIcons.zap,
+                        currentTheme.accentPrimary,
+                        gradientColors: currentTheme.accentGradient,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildQuickActions(context).animate().fadeIn(delay: 150.ms).slideY(begin: 0.06),
+                      const SizedBox(height: 24),
 
-                      // 2. Неоплачені абонементи (якщо є)
+                      // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
                       if (dashboardState.unpaidSubscriptions > 0) ...[
                         _buildSectionTitle(
                           'Потребує уваги',
@@ -152,37 +161,30 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           badgeColor: const Color(0xFFF43F5E),
                         ),
                         const SizedBox(height: 12),
-                        _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions).animate().fadeIn(delay: 250.ms).slideY(begin: 0.06),
+                        _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions).animate().fadeIn(delay: 220.ms).slideY(begin: 0.06),
                         const SizedBox(height: 24),
                       ],
 
-                      // 3. Центр підтримки клієнтів (без дублювання заголовка)
-                      _buildSupportCenterCard(unreadCount).animate().fadeIn(delay: 300.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 22),
+                      // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
+                      _buildLivePulseBar(dashboardState).animate().fadeIn(delay: 300.ms).slideY(begin: 0.06),
+                      const SizedBox(height: 20),
 
-                      // 4. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок)
-                      _buildSectionTitle(
-                        'admin.quick_actions'.tr(),
-                        LucideIcons.zap,
-                        const Color(0xFF00E5FF),
-                        gradientColors: const [Color(0xFF00D2FF), Color(0xFF0077B6)],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildQuickActions(context).animate().fadeIn(delay: 400.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 32),
+                      // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
+                      _buildSupportCenterCard(unreadCount).animate().fadeIn(delay: 380.ms).slideY(begin: 0.06),
+                      const SizedBox(height: 28),
 
                       // 5. Найближче заняття з аватарками учнів
                       if (dashboardState.nearestClass != null) ...[
                         _buildSectionTitle(
                           'admin.nearest_class'.tr(),
                           LucideIcons.clock,
-                          const Color(0xFF00E5FF),
-                          gradientColors: const [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                          currentTheme.accentPrimary,
+                          gradientColors: currentTheme.accentGradient,
                           badgeText: 'admin.today'.tr(),
-                          badgeColor: const Color(0xFF38BDF8),
+                          badgeColor: currentTheme.accentPrimary,
                         ),
                         const SizedBox(height: 12),
-                        _buildNearestClass(dashboardState.nearestClass!).animate().fadeIn(delay: 500.ms).slideY(begin: 0.06),
+                        _buildNearestClass(dashboardState.nearestClass!).animate().fadeIn(delay: 450.ms).slideY(begin: 0.06),
                         const SizedBox(height: 24),
                       ],
 
@@ -218,6 +220,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       color.withValues(alpha: 0.75),
     ];
 
+    final currentTheme = ref.watch(appThemeControllerProvider);
+
     return Row(
       children: [
         // Glowing Jewel Emblem Squircle
@@ -251,8 +255,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         // Title Text
         Text(
           _capitalize(title),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: currentTheme.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,
@@ -264,17 +268,28 @@ class _AdminMainState extends ConsumerState<AdminMain> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
             decoration: BoxDecoration(
-              color: (badgeColor ?? color).withValues(alpha: 0.15),
+              color: currentTheme.isDark
+                  ? (badgeColor ?? color).withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: (badgeColor ?? color).withValues(alpha: 0.40),
+                color: (badgeColor ?? color).withValues(alpha: currentTheme.isDark ? 0.40 : 0.50),
                 width: 0.8,
               ),
+              boxShadow: currentTheme.isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: (badgeColor ?? color).withValues(alpha: 0.12),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
             ),
             child: Text(
               badgeText,
               style: TextStyle(
-                color: badgeColor ?? Colors.white.withValues(alpha: 0.90),
+                color: badgeColor ?? (currentTheme.isDark ? Colors.white.withValues(alpha: 0.90) : color),
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.3,
@@ -291,8 +306,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withValues(alpha: 0.18),
-                    Colors.white.withValues(alpha: 0.02),
+                    currentTheme.isDark
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : currentTheme.accentPrimary.withValues(alpha: 0.20),
+                    Colors.transparent,
                   ],
                 ),
               ),
@@ -305,6 +322,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref, List<ActivityLog> recentActions) {
     final user = ref.watch(authControllerProvider);
+    final currentTheme = ref.watch(appThemeControllerProvider);
 
     return SliverToBoxAdapter(
       child: Padding(
@@ -320,7 +338,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.35),
                           blurRadius: 16,
                           spreadRadius: 2,
                         ),
@@ -338,8 +356,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       children: [
                         Text(
                           '${'admin.hello'.tr()}, ${user?.name ?? "Admin"}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: currentTheme.textPrimary,
                             fontSize: 19,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.2,
@@ -364,11 +382,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Flexible(
+                            Flexible(
                               child: Text(
                                 'CitySwim Admin',
                                 style: TextStyle(
-                                  color: Color(0xFF38BDF8),
+                                  color: currentTheme.accentSecondary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.4,
@@ -385,35 +403,65 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 ],
               ).animate().fadeIn(),
             ),
-            // Right actions: History log & Logout buttons
+            // Right actions: Theme Switcher, History log & Logout buttons
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const ThemeHeaderButton(size: 40),
+                const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: currentTheme.isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.85),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.20),
+                      color: currentTheme.isDark
+                          ? Colors.white.withValues(alpha: 0.20)
+                          : currentTheme.accentPrimary.withValues(alpha: 0.30),
                     ),
+                    boxShadow: currentTheme.isDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 6,
+                            ),
+                          ],
                   ),
                   child: IconButton(
-                    icon: const Icon(LucideIcons.history, color: Colors.white, size: 20),
+                    icon: Icon(LucideIcons.history, color: currentTheme.textPrimary, size: 20),
                     tooltip: 'admin.recent_actions'.tr(),
                     onPressed: () => _showRecentActionsSheet(context, recentActions),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: currentTheme.isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.85),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.20),
+                      color: currentTheme.isDark
+                          ? Colors.white.withValues(alpha: 0.20)
+                          : Colors.redAccent.withValues(alpha: 0.30),
                     ),
+                    boxShadow: currentTheme.isDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 6,
+                            ),
+                          ],
                   ),
                   child: IconButton(
-                    icon: const Icon(LucideIcons.logOut, color: Colors.white, size: 20),
+                    icon: Icon(
+                      LucideIcons.logOut,
+                      color: currentTheme.isDark ? Colors.white : Colors.redAccent,
+                      size: 20,
+                    ),
                     tooltip: 'Вийти',
                     onPressed: () {
                       ref.read(authControllerProvider.notifier).logout();
@@ -439,71 +487,138 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   }
 
   Widget _buildSearchBar() {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+
     return GestureDetector(
       onTap: () => _openGlobalSearch(initialCategoryIndex: 0),
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1B385C).withValues(alpha: 0.75),
-              const Color(0xFF102640).withValues(alpha: 0.80),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
+          gradient: currentTheme.isDark
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF1B385C).withValues(alpha: 0.75),
+                    const Color(0xFF102640).withValues(alpha: 0.80),
+                  ],
+                )
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.78),
+                    Colors.white.withValues(alpha: 0.52),
+                  ],
+                ),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: const Color(0xFF38BDF8).withValues(alpha: 0.30),
-            width: 1.1,
+            color: currentTheme.isDark
+                ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
+                : Colors.white.withValues(alpha: 0.95),
+            width: currentTheme.isDark ? 1.2 : 1.0,
           ),
           boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF003B73).withValues(alpha: 0.22),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
+            if (currentTheme.isDark) ...[
+              // Layer 1: Deep cyan-tinted shadow
+              BoxShadow(
+                color: const Color(0xFF003B73).withValues(alpha: 0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ] else ...[
+              // Premium glassmorphism shadow
+              BoxShadow(
+                color: currentTheme.cardShadow,
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: currentTheme.accentPrimary.withValues(alpha: 0.06),
+                blurRadius: 12,
+                spreadRadius: -2,
+              ),
+            ]
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 19),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: currentTheme.isDark
+                          ? const Color(0xFF38BDF8).withValues(alpha: 0.15)
+                          : currentTheme.accentPrimary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        LucideIcons.search,
+                        color: currentTheme.accentPrimary,
+                        size: 16,
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'admin.search_hint'.tr().replaceFirst('групи чи ', '').replaceFirst('группы или ', '').replaceFirst('group or ', '').replaceFirst('Gruppe oder ', ''),
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 13,
+                        color: currentTheme.textMuted,
+                        fontSize: 13.5,
                         letterSpacing: 0.2,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => _openGlobalSearch(initialCategoryIndex: 1),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _openGlobalSearch(initialCategoryIndex: 1);
+                    },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                        color: currentTheme.isDark
+                            ? const Color(0xFF38BDF8).withValues(alpha: 0.12)
+                            : Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: currentTheme.isDark
+                              ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
+                              : Colors.white,
+                          width: 1,
+                        ),
+                        boxShadow: currentTheme.isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: currentTheme.accentPrimary.withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.slidersHorizontal, color: Color(0xFF38BDF8), size: 14),
+                          Icon(
+                            LucideIcons.slidersHorizontal,
+                            color: currentTheme.accentPrimary,
+                            size: 13,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             'admin.filter_btn'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFF38BDF8),
-                              fontSize: 11,
+                            style: TextStyle(
+                              color: currentTheme.accentPrimary,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -545,6 +660,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   // 1. LIVE TELEMETRY STATUS BAR (HUD ІЗЮМИНКА)
   // ==========================================
   Widget _buildLivePulseBar(AdminDashboardState state) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
     final bool isSessionActive = state.ongoingClassesCount > 0;
 
     // 1. Скільки активних занять зараз проводяться
@@ -558,31 +675,53 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.18),
-            const Color(0xFF0284C7).withValues(alpha: 0.14),
-            const Color(0xFF031933).withValues(alpha: 0.40),
-          ],
-        ),
+        color: currentTheme.glassCardBg,
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  const Color(0xFF0284C7).withValues(alpha: 0.14),
+                  const Color(0xFF031933).withValues(alpha: 0.40),
+                ],
+              )
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.65),
+                  Colors.white.withValues(alpha: 0.45),
+                ],
+              ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.30),
-          width: 1.2,
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.30)
+              : currentTheme.cardBorder,
+          width: isDark ? 1.2 : 0.8,
         ),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF003B73).withValues(alpha: 0.30),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: const Color(0xFF00B4D8).withValues(alpha: 0.15),
-            blurRadius: 20,
-            spreadRadius: -2,
-          ),
+          if (isDark) ...[
+            // Layer 1: Deep accent shadow
+            BoxShadow(
+              color: const Color(0xFF003B73).withValues(alpha: 0.30),
+              blurRadius: 22,
+              offset: const Offset(0, 7),
+            ),
+            BoxShadow(
+              color: const Color(0xFF00B4D8).withValues(alpha: 0.15),
+              blurRadius: 20,
+              spreadRadius: -2,
+            ),
+          ] else ...[
+            // Minimalist iOS style soft shadow
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+          ]
         ],
       ),
       child: ClipRRect(
@@ -606,11 +745,16 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF),
+                              color: isSessionActive
+                                  ? const Color(0xFF10B981)
+                                  : (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: (isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF)).withValues(alpha: 0.85),
+                                  color: (isSessionActive
+                                          ? const Color(0xFF10B981)
+                                          : (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary))
+                                      .withValues(alpha: 0.85),
                                   blurRadius: 8,
                                   spreadRadius: 2,
                                 ),
@@ -625,7 +769,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               child: Text(
                                 _formatPulseBeaconTitle(isSessionActive),
                                 style: TextStyle(
-                                  color: isSessionActive ? const Color(0xFF10B981) : Colors.white,
+                                  color: isSessionActive
+                                      ? const Color(0xFF059669)
+                                      : currentTheme.textPrimary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,
@@ -648,7 +794,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               child: Text(
                                 'admin.live_badge'.tr(),
                                 style: const TextStyle(
-                                  color: Color(0xFF34D399),
+                                  color: Color(0xFF059669),
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.4,
@@ -663,22 +809,26 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.10),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.18)
+                              : currentTheme.cardBorder,
                           width: 0.8,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.activity, color: Color(0xFF38BDF8), size: 11),
+                          Icon(LucideIcons.activity, color: currentTheme.accentPrimary, size: 11),
                           const SizedBox(width: 4),
                           Text(
                             'admin.realtime'.tr(),
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : currentTheme.textSecondary,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.4,
@@ -696,57 +846,71 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.white.withValues(alpha: 0.15),
-                        const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                        Colors.white.withValues(alpha: 0.15),
-                        Colors.transparent,
-                      ],
+                      colors: isDark
+                          ? [
+                              Colors.transparent,
+                              Colors.white.withValues(alpha: 0.15),
+                              const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                              Colors.white.withValues(alpha: 0.15),
+                              Colors.transparent,
+                            ]
+                          : [
+                              Colors.transparent,
+                              currentTheme.cardBorder,
+                              currentTheme.cardBorder,
+                              Colors.transparent,
+                            ],
                     ),
                   ),
                 ),
 
-                // 3 Telemetry Gauges (Non-clickable, elegant high-end readout)
-                IntrinsicHeight(
+                // 3 Telemetry Columns (Spacious, elegant high-end vertical readout)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
                       // 1. Активні заняття
                       Expanded(
-                        child: _buildTelemetryGauge(
+                        child: _buildTelemetryColumn(
                           icon: LucideIcons.calendarClock,
-                          gradientColors: const [Color(0xFF00E5FF), Color(0xFF0077B6)],
-                          accentColor: const Color(0xFF38BDF8),
+                          gradientColors: isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                              : currentTheme.actionCardGradients[1],
+                          accentColor: isDark
+                              ? const Color(0xFF00E5FF)
+                              : currentTheme.actionCardGradients[1].first,
                           title: 'admin.classes_telemetry'.tr(),
                           value: '$classesValue',
                           status: 'admin.classes_status'.tr(),
                         ),
                       ),
 
-                      // Vertical Hairline
-                      _buildVerticalHairline(),
-
                       // 2. Клієнти
                       Expanded(
-                        child: _buildTelemetryGauge(
+                        child: _buildTelemetryColumn(
                           icon: LucideIcons.users,
-                          gradientColors: const [Color(0xFF34D399), Color(0xFF059669)],
-                          accentColor: const Color(0xFF10B981),
+                          gradientColors: isDark
+                              ? const [Color(0xFF10B981), Color(0xFF059669)]
+                              : currentTheme.actionCardGradients[0],
+                          accentColor: isDark
+                              ? const Color(0xFF10B981)
+                              : currentTheme.actionCardGradients[0].first,
                           title: 'admin.clients_telemetry'.tr(),
                           value: '$clientsValue',
                           status: 'admin.clients_status'.tr(),
                         ),
                       ),
 
-                      // Vertical Hairline
-                      _buildVerticalHairline(),
-
                       // 3. Тренери
                       Expanded(
-                        child: _buildTelemetryGauge(
+                        child: _buildTelemetryColumn(
                           icon: LucideIcons.award,
-                          gradientColors: const [Color(0xFFA855F7), Color(0xFF6D28D9)],
-                          accentColor: const Color(0xFFA855F7),
+                          gradientColors: isDark
+                              ? const [Color(0xFFA855F7), Color(0xFF7C3AED)]
+                              : currentTheme.actionCardGradients[2],
+                          accentColor: isDark
+                              ? const Color(0xFFA855F7)
+                              : currentTheme.actionCardGradients[2].first,
                           title: 'admin.coaches_telemetry'.tr(),
                           value: '$coachesValue',
                           status: 'admin.coaches_status'.tr(),
@@ -762,10 +926,14 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.14),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.14)
+                          : currentTheme.cardBorder,
                       width: 0.8,
                     ),
                   ),
@@ -776,7 +944,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             ? LucideIcons.waves
                             : (state.nearestClass != null ? LucideIcons.clock : LucideIcons.shieldCheck),
                         size: 14,
-                        color: isSessionActive ? const Color(0xFF10B981) : const Color(0xFF00E5FF),
+                        color: isSessionActive ? const Color(0xFF059669) : currentTheme.accentPrimary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -792,8 +960,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                       _formatCompactClassTitle(state.nearestClass!.title),
                                     ])
                                   : 'admin.normal_mode'.tr()),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: currentTheme.textPrimary,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.2,
@@ -802,27 +970,34 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                          color: isDark
+                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                              : currentTheme.statusActiveBadgeBg,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.40),
+                            color: isDark
+                                ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                : currentTheme.statusActiveBadgeText.withValues(alpha: 0.35),
                             width: 0.6,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
+                            Text(
                               '●',
-                              style: TextStyle(color: Color(0xFF10B981), fontSize: 7),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF059669) : currentTheme.statusActiveBadgeText,
+                                fontSize: 7,
+                              ),
                             ),
                             const SizedBox(width: 3),
                             Text(
                               'admin.normal_badge'.tr(),
-                              style: const TextStyle(
-                                color: Color(0xFF10B981),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF059669) : currentTheme.statusActiveBadgeText,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -867,7 +1042,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     return name.isEmpty ? coachName : name;
   }
 
-  Widget _buildTelemetryGauge({
+  Widget _buildTelemetryColumn({
     required IconData icon,
     required List<Color> gradientColors,
     required Color accentColor,
@@ -875,31 +1050,34 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     required String value,
     required String status,
   }) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Squircle Jewel Icon Badge (36x36)
+        // Squircle Jewel Icon Badge (38x38) with glowing aura
         Container(
-          width: 36,
-          height: 36,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: gradientColors,
             ),
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: gradientColors.first.withValues(alpha: 0.40),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+                color: gradientColors.first.withValues(alpha: isDark ? 0.45 : 0.28),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Center(
-            child: Icon(icon, color: Colors.white, size: 18),
+            child: Icon(icon, color: Colors.white, size: 19),
           ),
         ),
         const SizedBox(height: 8),
@@ -910,38 +1088,39 @@ class _AdminMainState extends ConsumerState<AdminMain> {
           child: Text(
             value,
             style: TextStyle(
-              color: Colors.white,
+              color: isDark ? Colors.white : currentTheme.textPrimary,
               fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
               height: 1.0,
               shadows: [
-                Shadow(
-                  color: accentColor.withValues(alpha: 0.45),
-                  blurRadius: 12,
-                ),
+                if (isDark)
+                  Shadow(
+                    color: accentColor.withValues(alpha: 0.45),
+                    blurRadius: 12,
+                  ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 6),
 
         // Category Name
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
+            style: TextStyle(
+              color: isDark ? Colors.white : currentTheme.textPrimary,
+              fontSize: 13.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
 
-        // Refined Live Status Subtitle (Clean single line, fits any screen)
+        // Refined Live Status Subtitle (accent colored)
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
@@ -949,9 +1128,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             textAlign: TextAlign.center,
             maxLines: 1,
             style: TextStyle(
-              color: accentColor.withValues(alpha: 0.90),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              color: accentColor,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.2,
             ),
           ),
@@ -960,28 +1139,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     );
   }
 
-  Widget _buildVerticalHairline() {
-    return Container(
-      width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.white.withValues(alpha: 0.12),
-            Colors.transparent,
-          ],
-        ),
-      ),
-    );
-  }
 
   // ==========================================
   // 2. ЦЕНТР ПІДТРИМКИ КЛІЄНТІВ (КРИШТАЛЕВА АЕРО-КАРТКА)
   // ==========================================
   Widget _buildSupportCenterCard(int unreadCount) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
     final bool hasUnread = unreadCount > 0;
 
     return ClipRRect(
@@ -1004,35 +1168,54 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             highlightColor: const Color(0xFF38BDF8).withValues(alpha: 0.08),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: hasUnread ? 0.24 : 0.16),
-                    Colors.white.withValues(alpha: hasUnread ? 0.12 : 0.06),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
+                gradient: isDark
+                    ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: hasUnread ? 0.24 : 0.16),
+                          Colors.white.withValues(alpha: hasUnread ? 0.12 : 0.06),
+                        ],
+                      )
+                    : LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: hasUnread ? 0.85 : 0.65),
+                          Colors.white.withValues(alpha: hasUnread ? 0.60 : 0.45),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: hasUnread
-                      ? const Color(0xFF38BDF8).withValues(alpha: 0.85)
-                      : Colors.white.withValues(alpha: 0.28),
-                  width: 1.2,
+                      ? (isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.85) : currentTheme.accentPrimary.withValues(alpha: 0.5))
+                      : (isDark ? Colors.white.withValues(alpha: 0.28) : currentTheme.cardBorder),
+                  width: isDark ? 1.2 : 1.0,
                 ),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.20),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                  if (hasUnread)
+                  if (isDark) ...[
+                    // Layer 1: Deep accent elevation
                     BoxShadow(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                      blurRadius: 18,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.20),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
                     ),
+                    if (hasUnread)
+                      BoxShadow(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 2),
+                      ),
+                  ] else ...[
+                    // Minimalist iOS style soft shadow
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
                 ],
               ),
               child: Row(
@@ -1094,8 +1277,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       children: [
                         Text(
                           'admin.support_center'.tr(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: currentTheme.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.2,
@@ -1109,7 +1292,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ? 'admin.new_messages_count'.tr(args: [unreadCount.toString()])
                               : 'admin.quick_answers'.tr(),
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
+                            color: currentTheme.textSecondary,
                             fontSize: 12,
                             fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
                           ),
@@ -1151,14 +1334,22 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : const Color(0xFFF1F5F9),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.20),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.20)
+                              : currentTheme.cardBorder,
                         ),
                       ),
-                      child: const Center(
-                        child: Icon(LucideIcons.chevronRight, color: Colors.white, size: 18),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.chevronRight,
+                          color: isDark ? Colors.white : currentTheme.textSecondary,
+                          size: 18,
+                        ),
                       ),
                     ),
                 ],
@@ -1171,10 +1362,14 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   }
 
   Widget _buildUnpaidAttentionItem(int unpaidCount) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          HapticFeedback.lightImpact();
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
@@ -1188,25 +1383,46 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFFF43F5E).withValues(alpha: 0.18),
-                const Color(0xFF152A44).withValues(alpha: 0.82),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
+            gradient: isDark
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFF43F5E).withValues(alpha: 0.18),
+                      const Color(0xFF152A44).withValues(alpha: 0.82),
+                    ],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.80),
+                      const Color(0xFFFFF1F2).withValues(alpha: 0.55),
+                    ],
+                  ),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFFF43F5E).withValues(alpha: 0.45),
-              width: 1.2,
+              color: isDark
+                  ? const Color(0xFFF43F5E).withValues(alpha: 0.45)
+                  : const Color(0xFFFECDD3), // Very soft red border
+              width: isDark ? 1.2 : 1.0,
             ),
             boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFF43F5E).withValues(alpha: 0.12),
-                blurRadius: 14,
-                offset: const Offset(0, 3),
-              ),
+              if (isDark) ...[
+                // Layer 1: Deep rose-tinted shadow
+                BoxShadow(
+                  color: const Color(0xFFF43F5E).withValues(alpha: 0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ] else ...[
+                // Minimalist iOS style soft shadow
+                BoxShadow(
+                  color: const Color(0xFFE11D48).withValues(alpha: 0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
             ],
           ),
           child: Row(
@@ -1215,15 +1431,26 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF43F5E).withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
-                    width: 1,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.40),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.32),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.creditCard, color: Color(0xFFF43F5E), size: 20),
+                  child: Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
                 ),
               ),
               const SizedBox(width: 14),
@@ -1237,13 +1464,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           margin: const EdgeInsets.only(right: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF43F5E).withValues(alpha: 0.2),
+                            color: isDark
+                                ? const Color(0xFFF43F5E).withValues(alpha: 0.2)
+                                : const Color(0xFFFEE2E2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             'admin.attention'.tr(),
                             style: const TextStyle(
-                              color: Color(0xFFF43F5E),
+                              color: Color(0xFFE11D48),
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.6,
@@ -1253,8 +1482,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         Expanded(
                           child: Text(
                             '$unpaidCount ${'admin.unpaid_subs_title'.tr()}',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF9F1239),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1266,8 +1495,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     const SizedBox(height: 3),
                     Text(
                       'admin.awaiting_payment_desc'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
                         fontSize: 12,
                       ),
                     ),
@@ -1278,11 +1507,19 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : const Color(0xFFFEE2E2),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : const Color(0xFFFB7185).withValues(alpha: 0.45),
+                    width: 0.9,
+                  ),
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.chevronRight, color: Color(0xFFF43F5E), size: 18),
+                  child: Icon(LucideIcons.chevronRight, color: Color(0xFFE11D48), size: 17),
                 ),
               ),
             ],
@@ -1296,6 +1533,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   // 3. ШВИДКІ ДІЇ (КРИШТАЛЕВИЙ BENTO-БЛОК ДІЙ)
   // ==========================================
   Widget _buildQuickActions(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final gradients = currentTheme.actionCardGradients;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 620;
@@ -1310,11 +1550,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             SizedBox(
               width: itemWidth,
               child: _InteractiveActionCard(
-                icon: LucideIcons.calendarPlus,
+                icon: LucideIcons.users,
                 label: _capitalize('admin.create'.tr()),
-                sublabel: 'admin.sub_classes'.tr(),
-                accentColor: const Color(0xFF10B981),
-                gradientColors: const [Color(0xFF34D399), Color(0xFF059669)],
+                sublabel: 'admin.sub_group'.tr(),
+                accentColor: gradients[0].first,
+                gradientColors: gradients[0],
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
@@ -1331,8 +1571,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 icon: LucideIcons.calendar,
                 label: _capitalize('admin.calendar'.tr()),
                 sublabel: 'admin.sub_schedule'.tr(),
-                accentColor: const Color(0xFF3B82F6),
-                gradientColors: const [Color(0xFF60A5FA), Color(0xFF1D4ED8)],
+                accentColor: gradients[1].first,
+                gradientColors: gradients[1],
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1347,8 +1587,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 icon: LucideIcons.users,
                 label: _capitalize('admin.clients_menu'.tr()),
                 sublabel: 'admin.sub_base'.tr(),
-                accentColor: const Color(0xFFA855F7),
-                gradientColors: const [Color(0xFFC084FC), Color(0xFF7C3AED)],
+                accentColor: gradients[2].first,
+                gradientColors: gradients[2],
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1363,8 +1603,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 icon: LucideIcons.userPlus,
                 label: _capitalize('admin.new_client'.tr()),
                 sublabel: 'admin.sub_profile'.tr(),
-                accentColor: const Color(0xFF06B6D4),
-                gradientColors: const [Color(0xFF22D3EE), Color(0xFF0891B2)],
+                accentColor: gradients[3].first,
+                gradientColors: gradients[3],
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
@@ -1381,8 +1621,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 icon: LucideIcons.award,
                 label: _capitalize('admin.coaches_menu'.tr()),
                 sublabel: 'admin.sub_team'.tr(),
-                accentColor: const Color(0xFF6366F1),
-                gradientColors: const [Color(0xFF818CF8), Color(0xFF4338CA)],
+                accentColor: gradients[4].first,
+                gradientColors: gradients[4],
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1398,8 +1638,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 icon: LucideIcons.creditCard,
                 label: _capitalize('admin.payment'.tr()),
                 sublabel: 'admin.sub_cash'.tr(),
-                accentColor: const Color(0xFFF59E0B),
-                gradientColors: const [Color(0xFFFBBF24), Color(0xFFD97706)],
+                accentColor: gradients[5].first,
+                gradientColors: gradients[5],
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
@@ -1420,6 +1660,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   // 4. НАЙБЛИЖЧЕ ЗАНЯТТЯ З АВАТАРКАМИ УЧНІВ
   // ==========================================
   Widget _buildNearestClass(GroupClass nearest) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
     final timeFormat = DateFormat('HH:mm');
     final startTimeStr = timeFormat.format(nearest.startTime);
     final endTimeStr = timeFormat.format(nearest.endTime);
@@ -1429,225 +1671,375 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF003B73), Color(0xFF006DAE), Color(0xFF00B4D8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: currentTheme.glassCardBg,
+        gradient: isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF003B73), Color(0xFF006DAE), Color(0xFF00B4D8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.88),
+                  Colors.white.withValues(alpha: 0.72),
+                ],
+              ),
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.95),
+          width: isDark ? 1.2 : 1.0,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF003B73).withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+          if (isDark) ...[
+            // Layer 1: Deep accent shadow
+            BoxShadow(
+              color: const Color(0xFF003B73).withValues(alpha: 0.40),
+              blurRadius: 22,
+              offset: const Offset(0, 7),
+            ),
+          ] else ...[
+            // Minimalist iOS style soft shadow
+            BoxShadow(
+              color: currentTheme.cardShadow,
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: currentTheme.accentPrimary.withValues(alpha: 0.05),
+              blurRadius: 12,
+              spreadRadius: -2,
+            ),
+          ]
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row: Time + Compact Category Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.clock, color: Colors.white, size: 14),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$startTimeStr – $endTimeStr',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      _formatCompactClassTitle(nearest.title),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Location and Coach (Adaptive Wrap with zero ellipsis!)
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.mapPin, color: Colors.white, size: 13.5),
-                    const SizedBox(width: 5),
-                    Text(
-                      nearest.lane.isNotEmpty ? nearest.lane : 'Всі доріжки',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.user, color: Colors.white70, size: 13.5),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${'admin.class_coach'.tr()}: ${_cleanCoachDisplay(nearest.coachName)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Capacity Bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Заповненість групи',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                '$occupancy / $maxCapacity учнів',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: percent,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-              minHeight: 6,
-            ),
-          ),
-
-          // Student Facepile (Аватарки учнів, що підтягуються від клієнта)
-          if (nearest.enrolledChildIds.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildEnrolledFacepile(nearest.enrolledChildIds),
-                const SizedBox(width: 10),
-                Text(
-                  '${'admin.enrolled_swimmers'.tr()} (${nearest.enrolledChildIds.length})',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                // Header Row: Time + Compact Category Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.20)
+                            : currentTheme.accentPrimary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.35)
+                              : currentTheme.accentPrimary.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.clock, color: isDark ? Colors.white : currentTheme.accentPrimary, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$startTimeStr – $endTimeStr',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.accentPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : Colors.white.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.40)
+                                : currentTheme.cardBorder,
+                            width: 0.8,
+                          ),
+                          boxShadow: isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _formatCompactClassTitle(nearest.title),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Location and Coach (Adaptive Wrap with zero ellipsis!)
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.14)
+                            : Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : currentTheme.cardBorder,
+                          width: 0.8,
+                        ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.mapPin,
+                            color: isDark ? Colors.white : currentTheme.accentPrimary,
+                            size: 13.5,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            nearest.lane.isNotEmpty ? nearest.lane : 'Всі доріжки',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.14)
+                            : Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : currentTheme.cardBorder,
+                          width: 0.8,
+                        ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.user,
+                            color: isDark ? Colors.white70 : currentTheme.accentPrimary,
+                            size: 13.5,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${'admin.class_coach'.tr()}: ${_cleanCoachDisplay(nearest.coachName)}',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Capacity Bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Заповненість групи',
+                      style: TextStyle(
+                        color: isDark ? Colors.white.withValues(alpha: 0.8) : currentTheme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '$occupancy / $maxCapacity учнів',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : currentTheme.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Premium gradient progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(7),
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: percent,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [Colors.white, Colors.white.withValues(alpha: 0.85)]
+                                : currentTheme.accentGradient,
+                          ),
+                          borderRadius: BorderRadius.circular(7),
+                          boxShadow: isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Student Facepile (Аватарки учнів, що підтягуються від клієнта)
+                if (nearest.enrolledChildIds.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _buildEnrolledFacepile(nearest.enrolledChildIds, isDark),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${'admin.enrolled_swimmers'.tr()} (${nearest.enrolledChildIds.length})',
+                        style: TextStyle(
+                          color: isDark ? Colors.white.withValues(alpha: 0.9) : currentTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 18),
+
+                // Button
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: isDark
+                          ? null
+                          : LinearGradient(
+                              colors: currentTheme.accentGradient,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isDark ? const Color(0xFF003B73) : currentTheme.accentPrimary).withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AdminCalendarScreen()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? Colors.white : Colors.transparent,
+                        foregroundColor: isDark ? const Color(0xFF003B73) : Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(LucideIcons.calendar, size: 16, color: isDark ? const Color(0xFF003B73) : Colors.white),
+                          const SizedBox(width: 8),
+                          Text(
+                            'admin.open_in_schedule'.tr(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isDark ? const Color(0xFF003B73) : Colors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
-
-          const SizedBox(height: 18),
-
-          // Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AdminCalendarScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF003B73),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 3,
-                shadowColor: Colors.black.withValues(alpha: 0.2),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(LucideIcons.calendar, size: 16, color: Color(0xFF003B73)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'admin.open_in_schedule'.tr(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF003B73),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEnrolledFacepile(List<String> childIds) {
+  Widget _buildEnrolledFacepile(List<String> childIds, bool isDark) {
     final displayIds = childIds.take(4).toList();
     final remainingCount = childIds.length - displayIds.length;
 
@@ -1664,7 +2056,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF003B73), width: 2),
+                  border: Border.all(color: isDark ? const Color(0xFF003B73) : Colors.white, width: 2),
                 ),
                 child: StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
@@ -1706,15 +2098,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF003B73), width: 2),
+                  border: Border.all(color: isDark ? const Color(0xFF003B73) : Colors.white, width: 2),
                 ),
                 child: Center(
                   child: Text(
                     '+$remainingCount',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF475569),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1733,6 +2125,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   // ІСТОРІЯ ОСТАННІХ ДІЙ (MODAL BOTTOM SHEET)
   // ==========================================
   void _showRecentActionsSheet(BuildContext context, List<ActivityLog> actions) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1747,28 +2142,29 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 maxHeight: MediaQuery.of(context).size.height * 0.75,
               ),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF13233C).withValues(alpha: 0.96),
-                    const Color(0xFF0C1626).withValues(alpha: 0.98),
-                  ],
-                ),
+                color: isDark ? null : Colors.white,
+                gradient: isDark
+                    ? LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFF13233C).withValues(alpha: 0.96),
+                          const Color(0xFF0C1626).withValues(alpha: 0.98),
+                        ],
+                      )
+                    : null,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 border: Border.all(
-                  color: const Color(0xFF38BDF8).withValues(alpha: 0.22),
+                  color: isDark
+                      ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
+                      : currentTheme.cardBorder,
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.08),
                     blurRadius: 24,
                     offset: const Offset(0, -6),
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.06),
-                    blurRadius: 30,
                   ),
                 ],
               ),
@@ -1782,7 +2178,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       width: 42,
                       height: 4.5,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -1796,15 +2192,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                            color: currentTheme.accentPrimary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.25),
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             LucideIcons.history,
-                            color: Color(0xFF38BDF8),
+                            color: currentTheme.accentPrimary,
                             size: 22,
                           ),
                         ),
@@ -1815,8 +2211,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             children: [
                               Text(
                                 'admin.recent_actions'.tr(),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.2,
@@ -1826,7 +2222,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               Text(
                                 'Журнал активностей адміністратора',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: currentTheme.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -1836,11 +2232,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         // Close button
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
+                            color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9),
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(LucideIcons.x, color: Colors.white70, size: 18),
+                            icon: Icon(LucideIcons.x, color: isDark ? Colors.white70 : currentTheme.textSecondary, size: 18),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ),
@@ -1848,8 +2244,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     ),
                   ),
 
-                  const Divider(
-                    color: Colors.white10,
+                  Divider(
+                    color: isDark ? Colors.white10 : currentTheme.cardBorder,
                     height: 1,
                   ),
 
@@ -1864,13 +2260,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                 Icon(
                                   LucideIcons.clockAlert,
                                   size: 48,
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: currentTheme.textMuted,
                                 ),
                                 const SizedBox(height: 14),
-                                const Text(
+                                Text(
                                   'Поки немає записів',
                                   style: TextStyle(
-                                    color: Colors.white70,
+                                    color: currentTheme.textPrimary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1880,7 +2276,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                   'Усі ключові дії та зміни в системі відображатимуться тут',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.4),
+                                    color: currentTheme.textSecondary,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -1893,7 +2289,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             physics: const BouncingScrollPhysics(),
                             itemCount: actions.length,
                             separatorBuilder: (context, index) => Divider(
-                              color: Colors.white.withValues(alpha: 0.06),
+                              color: isDark ? Colors.white.withValues(alpha: 0.06) : currentTheme.cardBorder.withValues(alpha: 0.5),
                               height: 16,
                             ),
                             itemBuilder: (context, index) {
@@ -1911,10 +2307,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.03),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.05),
+                                    color: isDark ? Colors.white.withValues(alpha: 0.05) : currentTheme.cardBorder,
                                   ),
                                 ),
                                 child: Row(
@@ -1924,11 +2320,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                       width: 9,
                                       height: 9,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF38BDF8),
+                                        color: currentTheme.accentPrimary,
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF38BDF8).withValues(alpha: 0.5),
+                                            color: currentTheme.accentPrimary.withValues(alpha: 0.5),
                                             blurRadius: 6,
                                             spreadRadius: 1,
                                           ),
@@ -1939,8 +2335,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                     Expanded(
                                       child: Text(
                                         a.action,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: currentTheme.textPrimary,
                                           fontSize: 13.5,
                                           fontWeight: FontWeight.w500,
                                           height: 1.3,
@@ -1951,13 +2347,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.05),
+                                        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFE2E8F0),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         timeStr,
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.5),
+                                          color: currentTheme.textSecondary,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -1983,7 +2379,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 // ==========================================
 // INTERACTIVE ACTION CARD (FROSTED BENTO GLASS)
 // ==========================================
-class _InteractiveActionCard extends StatefulWidget {
+class _InteractiveActionCard extends ConsumerStatefulWidget {
   final IconData icon;
   final String label;
   final String sublabel;
@@ -2001,14 +2397,17 @@ class _InteractiveActionCard extends StatefulWidget {
   });
 
   @override
-  State<_InteractiveActionCard> createState() => _InteractiveActionCardState();
+  ConsumerState<_InteractiveActionCard> createState() => _InteractiveActionCardState();
 }
 
-class _InteractiveActionCardState extends State<_InteractiveActionCard> {
+class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> {
   bool _isHovered = false;
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
     final effectiveGradient = widget.gradientColors ?? [
       widget.accentColor,
       widget.accentColor.withValues(alpha: 0.8),
@@ -2018,120 +2417,212 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _isHovered ? -2 : 0, 0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onTap,
-                borderRadius: BorderRadius.circular(18),
-                splashColor: widget.accentColor.withValues(alpha: 0.25),
-                highlightColor: widget.accentColor.withValues(alpha: 0.12),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: _isHovered ? 0.30 : 0.22),
-                        widget.accentColor.withValues(alpha: _isHovered ? 0.15 : 0.07),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: _isHovered
-                          ? widget.accentColor.withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.28),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: _isHovered ? 0.30 : 0.18),
-                        blurRadius: _isHovered ? 14 : 8,
-                        offset: const Offset(0, 3),
-                      ),
-                      BoxShadow(
-                        color: widget.accentColor.withValues(alpha: _isHovered ? 0.32 : 0.14),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Vibrant Glowing Jewel Emblem
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: effectiveGradient,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          HapticFeedback.lightImpact();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.94 : (_isHovered ? 1.025 : 1.0),
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(0, _isHovered ? -2.5 : 0, 0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onTap,
+                    borderRadius: BorderRadius.circular(20),
+                    splashColor: widget.accentColor.withValues(alpha: isDark ? 0.25 : 0.15),
+                    highlightColor: widget.accentColor.withValues(alpha: isDark ? 0.12 : 0.08),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: isDark
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: _isHovered ? 0.30 : 0.22),
+                                  widget.accentColor.withValues(alpha: _isHovered ? 0.15 : 0.07),
+                                ],
+                              )
+                            : LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: _isHovered ? 0.90 : 0.78),
+                                  Colors.white.withValues(alpha: _isHovered ? 0.68 : 0.52),
+                                ],
+                              ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: _isHovered
+                              ? (isDark
+                                  ? widget.accentColor.withValues(alpha: 0.85)
+                                  : widget.accentColor.withValues(alpha: 0.65))
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.28)
+                                  : Colors.white.withValues(alpha: 0.95)),
+                          width: _isHovered ? 1.2 : 1.0,
+                        ),
+                        boxShadow: [
+                          if (isDark) ...[
+                            // Layer 1: Deep colored base shadow
                             BoxShadow(
-                              color: effectiveGradient.first.withValues(alpha: _isHovered ? 0.60 : 0.40),
-                              blurRadius: _isHovered ? 12 : 8,
+                              color: Colors.black.withValues(alpha: _isHovered ? 0.30 : 0.18),
+                              blurRadius: _isHovered ? 20 : 14,
+                              offset: const Offset(0, 6),
+                            ),
+                            // Layer 2: Medium elevation shadow
+                            BoxShadow(
+                              color: widget.accentColor.withValues(alpha: _isHovered ? 0.32 : 0.14),
+                              blurRadius: 12,
                               offset: const Offset(0, 2),
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(widget.icon, color: Colors.white, size: 19),
-                        ),
+                          ] else ...[
+                            // Layer 1: Ambient Jewel Bloom (colored reflection on the water)
+                            BoxShadow(
+                              color: widget.accentColor.withValues(alpha: _isHovered ? 0.32 : 0.16),
+                              blurRadius: _isHovered ? 22 : 14,
+                              offset: Offset(0, _isHovered ? 6 : 4),
+                              spreadRadius: _isHovered ? 1 : 0,
+                            ),
+                            // Layer 2: Deep grounding shadow
+                            BoxShadow(
+                              color: currentTheme.cardShadow,
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      // Titles
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                widget.label,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.2,
+                      child: Row(
+                        children: [
+                          // Vibrant Glowing Jewel Emblem — 3D gemstone badge
+                          Container(
+                            width: isDark ? 40 : 44,
+                            height: isDark ? 40 : 44,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: effectiveGradient,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: isDark ? 0.50 : 0.65),
+                                width: 1.3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: effectiveGradient.first.withValues(alpha: _isHovered ? 0.65 : (isDark ? 0.42 : 0.36)),
+                                  blurRadius: _isHovered ? 18 : (isDark ? 12 : 10),
+                                  offset: Offset(0, isDark ? 4 : 3),
                                 ),
+                                if (!isDark)
+                                  BoxShadow(
+                                    color: effectiveGradient.last.withValues(alpha: 0.25),
+                                    blurRadius: 6,
+                                    spreadRadius: -1,
+                                  ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(widget.icon, color: Colors.white, size: isDark ? 20 : 22),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          // Titles
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    widget.label,
+                                    style: TextStyle(
+                                      color: currentTheme.textPrimary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.15,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.sublabel,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: _isHovered ? 0.90 : 0.70)
+                                        : currentTheme.textSecondary,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          // Chevron capsule with accent tint for light theme
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: _isHovered ? 0.16 : 0.08)
+                                  : (_isHovered
+                                      ? widget.accentColor.withValues(alpha: 0.16)
+                                      : Colors.white.withValues(alpha: 0.70)),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.20)
+                                    : (_isHovered
+                                        ? widget.accentColor.withValues(alpha: 0.40)
+                                        : Colors.white.withValues(alpha: 0.90)),
+                                width: 1.0,
+                              ),
+                              boxShadow: isDark
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: widget.accentColor.withValues(alpha: 0.10),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                LucideIcons.chevronRight,
+                                size: 13,
+                                color: _isHovered
+                                    ? widget.accentColor
+                                    : (isDark
+                                        ? Colors.white.withValues(alpha: 0.60)
+                                        : currentTheme.textSecondary),
                               ),
                             ),
-                            const SizedBox(height: 1.5),
-                            Text(
-                              widget.sublabel,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: _isHovered ? 0.90 : 0.70),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 3),
-                      Icon(
-                        LucideIcons.chevronRight,
-                        size: 14,
-                        color: Colors.white.withValues(alpha: _isHovered ? 0.85 : 0.35),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -2142,3 +2633,4 @@ class _InteractiveActionCardState extends State<_InteractiveActionCard> {
     );
   }
 }
+

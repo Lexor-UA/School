@@ -11,12 +11,18 @@ class EditCoachSheet extends ConsumerStatefulWidget {
   final String coachId;
   final String initialName;
   final String initialPhone;
+  final int initialRateGroup;
+  final int initialRateIndividual;
+  final int initialRateSplit;
 
   const EditCoachSheet({
     super.key,
     required this.coachId,
     required this.initialName,
     required this.initialPhone,
+    this.initialRateGroup = 400,
+    this.initialRateIndividual = 450,
+    this.initialRateSplit = 600,
   });
 
   @override
@@ -26,6 +32,9 @@ class EditCoachSheet extends ConsumerStatefulWidget {
 class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  late TextEditingController _rateGroupController;
+  late TextEditingController _rateIndividualController;
+  late TextEditingController _rateSplitController;
   
   bool _isLoading = false;
   String? _errorMessage;
@@ -35,12 +44,24 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _phoneController = TextEditingController(text: widget.initialPhone);
+    _rateGroupController = TextEditingController(
+      text: widget.initialRateGroup > 0 ? widget.initialRateGroup.toString() : '400',
+    );
+    _rateIndividualController = TextEditingController(
+      text: widget.initialRateIndividual > 0 ? widget.initialRateIndividual.toString() : '450',
+    );
+    _rateSplitController = TextEditingController(
+      text: widget.initialRateSplit > 0 ? widget.initialRateSplit.toString() : '600',
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _rateGroupController.dispose();
+    _rateIndividualController.dispose();
+    _rateSplitController.dispose();
     super.dispose();
   }
 
@@ -56,18 +77,25 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
+    final rateGroup = int.tryParse(_rateGroupController.text.trim()) ?? 0;
+    final rateIndividual = int.tryParse(_rateIndividualController.text.trim()) ?? 0;
+    final rateSplit = int.tryParse(_rateSplitController.text.trim()) ?? 0;
+
     try {
       final userRef = FirebaseFirestore.instance.collection('users').doc(widget.coachId);
 
       await userRef.update({
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
+        'rateGroup': rateGroup,
+        'rateIndividual': rateIndividual,
+        'rateSplit': rateSplit,
       }).timeout(const Duration(seconds: 5));
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Оновлено дані тренера "${_nameController.text.trim()}"', admin.id);
+          await logAdminAction('Оновлено дані та ставки тренера "${_nameController.text.trim()}" (Група: $rateGroup ₴, Інд: $rateIndividual ₴, Спліт: $rateSplit ₴)', admin.id);
         }
 
         navigator.pop();
@@ -120,9 +148,55 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 22),
+
+                      // Section: Персональні ставки (ЗП)
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                            ),
+                            child: const Icon(LucideIcons.banknote, color: Color(0xFF10B981), size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Ставки заробітної плати (ЗП)',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildRateField(
+                        label: 'Групове тренування (грн / заняття)',
+                        icon: LucideIcons.users,
+                        controller: _rateGroupController,
+                        color: const Color(0xFF00E5FF),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildRateField(
+                        label: 'Індивідуальне тренування (грн / заняття)',
+                        icon: LucideIcons.user,
+                        controller: _rateIndividualController,
+                        color: const Color(0xFFA855F7),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildRateField(
+                        label: 'Спліт-тренування (2 учні) (грн / заняття)',
+                        icon: LucideIcons.userCheck,
+                        controller: _rateSplitController,
+                        color: const Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(height: 26),
                   
                   if (_errorMessage != null) ...[
                     Container(
@@ -261,6 +335,76 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRateField({
+    required String label,
+    required IconData icon,
+    required TextEditingController controller,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: '0',
+                    hintStyle: TextStyle(color: Colors.white24),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.35)),
+            ),
+            child: Text(
+              '₴ / зан',
+              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
       ),
     );
   }

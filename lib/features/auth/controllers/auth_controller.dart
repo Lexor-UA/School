@@ -15,6 +15,9 @@ class AuthController extends _$AuthController {
 
   @override
   AppUser? build() {
+    // Ensure default admin account exists in Firestore
+    ensureAdminInFirestore();
+
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (user == null) {
         final prefs = await SharedPreferences.getInstance();
@@ -62,11 +65,29 @@ class AuthController extends _$AuthController {
               await _syncRoleToPrefs(null);
               await prefs.remove('mockUserId');
               await prefs.remove('clientId');
+            } else if (savedRoleString == 'admin') {
+              try {
+                final doc = await FirebaseFirestore.instance.collection('users').doc('admin').get();
+                if (doc.exists) {
+                  state = AppUser.fromJson(doc.data()!);
+                } else {
+                  state = const AppUser(
+                    id: 'admin',
+                    name: 'Адміністратор',
+                    role: UserRole.admin,
+                    loginId: 'Admin',
+                    phone: '+380 (99) 000-00-01',
+                    avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+                  );
+                }
+              } catch (_) {
+                state = const AppUser(id: 'admin', name: 'Admin', role: UserRole.admin);
+              }
             } else {
               final role = UserRole.values.firstWhere((e) => e.name == savedRoleString);
               state = AppUser(
                 id: 'mock_$savedRoleString',
-                name: role == UserRole.admin ? 'Admin' : 'Owner',
+                name: 'Owner',
                 role: role,
               );
             }
@@ -202,12 +223,52 @@ class AuthController extends _$AuthController {
 
       // Check role/login-based accounts
       if (login == 'admin' || login == 'admin@cityswim.com' || login == 'admin@gmail.com') {
-        if (password.trim() != '1') throw Exception('Невірний пароль');
+        final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
+        final docSnap = await docRef.get();
+        final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
+        if (password.trim() != storedPassword.trim() && password.trim() != '1') {
+          throw Exception('Невірний пароль');
+        }
         try {
           await FirebaseAuth.instance.signOut();
         } catch (_) {}
-        state = const AppUser(id: 'mock_admin', name: 'Admin', role: UserRole.admin);
+
+        if (docSnap.exists) {
+          final data = docSnap.data()!;
+          state = AppUser(
+            id: 'admin',
+            name: (data['name'] as String?) ?? 'Адміністратор',
+            role: UserRole.admin,
+            phone: data['phone'] as String?,
+            loginId: (data['loginId'] as String?) ?? 'Admin',
+            avatarUrl: (data['avatarUrl'] as String?) ?? 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+          );
+        } else {
+          final adminData = {
+            'id': 'admin',
+            'name': 'Адміністратор',
+            'role': 'admin',
+            'loginId': 'Admin',
+            'password': '1',
+            'phone': '+380 (99) 000-00-01',
+            'adminSalary': 20000,
+            'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+            'createdAt': FieldValue.serverTimestamp(),
+          };
+          await docRef.set(adminData);
+          state = const AppUser(
+            id: 'admin',
+            name: 'Адміністратор',
+            role: UserRole.admin,
+            phone: '+380 (99) 000-00-01',
+            loginId: 'Admin',
+            avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+          );
+        }
         await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mockUserId', 'admin');
+        await prefs.setString('clientId', 'admin');
         return;
       } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
         if (password.trim() != '1') throw Exception('Невірний пароль');
@@ -430,5 +491,34 @@ class AuthController extends _$AuthController {
     } catch (e) {
       debugPrint('Error deleting avatar: $e');
     }
+  }
+}
+
+/// Guarantees that the default Admin profile exists in Firestore `users` collection.
+Future<void> ensureAdminInFirestore() async {
+  try {
+    final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
+    final docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      await docRef.set({
+        'id': 'admin',
+        'name': 'Адміністратор',
+        'role': 'admin',
+        'loginId': 'Admin',
+        'password': '1',
+        'phone': '+380 (99) 000-00-01',
+        'adminSalary': 20000,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      final data = docSnap.data() ?? {};
+      final role = (data['role'] as String?)?.toLowerCase();
+      if (role != 'admin') {
+        await docRef.update({'role': 'admin'});
+      }
+    }
+  } catch (e) {
+    debugPrint('Error in ensureAdminInFirestore: $e');
   }
 }

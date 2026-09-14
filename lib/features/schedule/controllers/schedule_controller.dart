@@ -368,6 +368,75 @@ class ScheduleController extends _$ScheduleController {
     }
   }
 
+  Future<int> createRecurringClasses({
+    required String title,
+    required DateTime startDate,
+    required int hour,
+    required int minute,
+    int durationMinutes = 60,
+    required Set<int> weekdays,
+    required int durationWeeks,
+    required String coachId,
+    required String coachName,
+    required int maxCapacity,
+    required String category,
+    required String lane,
+  }) async {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return 0;
+
+    try {
+      final List<DateTime> startTimes = [];
+      final totalDays = durationWeeks * 7;
+      final baseDate = DateTime(startDate.year, startDate.month, startDate.day);
+
+      for (int i = 0; i < totalDays; i++) {
+        final date = baseDate.add(Duration(days: i));
+        if (weekdays.contains(date.weekday)) {
+          final classStart = DateTime(date.year, date.month, date.day, hour, minute);
+          startTimes.add(classStart);
+        }
+      }
+
+      if (startTimes.isEmpty) return 0;
+
+      final firestore = FirebaseFirestore.instance;
+      const chunkSize = 400;
+
+      for (int i = 0; i < startTimes.length; i += chunkSize) {
+        final chunk = startTimes.sublist(
+          i,
+          (i + chunkSize > startTimes.length) ? startTimes.length : i + chunkSize,
+        );
+        final batch = firestore.batch();
+        for (final st in chunk) {
+          final docRef = firestore.collection('classes').doc();
+          final et = st.add(Duration(minutes: durationMinutes));
+          final groupClass = GroupClass(
+            id: docRef.id,
+            title: title,
+            startTime: st,
+            endTime: et,
+            coachId: coachId,
+            coachName: coachName,
+            maxCapacity: maxCapacity,
+            enrolledChildIds: const [],
+            attendedChildIds: const [],
+            category: category,
+            lane: lane,
+          );
+          batch.set(docRef, groupClass.toJson());
+        }
+        await batch.commit();
+      }
+
+      return startTimes.length;
+    } catch (e) {
+      debugPrint('Error creating recurring classes: $e');
+      return 0;
+    }
+  }
+
   Future<bool> updateClass({
     required String classId,
     required String title,

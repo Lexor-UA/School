@@ -26,6 +26,13 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>uk</string>
+		<string>en</string>
+		<string>de</string>
+		<string>ru</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Нам потрібен доступ до камери для створення фото профілю та сканування QR-кодів.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

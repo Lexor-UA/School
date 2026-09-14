@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>720928546774-5q4bbigk2gjgh90qblrbk2gp2smecifp.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.720928546774-5q4bbigk2gjgh90qblrbk2gp2smecifp</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBi2mks7HZKswKlEmiENi_6JluEqyIltzk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>720928546774</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>city.swim.school</string>
+	<key>PROJECT_ID</key>
+	<string>city-swim</string>
+	<key>STORAGE_BUCKET</key>
+	<string>city-swim.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:720928546774:ios:bb4e758c45782993f0ce77</string>
+</dict>
+</plist>

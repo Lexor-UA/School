@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
-import 'package:intl/intl.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class AdminBookingSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -61,7 +61,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Помилка: $e'), backgroundColor: Colors.redAccent));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${'common.error'.tr()}: $e'), backgroundColor: Colors.redAccent));
       }
     } finally {
       if (mounted) {
@@ -101,10 +101,10 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
               ),
             ),
           ),
-          const Text('Записати на заняття', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('admin.book_class'.tr(), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           
-          const Text('Оберіть дату:', style: TextStyle(color: Colors.white70)),
+          Text('admin.select_date'.tr(), style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -128,7 +128,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                     ),
                     child: Column(
                       children: [
-                        Text(DateFormat('E', 'uk').format(date).toUpperCase(), style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white54, fontSize: 12)),
+                        Text(DateFormat('E', context.locale.languageCode).format(date).toUpperCase(), style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white54, fontSize: 12)),
                         const SizedBox(height: 4),
                         Text('${date.day}', style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                       ],
@@ -140,7 +140,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
           ),
           
           const SizedBox(height: 24),
-          const Text('Оберіть клієнта/дитину:', style: TextStyle(color: Colors.white70)),
+          Text('admin.select_client_child'.tr(), style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -168,7 +168,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
           ),
           
           const SizedBox(height: 24),
-          const Text('Доступні заняття:', style: TextStyle(color: Colors.white70)),
+          Text('admin.available_classes'.tr(), style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 8),
           
           Expanded(
@@ -190,7 +190,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                 classes.sort((a, b) => a.startTime.compareTo(b.startTime));
                 
                 if (classes.isEmpty) {
-                  return const Center(child: Text('Немає занять на цей день', style: TextStyle(color: Colors.white54)));
+                  return Center(child: Text('admin.no_classes_day'.tr(), style: const TextStyle(color: Colors.white54)));
                 }
                 
                 return ListView.builder(
@@ -218,7 +218,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                               children: [
                                 Text('${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')} - ${c.category}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                Text(c.lane.isNotEmpty ? c.lane : 'Основний басейн', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                Text(c.lane.isNotEmpty ? c.lane : 'admin.main_pool'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 12)),
                               ],
                             ),
                             Text('${c.enrolledChildIds.length} / ${c.maxCapacity}', style: TextStyle(color: isFull ? Colors.redAccent : Colors.greenAccent, fontWeight: FontWeight.bold)),
@@ -244,7 +244,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
               ),
               child: _isBooking
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 3))
-                  : const Text('Записати', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+                  : Text('admin.book_btn'.tr(), style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ),
         ],

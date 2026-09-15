@@ -109,12 +109,14 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     rippleColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
                     hoverColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
                     gap: 6,
-                    activeColor: themeConfig.isDark ? Colors.white : themeConfig.accentPrimary,
+                    activeColor: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
                     iconSize: 22,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     duration: const Duration(milliseconds: 350),
-                    tabBackgroundColor: themeConfig.accentPrimary.withValues(alpha: themeConfig.isDark ? 0.35 : 0.15),
-                    color: themeConfig.isDark ? Colors.white70 : themeConfig.textSecondary,
+                    tabBackgroundColor: themeConfig.isDark
+                        ? themeConfig.accentPrimary.withValues(alpha: 0.35)
+                        : const Color(0xFF0284C7).withValues(alpha: 0.15),
+                    color: themeConfig.isDark ? Colors.white70 : const Color(0xFF475569),
                     tabs: [
                       GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
                       GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_calendar'.tr()),

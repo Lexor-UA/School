@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -145,7 +146,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         );
       } catch (e) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Помилка: $e'), backgroundColor: const Color(0xFFF43F5E)),
+          SnackBar(content: Text('${'common.error'.tr()}: $e'), backgroundColor: const Color(0xFFF43F5E)),
         );
       }
     }
@@ -462,10 +463,10 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
     return Container(
       decoration: BoxDecoration(
-        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : currentTheme.cardBorder,
+          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.25) : currentTheme.cardBorder,
         ),
         boxShadow: currentTheme.isDark
             ? null
@@ -579,49 +580,56 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     final bool hasActiveSubs = activeSubs.isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: currentTheme.isDark
-            ? const Color(0xFF13233C).withValues(alpha: 0.90)
-            : Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: currentTheme.isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.18),
+                  const Color(0xFF0284C7).withValues(alpha: 0.18),
+                  const Color(0xFF0D2542).withValues(alpha: 0.45),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.94),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.94),
+                ],
+        ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: hasActiveSubs
-              ? currentTheme.accentPrimary.withValues(alpha: currentTheme.isDark ? 0.35 : 0.40)
-              : currentTheme.statusErrorBadgeText.withValues(alpha: currentTheme.isDark ? 0.25 : 0.35),
+          color: currentTheme.isDark
+              ? (hasActiveSubs
+                  ? currentTheme.accentPrimary.withValues(alpha: 0.50)
+                  : Colors.white.withValues(alpha: 0.28))
+              : (hasActiveSubs
+                  ? currentTheme.accentPrimary.withValues(alpha: 0.40)
+                  : currentTheme.statusErrorBadgeText.withValues(alpha: 0.35)),
           width: 1.2,
         ),
-        boxShadow: currentTheme.isDark
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-                if (hasActiveSubs)
-                  BoxShadow(
-                    color: currentTheme.accentPrimary.withValues(alpha: 0.06),
-                    blurRadius: 20,
-                    offset: const Offset(0, 2),
-                  ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-                if (hasActiveSubs)
-                  BoxShadow(
-                    color: currentTheme.accentPrimary.withValues(alpha: 0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 2),
-                  ),
-              ],
+        boxShadow: [
+          BoxShadow(
+            color: currentTheme.isDark
+                ? const Color(0xFF003B73).withValues(alpha: 0.30)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          if (hasActiveSubs)
+            BoxShadow(
+              color: currentTheme.accentPrimary.withValues(alpha: currentTheme.isDark ? 0.16 : 0.08),
+              blurRadius: 20,
+            ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           // 1. Client Identity Header
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,9 +788,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: currentTheme.isDark ? Colors.black.withValues(alpha: 0.25) : currentTheme.chipBg,
+              color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : currentTheme.chipBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.08) : currentTheme.chipBorder),
+              border: Border.all(color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.20) : currentTheme.chipBorder),
             ),
             child: Row(
               children: [
@@ -894,9 +902,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                           decoration: BoxDecoration(
-                            color: currentTheme.chipBg,
+                            color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : currentTheme.chipBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: currentTheme.chipBorder),
+                            border: Border.all(color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.22) : currentTheme.chipBorder),
                           ),
                           child: Text(
                             '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
@@ -1052,8 +1060,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
-  }
+    ),
+  ),
+),
+).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
+}
 
   Widget _buildEmptyState() {
     return Center(

@@ -210,16 +210,9 @@ class _ThemeCardState extends State<_ThemeCard> {
     final isSelected = widget.isSelected;
     final currentTheme = widget.currentTheme;
 
-    IconData themeIcon;
-    switch (theme.id) {
-      case AppThemeMode.darkOcean:
-        themeIcon = LucideIcons.moon;
-        break;
-      case AppThemeMode.lightAzure:
-      default:
-        themeIcon = LucideIcons.waves;
-        break;
-    }
+    final themeIcon = theme.id == AppThemeMode.darkOcean
+        ? LucideIcons.moon
+        : LucideIcons.waves;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),

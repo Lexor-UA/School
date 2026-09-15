@@ -207,11 +207,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F172A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 22),
-            SizedBox(width: 8),
-            Text('Додати дитину', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 22),
+            const SizedBox(width: 8),
+            Text('admin.child_add_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -221,7 +221,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               controller: nameCtrl,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: "Ім'я дитини",
+                labelText: 'admin.child_name'.tr(),
                 labelStyle: const TextStyle(color: Colors.white60),
                 prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
                 filled: true,
@@ -235,7 +235,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Вік дитини (років)',
+                labelText: 'admin.child_age'.tr(),
                 labelStyle: const TextStyle(color: Colors.white60),
                 prefixIcon: const Icon(LucideIcons.calendarDays, color: Color(0xFF00E5FF), size: 18),
                 filled: true,
@@ -285,7 +285,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 debugPrint('Error adding child: $e');
               }
             },
-            child: const Text('Додати', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('admin.add'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -301,11 +301,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F172A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 20),
-            SizedBox(width: 8),
-            Text('Редагувати дитину', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 20),
+            const SizedBox(width: 8),
+            Text('admin.child_edit_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -315,7 +315,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               controller: nameCtrl,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: "Ім'я дитини",
+                labelText: 'admin.child_name'.tr(),
                 labelStyle: const TextStyle(color: Colors.white60),
                 prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF38BDF8), size: 18),
                 filled: true,
@@ -329,7 +329,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Вік дитини (років)',
+                labelText: 'admin.child_age'.tr(),
                 labelStyle: const TextStyle(color: Colors.white60),
                 prefixIcon: const Icon(LucideIcons.calendarDays, color: Color(0xFF38BDF8), size: 18),
                 filled: true,
@@ -369,7 +369,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 debugPrint('Error updating child: $e');
               }
             },
-            child: const Text('Зберегти', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('admin.save'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -382,8 +382,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F172A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Видалити дитину?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Ви дійсно бажаєте видалити дані дитини "$childName"?', style: const TextStyle(color: Colors.white70)),
+        title: Text('admin.child_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text('admin.child_delete_confirm'.tr(namedArgs: {'name': childName}), style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -421,7 +421,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 debugPrint('Error deleting child: $e');
               }
             },
-            child: const Text('Видалити'),
+            child: Text('admin.delete'.tr()),
           ),
         ],
       ),
@@ -456,7 +456,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
         ),
-        title: const Text('Видалити абонемент?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('admin.sub_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: Text(
           'Ви дійсно бажаєте видалити абонемент "${sub.serviceName ?? 'Абонемент'}" для ${sub.ownerName ?? widget.initialName}?',
           style: const TextStyle(color: Colors.white70),
@@ -503,7 +503,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           builder: (context, setStateDialog) {
             return AlertDialog(
               backgroundColor: const Color(0xFF0F172A),
-              title: const Text('Призначити абонемент', style: TextStyle(color: Colors.white)),
+              title: Text('admin.assign_subscription'.tr(), style: const TextStyle(color: Colors.white)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,7 +603,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       debugPrint('Error assigning sub: $e');
                     }
                   },
-                  child: const Text('Призначити', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+                  child: Text('admin.assign_btn'.tr(), style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
                 ),
               ],
             );
@@ -927,7 +927,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
                                       icon: const Icon(LucideIcons.minusCircle, color: Color(0xFFF59E0B), size: 18),
                                       onPressed: () => _updateSubscriptionClasses(sub, -1),
-                                      tooltip: 'Відняти 1 заняття',
+                                      tooltip: 'admin.tooltip_sub_minus'.tr(),
                                     ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
@@ -935,7 +935,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
                                       icon: const Icon(LucideIcons.plusCircle, color: Color(0xFF38BDF8), size: 18),
                                       onPressed: () => _updateSubscriptionClasses(sub, 1),
-                                      tooltip: 'Додати 1 заняття',
+                                      tooltip: 'admin.tooltip_sub_plus'.tr(),
                                     ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
@@ -943,7 +943,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
                                       icon: const Icon(LucideIcons.refreshCw, color: Color(0xFFFACC15), size: 16),
                                       onPressed: () => _updateSubscriptionClasses(sub, -sub.remainingClasses),
-                                      tooltip: 'Обнулити абонемент',
+                                      tooltip: 'admin.tooltip_sub_reset'.tr(),
                                     ),
                                     Container(
                                       height: 16,
@@ -975,7 +975,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   height: 48,
                   child: OutlinedButton.icon(
                     icon: const Icon(LucideIcons.plus, color: Colors.greenAccent),
-                    label: const Text('Призначити новий абонемент', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    label: Text('admin.assign_new_sub'.tr(), style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.greenAccent),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1094,13 +1094,13 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                         );
                                         if (success && mounted) {
                                           messenger.showSnackBar(
-                                            const SnackBar(content: Text('Запис скасовано, заняття повернено на абонемент', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+                                            SnackBar(content: Text('admin.booking_cancelled_success'.tr(), style: const TextStyle(color: Colors.white)), backgroundColor: Colors.green),
                                           );
                                         }
                                       } catch (e) {
                                         if (mounted) {
                                           messenger.showSnackBar(
-                                            SnackBar(content: Text('Помилка: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.redAccent),
+                                            SnackBar(content: Text('${'common.error'.tr()}: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.redAccent),
                                           );
                                         }
                                       }
@@ -1110,7 +1110,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       minimumSize: const Size(50, 24),
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
-                                    child: const Text('Скасувати запис', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                                    child: Text('admin.cancel_booking'.tr(), style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
                                   ),
                                 ],
                               ),
@@ -1145,7 +1145,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               height: 48,
               child: OutlinedButton.icon(
                 icon: const Icon(LucideIcons.calendarPlus, color: Colors.blueAccent),
-                label: const Text('Записати на заняття', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                label: Text('admin.book_class'.tr(), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.blueAccent),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1410,9 +1410,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
             TextButton.icon(
               onPressed: _showAddChildDialog,
               icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
-              label: const Text(
-                'Додати',
-                style: TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w700),
+              label: Text(
+                'admin.add'.tr(),
+                style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w700),
               ),
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.12),
@@ -1493,12 +1493,12 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       ),
                       IconButton(
                         icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 16),
-                        tooltip: 'Редагувати',
+                        tooltip: 'admin.edit'.tr(),
                         onPressed: () => _showEditChildDialog(cId, cName, cAge),
                       ),
                       IconButton(
                         icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 16),
-                        tooltip: 'Видалити',
+                        tooltip: 'admin.delete'.tr(),
                         onPressed: () => _deleteChild(cId, cName),
                       ),
                     ],

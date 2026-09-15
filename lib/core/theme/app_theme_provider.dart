@@ -6,8 +6,6 @@ import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 enum AppThemeMode {
   darkOcean,
   lightAzure,
-  lightPearlCoral,
-  lightMintSpa,
 }
 
 class AppThemeConfig {
@@ -303,136 +301,11 @@ class AppThemeConfig {
     previewColors: const [Color(0xFFE0F2FE), Color(0xFF0EA5E9), Color(0xFF38BDF8), Color(0xFF0F172A)],
   );
 
-  // Preset 3: Warm Silk & Champagne (Light 2 — Canva Luxury & Rose Gold) - Deprecated / Fallback
-  static final AppThemeConfig lightPearlCoral = AppThemeConfig(
-    id: AppThemeMode.lightPearlCoral,
-    title: 'Теплий шовк & Шампань',
-    subtitle: 'М\'який крем, рожеве золото та теракота, повний комфорт для очей',
-    badgeText: 'Світла 2',
-    titleKey: 'theme_light_pearl_coral_title',
-    subKey: 'theme_light_pearl_coral_sub',
-    badgeKey: 'theme_badge_light2',
-    isDark: false,
-    scaffoldBg: const Color(0xFFFAF7F2), // Warm Silk Alabaster
-    bgGradient: [
-      const Color(0xFFFB7185).withValues(alpha: 0.14),
-      const Color(0xFFFBBF24).withValues(alpha: 0.10),
-      const Color(0xFFE11D48).withValues(alpha: 0.18),
-    ],
-    cardBg: Colors.white.withValues(alpha: 0.70), // Translucent frosted warm silk glass
-    cardBorder: Colors.white.withValues(alpha: 0.95), // Crisp bright white specular border
-    cardShadow: const Color(0xFF9A3412).withValues(alpha: 0.08), // Warm bronze-rose ambient shadow
-    glassCardBg: Colors.white.withValues(alpha: 0.58), // Liquid frosted glass
-    textPrimary: const Color(0xFF1C1917), // Warm Stone 900
-    textSecondary: const Color(0xFF44403C), // Warm Stone 700
-    textMuted: const Color(0xFF78716C), // Stone 500
-    accentPrimary: const Color(0xFFE11D48), // Rose Gold / Ruby Coral 600
-    accentSecondary: const Color(0xFFD97706), // Warm Champagne Gold
-    accentGradient: const [Color(0xFFFB7185), Color(0xFFE11D48)], // Radiant Rose Gold
-    chipBg: Colors.white.withValues(alpha: 0.65),
-    chipBorder: Colors.white.withValues(alpha: 0.85),
-    inputBg: Colors.white.withValues(alpha: 0.70),
-    inputBorder: Colors.white.withValues(alpha: 0.90),
-    dialogBg: const Color(0xFFFFFDF9),
-    dialogBorder: Colors.white,
-    dividerColor: const Color(0xFFE11D48).withValues(alpha: 0.12),
-    statusActiveBadgeBg: const Color(0xFFDCFCE7),
-    statusActiveBadgeText: const Color(0xFF15803D),
-    statusWarningBadgeBg: const Color(0xFFFED7AA),
-    statusWarningBadgeText: const Color(0xFFC2410C),
-    statusErrorBadgeBg: const Color(0xFFFFE4E6),
-    statusErrorBadgeText: const Color(0xFFE11D48),
-    statusNeutralBadgeBg: Colors.white.withValues(alpha: 0.60),
-    statusNeutralBadgeText: const Color(0xFF78716C),
-    // Vibrant Champagne & Rose Gold Caustics with living wave flow
-    waterBgTop: const Color(0xFFFFF7F2), // Soft luminous peach-rose silk
-    waterBgBottom: const Color(0xFFFDE8E4), // Warm champagne cream base
-    waterWave1: const Color(0xFFFB7185).withValues(alpha: 0.36), // Radiant Rose Gold wave
-    waterWave2: const Color(0xFFFBBF24).withValues(alpha: 0.34), // Glowing Champagne Gold wave
-    waterWave3: const Color(0xFFE11D48).withValues(alpha: 0.26), // Deep Rose Silk wave
-    orb1Color: const Color(0xFFFB7185).withValues(alpha: 0.40), // Luminous Rose Gold orb
-    orb2Color: const Color(0xFFFBBF24).withValues(alpha: 0.40), // Champagne Sunbeam orb
-    orb3Color: const Color(0xFFF43F5E).withValues(alpha: 0.32), // Soft Peach Coral orb
-    actionCardGradients: const [
-      [Color(0xFFE11D48), Color(0xFFBE123C)], // 1. Створити - Ruby Rose Gold
-      [Color(0xFFF97316), Color(0xFFEA580C)], // 2. Календар - Sunset Mandarin Terracotta
-      [Color(0xFF7C3AED), Color(0xFF5B21B6)], // 3. Клієнти - Royal Amethyst (Approved)
-      [Color(0xFFFB7185), Color(0xFFE11D48)], // 4. Новий клієнт - Soft Rose Quartz
-      [Color(0xFFF59E0B), Color(0xFFD97706)], // 5. Тренери - Radiant Champagne Citrine
-      [Color(0xFF10B981), Color(0xFF059669)], // 6. Оплата - Noble Emerald Jade (Approved)
-    ],
-    previewColors: const [Color(0xFFFAF7F2), Color(0xFFE11D48), Color(0xFFFBBF24), Color(0xFF7C3AED)],
-  );
-
-  // Preset 4: Fresh Mint & Seafoam (Light 3 — Nordic Mint & Emerald Spa) - Deprecated / Fallback
-  static final AppThemeConfig lightMintSpa = AppThemeConfig(
-    id: AppThemeMode.lightMintSpa,
-    title: 'М\'ятний велнес & Смарагд',
-    subtitle: 'Преміальний спа-стиль, морська піна та свіжа м\'ята',
-    badgeText: 'Світла 3',
-    titleKey: 'theme_light_mint_spa_title',
-    subKey: 'theme_light_mint_spa_sub',
-    badgeKey: 'theme_badge_light3',
-    isDark: false,
-    scaffoldBg: const Color(0xFFF2FBF6), // Fresh Seafoam Alabaster
-    bgGradient: [
-      const Color(0xFF10B981).withValues(alpha: 0.12),
-      const Color(0xFF14B8A6).withValues(alpha: 0.08),
-      const Color(0xFF059669).withValues(alpha: 0.18),
-    ],
-    cardBg: Colors.white.withValues(alpha: 0.68), // Translucent frosted white glass
-    cardBorder: Colors.white.withValues(alpha: 0.95), // Crisp white edges
-    cardShadow: const Color(0xFF064E3B).withValues(alpha: 0.08), // Grounding ambient shadow
-    glassCardBg: Colors.white.withValues(alpha: 0.58), // Highly translucent glass
-    textPrimary: const Color(0xFF0F172A), // Deep Slate Navy (High contrast, crystal-clear)
-    textSecondary: const Color(0xFF334155), // Slate Gray (Balanced, readable)
-    textMuted: const Color(0xFF64748B), // Slate Muted
-    accentPrimary: const Color(0xFF059669), // Vibrant Emerald 600
-    accentSecondary: const Color(0xFF0EA5E9), // Nordic Aqua Blue
-    accentGradient: const [Color(0xFF10B981), Color(0xFF059669)],
-    chipBg: Colors.white.withValues(alpha: 0.60),
-    chipBorder: Colors.white.withValues(alpha: 0.80),
-    inputBg: Colors.white.withValues(alpha: 0.65),
-    inputBorder: Colors.white.withValues(alpha: 0.85),
-    dialogBg: const Color(0xFFF8FCFA),
-    dialogBorder: Colors.white,
-    dividerColor: const Color(0xFF059669).withValues(alpha: 0.12),
-    statusActiveBadgeBg: const Color(0xFFD1FAE5),
-    statusActiveBadgeText: const Color(0xFF065F46),
-    statusWarningBadgeBg: const Color(0xFFFEF3C7),
-    statusWarningBadgeText: const Color(0xFF92400E),
-    statusErrorBadgeBg: const Color(0xFFFFE4E6),
-    statusErrorBadgeText: const Color(0xFFE11D48),
-    statusNeutralBadgeBg: Colors.white.withValues(alpha: 0.60),
-    statusNeutralBadgeText: const Color(0xFF475569),
-    waterBgTop: const Color(0xFFE6F7F0), // Soft fresh mint water
-    waterBgBottom: const Color(0xFFC7F0DF),
-    waterWave1: const Color(0xFF34D399).withValues(alpha: 0.36),
-    waterWave2: const Color(0xFF2DD4BF).withValues(alpha: 0.32),
-    waterWave3: const Color(0xFF059669).withValues(alpha: 0.24),
-    orb1Color: const Color(0xFF34D399).withValues(alpha: 0.35),
-    orb2Color: const Color(0xFF38BDF8).withValues(alpha: 0.30),
-    orb3Color: const Color(0xFFA7F3D0).withValues(alpha: 0.25),
-    actionCardGradients: const [
-      [Color(0xFF10B981), Color(0xFF059669)], // 1. Створити - Fresh Emerald Jade
-      [Color(0xFF0EA5E9), Color(0xFF0284C7)], // 2. Календар - Nordic Glacial Blue
-      [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // 3. Клієнти - Royal Lavender
-      [Color(0xFF14B8A6), Color(0xFF0D9488)], // 4. Новий клієнт - Eucalyptus Teal
-      [Color(0xFFF59E0B), Color(0xFFD97706)], // 5. Тренери - Warm Honey Citrine
-      [Color(0xFFF43F5E), Color(0xFFE11D48)], // 6. Оплата - Coral Lotus Rose
-    ],
-    previewColors: const [Color(0xFFF4FAF7), Color(0xFF10B981), Color(0xFF0EA5E9), Color(0xFF0F172A)],
-  );
-
   static AppThemeConfig fromMode(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.darkOcean:
         return darkOcean;
       case AppThemeMode.lightAzure:
-        return lightAzure;
-      case AppThemeMode.lightPearlCoral:
-      case AppThemeMode.lightMintSpa:
-        // Graceful backwards-compatible fallback for users who previously selected light 2 or 3
         return lightAzure;
     }
   }
@@ -452,7 +325,12 @@ class AppThemeController extends Notifier<AppThemeConfig> {
     final savedModeStr = prefs.getString(_prefsKey);
     if (savedModeStr != null) {
       try {
-        final mode = AppThemeMode.values.firstWhere((e) => e.name == savedModeStr);
+        final mode = AppThemeMode.values.firstWhere(
+          (e) => e.name == savedModeStr,
+          orElse: () => savedModeStr.contains('light')
+              ? AppThemeMode.lightAzure
+              : AppThemeMode.darkOcean,
+        );
         return AppThemeConfig.fromMode(mode);
       } catch (_) {}
     }

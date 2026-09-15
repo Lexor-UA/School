@@ -8,6 +8,7 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'widgets/apple_time_wheel_picker.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
@@ -130,6 +131,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   Future<void> _selectDate() async {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -137,15 +139,22 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF00E5FF),
-              onPrimary: Colors.black,
-              surface: Color(0xFF13233C),
-              onSurface: Colors.white,
-            ),
-            dialogTheme: const DialogThemeData(
-              backgroundColor: Color(0xFF13233C),
+          data: (isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: Color(0xFF00E5FF),
+                    onPrimary: Colors.black,
+                    surface: Color(0xFF162D4A),
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: Color(0xFF0284C7),
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Color(0xFF0F172A),
+                  ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: isDark ? const Color(0xFF162D4A) : Colors.white,
             ),
           ),
           child: child!,
@@ -200,7 +209,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       if (_selectedWeekdays.isEmpty) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Оберіть хоча б один день тижня')),
+          SnackBar(content: Text('admin.select_weekdays_warning'.tr())),
         );
         return;
       }
@@ -233,7 +242,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Групу "${_titleController.text.trim()}" успішно створено! Згенеровано $createdCount занять у розкладі.'),
+                    child: Text('admin.group_created_success'.tr(namedArgs: {
+                      'name': _titleController.text.trim(),
+                      'count': '$createdCount',
+                    })),
                   ),
                 ],
               ),
@@ -273,6 +285,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   Widget build(BuildContext context) {
     final coachesAsync = ref.watch(coachesProvider);
     final mediaQuery = MediaQuery.of(context);
+    final themeConfig = ref.watch(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
     
     return Container(
       constraints: BoxConstraints(
@@ -282,24 +296,34 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.98),
-            const Color(0xFF091424).withValues(alpha: 0.99),
-          ],
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.22),
+                  const Color(0xFF0284C7).withValues(alpha: 0.26),
+                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.28),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.35)
+              : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.60),
+            color: isDark
+                ? const Color(0xFF003B73).withValues(alpha: 0.35)
+                : const Color(0xFF0284C7).withValues(alpha: 0.12),
             blurRadius: 30,
             offset: const Offset(0, -6),
           ),
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.20 : 0.08),
             blurRadius: 28,
           ),
         ],
@@ -327,7 +351,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       height: 5,
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
+                        color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFF94A3B8),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -377,8 +401,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                   : (_isRecurring
                                       ? 'admin.group_create_title'.tr()
                                       : 'admin.class_single_title'.tr()),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.3,
@@ -391,8 +415,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                   : (_isRecurring
                                       ? 'admin.group_create_subtitle'.tr()
                                       : 'admin.class_single_subtitle'.tr()),
-                              style: const TextStyle(
-                                color: Colors.white60,
+                              style: TextStyle(
+                                color: isDark ? Colors.white60 : const Color(0xFF64748B),
                                 fontSize: 12,
                               ),
                             ),
@@ -403,15 +427,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.10),
+                          color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.18),
+                            color: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFCBD5E1),
                           ),
                         ),
                         child: IconButton(
                           padding: EdgeInsets.zero,
-                          icon: const Icon(LucideIcons.x, color: Colors.white70, size: 17),
+                          icon: Icon(LucideIcons.x, color: isDark ? Colors.white70 : const Color(0xFF475569), size: 17),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
@@ -420,12 +444,17 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   const SizedBox(height: 22),
 
                   // Title input (Group Name vs Class Title)
-                  _buildLabel(_isRecurring ? 'admin.group_name'.tr() : 'admin.class_name'.tr()),
+                  _buildLabel(_isRecurring ? 'admin.group_name'.tr() : 'admin.class_name'.tr(), isDark: isDark),
                   TextField(
                     controller: _titleController,
-                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: _inputDecoration(
                       hint: _isRecurring ? 'admin.group_name_hint'.tr() : 'admin.class_name_hint'.tr(),
+                      isDark: isDark,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -437,8 +466,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('admin.class_category'.tr()),
-                            _buildDropdown(_selectedCategory, _categories, (v) => setState(() => _selectedCategory = v!)),
+                            _buildLabel('admin.class_category'.tr(), isDark: isDark),
+                            _buildDropdown(_selectedCategory, _categories, (v) => setState(() => _selectedCategory = v!), isDark: isDark),
                           ],
                         ),
                       ),
@@ -447,16 +476,16 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('admin.class_coach'.tr()),
+                            _buildLabel('admin.class_coach'.tr(), isDark: isDark),
                             coachesAsync.when(
                               data: (coachesList) {
                                 if (coachesList.isEmpty) {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.06),
+                                      color: isDark ? const Color(0xFF1B385D) : const Color(0xFFF1F5F9),
                                       borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0)),
                                     ),
                                     child: Text('admin.class_no_coaches'.tr(), style: const TextStyle(color: Color(0xFFF43F5E), fontSize: 13)),
                                   );
@@ -483,12 +512,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                     }
                                   });
                                 }
-                                return _buildCoachDropdown(_selectedCoach, coachesList, (v) => setState(() => _selectedCoach = v!));
+                                return _buildCoachDropdown(_selectedCoach, coachesList, (v) => setState(() => _selectedCoach = v!), isDark: isDark);
                               },
                               loading: () => Container(
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.06),
+                                  color: isDark ? const Color(0xFF1B385D) : const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: const Center(child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)))),
@@ -504,12 +533,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
 
                   // Schedule Mode Selector (Single vs Recurring Year-long)
                   if (!_isEditing) ...[
-                    _buildModeSelector(),
+                    _buildModeSelector(isDark: isDark),
                     const SizedBox(height: 16),
                   ],
 
                   // Date Picker Card
-                  _buildLabel(_isRecurring ? 'Дата першого тренування (старт)' : 'admin.class_date'.tr()),
+                  _buildLabel(_isRecurring ? 'Дата першого тренування (старт)' : 'admin.class_date'.tr(), isDark: isDark),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -518,27 +547,41 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.07),
+                          color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                          border: Border.all(
+                            color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+                          ),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF38BDF8).withValues(alpha: 0.20),
+                                color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.22) : const Color(0xFFE0F2FE),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(LucideIcons.calendar, color: Color(0xFF00E5FF), size: 16),
+                              child: Icon(
+                                LucideIcons.calendar,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                size: 16,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Text(
                               '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}', 
-                              style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const Spacer(),
-                            const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 16),
+                            Icon(
+                              LucideIcons.chevronRight,
+                              color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                              size: 16,
+                            ),
                           ],
                         ),
                       ),
@@ -548,17 +591,18 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   // Recurring Options: Weekdays, Duration, Preview Banner
                   if (_isRecurring && !_isEditing) ...[
                     const SizedBox(height: 16),
-                    _buildWeekdaysSelector(),
+                    _buildWeekdaysSelector(isDark: isDark),
                     const SizedBox(height: 16),
-                    _buildDurationSelector(),
+                    _buildDurationSelector(isDark: isDark),
                     const SizedBox(height: 16),
-                    _buildRecurringBanner(),
+                    _buildRecurringBanner(isDark: isDark),
                   ],
                   const SizedBox(height: 16),
 
                   // Apple Alarm-style Time Drum Wheel Picker
                   AppleTimeWheelPicker(
                     initialTime: _selectedTime,
+                    isDark: isDark,
                     onTimeChanged: (newTime) {
                       setState(() => _selectedTime = newTime);
                     },
@@ -566,25 +610,27 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   const SizedBox(height: 16),
 
                   // Pool & Lane selection (Sport pool with lanes vs Kids pool)
-                  _buildPoolAndLaneSelector(),
+                  _buildPoolAndLaneSelector(isDark: isDark),
                   const SizedBox(height: 16),
 
                   // Capacity Slider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildLabel(_isRecurring ? 'Місткість групи (кількість учнів)' : 'admin.class_students_limit'.tr()),
+                      _buildLabel(_isRecurring ? 'Місткість групи (кількість учнів)' : 'admin.class_students_limit'.tr(), isDark: isDark),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.40)),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFF38BDF8),
+                          ),
                         ),
                         child: Text(
                           'admin.class_spots_count'.tr(args: ['$_maxCapacity']),
-                          style: const TextStyle(
-                            color: Color(0xFF00E5FF),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
@@ -595,7 +641,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: const Color(0xFF00E5FF),
-                      inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+                      inactiveTrackColor: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFCBD5E1),
                       thumbColor: const Color(0xFF00E5FF),
                       overlayColor: const Color(0xFF00E5FF).withValues(alpha: 0.20),
                       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
@@ -685,13 +731,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, {required bool isDark}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 7.0, left: 2),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.85),
+          color: isDark ? Colors.white.withValues(alpha: 0.90) : const Color(0xFF334155),
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
@@ -700,76 +746,117 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     );
   }
 
-  InputDecoration _inputDecoration({String? hint}) {
+  InputDecoration _inputDecoration({String? hint, required bool isDark}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13.5),
+      hintStyle: TextStyle(
+        color: isDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF94A3B8),
+        fontSize: 13.5,
+      ),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.07),
+      fillColor: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+        borderSide: BorderSide(
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+        borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.4),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 
-  Widget _buildDropdown(String value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(String value, List<String> items, ValueChanged<String?> onChanged, {required bool isDark}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          dropdownColor: const Color(0xFF13233C),
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-          icon: Icon(LucideIcons.chevronDown, color: Colors.white.withValues(alpha: 0.60), size: 18),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(_getCategoryLabel(i)))).toList(),
+          dropdownColor: isDark ? const Color(0xFF0E2544) : Colors.white,
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          icon: Icon(
+            LucideIcons.chevronDown,
+            color: isDark ? Colors.white70 : const Color(0xFF64748B),
+            size: 18,
+          ),
+          items: items.map((i) => DropdownMenuItem(
+            value: i,
+            child: Text(
+              _getCategoryLabel(i),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+          )).toList(),
           onChanged: onChanged,
         ),
       ),
     );
   }
 
-  Widget _buildCoachDropdown(AppUser? value, List<AppUser> items, ValueChanged<AppUser?> onChanged) {
+  Widget _buildCoachDropdown(AppUser? value, List<AppUser> items, ValueChanged<AppUser?> onChanged, {required bool isDark}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<AppUser>(
           value: value,
           isExpanded: true,
-          dropdownColor: const Color(0xFF13233C),
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-          icon: Icon(LucideIcons.chevronDown, color: Colors.white.withValues(alpha: 0.60), size: 18),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i.name))).toList(),
+          dropdownColor: isDark ? const Color(0xFF0E2544) : Colors.white,
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          icon: Icon(
+            LucideIcons.chevronDown,
+            color: isDark ? Colors.white70 : const Color(0xFF64748B),
+            size: 18,
+          ),
+          items: items.map((i) => DropdownMenuItem(
+            value: i,
+            child: Text(
+              i.name,
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+          )).toList(),
           onChanged: onChanged,
         ),
       ),
     );
   }
 
-  Widget _buildModeSelector() {
+  Widget _buildModeSelector({required bool isDark}) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
+          color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
         ),
       ),
       child: Row(
@@ -803,13 +890,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.users,
                       size: 15,
-                      color: _isRecurring ? Colors.white : const Color(0xFF00E5FF),
+                      color: _isRecurring ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '👥 Постійна група',
                       style: TextStyle(
-                        color: _isRecurring ? Colors.white : Colors.white,
+                        color: _isRecurring
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : const Color(0xFF475569)),
                         fontSize: 13,
                         fontWeight: _isRecurring ? FontWeight.w800 : FontWeight.w600,
                       ),
@@ -849,13 +938,17 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.calendar,
                       size: 15,
-                      color: !_isRecurring ? Colors.white : Colors.white60,
+                      color: !_isRecurring
+                          ? Colors.white
+                          : (isDark ? Colors.white60 : const Color(0xFF94A3B8)),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '⏱ Разове заняття',
                       style: TextStyle(
-                        color: !_isRecurring ? Colors.white : Colors.white70,
+                        color: !_isRecurring
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : const Color(0xFF475569)),
                         fontSize: 13,
                         fontWeight: !_isRecurring ? FontWeight.w700 : FontWeight.w500,
                       ),
@@ -870,7 +963,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     );
   }
 
-  Widget _buildWeekdaysSelector() {
+  Widget _buildWeekdaysSelector({required bool isDark}) {
     final days = [
       {'id': 1, 'label': 'Пн'},
       {'id': 2, 'label': 'Вт'},
@@ -887,11 +980,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildLabel('Дні тижня для регулярної групи'),
+            _buildLabel('Дні тижня для регулярної групи', isDark: isDark),
             Text(
               'Обрано: ${_selectedWeekdays.length}',
-              style: const TextStyle(
-                color: Color(0xFF00E5FF),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -932,12 +1025,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                               colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
                             )
                           : null,
-                      color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
+                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF00E5FF)
-                            : Colors.white.withValues(alpha: 0.16),
+                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
                         width: isSelected ? 1.2 : 1,
                       ),
                       boxShadow: isSelected
@@ -954,7 +1047,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       child: Text(
                         label,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark ? Colors.white70 : const Color(0xFF475569)),
                           fontSize: 13.5,
                           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                         ),
@@ -985,7 +1080,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     }
   }
 
-  Widget _buildDurationSelector() {
+  Widget _buildDurationSelector({required bool isDark}) {
     final durations = [
       {'weeks': 52, 'title': 'Рік', 'sub': '52 тиж.'},
       {'weeks': 26, 'title': 'Пів року', 'sub': '26 тиж.'},
@@ -996,7 +1091,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Період розкладу'),
+        _buildLabel('Період розкладу', isDark: isDark),
         const SizedBox(height: 6),
         Row(
           children: durations.map((dur) {
@@ -1021,12 +1116,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                               colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                             )
                           : null,
-                      color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
+                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF00E5FF)
-                            : Colors.white.withValues(alpha: 0.16),
+                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
                         width: isSelected ? 1.2 : 1,
                       ),
                       boxShadow: isSelected
@@ -1045,7 +1140,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         Text(
                           title,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white : const Color(0xFF0F172A)),
                             fontSize: 12.5,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                           ),
@@ -1057,7 +1154,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         Text(
                           sub,
                           style: TextStyle(
-                            color: isSelected ? Colors.white.withValues(alpha: 0.92) : Colors.white38,
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.92)
+                                : (isDark ? Colors.white38 : const Color(0xFF64748B)),
                             fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           ),
@@ -1075,7 +1174,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     );
   }
 
-  Widget _buildRecurringBanner() {
+  Widget _buildRecurringBanner({required bool isDark}) {
     final count = _calculatedRecurringCount;
     final timeStr = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
     final weekdaysSummary = _getWeekdaysNamesSummary();
@@ -1086,20 +1185,28 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF00E5FF).withValues(alpha: 0.16),
-            const Color(0xFF0284C7).withValues(alpha: 0.10),
-            const Color(0xFF0F172A).withValues(alpha: 0.60),
-          ],
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.14),
+                  const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  const Color(0xFF0284C7).withValues(alpha: 0.20),
+                ]
+              : [
+                  const Color(0xFFE0F2FE),
+                  const Color(0xFFF0F9FF),
+                  Colors.white,
+                ],
         ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+          color: isDark
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
+              : const Color(0xFF38BDF8).withValues(alpha: 0.60),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.18 : 0.10),
             blurRadius: 16,
           ),
         ],
@@ -1130,10 +1237,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Розклад постійної групи',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1142,14 +1249,20 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                            : const Color(0xFFBAE6FD).withValues(alpha: 0.50),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.5)),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.5)
+                              : const Color(0xFF0284C7).withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Text(
                         '$count занять',
-                        style: const TextStyle(
-                          color: Color(0xFF00E5FF),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1160,8 +1273,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 const SizedBox(height: 4),
                 Text(
                   'Група займатиметься щотижня по $weekdaysSummary о $timeStr на «$_selectedLane». Буде автоматично згенеровано $count занять на ${_getDurationPeriodSummary()}.',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : const Color(0xFF475569),
                     fontSize: 12,
                     height: 1.35,
                   ),
@@ -1174,23 +1287,23 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     );
   }
 
-  Widget _buildPoolAndLaneSelector() {
+  Widget _buildPoolAndLaneSelector({required bool isDark}) {
     final isSport = _selectedPoolType == 'Спортивний басейн';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Басейн та місце проведення'),
+        _buildLabel('Басейн та місце проведення', isDark: isDark),
         const SizedBox(height: 2),
 
         // 1. Primary Pool Type Selector (Дитячий vs Спортивний)
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.14),
+              color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
             ),
           ),
           child: Row(
@@ -1232,13 +1345,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         Icon(
                           LucideIcons.waves,
                           size: 16,
-                          color: isSport ? Colors.white : const Color(0xFF00E5FF),
+                          color: isSport ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Спортивний',
                           style: TextStyle(
-                            color: isSport ? Colors.white : Colors.white70,
+                            color: isSport
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : const Color(0xFF64748B)),
                             fontSize: 13,
                             fontWeight: isSport ? FontWeight.w800 : FontWeight.w500,
                           ),
@@ -1290,7 +1405,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         Text(
                           'Дитячий басейн',
                           style: TextStyle(
-                            color: !isSport ? Colors.white : Colors.white70,
+                            color: !isSport
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : const Color(0xFF64748B)),
                             fontSize: 13,
                             fontWeight: !isSport ? FontWeight.w800 : FontWeight.w500,
                           ),
@@ -1313,7 +1430,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               Text(
                 'Оберіть доріжку:',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.70),
+                  color: isDark ? Colors.white.withValues(alpha: 0.70) : const Color(0xFF475569),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1321,13 +1438,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  color: isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                      : const Color(0xFFE0F2FE),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   _selectedLane,
-                  style: const TextStyle(
-                    color: Color(0xFF00E5FF),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1357,12 +1476,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                   colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
                                 )
                               : null,
-                          color: isSelected ? null : Colors.white.withValues(alpha: 0.07),
+                          color: isSelected
+                              ? null
+                              : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? const Color(0xFF00E5FF)
-                                : Colors.white.withValues(alpha: 0.16),
+                                : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
                             width: 1,
                           ),
                           boxShadow: isSelected
@@ -1385,7 +1506,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             Text(
                               lane,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white70,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark ? Colors.white70 : const Color(0xFF475569)),
                                 fontSize: 13,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                               ),
@@ -1404,10 +1527,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: isDark ? const Color(0xFF1B385D).withValues(alpha: 0.55) : const Color(0xFFF0F9FF),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.30) : const Color(0xFFBAE6FD),
               ),
             ),
             child: Row(
@@ -1418,7 +1541,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   child: Text(
                     'Дитячий басейн без поділу на доріжки (мала глибина для дітей)',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
+                      color: isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0369A1),
                       fontSize: 12,
                       height: 1.3,
                     ),

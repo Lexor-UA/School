@@ -16,6 +16,7 @@ import 'payment_sheet.dart';
 import 'admin_calendar_screen.dart';
 import 'admin_clients_screen.dart';
 import 'admin_coaches_screen.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 class AdminGlobalSearchSheet extends ConsumerStatefulWidget {
   final int initialCategoryIndex;
@@ -34,6 +35,9 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   final FocusNode _focusNode = FocusNode();
   String _query = '';
   late int _selectedCategoryIndex;
+
+  AppThemeConfig get _theme => ref.watch(appThemeControllerProvider);
+  bool get _isDark => _theme.isDark;
 
   List<String> get _categories => [
     'admin.cat_all'.tr(),
@@ -74,29 +78,41 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           constraints: BoxConstraints(maxHeight: maxHeight),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF13233C),
-                Color(0xFF0A1220),
-              ],
-            ),
+            color: _isDark ? null : Colors.white,
+            gradient: _isDark
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF225182),
+                      Color(0xFF143456),
+                    ],
+                  )
+                : null,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
-              width: 1.2,
+              color: _isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
+                  : _theme.cardBorder,
+              width: 1.4,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.6),
-                blurRadius: 30,
+                color: Colors.black.withValues(alpha: _isDark ? 0.50 : 0.08),
+                blurRadius: 36,
                 offset: const Offset(0, -8),
               ),
+              if (_isDark) ...[
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                  blurRadius: 26,
+                  spreadRadius: 0,
+                ),
+              ],
             ],
           ),
           child: StreamBuilder<QuerySnapshot>(
@@ -228,11 +244,19 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           // Drag Handle
           Center(
             child: Container(
-              width: 42,
+              width: 44,
               height: 4.5,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
+                color: _isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.75) : const Color(0xFFCBD5E1),
                 borderRadius: BorderRadius.circular(3),
+                boxShadow: _isDark
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.55),
+                          blurRadius: 6,
+                        ),
+                      ]
+                    : null,
               ),
             ),
           ),
@@ -243,18 +267,25 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(9),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF38BDF8).withValues(alpha: 0.25),
-                          const Color(0xFF00B4D8).withValues(alpha: 0.1),
-                        ],
+                        colors: _theme.accentGradient,
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _theme.accentPrimary.withValues(alpha: 0.40),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    child: const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 18),
+                    child: const Icon(LucideIcons.search, color: Colors.white, size: 18),
                   ),
                   const SizedBox(width: 12),
                   Column(
@@ -262,24 +293,39 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     children: [
                       Text(
                         'admin.smart_search_title'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
+                        style: TextStyle(
+                          color: _isDark ? Colors.white : _theme.textPrimary,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
+                          letterSpacing: 0.2,
                         ),
                       ),
                       Text(
                         'admin.smart_search_subtitle'.tr(),
-                        style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                        style: TextStyle(
+                          color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
-              IconButton(
-                icon: const Icon(LucideIcons.x, color: Colors.white60, size: 20),
-                onPressed: () => Navigator.pop(context),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: _isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                  border: _isDark
+                      ? Border.all(color: Colors.white.withValues(alpha: 0.20))
+                      : null,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(LucideIcons.x, color: _isDark ? Colors.white : _theme.textSecondary, size: 18),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
             ],
           ),
@@ -294,45 +340,66 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   Widget _buildSearchInputField() {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1B2E4D).withValues(alpha: 0.9),
-            const Color(0xFF122036).withValues(alpha: 0.9),
-          ],
-        ),
+        gradient: _isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.09),
+                ],
+              )
+            : null,
+        color: _isDark ? null : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-          width: 1.2,
+          color: _isDark
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
+              : _theme.cardBorder,
+          width: 1.4,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: const Color(0xFF38BDF8).withValues(alpha: 0.08),
-            blurRadius: 18,
-          ),
-        ],
+        boxShadow: _isDark
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 10,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: TextField(
         controller: _searchController,
         focusNode: _focusNode,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
+        style: TextStyle(
+          color: _isDark ? Colors.white : _theme.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
         decoration: InputDecoration(
           hintText: 'admin.smart_search_hint'.tr(),
           hintStyle: TextStyle(
-            color: Colors.white.withValues(alpha: 0.38),
+            color: _isDark ? Colors.white.withValues(alpha: 0.70) : _theme.textMuted,
             fontSize: 13.5,
           ),
-          prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF38BDF8), size: 19),
+          prefixIcon: Icon(
+            LucideIcons.search,
+            color: _isDark ? const Color(0xFF00E5FF) : _theme.accentPrimary,
+            size: 20,
+          ),
           suffixIcon: _query.isNotEmpty
               ? IconButton(
-                  icon: const Icon(LucideIcons.x, color: Colors.white60, size: 17),
+                  icon: Icon(LucideIcons.x, color: _isDark ? Colors.white : _theme.textSecondary, size: 17),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _query = '');
@@ -357,6 +424,9 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
       child: Row(
         children: List.generate(_categories.length, (idx) {
           final isSelected = _selectedCategoryIndex == idx;
+          final activeIconColor = Colors.white;
+          final inactiveIconColor = _isDark ? Colors.white70 : _theme.textSecondary;
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
@@ -365,16 +435,27 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF38BDF8) : Colors.white.withValues(alpha: 0.05),
+                  gradient: isSelected
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: _theme.accentGradient,
+                        )
+                      : null,
+                  color: isSelected
+                      ? null
+                      : (_isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFF1F5F9)),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF38BDF8) : Colors.white.withValues(alpha: 0.08),
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.60)
+                        : (_isDark ? Colors.white.withValues(alpha: 0.25) : _theme.cardBorder),
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                            blurRadius: 10,
+                            color: _theme.accentPrimary.withValues(alpha: 0.45),
+                            blurRadius: 12,
                             offset: const Offset(0, 2),
                           )
                         ]
@@ -383,18 +464,20 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (idx == 1) Icon(LucideIcons.user, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 2) Icon(LucideIcons.creditCard, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 3) Icon(LucideIcons.users, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 4) Icon(LucideIcons.waves, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
-                    if (idx == 5) Icon(LucideIcons.award, size: 13, color: isSelected ? const Color(0xFF081424) : Colors.white60),
+                    if (idx == 1) Icon(LucideIcons.user, size: 13, color: isSelected ? activeIconColor : inactiveIconColor),
+                    if (idx == 2) Icon(LucideIcons.creditCard, size: 13, color: isSelected ? activeIconColor : inactiveIconColor),
+                    if (idx == 3) Icon(LucideIcons.users, size: 13, color: isSelected ? activeIconColor : inactiveIconColor),
+                    if (idx == 4) Icon(LucideIcons.waves, size: 13, color: isSelected ? activeIconColor : inactiveIconColor),
+                    if (idx == 5) Icon(LucideIcons.award, size: 13, color: isSelected ? activeIconColor : inactiveIconColor),
                     if (idx > 0) const SizedBox(width: 5),
                     Text(
                       _categories[idx],
                       style: TextStyle(
-                        color: isSelected ? const Color(0xFF081424) : Colors.white70,
+                        color: isSelected
+                            ? Colors.white
+                            : (_isDark ? Colors.white.withValues(alpha: 0.90) : _theme.textSecondary),
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                       ),
                     ),
                   ],
@@ -421,9 +504,9 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section: Швидкі розділи
-          const Text(
+          Text(
             'Швидкий перехід за категоріями',
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _theme.textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
 
@@ -434,7 +517,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   icon: LucideIcons.users,
                   title: 'Всі клієнти',
                   subtitle: 'База батьків та дітей',
-                  color: const Color(0xFF00B4D8),
+                  color: const Color(0xFF0EA5E9),
+                  gradientColors: const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminClientsScreen()));
@@ -447,7 +531,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   icon: LucideIcons.award,
                   title: 'Тренери клубу',
                   subtitle: 'Команда та контакти',
-                  color: const Color(0xFF8B5CF6),
+                  color: const Color(0xFFA855F7),
+                  gradientColors: const [Color(0xFFA855F7), Color(0xFF7C3AED)],
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCoachesScreen()));
@@ -465,6 +550,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   title: 'Абонементи',
                   subtitle: 'Активні та боржники',
                   color: const Color(0xFF10B981),
+                  gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
                   onTap: () {
                     Navigator.pop(context);
                     showModalBottomSheet(
@@ -482,7 +568,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   icon: LucideIcons.calendar,
                   title: 'Розклад груп',
                   subtitle: 'Календар басейну',
-                  color: const Color(0xFF38BDF8),
+                  color: const Color(0xFF06B6D4),
+                  gradientColors: const [Color(0xFF06B6D4), Color(0xFF0284C7)],
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCalendarScreen()));
@@ -499,16 +586,27 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Останні додані клієнти',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                Text(
+                  'admin.recent_added_clients'.tr(),
+                  style: TextStyle(
+                    color: _isDark ? Colors.white : _theme.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminClientsScreen()));
                   },
-                  child: const Text('Всі', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12)),
+                  child: Text(
+                    'admin.all'.tr(),
+                    style: TextStyle(
+                      color: _isDark ? const Color(0xFF00E5FF) : _theme.accentPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -529,9 +627,13 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
           // Section: Найближчі заняття
           if (upcomingClasses.isNotEmpty) ...[
-            const Text(
+            Text(
               'Найближчі тренування',
-              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: _isDark ? Colors.white : _theme.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             ...upcomingClasses.map((cl) => _buildClassResultRow(cl)),
@@ -546,29 +648,73 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     required String title,
     required String subtitle,
     required Color color,
+    required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.25)),
+            gradient: _isDark
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      gradientColors[0].withValues(alpha: 0.36),
+                      gradientColors[1].withValues(alpha: 0.22),
+                    ],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      gradientColors[0].withValues(alpha: 0.12),
+                      gradientColors[1].withValues(alpha: 0.05),
+                    ],
+                  ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: _isDark
+                  ? gradientColors[0].withValues(alpha: 0.60)
+                  : gradientColors[0].withValues(alpha: 0.35),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: gradientColors[0].withValues(alpha: _isDark ? 0.30 : 0.12),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: gradientColors,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors[0].withValues(alpha: 0.45),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 18),
+                child: Icon(icon, color: Colors.white, size: 19),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -577,13 +723,21 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: _isDark ? Colors.white : _theme.textPrimary,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
+                      style: TextStyle(
+                        color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -615,18 +769,18 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(LucideIcons.searchX, size: 48, color: Colors.white.withValues(alpha: 0.25)),
+              Icon(LucideIcons.searchX, size: 48, color: _isDark ? Colors.white.withValues(alpha: 0.30) : _theme.textMuted),
               const SizedBox(height: 14),
               Text(
                 'Нічого не знайдено за запитом "$_query"',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                style: TextStyle(color: _theme.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Спробуйте змінити пошуковий запит або обрати іншу категорію',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 12.5),
+                style: TextStyle(color: _theme.textSecondary, fontSize: 12.5),
               ),
             ],
           ),
@@ -649,8 +803,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             'ЗНАЙДЕНО: $totalResults',
-            style: const TextStyle(
-              color: Color(0xFF38BDF8),
+            style: TextStyle(
+              color: _theme.accentPrimary,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
@@ -738,8 +892,11 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
+              color: color.withValues(alpha: _isDark ? 0.20 : 0.12),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: color.withValues(alpha: _isDark ? 0.40 : 0.25),
+              ),
             ),
             child: Text(
               '$count',
@@ -762,60 +919,182 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     String password = '1',
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        gradient: _isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.09),
+                ],
+              )
+            : null,
+        color: _isDark ? null : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: _isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                  blurRadius: 8,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFF00B4D8).withValues(alpha: 0.2),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF00E5FF),
+                Color(0xFF0284C7),
+              ],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.50),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
           child: Text(
             name.isNotEmpty ? name[0].toUpperCase() : 'К',
-            style: const TextStyle(color: Color(0xFF00B4D8), fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
           ),
         ),
-        title: Text(name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+        title: Text(
+          name,
+          style: TextStyle(
+            color: _isDark ? Colors.white : _theme.textPrimary,
+            fontSize: 14.5,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         subtitle: Text(
           '$phone • Логін: $loginId',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+          style: TextStyle(
+            color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 18),
-              tooltip: 'Абонементи клієнта',
-              onPressed: () {
-                Navigator.pop(context);
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => PaymentSheet(initialSearchQuery: name),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 18),
-              tooltip: 'Редагувати',
-              onPressed: () {
-                Navigator.pop(context);
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => EditClientSheet(
-                    clientId: clientId,
-                    initialName: name,
-                    initialPhone: phone,
-                    initialLoginId: loginId,
-                    initialPassword: password,
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFF59E0B),
+                    Color(0xFFD97706),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.45),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                );
-              },
+                ],
+              ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(LucideIcons.creditCard, color: Colors.white, size: 17),
+                tooltip: 'admin.tooltip_client_subs'.tr(),
+                onPressed: () {
+                  Navigator.pop(context);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => PaymentSheet(initialSearchQuery: name),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF38BDF8),
+                    Color(0xFF0284C7),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF38BDF8).withValues(alpha: 0.45),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(LucideIcons.pencil, color: Colors.white, size: 17),
+                tooltip: 'admin.edit'.tr(),
+                onPressed: () {
+                  Navigator.pop(context);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => EditClientSheet(
+                      clientId: clientId,
+                      initialName: name,
+                      initialPhone: phone,
+                      initialLoginId: loginId,
+                      initialPassword: password,
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -830,46 +1109,125 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     required String parentName,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 9),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        gradient: _isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.09),
+                ],
+              )
+            : null,
+        color: _isDark ? null : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: _isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                  blurRadius: 8,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF38BDF8),
+                  Color(0xFF0284C7),
+                ],
+              ),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.45),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF38BDF8).withValues(alpha: 0.40),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Icon(LucideIcons.waves, color: Color(0xFF38BDF8), size: 18),
+            child: const Icon(LucideIcons.waves, color: Colors.white, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(childName, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(
+                  childName,
+                  style: TextStyle(
+                    color: _isDark ? Colors.white : _theme.textPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   'Батьки: $parentName',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                  style: TextStyle(
+                    color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF00E5FF),
+                  Color(0xFF0284C7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.40),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               'Рівень $level',
-              style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -884,42 +1242,138 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     required String loginId,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        gradient: _isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.09),
+                ],
+              )
+            : null,
+        color: _isDark ? null : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: _isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: const Color(0xFFA855F7).withValues(alpha: 0.08),
+                  blurRadius: 8,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFA855F7),
+                Color(0xFF7C3AED),
+              ],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.50),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFA855F7).withValues(alpha: 0.40),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
           child: Text(
             name.isNotEmpty ? name[0].toUpperCase() : 'Т',
-            style: const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
           ),
         ),
-        title: Text(name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+        title: Text(
+          name,
+          style: TextStyle(
+            color: _isDark ? Colors.white : _theme.textPrimary,
+            fontSize: 14.5,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         subtitle: Text(
           '$phone • Логін: $loginId',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+          style: TextStyle(
+            color: _isDark ? const Color(0xFFE9D5FF) : _theme.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        trailing: IconButton(
-          icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 18),
-          tooltip: 'Редагувати тренера',
-          onPressed: () {
-            Navigator.pop(context);
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => EditCoachSheet(
-                coachId: coachId,
-                initialName: name,
-                initialPhone: phone,
+        trailing: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF38BDF8),
+                Color(0xFF0284C7),
+              ],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.45),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.45),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            );
-          },
+            ],
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: const Icon(LucideIcons.pencil, color: Colors.white, size: 17),
+            tooltip: 'admin.tooltip_edit_coach'.tr(),
+            onPressed: () {
+              Navigator.pop(context);
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => EditCoachSheet(
+                  coachId: coachId,
+                  initialName: name,
+                  initialPhone: phone,
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -930,24 +1384,76 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     final timeStr = timeFormat.format(cl.startTime);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 9),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        gradient: _isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.09),
+                ],
+              )
+            : null,
+        color: _isDark ? null : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: _isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                  blurRadius: 8,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF10B981),
+                  Color(0xFF059669),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.40),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.40),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               timeStr,
-              style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -955,11 +1461,22 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(cl.title, style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold)),
+                Text(
+                  cl.title,
+                  style: TextStyle(
+                    color: _isDark ? Colors.white : _theme.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   'Тренер: ${cl.coachName} • ${cl.lane}',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5),
+                  style: TextStyle(
+                    color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -967,12 +1484,19 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: _isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _isDark ? Colors.white.withValues(alpha: 0.25) : _theme.cardBorder,
+              ),
             ),
             child: Text(
               '${cl.enrolledChildIds.length}/${cl.maxCapacity}',
-              style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: _isDark ? Colors.white : _theme.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -984,47 +1508,121 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     final expiryStr = s.expiryDate != null ? DateFormat('dd.MM.yyyy').format(s.expiryDate!) : 'Безстроково';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 9),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        gradient: _isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.09),
+                ],
+              )
+            : null,
+        color: _isDark ? null : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: _isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                  blurRadius: 8,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFF59E0B),
+                  Color(0xFFD97706),
+                ],
+              ),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.45),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.40),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Icon(LucideIcons.creditCard, color: Color(0xFFF59E0B), size: 16),
+            child: const Icon(LucideIcons.creditCard, color: Colors.white, size: 17),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.serviceName ?? 'Абонемент', style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold)),
+                Text(
+                  s.serviceName ?? 'Абонемент',
+                  style: TextStyle(
+                    color: _isDark ? Colors.white : _theme.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   'Учень: ${s.ownerName} • До: $expiryStr',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5),
+                  style: TextStyle(
+                    color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
-              color: s.remainingClasses > 0 ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFFF43F5E).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                colors: s.remainingClasses > 0
+                    ? const [Color(0xFF10B981), Color(0xFF059669)]
+                    : const [Color(0xFFF43F5E), Color(0xFFE11D48)],
+              ),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.40),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (s.remainingClasses > 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.40),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               '${s.remainingClasses} з ${s.totalClasses}',
-              style: TextStyle(
-                color: s.remainingClasses > 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),

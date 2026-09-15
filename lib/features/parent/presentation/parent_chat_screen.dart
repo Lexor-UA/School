@@ -73,7 +73,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     final messagesAsync = ref.watch(chatMessagesStreamProvider(dialogId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF030D1B),
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           const AnimatedWaterBackground(),
@@ -129,40 +129,75 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
-            onPressed: () => context.pop(),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: Colors.cyanAccent.withValues(alpha: 0.2),
-            child: const Icon(LucideIcons.headset, color: Colors.cyanAccent),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title ?? 'Підтримка CitySwim',
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  widget.subtitle ?? 'Служба турботи про клієнтів',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                ),
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white.withValues(alpha: 0.12),
+                Colors.white.withValues(alpha: 0.04),
               ],
             ),
+            border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1.1)),
           ),
-        ],
+          child: Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                ),
+                child: IconButton(
+                  icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
+                  onPressed: () => context.pop(),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+                      blurRadius: 14,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: const Icon(LucideIcons.headset, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title ?? 'Підтримка CitySwim',
+                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: -0.2),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle ?? 'Служба турботи про клієнтів',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -172,51 +207,79 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isMe 
-              ? [Colors.cyanAccent.withValues(alpha: 0.8), Colors.blueAccent.withValues(alpha: 0.8)]
-              : [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isMe ? 20 : 0),
-            bottomRight: Radius.circular(isMe ? 0 : 20),
-          ),
-          boxShadow: isMe 
-            ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 10)]
-            : [],
-          border: Border.all(
-            color: isMe ? Colors.cyanAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(22),
+            topRight: const Radius.circular(22),
+            bottomLeft: Radius.circular(isMe ? 22 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 22),
+          ),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isMe
+                      ? [
+                          const Color(0xFF06B6D4).withValues(alpha: 0.90),
+                          const Color(0xFF0284C7).withValues(alpha: 0.90),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.14),
+                          Colors.white.withValues(alpha: 0.05),
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(22),
+                  topRight: const Radius.circular(22),
+                  bottomLeft: Radius.circular(isMe ? 22 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 22),
+                ),
+                border: Border.all(
+                  color: isMe
+                      ? const Color(0xFF06B6D4).withValues(alpha: 0.6)
+                      : Colors.white.withValues(alpha: 0.18),
+                  width: 1.1,
+                ),
+                boxShadow: isMe
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     text,
                     style: TextStyle(
-                      color: isMe ? Colors.black87 : Colors.white,
+                      color: isMe ? Colors.white : Colors.white.withValues(alpha: 0.95),
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
+                      height: 1.35,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     time,
                     style: TextStyle(
-                      color: isMe ? Colors.black54 : Colors.white54,
+                      color: isMe ? Colors.white.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.5),
                       fontSize: 10,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -224,56 +287,78 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
             ),
           ),
         ),
-      ).animate().fadeIn(delay: (20 * index).ms).slideY(begin: 0.1),
+      ).animate().fadeIn(delay: (20 * index).ms).slideY(begin: 0.08),
     );
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(LucideIcons.paperclip, color: Colors.white54),
-            onPressed: () {},
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white.withValues(alpha: 0.06),
+                Colors.white.withValues(alpha: 0.02),
+              ],
+            ),
+            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1.1)),
           ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(LucideIcons.paperclip, color: Colors.white.withValues(alpha: 0.6)),
+                onPressed: () {},
               ),
-              child: TextField(
-                controller: _messageController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: 'Повідомлення...',
-                  hintStyle: TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                  ),
+                  child: TextField(
+                    controller: _messageController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Повідомлення...',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
-            ),
+              const SizedBox(width: 10),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(LucideIcons.send, color: Colors.white, size: 19),
+                  onPressed: _sendMessage,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Colors.cyanAccent, Colors.blueAccent]),
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 10)],
-            ),
-            child: IconButton(
-              icon: const Icon(LucideIcons.send, color: Colors.black87, size: 20),
-              onPressed: _sendMessage,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

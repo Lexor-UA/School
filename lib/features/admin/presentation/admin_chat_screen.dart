@@ -8,6 +8,7 @@ import 'package:swimming_school_app/shared/widgets/animated_water_background.dar
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 class AdminChatScreen extends ConsumerStatefulWidget {
   final String clientName;
@@ -63,10 +64,12 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
     final messagesAsync = ref.watch(chatMessagesStreamProvider(widget.clientId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF030D1B),
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           const AnimatedWaterBackground(),
@@ -74,15 +77,18 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(context),
+                _buildHeader(context, isDark, currentTheme),
                 Expanded(
                   child: messagesAsync.when(
                     data: (messages) {
                       if (messages.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Немає повідомлень.',
-                            style: TextStyle(color: Colors.white54, fontSize: 16),
+                            style: TextStyle(
+                              color: isDark ? Colors.white54 : currentTheme.textSecondary,
+                              fontSize: 16,
+                            ),
                           ),
                         );
                       }
@@ -95,22 +101,31 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
 
                       return ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(20.0),
                         physics: const BouncingScrollPhysics(),
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
                           final isMe = msg.senderId == 'admin';
                           final timeString = "${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}";
-                          return _buildMessageBubble(msg.text, isMe, timeString, index);
+                          return _buildMessageBubble(msg.text, isMe, timeString, index, isDark, currentTheme);
                         },
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
-                    error: (err, stack) => Center(child: Text('Помилка: $err', style: const TextStyle(color: Colors.white))),
+                    loading: () => Center(
+                      child: CircularProgressIndicator(
+                        color: isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary,
+                      ),
+                    ),
+                    error: (err, stack) => Center(
+                      child: Text(
+                        'Помилка: $err',
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
                   ),
                 ),
-                _buildInputArea(),
+                _buildInputArea(isDark, currentTheme),
               ],
             ),
           ),
@@ -119,7 +134,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, bool isDark, AppThemeConfig currentTheme) {
     final userRoles = ref.watch(usersRoleMapProvider).value ?? {};
 
     String role = 'parent';
@@ -142,267 +157,310 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
       displayName = displayName.replaceFirst('🔑', '').trim();
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07152B).withValues(alpha: 0.85),
-        border: Border(
-          bottom: BorderSide(
-            color: isRecovery
-                ? const Color(0xFFF59E0B).withValues(alpha: 0.3)
-                : (isCoach
-                    ? const Color(0xFF10B981).withValues(alpha: 0.25)
-                    : Colors.white.withValues(alpha: 0.08)),
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.85),
+            border: Border(
+              bottom: BorderSide(
+                color: isRecovery
+                    ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
+                    : (isCoach
+                        ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                        : (isDark ? Colors.white.withValues(alpha: 0.25) : currentTheme.cardBorder)),
+                width: 1.2,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.black.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark ? Colors.white.withValues(alpha: 0.20) : currentTheme.cardBorder,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    LucideIcons.arrowLeft,
+                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                    size: 20,
+                  ),
+                  onPressed: () => context.pop(),
+                  constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Role-specific avatar
+              if (isRecovery)
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: const Color(0xFFFDE68A), width: 1.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text('🔑', style: TextStyle(fontSize: 20)),
+                  ),
+                )
+              else
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isCoach
+                          ? const Color(0xFF10B981).withValues(alpha: 0.8)
+                          : (isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.8) : currentTheme.accentPrimary),
+                      width: 1.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isCoach
+                                ? const Color(0xFF10B981)
+                                : (isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary))
+                            .withValues(alpha: 0.35),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(widget.clientId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      final data = snapshot.data?.data() as Map<String, dynamic>?;
+                      final avatarUrl = data?['avatarUrl'] as String?;
+                      if (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundImage: NetworkImage(avatarUrl),
+                          backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+                        );
+                      }
+
+                      return CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: isCoach
+                                  ? const [Color(0xFF10B981), Color(0xFF0284C7)]
+                                  : const [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            displayName,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Role Badge
+                        if (isRecovery)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.25 : 0.18),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🔑 ', style: TextStyle(fontSize: 8.5)),
+                                Text(
+                                  'ВІДНОВЛЕННЯ',
+                                  style: TextStyle(
+                                    color: Color(0xFFFBBF24),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (isCoach)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.18),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🏊 ', style: TextStyle(fontSize: 8.5)),
+                                Text(
+                                  'ТРЕНЕР',
+                                  style: TextStyle(
+                                    color: Color(0xFF34D399),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF38BDF8).withValues(alpha: isDark ? 0.2 : 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFF38BDF8).withValues(alpha: 0.45),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('👤 ', style: TextStyle(fontSize: 8.5)),
+                                Text(
+                                  'КЛІЄНТ',
+                                  style: TextStyle(
+                                    color: Color(0xFF38BDF8),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          isRecovery
+                              ? 'Запит на відновлення доступу'
+                              : (isCoach ? 'В мережі • Тренер школи' : 'В мережі'),
+                          style: TextStyle(
+                            color: isRecovery
+                                ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309))
+                                : (isDark ? Colors.white70 : currentTheme.textSecondary),
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  LucideIcons.phone,
+                  color: isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary,
+                  size: 20,
+                ),
+                onPressed: () {},
+              ),
+            ],
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
-            onPressed: () => context.pop(),
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            padding: EdgeInsets.zero,
-          ),
-          const SizedBox(width: 6),
-          // Role-specific avatar
-          if (isRecovery)
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: const Color(0xFFFDE68A), width: 1.8),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text('🔑', style: TextStyle(fontSize: 20)),
-              ),
-            )
-          else
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isCoach
-                      ? const Color(0xFF10B981).withValues(alpha: 0.7)
-                      : const Color(0xFF38BDF8).withValues(alpha: 0.6),
-                  width: 1.8,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isCoach ? const Color(0xFF10B981) : const Color(0xFF38BDF8))
-                        .withValues(alpha: 0.3),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(widget.clientId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  final data = snapshot.data?.data() as Map<String, dynamic>?;
-                  final avatarUrl = data?['avatarUrl'] as String?;
-                  if (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
-                    return CircleAvatar(
-                      radius: 20,
-                      backgroundImage: NetworkImage(avatarUrl),
-                      backgroundColor: Colors.white12,
-                    );
-                  }
-
-                  return CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.transparent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: isCoach
-                              ? const [Color(0xFF10B981), Color(0xFF0284C7)]
-                              : const [Color(0xFF00D2FF), Color(0xFF0077B6)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.2,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Role Badge
-                    if (isRecovery)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.55),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('🔑 ', style: TextStyle(fontSize: 8.5)),
-                            Text(
-                              'ВІДНОВЛЕННЯ',
-                              style: TextStyle(
-                                color: Color(0xFFFBBF24),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (isCoach)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.55),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('🏊 ', style: TextStyle(fontSize: 8.5)),
-                            Text(
-                              'ТРЕНЕР',
-                              style: TextStyle(
-                                color: Color(0xFF34D399),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('👤 ', style: TextStyle(fontSize: 8.5)),
-                            Text(
-                              'КЛІЄНТ',
-                              style: TextStyle(
-                                color: Color(0xFF38BDF8),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      isRecovery
-                          ? 'Запит на відновлення доступу'
-                          : (isCoach ? 'В мережі • Тренер школи' : 'В мережі'),
-                      style: TextStyle(
-                        color: isRecovery
-                            ? const Color(0xFFFBBF24).withValues(alpha: 0.8)
-                            : Colors.white54,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(LucideIcons.phone, color: Color(0xFF38BDF8), size: 20),
-            onPressed: () {},
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(String text, bool isMe, String time, int index) {
+  Widget _buildMessageBubble(
+    String text,
+    bool isMe,
+    String time,
+    int index,
+    bool isDark,
+    AppThemeConfig currentTheme,
+  ) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -411,28 +469,39 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isMe 
-              ? [Colors.cyanAccent.withValues(alpha: 0.8), Colors.blueAccent.withValues(alpha: 0.8)]
-              : [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)],
+              ? [const Color(0xFF00E5FF).withValues(alpha: 0.90), const Color(0xFF0077B6).withValues(alpha: 0.90)]
+              : (isDark
+                  ? [Colors.white.withValues(alpha: 0.22), Colors.white.withValues(alpha: 0.12)]
+                  : [Colors.white.withValues(alpha: 0.95), const Color(0xFFF1F5F9).withValues(alpha: 0.95)]),
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isMe ? 20 : 0),
-            bottomRight: Radius.circular(isMe ? 0 : 20),
+            bottomLeft: Radius.circular(isMe ? 20 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 20),
           ),
           boxShadow: isMe 
-            ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 10)]
-            : [],
+            ? [BoxShadow(color: const Color(0xFF00E5FF).withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 2))]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
           border: Border.all(
-            color: isMe ? Colors.cyanAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
+            color: isMe
+                ? Colors.white.withValues(alpha: 0.6)
+                : (isDark ? Colors.white.withValues(alpha: 0.30) : currentTheme.cardBorder),
+            width: 1.2,
           ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
@@ -441,7 +510,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                   Text(
                     text,
                     style: TextStyle(
-                      color: isMe ? Colors.black87 : Colors.white,
+                      color: isMe ? Colors.white : (isDark ? Colors.white : currentTheme.textPrimary),
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
@@ -450,7 +519,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                   Text(
                     time,
                     style: TextStyle(
-                      color: isMe ? Colors.black54 : Colors.white54,
+                      color: isMe ? Colors.white70 : (isDark ? Colors.white60 : currentTheme.textMuted),
                       fontSize: 10,
                     ),
                   ),
@@ -463,52 +532,90 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     );
   }
 
-  Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(LucideIcons.paperclip, color: Colors.white54),
-            onPressed: () {},
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+  Widget _buildInputArea(bool isDark, AppThemeConfig currentTheme) {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.white.withValues(alpha: 0.90),
+            border: Border(
+              top: BorderSide(
+                color: isDark ? Colors.white.withValues(alpha: 0.22) : currentTheme.cardBorder,
               ),
-              child: TextField(
-                controller: _messageController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: 'Повідомлення...',
-                  hintStyle: TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
+            ),
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(
+                  LucideIcons.paperclip,
+                  color: isDark ? Colors.white70 : currentTheme.textSecondary,
                 ),
-                onSubmitted: (_) => _sendMessage(),
+                onPressed: () {},
               ),
-            ),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.28)
+                          : currentTheme.cardBorder,
+                    ),
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _messageController,
+                    style: TextStyle(color: isDark ? Colors.white : currentTheme.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Повідомлення...',
+                      hintStyle: TextStyle(
+                        color: isDark ? Colors.white54 : currentTheme.textMuted,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(LucideIcons.send, color: Colors.white, size: 19),
+                  onPressed: _sendMessage,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Colors.cyanAccent, Colors.blueAccent]),
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 10)],
-            ),
-            child: IconButton(
-              icon: const Icon(LucideIcons.send, color: Colors.black87, size: 20),
-              onPressed: _sendMessage,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

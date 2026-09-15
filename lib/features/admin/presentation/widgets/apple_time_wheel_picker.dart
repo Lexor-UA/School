@@ -8,11 +8,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 class AppleTimeWheelPicker extends StatefulWidget {
   final TimeOfDay initialTime;
   final ValueChanged<TimeOfDay> onTimeChanged;
+  final bool? isDark;
 
   const AppleTimeWheelPicker({
     super.key,
     required this.initialTime,
     required this.onTimeChanged,
+    this.isDark,
   });
 
   @override
@@ -118,21 +120,28 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveIsDark = widget.isDark ?? (Theme.of(context).brightness == Brightness.dark);
     final formattedTime =
         '${_selectedHour.toString().padLeft(2, '0')}:${_selectedMinute.toString().padLeft(2, '0')}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: effectiveIsDark
+            ? const Color(0xFF18385E).withValues(alpha: 0.65)
+            : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
+          color: effectiveIsDark
+              ? const Color(0xFF38BDF8).withValues(alpha: 0.32)
+              : const Color(0xFF0EA5E9).withValues(alpha: 0.25),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: effectiveIsDark
+                ? Colors.black.withValues(alpha: 0.20)
+                : const Color(0xFF0284C7).withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -150,20 +159,20 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                      color: const Color(0xFF0EA5E9).withValues(alpha: effectiveIsDark ? 0.22 : 0.12),
                       borderRadius: BorderRadius.circular(9),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       LucideIcons.clock,
-                      color: Color(0xFF00E5FF),
+                      color: effectiveIsDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       size: 15,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Час початку',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: effectiveIsDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -224,12 +233,16 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                            : Colors.white.withValues(alpha: 0.06),
+                            : (effectiveIsDark
+                                ? const Color(0xFF1E426D).withValues(alpha: 0.70)
+                                : const Color(0xFFF0F9FF)),
                         borderRadius: BorderRadius.circular(9),
                         border: Border.all(
                           color: isSelected
                               ? const Color(0xFF00E5FF)
-                              : Colors.white.withValues(alpha: 0.12),
+                              : (effectiveIsDark
+                                  ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
+                                  : const Color(0xFFBAE6FD)),
                           width: isSelected ? 1.2 : 1.0,
                         ),
                       ),
@@ -237,7 +250,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                         child: Text(
                           preset,
                           style: TextStyle(
-                            color: isSelected ? const Color(0xFF00E5FF) : Colors.white70,
+                            color: isSelected
+                                ? (effectiveIsDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                : (effectiveIsDark ? Colors.white.withValues(alpha: 0.88) : const Color(0xFF334155)),
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                           ),
@@ -263,7 +278,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                     child: Text(
                       'ГОДИНИ',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: effectiveIsDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
@@ -277,7 +292,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                     child: Text(
                       'ХВИЛИНИ',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: effectiveIsDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
@@ -304,15 +319,18 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                      color: (effectiveIsDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9))
+                          .withValues(alpha: effectiveIsDark ? 0.16 : 0.10),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                        color: (effectiveIsDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            .withValues(alpha: 0.45),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                          color: (effectiveIsDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9))
+                              .withValues(alpha: 0.18),
                           blurRadius: 10,
                         ),
                       ],
@@ -327,7 +345,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                     // Hours Wheel
                     Expanded(
                       child: CupertinoTheme(
-                        data: const CupertinoThemeData(brightness: Brightness.dark),
+                        data: CupertinoThemeData(brightness: effectiveIsDark ? Brightness.dark : Brightness.light),
                         child: CupertinoPicker(
                           scrollController: _hourController,
                           itemExtent: 40,
@@ -343,7 +361,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                               child: Text(
                                 hour.toString().padLeft(2, '0'),
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.35),
+                                  color: isSelected
+                                      ? (effectiveIsDark ? Colors.white : const Color(0xFF0F172A))
+                                      : (effectiveIsDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF94A3B8)),
                                   fontSize: isSelected ? 22 : 17,
                                   fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
                                   letterSpacing: 0.5,
@@ -361,7 +381,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                       child: Text(
                         ':',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: effectiveIsDark ? Colors.white.withValues(alpha: 0.90) : const Color(0xFF0F172A),
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                         ),
@@ -371,7 +391,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                     // Minutes Wheel
                     Expanded(
                       child: CupertinoTheme(
-                        data: const CupertinoThemeData(brightness: Brightness.dark),
+                        data: CupertinoThemeData(brightness: effectiveIsDark ? Brightness.dark : Brightness.light),
                         child: CupertinoPicker(
                           scrollController: _minuteController,
                           itemExtent: 40,
@@ -387,7 +407,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                               child: Text(
                                 minute.toString().padLeft(2, '0'),
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.35),
+                                  color: isSelected
+                                      ? (effectiveIsDark ? Colors.white : const Color(0xFF0F172A))
+                                      : (effectiveIsDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF94A3B8)),
                                   fontSize: isSelected ? 22 : 17,
                                   fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
                                   letterSpacing: 0.5,

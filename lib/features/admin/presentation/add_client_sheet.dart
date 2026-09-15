@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
@@ -156,6 +157,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
+    final themeConfig = ref.watch(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
     
     return Container(
       constraints: BoxConstraints(
@@ -165,24 +168,30 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF13233C).withValues(alpha: 0.98),
-            const Color(0xFF091424).withValues(alpha: 0.99),
-          ],
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.22),
+                  const Color(0xFF0284C7).withValues(alpha: 0.26),
+                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.28),
+          color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.60),
+            color: isDark ? const Color(0xFF003B73).withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.12),
             blurRadius: 30,
             offset: const Offset(0, -6),
           ),
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.20 : 0.08),
             blurRadius: 28,
           ),
         ],
@@ -199,12 +208,12 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                     22,
                     mediaQuery.viewInsets.bottom + 24,
                   ),
-                  child: _buildSuccessState(),
+                  child: _buildSuccessState(isDark: isDark),
                 )
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildHeader(context),
+                    _buildHeader(context, isDark: isDark),
                     Flexible(
                       child: SingleChildScrollView(
                         padding: EdgeInsets.fromLTRB(
@@ -213,7 +222,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                           22,
                           mediaQuery.viewInsets.bottom + 24,
                         ),
-                        child: _buildFormFields(),
+                        child: _buildFormFields(isDark: isDark),
                       ),
                     ),
                   ],
@@ -223,7 +232,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState({required bool isDark}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -250,20 +259,20 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         const SizedBox(height: 20),
         Text(
           'admin.add_client_success_title'.tr(),
-          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 20, fontWeight: FontWeight.bold),
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 6),
         Text(
           _nameController.text,
-          style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500),
+          style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF475569), fontSize: 15, fontWeight: FontWeight.w500),
         ).animate().fadeIn(delay: 350.ms),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.40)),
+            border: Border.all(color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD)),
           ),
           child: Column(
             children: [
@@ -326,14 +335,13 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, {required bool isDark}) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0),
             width: 1,
           ),
         ),
@@ -346,7 +354,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               width: 44,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.30),
+                color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFFCBD5E1),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -383,8 +391,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   children: [
                     Text(
                       'admin.add_client_title'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.3,
@@ -393,8 +401,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                     const SizedBox(height: 2),
                     Text(
                       'admin.add_client_subtitle'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
                         fontSize: 12,
                       ),
                     ),
@@ -409,13 +417,13 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFCBD5E1),
                       ),
                     ),
-                    child: const Icon(LucideIcons.x, color: Colors.white70, size: 18),
+                    child: Icon(LucideIcons.x, color: isDark ? Colors.white70 : const Color(0xFF475569), size: 18),
                   ),
                 ),
               ),
@@ -426,16 +434,16 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     );
   }
 
-  Widget _buildFormFields() {
+  Widget _buildFormFields({required bool isDark}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
+          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, isDark: isDark),
           const SizedBox(height: 14),
-          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
+          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true, isDark: isDark),
           const SizedBox(height: 14),
-          _buildTextField('Вік клієнта (років)', LucideIcons.calendar, _ageController, isNumber: true),
+          _buildTextField('Вік клієнта (років)', LucideIcons.calendar, _ageController, isNumber: true, isDark: isDark),
           const SizedBox(height: 20),
           
           if (_childrenEntries.isNotEmpty) ...[
@@ -443,7 +451,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               children: [
                 const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
                 const SizedBox(width: 8),
-                Text('admin.add_client_children_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('admin.add_client_children_title'.tr(), style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 10),
@@ -457,12 +465,12 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController),
+                    child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController, isDark: isDark),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
-                    child: _buildTextField('Вік (р.)', LucideIcons.calendarDays, entry.ageController, isNumber: true),
+                    child: _buildTextField('Вік (р.)', LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -575,23 +583,24 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       );
   }
 
-  Widget _buildTextField(String hint, IconData icon, TextEditingController controller, {bool isNumber = false}) {
+  Widget _buildTextField(String hint, IconData icon, TextEditingController controller, {bool isNumber = false, required bool isDark}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0)),
       ),
       child: TextField(
         controller: controller,
-        keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-        style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
+        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14.5),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13.5),
-          prefixIcon: Icon(icon, color: const Color(0xFF00E5FF), size: 18),
+          hintStyle: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF94A3B8), fontSize: 13.5),
+          prefixIcon: Icon(icon, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 18),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -114,7 +115,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         );
       } catch (e) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Помилка: $e'), backgroundColor: const Color(0xFFF43F5E)),
+          SnackBar(content: Text('${'common.error'.tr()}: $e'), backgroundColor: const Color(0xFFF43F5E)),
         );
       }
     }
@@ -370,9 +371,15 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
     return Container(
       decoration: BoxDecoration(
-        color: currentTheme.cardBg,
+        color: currentTheme.isDark
+            ? Colors.white.withValues(alpha: 0.12)
+            : Colors.white.withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: currentTheme.cardBorder),
+        border: Border.all(
+          color: currentTheme.isDark
+              ? Colors.white.withValues(alpha: 0.25)
+              : currentTheme.cardBorder,
+        ),
         boxShadow: [
           BoxShadow(
             color: currentTheme.cardShadow,
@@ -416,289 +423,316 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     required int index,
     required AppThemeConfig currentTheme,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: currentTheme.cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: currentTheme.cardBorder,
-          width: 1.1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: currentTheme.cardShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: currentTheme.isDark
+                  ? [
+                      Colors.white.withValues(alpha: 0.18),
+                      const Color(0xFF0284C7).withValues(alpha: 0.18),
+                      const Color(0xFF0D2542).withValues(alpha: 0.45),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.92),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.88),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: currentTheme.isDark
+                  ? Colors.white.withValues(alpha: 0.30)
+                  : currentTheme.cardBorder,
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: currentTheme.cardShadow,
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
-              Stack(
+              Row(
                 children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: currentTheme.accentGradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  // Avatar
+                  Stack(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: currentTheme.accentGradient,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'Т',
+                            style: TextStyle(
+                              color: currentTheme.isDark ? const Color(0xFF061426) : Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: currentTheme.accentPrimary.withValues(alpha: 0.35),
-                          blurRadius: 10,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: currentTheme.cardBg, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+
+                  // Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(LucideIcons.phone, size: 12, color: currentTheme.textMuted),
+                            const SizedBox(width: 5),
+                            Text(
+                              phone,
+                              style: TextStyle(
+                                color: currentTheme.textSecondary,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'Т',
-                        style: TextStyle(
-                          color: currentTheme.isDark ? const Color(0xFF061426) : Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.bold,
+                  ),
+
+                  // Action Buttons
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: currentTheme.glassCardBg,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: currentTheme.cardBorder),
+                        ),
+                        child: IconButton(
+                          icon: Icon(LucideIcons.pencil, color: currentTheme.accentPrimary, size: 16),
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => EditCoachSheet(
+                                coachId: coachId,
+                                initialName: name,
+                                initialPhone: phone,
+                                initialRateGroup: rateGroup,
+                                initialRateIndividual: rateIndividual,
+                                initialRateSplit: rateSplit,
+                              ),
+                            );
+                          },
                         ),
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: currentTheme.cardBg, width: 2),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFFF3B30).withValues(alpha: 0.24),
+                              const Color(0xFFFF1744).withValues(alpha: 0.14),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFFF3B30).withValues(alpha: 0.60),
+                            width: 1.1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF3B30).withValues(alpha: 0.28),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 16),
+                          tooltip: 'admin.delete'.tr(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _deleteCoach(coachId, name, currentTheme),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(width: 14),
 
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 14),
+
+              // Credentials Card with Instant Copy
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: currentTheme.isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : currentTheme.glassCardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: currentTheme.isDark
+                        ? Colors.white.withValues(alpha: 0.20)
+                        : currentTheme.cardBorder,
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: TextStyle(
-                              color: currentTheme.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                    Icon(LucideIcons.keyRound, color: currentTheme.accentPrimary, size: 15),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(fontSize: 12, color: currentTheme.textSecondary),
+                          children: [
+                            TextSpan(text: 'admin.clients_login_label'.tr()),
+                            TextSpan(
+                              text: loginId,
+                              style: TextStyle(
+                                color: currentTheme.accentPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
+                            const TextSpan(
+                              text: '1',
+                              style: TextStyle(
+                                color: Color(0xFFF59E0B),
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Icon(LucideIcons.phone, size: 12, color: currentTheme.textMuted),
-                        const SizedBox(width: 5),
-                        Text(
-                          phone,
-                          style: TextStyle(
-                            color: currentTheme.textSecondary,
-                            fontSize: 12.5,
-                          ),
+                    GestureDetector(
+                      onTap: () => _copyCredentials(loginId, name),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.copy, color: currentTheme.accentPrimary, size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              'admin.clients_copy'.tr(),
+                              style: TextStyle(
+                                color: currentTheme.accentPrimary,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              // Action Buttons
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: currentTheme.glassCardBg,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: currentTheme.cardBorder),
-                    ),
-                    child: IconButton(
-                      icon: Icon(LucideIcons.pencil, color: currentTheme.accentPrimary, size: 16),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => EditCoachSheet(
-                            coachId: coachId,
-                            initialName: name,
-                            initialPhone: phone,
-                            initialRateGroup: rateGroup,
-                            initialRateIndividual: rateIndividual,
-                            initialRateSplit: rateSplit,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFFFF3B30).withValues(alpha: 0.24),
-                          const Color(0xFFFF1744).withValues(alpha: 0.14),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFFF3B30).withValues(alpha: 0.60),
-                        width: 1.1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF3B30).withValues(alpha: 0.28),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+              const SizedBox(height: 12),
+
+              // Action: Manage Coach Schedule
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AdminCalendarScreen(
+                          initialCoachId: coachId,
+                          initialCoachName: name,
                         ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 16),
-                      tooltip: 'admin.delete'.tr(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _deleteCoach(coachId, name, currentTheme),
+                      ),
+                    );
+                  },
+                  icon: const Icon(LucideIcons.calendarClock, size: 14),
+                  label: Text(
+                    'admin.manage_schedule'.tr(),
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: currentTheme.accentPrimary.withValues(alpha: 0.12),
+                    foregroundColor: currentTheme.accentPrimary,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                      ),
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: 14),
-
-          // Credentials Card with Instant Copy
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: currentTheme.glassCardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: currentTheme.cardBorder),
-            ),
-            child: Row(
-              children: [
-                Icon(LucideIcons.keyRound, color: currentTheme.accentPrimary, size: 15),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 12, color: currentTheme.textSecondary),
-                      children: [
-                        TextSpan(text: 'admin.clients_login_label'.tr()),
-                        TextSpan(
-                          text: loginId,
-                          style: TextStyle(
-                            color: currentTheme.accentPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                        TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
-                        const TextSpan(
-                          text: '1',
-                          style: TextStyle(
-                            color: Color(0xFFF59E0B),
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _copyCredentials(loginId, name),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: currentTheme.accentPrimary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(LucideIcons.copy, color: currentTheme.accentPrimary, size: 12),
-                        const SizedBox(width: 4),
-                        Text(
-                          'admin.clients_copy'.tr(),
-                          style: TextStyle(
-                            color: currentTheme.accentPrimary,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Action: Manage Coach Schedule
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AdminCalendarScreen(
-                      initialCoachId: coachId,
-                      initialCoachName: name,
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(LucideIcons.calendarClock, size: 14),
-              label: const Text(
-                'Керувати розкладом тренера',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: currentTheme.accentPrimary.withValues(alpha: 0.12),
-                foregroundColor: currentTheme.accentPrimary,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: currentTheme.accentPrimary.withValues(alpha: 0.35),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
   }

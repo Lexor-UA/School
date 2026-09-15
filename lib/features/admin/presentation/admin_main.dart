@@ -154,11 +154,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
                       if (dashboardState.unpaidSubscriptions > 0) ...[
                         _buildSectionTitle(
-                          'Потребує уваги',
+                          'admin.needs_attention'.tr(),
                           LucideIcons.alertTriangle,
                           const Color(0xFFF43F5E),
                           gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
-                          badgeText: '${dashboardState.unpaidSubscriptions} борж.',
+                          badgeText: '${dashboardState.unpaidSubscriptions} ${'admin.debtors_short'.tr()}',
                           badgeColor: const Color(0xFFF43F5E),
                         ),
                         const SizedBox(height: 10),
@@ -341,33 +341,37 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       boxShadow: [
                         BoxShadow(
                           color: currentTheme.accentPrimary.withValues(alpha: 0.35),
-                          blurRadius: 16,
-                          spreadRadius: 2,
+                          blurRadius: 14,
+                          spreadRadius: 1,
                         ),
                       ],
                     ),
                     child: const AvatarPicker(
                       heroTag: 'hero_avatar_Адміністраторам',
-                      radius: 26,
+                      radius: 24,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '${'admin.hello'.tr()}, ${user?.name ?? "Admin"}',
-                            style: TextStyle(
-                              color: currentTheme.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
-                            ),
+                        Text(
+                          (user?.name != null &&
+                                  user!.name.trim().isNotEmpty &&
+                                  user.name.trim() != 'Admin' &&
+                                  user.name.trim() != 'Адміністратор')
+                              ? 'admin.welcome_admin'.tr(namedArgs: {'name': user.name.trim()})
+                              : '${'admin.hello'.tr()} 👋',
+                          style: TextStyle(
+                            color: currentTheme.textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Row(
@@ -417,6 +421,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 _buildActivityLogHeaderButton(context, recentActions, currentTheme),
                 const SizedBox(width: 8),
                 Container(
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: currentTheme.isDark
                         ? Colors.white.withValues(alpha: 0.12)
@@ -437,12 +443,14 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           ],
                   ),
                   child: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(width: 40, height: 40),
                     icon: Icon(
                       LucideIcons.logOut,
                       color: currentTheme.isDark ? Colors.white : Colors.redAccent,
                       size: 20,
                     ),
-                    tooltip: 'Вийти',
+                    tooltip: 'parent.logout_short'.tr(),
                     onPressed: () {
                       ref.read(authControllerProvider.notifier).logout();
                       context.go('/');
@@ -468,6 +476,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         (a.timestamp.year == now.year && a.timestamp.month == now.month && a.timestamp.day == now.day));
 
     return Container(
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         color: currentTheme.isDark
             ? Colors.white.withValues(alpha: 0.12)
@@ -491,6 +501,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         clipBehavior: Clip.none,
         children: [
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
             icon: Icon(
               LucideIcons.history,
               color: currentTheme.accentPrimary,
@@ -501,8 +513,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
           ),
           if (hasRecentToday)
             Positioned(
-              top: 7,
-              right: 7,
+              top: 5,
+              right: 5,
               child: Container(
                 width: 7.5,
                 height: 7.5,
@@ -1416,164 +1428,169 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     final currentTheme = ref.watch(appThemeControllerProvider);
     final isDark = currentTheme.isDark;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const PaymentSheet(initialTabIndex: 1),
-          );
-        },
-        borderRadius: BorderRadius.circular(18),
-        splashColor: const Color(0xFFF43F5E).withValues(alpha: 0.15),
-        highlightColor: const Color(0xFFF43F5E).withValues(alpha: 0.08),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: isDark
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFF43F5E).withValues(alpha: 0.18),
-                      const Color(0xFF152A44).withValues(alpha: 0.82),
-                    ],
-                  )
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.80),
-                      const Color(0xFFFFF1F2).withValues(alpha: 0.55),
-                    ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const PaymentSheet(initialTabIndex: 1),
+              );
+            },
+            borderRadius: BorderRadius.circular(18),
+            splashColor: const Color(0xFFF43F5E).withValues(alpha: 0.20),
+            highlightColor: const Color(0xFFF43F5E).withValues(alpha: 0.08),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.22),
+                          const Color(0xFFF43F5E).withValues(alpha: 0.22),
+                          const Color(0xFF0F1E32).withValues(alpha: 0.45),
+                        ],
+                      )
+                    : LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.90),
+                          const Color(0xFFFFF1F2).withValues(alpha: 0.75),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : const Color(0xFFFECDD3),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.28 : 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFFF43F5E).withValues(alpha: 0.45)
-                  : const Color(0xFFFECDD3), // Very soft red border
-              width: isDark ? 1.2 : 1.0,
-            ),
-            boxShadow: [
-              if (isDark) ...[
-                // Layer 1: Deep rose-tinted shadow
-                BoxShadow(
-                  color: const Color(0xFFF43F5E).withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ] else ...[
-                // Minimalist iOS style soft shadow
-                BoxShadow(
-                  color: const Color(0xFFE11D48).withValues(alpha: 0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.40),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.32),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(LucideIcons.creditCard, color: Colors.white, size: 18),
-                ),
+                ],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          margin: const EdgeInsets.only(right: 6),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFFF43F5E).withValues(alpha: 0.2)
-                                : const Color(0xFFFEE2E2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'admin.attention'.tr(),
-                            style: const TextStyle(
-                              color: Color(0xFFE11D48),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.32),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                        Expanded(
-                          child: Text(
-                            '$unpaidCount ${'admin.unpaid_subs_title'.tr()}',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF9F1239),
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(LucideIcons.creditCard, color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFFF43F5E).withValues(alpha: 0.25)
+                                    : const Color(0xFFFEE2E2),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.5 : 0.2),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                'admin.attention'.tr(),
+                                style: const TextStyle(
+                                  color: Color(0xFFE11D48),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            Expanded(
+                              child: Text(
+                                '$unpaidCount ${'admin.unpaid_subs_title'.tr()}',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : const Color(0xFF9F1239),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'admin.awaiting_payment_desc'.tr(),
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                            fontSize: 12,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'admin.awaiting_payment_desc'.tr(),
-                      style: TextStyle(
-                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                        fontSize: 12,
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.14)
+                          : const Color(0xFFFEE2E2),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : const Color(0xFFFB7185).withValues(alpha: 0.45),
+                        width: 0.9,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : const Color(0xFFFEE2E2),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : const Color(0xFFFB7185).withValues(alpha: 0.45),
-                    width: 0.9,
+                    child: Center(
+                      child: Icon(
+                        LucideIcons.chevronRight,
+                        color: isDark ? Colors.white : const Color(0xFFE11D48),
+                        size: 17,
+                      ),
+                    ),
                   ),
-                ),
-                child: const Center(
-                  child: Icon(LucideIcons.chevronRight, color: Color(0xFFE11D48), size: 17),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

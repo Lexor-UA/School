@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
@@ -116,29 +117,59 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.90,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF030D1B).withValues(alpha: 0.8),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.22),
+                  const Color(0xFF0284C7).withValues(alpha: 0.26),
+                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                ],
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.35)
+              : currentTheme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                : currentTheme.cardShadow,
+            blurRadius: 28,
+            offset: const Offset(0, -6),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Padding(
             padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
-            child: _isSuccess ? _buildSuccessState() : _buildFormState(),
+            child: _isSuccess ? _buildSuccessState(currentTheme) : _buildFormState(currentTheme),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(AppThemeConfig currentTheme) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -146,54 +177,60 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.greenAccent.withValues(alpha: 0.15),
+            color: const Color(0xFF10B981).withValues(alpha: 0.15),
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.2), blurRadius: 20)],
+            boxShadow: [BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.2), blurRadius: 20)],
           ),
-          child: const Icon(LucideIcons.check, color: Colors.greenAccent, size: 48),
+          child: const Icon(LucideIcons.check, color: Color(0xFF10B981), size: 48),
         ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
         const SizedBox(height: 24),
         Text(
           'admin.add_coach_success_title'.tr(),
-          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          style: TextStyle(color: currentTheme.textPrimary, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5),
         ).animate().fadeIn(delay: 100.ms),
         const SizedBox(height: 8),
         Text(
           _nameController.text,
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          style: TextStyle(color: currentTheme.textSecondary, fontSize: 16),
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 32),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
+            color: currentTheme.isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : currentTheme.glassCardBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            border: Border.all(
+              color: currentTheme.isDark
+                  ? Colors.white.withValues(alpha: 0.25)
+                  : currentTheme.cardBorder,
+            ),
           ),
           child: Column(
             children: [
-              Text('admin.add_client_credentials_title'.tr().toUpperCase(), style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              Text('admin.add_client_credentials_title'.tr().toUpperCase(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(LucideIcons.user, color: Colors.cyanAccent, size: 18),
+                  Icon(LucideIcons.user, color: currentTheme.accentPrimary, size: 18),
                   const SizedBox(width: 12),
-                  Text('admin.clients_login_label'.tr(), style: const TextStyle(color: Colors.white54, fontSize: 16)),
+                  Text('admin.clients_login_label'.tr(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 16)),
                   const SizedBox(width: 6),
-                  Text(_generatedLogin ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(_generatedLogin ?? '', style: TextStyle(color: currentTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(LucideIcons.key, color: Colors.cyanAccent, size: 18),
+                  Icon(LucideIcons.key, color: currentTheme.accentPrimary, size: 18),
                   const SizedBox(width: 12),
-                  Text('admin.clients_password_label'.tr(), style: const TextStyle(color: Colors.white54, fontSize: 16)),
+                  Text('admin.clients_password_label'.tr(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 16)),
                   const SizedBox(width: 6),
-                  const Text('1', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('1', style: TextStyle(color: currentTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -204,7 +241,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     );
   }
 
-  Widget _buildFormState() {
+  Widget _buildFormState(AppThemeConfig currentTheme) {
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -214,21 +251,31 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: currentTheme.textSecondary.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 24),
           Row(
             children: [
-              const Icon(LucideIcons.userPlus, color: Colors.cyanAccent),
+              Icon(LucideIcons.userPlus, color: currentTheme.accentPrimary),
               const SizedBox(width: 12),
-              Text('admin.add_coach_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(
+                'admin.add_coach_title'.tr(),
+                style: TextStyle(
+                  color: currentTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
-          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController),
+          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, currentTheme),
           const SizedBox(height: 16),
-          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true),
+          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, currentTheme, isNumber: true),
           const SizedBox(height: 22),
 
           // Section: Персональні ставки (ЗП)
@@ -244,10 +291,10 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 child: const Icon(LucideIcons.banknote, color: Color(0xFF10B981), size: 16),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Ставки заробітної плати (ЗП)',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: currentTheme.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -260,6 +307,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             icon: LucideIcons.users,
             controller: _rateGroupController,
             color: const Color(0xFF00E5FF),
+            currentTheme: currentTheme,
           ),
           const SizedBox(height: 10),
           _buildRateField(
@@ -267,6 +315,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             icon: LucideIcons.user,
             controller: _rateIndividualController,
             color: const Color(0xFFA855F7),
+            currentTheme: currentTheme,
           ),
           const SizedBox(height: 10),
           _buildRateField(
@@ -274,6 +323,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             icon: LucideIcons.userCheck,
             controller: _rateSplitController,
             color: const Color(0xFFF59E0B),
+            currentTheme: currentTheme,
           ),
           const SizedBox(height: 26),
           
@@ -297,16 +347,16 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             height: 56,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyanAccent,
-                foregroundColor: Colors.black,
+                backgroundColor: currentTheme.accentPrimary,
+                foregroundColor: currentTheme.isDark ? const Color(0xFF061426) : Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 10,
-                shadowColor: Colors.cyanAccent.withValues(alpha: 0.5),
+                elevation: 6,
+                shadowColor: currentTheme.accentPrimary.withValues(alpha: 0.4),
               ),
               onPressed: _isLoading ? null : _submit,
               child: _isLoading 
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                  : Text('admin.add_coach_save_btn'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: currentTheme.isDark ? const Color(0xFF061426) : Colors.white, strokeWidth: 2))
+                  : Text('admin.add_coach_save_btn'.tr(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
             ),
           ),
         ],
@@ -314,21 +364,24 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     );
   }
 
-  Widget _buildTextField(String hint, IconData icon, TextEditingController controller, {bool isNumber = false}) {
+  Widget _buildTextField(String hint, IconData icon, TextEditingController controller, AppThemeConfig currentTheme, {bool isNumber = false}) {
+    final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+        ),
       ),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.w600),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.cyanAccent.withValues(alpha: 0.7)),
+          hintStyle: TextStyle(color: currentTheme.textMuted),
+          prefixIcon: Icon(icon, color: currentTheme.accentPrimary),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
@@ -341,12 +394,14 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     required IconData icon,
     required TextEditingController controller,
     required Color color,
+    required AppThemeConfig currentTheme,
   }) {
+    final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
@@ -354,7 +409,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
+              color: color.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -368,7 +423,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: currentTheme.textSecondary,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                   ),
@@ -377,13 +432,13 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 TextField(
                   controller: controller,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: currentTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
+                  decoration: InputDecoration(
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                     hintText: '0',
-                    hintStyle: TextStyle(color: Colors.white24),
+                    hintStyle: TextStyle(color: currentTheme.textMuted),
                   ),
                 ),
               ],

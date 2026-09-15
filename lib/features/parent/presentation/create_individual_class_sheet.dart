@@ -1,10 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 class CreateIndividualClassSheet extends ConsumerStatefulWidget {
   final DateTime selectedDate;
@@ -64,23 +65,37 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
     final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName);
+    final currentTheme = ref.read(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
     
     if (subscription == null || subscription.remainingClasses <= 0) {
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
-            title: const Text('Немає абонемента', style: TextStyle(color: Colors.white)),
-            content: Text('Для запису необхідно мати оплачений абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?', style: const TextStyle(color: Colors.white70)),
+            backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
+              ),
+            ),
+            title: Text('Немає абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+            content: Text(
+              'Для запису необхідно мати оплачений абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?',
+              style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Скасувати', style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
+              ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                   Navigator.pop(context);
                 },
-                child: const Text('Зрозуміло', style: TextStyle(color: Colors.cyanAccent)),
+                child: Text('Зрозуміло', style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -118,7 +133,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Заняття успішно заплановано!'),
-              backgroundColor: Colors.greenAccent,
+              backgroundColor: Color(0xFF10B981),
             ),
           );
         } else {
@@ -148,6 +163,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
+
     // Determine occupied hours for the selected date
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final classesOnDate = scheduleAsync.value?.where((c) {
@@ -174,123 +192,228 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         .toSet();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.22),
+                  const Color(0xFF0284C7).withValues(alpha: 0.26),
+                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                ],
+              )
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.96),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.92),
+                ],
               ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.35) : currentTheme.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+            blurRadius: 32,
+            offset: const Offset(0, -8),
+          ),
+          if (isDark)
+            BoxShadow(
+              color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
+              blurRadius: 36,
             ),
-          ),
-          const Text(
-            'Запланувати заняття',
-            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
-          
-          const Text(
-            'Оберіть заняття',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _availableServices.map((service) {
-              final isSelected = _selectedService == service;
-              return ChoiceChip(
-                label: Text(service),
-                selected: isSelected,
-                selectedColor: AppTheme.accentTeal.withValues(alpha: 0.2),
-                backgroundColor: Colors.white.withValues(alpha: 0.05),
-                labelStyle: TextStyle(
-                  color: isSelected ? AppTheme.accentTeal : Colors.white,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                side: BorderSide(color: isSelected ? AppTheme.accentTeal : Colors.transparent),
-                onSelected: (selected) {
-                  if (selected) setState(() => _selectedService = service);
-                },
-              );
-            }).toList(),
-          ),
-          
-          const SizedBox(height: 24),
-          const Text(
-            'Оберіть час',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _allHours.map((hour) {
-              final isOccupied = occupiedHours.contains(hour);
-              final isSelected = _selectedHour == hour;
-              
-              return InkWell(
-                onTap: isOccupied ? null : () => setState(() => _selectedHour = hour),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isOccupied 
-                        ? Colors.redAccent.withValues(alpha: 0.1) 
-                        : (isSelected ? AppTheme.primaryBlue : Colors.white.withValues(alpha: 0.05)),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? AppTheme.primaryBlue : Colors.transparent,
-                    ),
-                  ),
-                  child: Text(
-                    '${hour.toString().padLeft(2, '0')}:00',
-                    style: TextStyle(
-                      color: isOccupied 
-                          ? Colors.redAccent.withValues(alpha: 0.5) 
-                          : (isSelected ? Colors.white : Colors.white70),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      decoration: isOccupied ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: (_isLoading || _selectedService == null || _selectedHour == null)
-                  ? null
-                  : _createBooking,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentTeal,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: _isLoading
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text(
-                      'Підтвердити',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 24), // SafeArea margin equivalent
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.35)
+                          : Colors.black.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                Text(
+                  'Запланувати заняття',
+                  style: TextStyle(
+                    color: currentTheme.textPrimary,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                Text(
+                  'Оберіть послугу',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _availableServices.map((service) {
+                    final isSelected = _selectedService == service;
+                    return ChoiceChip(
+                      label: Text(service),
+                      selected: isSelected,
+                      selectedColor: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.15),
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.white.withValues(alpha: 0.85),
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            : (isDark ? Colors.white70 : currentTheme.textSecondary),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      side: BorderSide(
+                        color: isSelected
+                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            : (isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFBAE6FD)),
+                        width: isSelected ? 1.2 : 1.0,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) setState(() => _selectedService = service);
+                      },
+                    );
+                  }).toList(),
+                ),
+                
+                const SizedBox(height: 20),
+                Text(
+                  'Оберіть час',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _allHours.map((hour) {
+                    final isOccupied = occupiedHours.contains(hour);
+                    final isSelected = _selectedHour == hour;
+                    
+                    return InkWell(
+                      onTap: isOccupied ? null : () => setState(() => _selectedHour = hour),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isOccupied 
+                              ? (isDark ? Colors.redAccent.withValues(alpha: 0.12) : const Color(0xFFFEE2E2)) 
+                              : (isSelected
+                                  ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                  : (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white.withValues(alpha: 0.85))),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD)),
+                            width: isSelected ? 1.4 : 1.0,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Text(
+                          '${hour.toString().padLeft(2, '0')}:00',
+                          style: TextStyle(
+                            color: isOccupied 
+                                ? Colors.redAccent.withValues(alpha: 0.6) 
+                                : (isSelected ? Colors.white : currentTheme.textPrimary),
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 13,
+                            decoration: isOccupied ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                
+                const SizedBox(height: 26),
+                Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: (_isLoading || _selectedService == null || _selectedHour == null)
+                        ? null
+                        : LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: (_isLoading || _selectedService == null || _selectedHour == null)
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: (_isLoading || _selectedService == null || _selectedHour == null)
+                        ? null
+                        : _createBooking,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: (_isLoading || _selectedService == null || _selectedHour == null)
+                          ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black12)
+                          : Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text(
+                            'Підтвердити',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

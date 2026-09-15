@@ -75,7 +75,7 @@ Stream<List<ActivityLog>> recentActions(Ref ref) {
   return FirebaseFirestore.instance
       .collection('activity_logs')
       .orderBy('timestamp', descending: true)
-      .limit(5)
+      .limit(100)
       .snapshots()
       .map((snapshot) {
     return snapshot.docs.map((doc) {

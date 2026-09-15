@@ -185,7 +185,7 @@ class AppThemeConfig {
   // Preset 1: Deep Ocean Dark (The Standard Dark)
   static final AppThemeConfig darkOcean = AppThemeConfig(
     id: AppThemeMode.darkOcean,
-    title: 'Океанська ніч',
+    title: 'Океанічна ніч',
     subtitle: 'Фірмова темна тема з неоновими океанічними акцентами',
     badgeText: 'Темна',
     titleKey: 'theme_dark_ocean_title',
@@ -247,10 +247,10 @@ class AppThemeConfig {
     id: AppThemeMode.lightAzure,
     title: 'Океанічна Перлина',
     subtitle: 'Розкішний світлий дизайн з ефектом скла та живою водою.',
-    badgeText: 'Premium',
+    badgeText: 'Світла',
     titleKey: 'theme_light_pearl_title',
     subKey: 'theme_light_pearl_sub',
-    badgeKey: 'theme_badge_light1',
+    badgeKey: 'theme_badge_light',
     isDark: false,
     scaffoldBg: const Color(0xFFE0F2FE), // Very light sky blue
     bgGradient: [
@@ -303,7 +303,7 @@ class AppThemeConfig {
     previewColors: const [Color(0xFFE0F2FE), Color(0xFF0EA5E9), Color(0xFF38BDF8), Color(0xFF0F172A)],
   );
 
-  // Preset 3: Warm Silk & Champagne (Light 2 — Canva Luxury & Rose Gold)
+  // Preset 3: Warm Silk & Champagne (Light 2 — Canva Luxury & Rose Gold) - Deprecated / Fallback
   static final AppThemeConfig lightPearlCoral = AppThemeConfig(
     id: AppThemeMode.lightPearlCoral,
     title: 'Теплий шовк & Шампань',
@@ -364,7 +364,7 @@ class AppThemeConfig {
     previewColors: const [Color(0xFFFAF7F2), Color(0xFFE11D48), Color(0xFFFBBF24), Color(0xFF7C3AED)],
   );
 
-  // Preset 4: Fresh Mint & Seafoam (Light 3 — Nordic Mint & Emerald Spa)
+  // Preset 4: Fresh Mint & Seafoam (Light 3 — Nordic Mint & Emerald Spa) - Deprecated / Fallback
   static final AppThemeConfig lightMintSpa = AppThemeConfig(
     id: AppThemeMode.lightMintSpa,
     title: 'М\'ятний велнес & Смарагд',
@@ -431,17 +431,15 @@ class AppThemeConfig {
       case AppThemeMode.lightAzure:
         return lightAzure;
       case AppThemeMode.lightPearlCoral:
-        return lightPearlCoral;
       case AppThemeMode.lightMintSpa:
-        return lightMintSpa;
+        // Graceful backwards-compatible fallback for users who previously selected light 2 or 3
+        return lightAzure;
     }
   }
 
   static List<AppThemeConfig> get allPresets => [
     darkOcean,
     lightAzure,
-    lightPearlCoral,
-    lightMintSpa,
   ];
 }
 

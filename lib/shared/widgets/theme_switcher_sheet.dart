@@ -113,7 +113,7 @@ class ThemeSwitcherSheet extends ConsumerWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            _t('theme_subtitle', 'Оберіть темну або одну з 3 світлих тем'),
+                            _t('theme_subtitle', 'Оберіть темну або світлу океанічну тему'),
                             style: TextStyle(
                               color: currentTheme.textSecondary,
                               fontSize: 13,
@@ -142,7 +142,7 @@ class ThemeSwitcherSheet extends ConsumerWidget {
                 color: currentTheme.dividerColor,
               ),
 
-              // List of 4 themes with live UI mockup cards
+              // List of 2 themes with live UI mockup cards
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -158,9 +158,9 @@ class ThemeSwitcherSheet extends ConsumerWidget {
                       theme: theme,
                       isSelected: isSelected,
                       currentTheme: currentTheme,
-                      onTap: () {
+                      onTap: () async {
                         HapticFeedback.mediumImpact();
-                        ref.read(appThemeControllerProvider.notifier).setTheme(theme.id);
+                        await ref.read(appThemeControllerProvider.notifier).setTheme(theme.id);
                       },
                     );
                   },
@@ -192,8 +192,8 @@ class _ThemeCard extends StatefulWidget {
 }
 
 class _ThemeCardState extends State<_ThemeCard> {
-  bool _isPressed = false;
   bool _isHovered = false;
+  bool _isPressed = false;
 
   String _t(String key, String fallback) {
     try {
@@ -216,13 +216,8 @@ class _ThemeCardState extends State<_ThemeCard> {
         themeIcon = LucideIcons.moon;
         break;
       case AppThemeMode.lightAzure:
+      default:
         themeIcon = LucideIcons.waves;
-        break;
-      case AppThemeMode.lightPearlCoral:
-        themeIcon = LucideIcons.sun;
-        break;
-      case AppThemeMode.lightMintSpa:
-        themeIcon = LucideIcons.sparkles;
         break;
     }
 

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
-import 'package:swimming_school_app/shared/widgets/theme_switcher_sheet.dart';
 
 class ThemeHeaderButton extends ConsumerStatefulWidget {
   final double size;
@@ -45,14 +44,16 @@ class _ThemeHeaderButtonState extends ConsumerState<ThemeHeaderButton>
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
+        onTapUp: (_) async {
           setState(() => _isPressed = false);
-          HapticFeedback.lightImpact();
-          ThemeSwitcherSheet.show(context);
+          HapticFeedback.mediumImpact();
+          // Instant direct toggle between Oceanic Night (dark) and Oceanic Pearl (light)
+          final nextMode = isDark ? AppThemeMode.lightAzure : AppThemeMode.darkOcean;
+          await ref.read(appThemeControllerProvider.notifier).setTheme(nextMode);
         },
         onTapCancel: () => setState(() => _isPressed = false),
         child: AnimatedScale(
-          scale: _isPressed ? 0.90 : (_isHovered ? 1.08 : 1.0),
+          scale: _isPressed ? 0.88 : (_isHovered ? 1.08 : 1.0),
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutBack,
           child: AnimatedBuilder(
@@ -91,36 +92,25 @@ class _ThemeHeaderButtonState extends ConsumerState<ThemeHeaderButton>
                         ],
                 ),
                 child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Palette Icon with vibrant theme accent
-                      Icon(
-                        LucideIcons.palette,
-                        color: currentTheme.accentPrimary,
-                        size: widget.size * 0.48,
-                      ),
-                      // Micro jewel shine dot in corner of the button
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: currentTheme.accentSecondary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: currentTheme.accentSecondary.withValues(alpha: 0.8),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 320),
+                    transitionBuilder: (child, animation) {
+                      return RotationTransition(
+                        turns: child.key == const ValueKey('moon')
+                            ? Tween<double>(begin: -0.20, end: 0.0).animate(animation)
+                            : Tween<double>(begin: 0.20, end: 0.0).animate(animation),
+                        child: ScaleTransition(
+                          scale: animation,
+                          child: child,
                         ),
-                      ),
-                    ],
+                      );
+                    },
+                    child: Icon(
+                      isDark ? LucideIcons.moon : LucideIcons.sun,
+                      key: ValueKey(isDark ? 'moon' : 'sun'),
+                      color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                      size: widget.size * 0.50,
+                    ),
                   ),
                 ),
               );

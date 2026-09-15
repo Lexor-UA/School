@@ -122,21 +122,22 @@ class _AdminMainState extends ConsumerState<AdminMain> {
           ),
 
           SafeArea(
+            bottom: false,
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               slivers: [
                 _buildAppBar(context, ref, dashboardState.recentActions),
 
                 // Search Bar
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 6.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
                     child: _buildSearchBar().animate().fadeIn(delay: 100.ms).slideY(begin: 0.06),
                   ),
                 ),
 
                 SliverPadding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       // 1. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок під пошуком)
@@ -146,9 +147,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         currentTheme.accentPrimary,
                         gradientColors: currentTheme.accentGradient,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       _buildQuickActions(context).animate().fadeIn(delay: 150.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 18),
 
                       // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
                       if (dashboardState.unpaidSubscriptions > 0) ...[
@@ -160,18 +161,18 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           badgeText: '${dashboardState.unpaidSubscriptions} борж.',
                           badgeColor: const Color(0xFFF43F5E),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions).animate().fadeIn(delay: 220.ms).slideY(begin: 0.06),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
                       ],
 
                       // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
                       _buildLivePulseBar(dashboardState).animate().fadeIn(delay: 300.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
 
                       // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
                       _buildSupportCenterCard(unreadCount).animate().fadeIn(delay: 380.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 20),
 
                       // 5. Найближче заняття з аватарками учнів
                       if (dashboardState.nearestClass != null) ...[
@@ -183,12 +184,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           badgeText: 'admin.today'.tr(),
                           badgeColor: currentTheme.accentPrimary,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         _buildNearestClass(dashboardState.nearestClass!).animate().fadeIn(delay: 450.ms).slideY(begin: 0.06),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                       ],
 
-                      const SizedBox(height: 24),
+                      // Generous bottom buffer ensuring the entire screen can be scrolled comfortably above the home indicator
+                      SizedBox(height: MediaQuery.of(context).padding.bottom + 64),
                     ]),
                   ),
                 ),
@@ -326,7 +328,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -349,20 +351,23 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       radius: 26,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${'admin.hello'.tr()}, ${user?.name ?? "Admin"}',
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 19,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${'admin.hello'.tr()}, ${user?.name ?? "Admin"}',
+                            style: TextStyle(
+                              color: currentTheme.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Row(
@@ -729,7 +734,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1381,7 +1386,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         splashColor: const Color(0xFFF43F5E).withValues(alpha: 0.15),
         highlightColor: const Color(0xFFF43F5E).withValues(alpha: 0.08),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             gradient: isDark
                 ? LinearGradient(
@@ -1428,15 +1433,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.40),
                     width: 1.2,
@@ -1450,7 +1455,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   ],
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
+                  child: Icon(LucideIcons.creditCard, color: Colors.white, size: 18),
                 ),
               ),
               const SizedBox(width: 14),
@@ -1540,7 +1545,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 620;
         final columns = isWide ? 3 : 2;
-        const spacing = 10.0;
+        const spacing = 8.0;
         final itemWidth = (constraints.maxWidth - (spacing * (columns - 1))) / columns;
 
         return Wrap(
@@ -2445,7 +2450,7 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                     highlightColor: widget.accentColor.withValues(alpha: isDark ? 0.12 : 0.08),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                       decoration: BoxDecoration(
                         gradient: isDark
                             ? LinearGradient(
@@ -2510,24 +2515,24 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                         children: [
                           // Vibrant Glowing Jewel Emblem — 3D gemstone badge
                           Container(
-                            width: isDark ? 40 : 44,
-                            height: isDark ? 40 : 44,
+                            width: 38,
+                            height: 38,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: effectiveGradient,
                               ),
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: isDark ? 0.50 : 0.65),
-                                width: 1.3,
+                                width: 1.2,
                               ),
                               boxShadow: [
                                 BoxShadow(
                                   color: effectiveGradient.first.withValues(alpha: _isHovered ? 0.65 : (isDark ? 0.42 : 0.36)),
-                                  blurRadius: _isHovered ? 18 : (isDark ? 12 : 10),
-                                  offset: Offset(0, isDark ? 4 : 3),
+                                  blurRadius: _isHovered ? 16 : (isDark ? 10 : 8),
+                                  offset: Offset(0, isDark ? 3 : 2),
                                 ),
                                 if (!isDark)
                                   BoxShadow(

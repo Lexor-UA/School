@@ -27,10 +27,10 @@ class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTick
 
     _controller.addListener(() {
       for (var particle in _particles) {
-        // Move particle up
+        // Move particle up slowly and smoothly
         particle.y -= particle.speed;
-        // Sway left and right with natural buoyancy
-        particle.x += math.sin(particle.y * 0.04 + particle.seed) * 0.35;
+        // Gentle, relaxing lateral sway
+        particle.x += math.sin(particle.y * 0.03 + particle.seed) * 0.12;
         
         // Reset if it goes off screen top
         if (particle.y < -12) {
@@ -50,7 +50,7 @@ class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTick
       x: _random.nextDouble() * 100, // percentage width
       y: initial ? _random.nextDouble() * 100 : 110 + _random.nextDouble() * 10,
       size: _random.nextDouble() * 4.5 + 2.0, // 2 to 6.5 radius for visible presence
-      speed: _random.nextDouble() * 0.22 + 0.08,
+      speed: _random.nextDouble() * 0.045 + 0.025, // Calm, smooth floating speed (approx 5x slower)
       seed: _random.nextDouble() * math.pi * 2,
       alpha: _random.nextDouble() * 0.35 + 0.65, // Opacity variation
     );
@@ -113,21 +113,11 @@ class _ParticlePainter extends CustomPainter {
       rimColor = const Color(0xFF00E5FF).withValues(alpha: 0.55);
       bodyColor = const Color(0xFF0284C7).withValues(alpha: 0.22);
       highlightColor = Colors.white.withValues(alpha: 0.90);
-    } else if (theme.id == AppThemeMode.lightPearlCoral) {
-      // Warm Silk & Champagne: Effervescent golden pearl / rose-gold fizz
-      rimColor = const Color(0xFFD97706).withValues(alpha: 0.48);
-      bodyColor = const Color(0xFFFDE68A).withValues(alpha: 0.28);
-      highlightColor = Colors.white.withValues(alpha: 0.95);
-    } else if (theme.id == AppThemeMode.lightAzure) {
-      // Ocean Pearl: Crystal azure and sky blue water bubbles
+    } else {
+      // Ocean Pearl (Light): Crystal azure and sky blue water bubbles
       rimColor = const Color(0xFF0284C7).withValues(alpha: 0.45);
       bodyColor = const Color(0xFF38BDF8).withValues(alpha: 0.24);
       highlightColor = Colors.white.withValues(alpha: 0.95);
-    } else {
-      // Nordic Mint & others
-      rimColor = theme.accentPrimary.withValues(alpha: 0.45);
-      bodyColor = theme.accentSecondary.withValues(alpha: 0.22);
-      highlightColor = Colors.white.withValues(alpha: 0.90);
     }
 
     final bodyPaint = Paint()..style = PaintingStyle.fill;

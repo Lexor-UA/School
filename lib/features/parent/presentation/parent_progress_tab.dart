@@ -115,7 +115,7 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
     ),
     SwimStyleData(
       id: 'breaststroke',
-      title: 'Брасс',
+      title: 'Брас',
       subtitle: 'Класичний брас',
       badge: 'Вивчається',
       isPrimary: false,
@@ -388,15 +388,15 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
           final isSelected = _selectedStyleIndex == index;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: EdgeInsets.only(right: index == _styles.length - 1 ? 0 : 6),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => setState(() => _selectedStyleIndex = index),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
                   decoration: BoxDecoration(
                     gradient: isSelected
                         ? LinearGradient(
@@ -411,8 +411,8 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
                         ? null
                         : (isDark
                             ? Colors.white.withValues(alpha: 0.10)
-                            : Colors.white.withValues(alpha: 0.82)),
-                    borderRadius: BorderRadius.circular(20),
+                            : Colors.white.withValues(alpha: 0.85)),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.6)
@@ -436,19 +436,19 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
                     children: [
                       Icon(
                         style.icon,
-                        size: 14,
+                        size: 13,
                         color: isSelected
                             ? Colors.white
                             : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       Text(
                         style.title,
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white
                               : (isDark ? Colors.white : const Color(0xFF0F172A)),
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                         ),
                       ),
@@ -527,53 +527,62 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                          ],
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(style.icon, color: Colors.white, size: 18),
                         ),
-                        child: Icon(style.icon, color: Colors.white, size: 18),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            style.title,
-                            style: TextStyle(
-                              color: currentTheme.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.2,
-                            ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                style.title,
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                style.subtitle,
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 1),
-                          Text(
-                            style.subtitle,
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   // Badge Pill
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -629,9 +638,9 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
               ),
               const SizedBox(height: 16),
 
-              // Overall Score Strip
+              // Overall Score Strip (Protected from clipping)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.06)
@@ -645,28 +654,28 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          LucideIcons.gauge,
-                          size: 15,
-                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Загальний рівень володіння',
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      LucideIcons.gauge,
+                      size: 15,
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Рівень володіння',
+                        style: TextStyle(
+                          color: currentTheme.textPrimary,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDark
@@ -676,13 +685,21 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.35 : 0.20),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Text(
                         '${style.overallScore}% • ${style.levelTitle}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
                           fontSize: 11.5,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
@@ -709,33 +726,32 @@ class _ParentProgressTabState extends ConsumerState<ParentProgressTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: valueColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Icon(metric.icon, size: 12, color: valueColor),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    metric.label,
-                    style: TextStyle(
-                      color: currentTheme.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13.5,
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                ],
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: valueColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(metric.icon, size: 12, color: valueColor),
+                ),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  metric.label,
+                  style: TextStyle(
+                    color: currentTheme.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    letterSpacing: 0.1,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(

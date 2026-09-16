@@ -110,17 +110,16 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                   ),
                   const SizedBox(height: 24),
                   
-                  // Style Selector (Tech Tabs - single smooth scrollable row)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  // Style Selector (Tech Tabs - all 4 fit seamlessly in one row)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: _styleMuscles.keys.map((style) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: _buildTechTab(style),
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                            child: _buildTechTab(style),
+                          ),
                         );
                       }).toList(),
                     ),
@@ -170,26 +169,37 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
     return GestureDetector(
       onTap: () => setState(() => _selectedStyle = style),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        duration: const Duration(milliseconds: 250),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8.5),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
           border: Border.all(
-            color: isSelected ? Colors.cyanAccent : Colors.white.withValues(alpha: 0.2),
-            width: isSelected ? 2 : 1,
+            color: isSelected ? Colors.cyanAccent : Colors.white.withValues(alpha: 0.18),
+            width: isSelected ? 1.5 : 1,
           ),
-          borderRadius: BorderRadius.circular(12), // Tech square look
+          borderRadius: BorderRadius.circular(10), // Tech square look
           boxShadow: isSelected
-              ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 15)]
+              ? [
+                  BoxShadow(
+                    color: Colors.cyanAccent.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ]
               : [],
         ),
-        child: Text(
-          style.tr().toUpperCase(),
-          style: TextStyle(
-            color: isSelected ? Colors.cyanAccent : Colors.white54,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-            fontSize: 12.5,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            style.tr().toUpperCase(),
+            maxLines: 1,
+            style: TextStyle(
+              color: isSelected ? Colors.cyanAccent : Colors.white60,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.6,
+              fontSize: 11,
+            ),
           ),
         ),
       ),

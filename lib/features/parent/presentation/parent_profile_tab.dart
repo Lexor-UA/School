@@ -557,15 +557,16 @@ class ParentProfileTab extends ConsumerWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 1),
                       Text(
-                        'Додайте дитину для обліку занять',
+                        'Додайте дитину для занять',
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : subColor,
-                          fontSize: 11,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w500,
+                          height: 1.15,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ],
                   ),
@@ -1154,6 +1155,8 @@ class ParentProfileTab extends ConsumerWidget {
   }
 
   void _showSettingsDialog(BuildContext context, bool isDark, AppThemeConfig themeConfig) {
+    bool pushNotificationsEnabled = true;
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -1169,20 +1172,29 @@ class ParentProfileTab extends ConsumerWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: isDark ? 0.15 : 0.85),
-                    Colors.white.withValues(alpha: isDark ? 0.05 : 0.40),
-                  ],
+                  colors: isDark
+                      ? [
+                          const Color(0xFF0E3D64).withValues(alpha: 0.85),
+                          const Color(0xFF092842).withValues(alpha: 0.90),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.96),
+                          const Color(0xFFF0F9FF).withValues(alpha: 0.94),
+                        ],
                 ),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: isDark ? 0.22 : 0.6),
+                  color: isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                      : const Color(0xFFBAE6FD),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                    color: (isDark ? const Color(0xFF003B73) : const Color(0xFF0284C7))
+                        .withValues(alpha: isDark ? 0.45 : 0.12),
                     blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
@@ -1195,8 +1207,19 @@ class ParentProfileTab extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)]),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: const Icon(LucideIcons.settings, color: Colors.white, size: 20),
                       ),
@@ -1204,9 +1227,10 @@ class ParentProfileTab extends ConsumerWidget {
                       Text(
                         'Налаштування',
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
+                          color: themeConfig.textPrimary,
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],
@@ -1214,55 +1238,170 @@ class ParentProfileTab extends ConsumerWidget {
                   const SizedBox(height: 20),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.3),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.3)),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : const Color(0xFFE2E8F0),
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       children: [
                         ListTile(
-                          leading: Icon(LucideIcons.palette, color: themeConfig.accentPrimary),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                          leading: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                                  : const Color(0xFFE0F2FE),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              LucideIcons.palette,
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              size: 18,
+                            ),
+                          ),
                           title: Text(
                             'Тема додатку',
-                            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              color: themeConfig.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14.5,
+                            ),
                           ),
                           subtitle: Text(
                             themeConfig.title,
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFFB0D4EC) : themeConfig.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          trailing: const Icon(LucideIcons.chevronRight, size: 18),
+                          trailing: Icon(
+                            LucideIcons.chevronRight,
+                            size: 18,
+                            color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
+                          ),
                           onTap: () {
                             Navigator.pop(ctx);
                             ThemeSwitcherSheet.show(context);
                           },
                         ),
-                        Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
-                        SwitchListTile(
-                          title: Text(
-                            'Push-сповіщення',
-                            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            'Нагадування про тренування',
-                            style: TextStyle(color: isDark ? Colors.white60 : Colors.black45, fontSize: 12),
-                          ),
-                          value: true,
-                          onChanged: (v) {},
-                          activeThumbColor: themeConfig.accentPrimary,
+                        Divider(
+                          height: 1,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : const Color(0xFFE2E8F0),
+                        ),
+                        StatefulBuilder(
+                          builder: (context, setLocalState) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                          : const Color(0xFFECFDF5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      LucideIcons.bell,
+                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Push-сповіщення',
+                                          style: TextStyle(
+                                            color: themeConfig.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          'Нагадування про тренування',
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? const Color(0xFFB0D4EC)
+                                                : themeConfig.textSecondary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: pushNotificationsEnabled,
+                                    onChanged: (v) {
+                                      setLocalState(() => pushNotificationsEnabled = v);
+                                    },
+                                    activeThumbColor: Colors.white,
+                                    activeTrackColor: const Color(0xFF0284C7),
+                                    inactiveThumbColor: isDark ? const Color(0xFF94A3B8) : Colors.white,
+                                    inactiveTrackColor: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        foregroundColor: themeConfig.accentPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                  .withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'Закрити',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
-                      child: const Text('Закрити', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
                   ),
                 ],

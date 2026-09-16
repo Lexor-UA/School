@@ -534,110 +534,113 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           _buildTextField('admin.add_client_age_hint'.tr() == 'admin.add_client_age_hint' ? 'Вік клієнта (років)' : 'admin.add_client_age_hint'.tr(), LucideIcons.calendar, _ageController, isNumber: true, isDark: isDark),
           const SizedBox(height: 20),
           
-          if (_childrenEntries.isNotEmpty) ...[
-            Row(
-              children: [
-                const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'admin.add_client_children_title'.tr() == 'admin.add_client_children_title' ? 'Діти / Учні' : 'admin.add_client_children_title'.tr(),
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13.5,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-          ],
-          
-          ...List.generate(_childrenEntries.length, (index) {
-            final entry = _childrenEntries[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: _buildTextField('admin.add_client_child_name_hint'.tr() == 'admin.add_client_child_name_hint' ? "Ім'я дитини" : 'admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController, isDark: isDark),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: _buildTextField('admin.add_client_child_age_hint'.tr() == 'admin.add_client_child_age_hint' ? 'Вік (р.)' : 'admin.add_client_child_age_hint'.tr(), LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFFF43F5E).withValues(alpha: 0.15)
-                          : const Color(0xFFFFF1F2),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark
-                            ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
-                            : const Color(0xFFFECDD3),
-                      ),
-                    ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFE11D48), size: 18),
-                      onPressed: () => _removeChildField(index),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          
-          Align(
-            alignment: Alignment.centerRight,
-            child: Material(
+          // Children Section (Prominent & Intuitive)
+          if (_childrenEntries.isEmpty) ...[
+            Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: _addChildField,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-                        : const Color(0xFFE0F2FE),
-                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                              const Color(0xFF0284C7).withValues(alpha: 0.16),
+                            ]
+                          : [
+                              const Color(0xFFE0F2FE).withValues(alpha: 0.90),
+                              const Color(0xFFF0F9FF),
+                            ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark
                           ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
-                          : const Color(0xFFBAE6FD),
-                      width: 1.15,
+                          : const Color(0xFF38BDF8).withValues(alpha: 0.50),
+                      width: 1.3,
                     ),
-                    boxShadow: isDark
-                        ? null
-                        : [
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.15 : 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                              blurRadius: 6,
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                              blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.plus,
-                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                        size: 15,
+                        ),
+                        child: const Icon(
+                          LucideIcons.baby,
+                          color: Colors.white,
+                          size: 19,
+                        ),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _childrenEntries.isEmpty ? 'admin.add_client_add_child'.tr() : 'admin.add_client_add_more_child'.tr(),
-                        style: TextStyle(
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '+ Додати дитину (учня)',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0369A1),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Прив\'язати юного плавця до анкети',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.12)
+                              : Colors.white.withValues(alpha: 0.85),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                : const Color(0xFFBAE6FD),
+                          ),
+                        ),
+                        child: Icon(
+                          LucideIcons.plus,
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
+                          size: 16,
                         ),
                       ),
                     ],
@@ -645,7 +648,107 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 ),
               ),
             ),
-          ),
+          ] else ...[
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Діти / Учні (${_childrenEntries.length})',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                const Spacer(),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _addChildField,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                            : const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                              : const Color(0xFF38BDF8).withValues(alpha: 0.60),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Ще дитина',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...List.generate(_childrenEntries.length, (index) {
+              final entry = _childrenEntries[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _buildTextField('admin.add_client_child_name_hint'.tr() == 'admin.add_client_child_name_hint' ? "Ім'я дитини" : 'admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController, isDark: isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: _buildTextField('admin.add_client_child_age_hint'.tr() == 'admin.add_client_child_age_hint' ? 'Вік (р.)' : 'admin.add_client_child_age_hint'.tr(), LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFFF43F5E).withValues(alpha: 0.15)
+                            : const Color(0xFFFFF1F2),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
+                              : const Color(0xFFFECDD3),
+                        ),
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(LucideIcons.trash2, color: Color(0xFFE11D48), size: 18),
+                        onPressed: () => _removeChildField(index),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
 
           if (_errorMessage != null) ...[
             Container(

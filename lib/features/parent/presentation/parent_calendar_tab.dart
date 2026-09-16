@@ -71,24 +71,25 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 4),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            const SizedBox(height: 4),
 
-          // 1. Sleek Frosted Glass Child / Parent Selector
-          _buildChildSelector(currentTheme, user?.id ?? '', user?.name ?? 'Я'),
-          const SizedBox(height: 12),
+            // 1. Sleek Frosted Glass Child / Parent Selector
+            _buildChildSelector(currentTheme, user?.id ?? '', user?.name ?? 'Я'),
+            const SizedBox(height: 12),
 
-          // 2. VisionOS Frosted Glass Calendar Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildCalendarCard(allClasses, currentTheme, targetChildId),
-          ),
-          const SizedBox(height: 14),
+            // 2. VisionOS Frosted Glass Calendar Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildCalendarCard(allClasses, currentTheme, targetChildId),
+            ),
+            const SizedBox(height: 14),
 
-          // 3. On-Screen Live Day Schedule Section
-          Expanded(
-            child: Padding(
+            // 3. On-Screen Live Day Schedule Section
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _buildDayScheduleSection(
                 dayClasses,
@@ -98,8 +99,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                 children,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 120), // Clearance for floating bottom nav bar
+          ],
+        ),
       ),
     );
   }
@@ -746,131 +748,128 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         ),
         const SizedBox(height: 10),
 
-        // Non-scrollable List of classes
-        Expanded(
-          child: (enrolledClasses.isEmpty && availableClasses.isEmpty)
-              ? _buildEmptyDayState(currentTheme)
-              : SingleChildScrollView(
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        if (enrolledClasses.isEmpty && availableClasses.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _buildEmptyDayState(currentTheme),
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (enrolledClasses.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF10B981).withValues(alpha: 0.40)
+                          : const Color(0xFFBAE6FD),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? const Color(0xFF10B981) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (enrolledClasses.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                                : Colors.white.withValues(alpha: 0.88),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.40)
-                                  : const Color(0xFFBAE6FD),
-                              width: 0.8,
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: 0.5),
+                              blurRadius: 4,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isDark ? const Color(0xFF10B981) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: 0.5),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 7),
-                              Text(
-                                'Ваші заплановані заняття (${enrolledClasses.length})',
-                                style: TextStyle(
-                                  color: isDark ? const Color(0xFF34D399) : currentTheme.textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        ...enrolledClasses.map((c) => _buildEnrolledClassCard(c, targetChildId, currentTheme)),
-                        const SizedBox(height: 12),
-                      ],
-                      if (availableClasses.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF0284C7).withValues(alpha: 0.15)
-                                : Colors.white.withValues(alpha: 0.88),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF38BDF8).withValues(alpha: 0.40)
-                                  : const Color(0xFFBAE6FD),
-                              width: 0.8,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.5),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 7),
-                              Text(
-                                'Доступні для запису (${availableClasses.length})',
-                                style: TextStyle(
-                                  color: isDark ? const Color(0xFF38BDF8) : currentTheme.textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Ваші заплановані заняття (${enrolledClasses.length})',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF34D399) : currentTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
                         ),
-                        const SizedBox(height: 8),
-                        ...availableClasses.map((c) => _buildAvailableClassCard(c, targetChildId, currentTheme)),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-        ),
+                const SizedBox(height: 8),
+                ...enrolledClasses.map((c) => _buildEnrolledClassCard(c, targetChildId, currentTheme)),
+                const SizedBox(height: 12),
+              ],
+              if (availableClasses.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0284C7).withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF38BDF8).withValues(alpha: 0.40)
+                          : const Color(0xFFBAE6FD),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Доступні для запису (${availableClasses.length})',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF38BDF8) : currentTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...availableClasses.map((c) => _buildAvailableClassCard(c, targetChildId, currentTheme)),
+              ],
+            ],
+          ),
       ],
     );
   }

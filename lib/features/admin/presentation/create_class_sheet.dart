@@ -43,7 +43,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   AppUser? _selectedCoach;
 
   String _selectedCategory = 'Плавання';
-  final List<String> _categories = ['Плавання', 'Стрибки', 'Аквааеробіка'];
+  final List<String> _categories = ['Плавання', 'Аквааеробіка'];
 
   bool _isSaving = false;
 
@@ -133,7 +133,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       _selectedDate = c.startTime;
       _selectedTime = TimeOfDay(hour: c.startTime.hour, minute: c.startTime.minute);
       _maxCapacity = c.maxCapacity;
-      _selectedCategory = c.category;
+      _selectedCategory = _categories.contains(c.category) ? c.category : _categories.first;
       if (c.lane == 'Дитячий басейн') {
         _selectedPoolType = 'Дитячий басейн';
         _selectedLane = 'Дитячий басейн';
@@ -812,6 +812,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   Widget _buildDropdown(String value, List<String> items, ValueChanged<String?> onChanged, {required bool isDark}) {
+    final effectiveValue = items.contains(value) ? value : (items.isNotEmpty ? items.first : null);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
@@ -833,7 +834,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: value,
+          value: effectiveValue,
           isExpanded: true,
           dropdownColor: isDark ? const Color(0xFF0E2544) : Colors.white,
           style: TextStyle(

@@ -23,9 +23,7 @@ class ParentSubscriptionTab extends ConsumerStatefulWidget {
 
 class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   bool _isLoading = false;
-  int _currentIndex = 0;
   String _selectedOwner = '';
-  final PageController _pageController = PageController(viewportFraction: 0.9);
 
   final List<Map<String, dynamic>> _services = [
     {'name': 'Абонемент на 4 тренування', 'price': '1200 грн', 'classes': 4, 'validityDays': 30},
@@ -42,6 +40,34 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
     try {
       await Future.delayed(const Duration(seconds: 1)); // Імітація оплати
+
+      // Check if this owner already has an active subscription
+      final existingSubSnap = await FirebaseFirestore.instance
+          .collection('subscriptions')
+          .where('userId', isEqualTo: userId)
+          .where('ownerName', isEqualTo: owner)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      final hasActive = existingSubSnap.docs.any((d) {
+        final data = d.data();
+        final remaining = data['remainingClasses'] as int? ?? 0;
+        final expiry = (data['expiryDate'] as Timestamp?)?.toDate();
+        final isNotExpired = expiry == null || expiry.isAfter(DateTime.now());
+        return remaining > 0 && isNotExpired;
+      });
+
+      if (hasActive) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Для "$owner" вже діє активний абонемент!'),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+        }
+        return;
+      }
 
       final serviceDetails = _services.firstWhere((s) => s['name'] == selectedService);
       final classes = serviceDetails['classes'] as int;
@@ -347,7 +373,6 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
     final subscriptions = ref.watch(subscriptionControllerProvider);
     final allSubs = user != null ? subscriptions.where((s) => s.userId == user.id).toList() : <Subscription>[];
-    var activeSubs = allSubs.where((s) => s.isActive).toList();
     
     final filterOwners = [
       if (user != null) {'id': user.name, 'name': user.name, 'isParent': true},
@@ -359,18 +384,13 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       effectiveOwner = filterOwners.first['id'] as String;
     }
 
-    if (effectiveOwner.isNotEmpty) {
-      activeSubs = activeSubs.where((s) => s.ownerName == effectiveOwner).toList();
-    }
+    final activeForMember = allSubs.where((s) {
+      final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? (user?.name ?? '') : s.ownerName!;
+      return owner.trim() == effectiveOwner.trim() && s.isActive && s.remainingClasses > 0;
+    }).toList();
 
-    // Safety check if current index exceeds length after deletion/expiration
-    if (_currentIndex >= activeSubs.length && activeSubs.isNotEmpty) {
-      _currentIndex = activeSubs.length - 1;
-    } else if (activeSubs.isEmpty) {
-      _currentIndex = 0;
-    }
-
-    final currentSub = activeSubs.isNotEmpty ? activeSubs[_currentIndex] : null;
+    final currentSub = activeForMember.isNotEmpty ? activeForMember.first : null;
+    final bool hasActiveSubscription = currentSub != null;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -418,10 +438,6 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           onTap: () {
                             setState(() {
                               _selectedOwner = owner['id'] as String;
-                              _currentIndex = 0;
-                              if (_pageController.hasClients) {
-                                _pageController.jumpToPage(0);
-                              }
                             });
                           },
                           borderRadius: BorderRadius.circular(20),
@@ -496,69 +512,79 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             ),
             const SizedBox(height: 12),
             
-            // 3D Cards Carousel
-            if (activeSubs.isEmpty)
-              SizedBox(
-                height: 240,
-                child: Center(
-                  child: Text(
-                    'parent.no_active_subs'.tr(),
-                    style: TextStyle(color: isDark ? Colors.white70 : themeConfig.textSecondary, fontSize: 16),
+            // 3D Subscription Card or Empty State
+            if (currentSub == null)
+              Container(
+                width: double.infinity,
+                height: 220,
+                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF0E3D64).withValues(alpha: 0.50),
+                            const Color(0xFF092842).withValues(alpha: 0.65),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.90),
+                            const Color(0xFFF0F9FF).withValues(alpha: 0.85),
+                          ],
                   ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
+                        border: Border.all(
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Icon(
+                        LucideIcons.creditCard,
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Немає активного абонемента',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : themeConfig.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Для "$effectiveOwner" абонемент ще не оформлено',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: isDark ? Colors.white60 : themeConfig.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
               SizedBox(
                 height: 240,
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) => setState(() => _currentIndex = index),
-                  itemCount: activeSubs.length,
-                  itemBuilder: (context, index) {
-                    final isSelected = index == _currentIndex;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: EdgeInsets.symmetric(
-                        horizontal: 8.0,
-                        vertical: isSelected ? 0.0 : 16.0,
-                      ),
-                      child: Opacity(
-                        opacity: isSelected ? 1.0 : 0.6,
-                        child: SubscriptionFlipCard(currentSub: activeSubs[index]),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-            if (activeSubs.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(activeSubs.length, (index) {
-                    final isSelected = index == _currentIndex;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                      width: isSelected ? 24.0 : 8.0,
-                      height: 8.0,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                            : (isDark ? Colors.white24 : const Color(0xFFBAE6FD)),
-                        borderRadius: BorderRadius.circular(4.0),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.5),
-                                  blurRadius: 6,
-                                ),
-                              ]
-                            : null,
-                      ),
-                    );
-                  }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: SubscriptionFlipCard(currentSub: currentSub),
                 ),
               ),
             
@@ -749,48 +775,123 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
             const SizedBox(height: 24),
 
-            // Action Button
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              width: double.infinity,
-              height: 54,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                      : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.45),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.40 : 0.30),
-                    blurRadius: 18,
-                    offset: const Offset(0, 4),
+            // Action Button or Active Subscription Status Card
+            if (hasActiveSubscription)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF10B981).withValues(alpha: 0.18),
+                            const Color(0xFF064E3B).withValues(alpha: 0.28),
+                          ]
+                        : [
+                            const Color(0xFFECFDF5),
+                            const Color(0xFFD1FAE5),
+                          ],
                   ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig),
-                icon: _isLoading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
-                label: Text(
-                  _isLoading ? 'parent.processing'.tr() : 'parent.pay_subscription'.tr(),
-                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.40 : 0.50),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.12),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Абонемент активний',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF065F46),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Для "$effectiveOwner" вже діє абонемент (залишилось ${currentSub.remainingClasses} занять). Новий абонемент буде доступний після завершення занять.',
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : const Color(0xFF047857),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ).animate().fadeIn(delay: 450.ms).scale(begin: const Offset(0.95, 0.95)),
+              ).animate().fadeIn(delay: 450.ms).slideY(begin: 0.08)
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                width: double.infinity,
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.45),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.40 : 0.30),
+                      blurRadius: 18,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig),
+                  icon: _isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
+                  label: Text(
+                    _isLoading
+                        ? 'parent.processing'.tr()
+                        : (effectiveOwner == user?.name
+                            ? 'parent.pay_subscription'.tr()
+                            : 'Оформити абонемент для $effectiveOwner'),
+                    style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  ),
+                ),
+              ).animate().fadeIn(delay: 450.ms).scale(begin: const Offset(0.95, 0.95)),
             
             const SizedBox(height: 120), // spacing for bottom nav bar
           ],

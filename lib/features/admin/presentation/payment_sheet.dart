@@ -763,6 +763,36 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     required VoidCallback onTap,
     required AppThemeConfig currentTheme,
   }) {
+    final bool isDark = currentTheme.isDark;
+
+    // High-contrast, WCAG AAA compliant color mapping
+    final Color effectiveColor = isDark
+        ? color
+        : (color == const Color(0xFF00E5FF)
+            ? const Color(0xFF0284C7) // Vivid deep ocean blue
+            : (color == const Color(0xFF10B981)
+                ? const Color(0xFF059669) // Deep emerald
+                : (color == const Color(0xFFF59E0B)
+                    ? const Color(0xFFD97706) // Rich warm amber
+                    : const Color(0xFFE11D48)))); // Vivid crimson
+
+    // Distinct soft tinted backgrounds & borders for each card in Light theme
+    final Color lightBg = color == const Color(0xFF00E5FF)
+        ? const Color(0xFFF0F9FF)
+        : (color == const Color(0xFF10B981)
+            ? const Color(0xFFF0FDF4)
+            : (color == const Color(0xFFF59E0B)
+                ? const Color(0xFFFFFBEB)
+                : const Color(0xFFFFF1F2)));
+
+    final Color lightBorder = color == const Color(0xFF00E5FF)
+        ? const Color(0xFFBAE6FD)
+        : (color == const Color(0xFF10B981)
+            ? const Color(0xFFBBF7D0)
+            : (color == const Color(0xFFF59E0B)
+                ? const Color(0xFFFDE68A)
+                : const Color(0xFFFECDD3)));
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -770,13 +800,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      color.withValues(alpha: currentTheme.isDark ? 0.28 : 0.20),
-                      color.withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
+                      effectiveColor.withValues(alpha: isDark ? 0.32 : 0.22),
+                      effectiveColor.withValues(alpha: isDark ? 0.10 : 0.06),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -784,33 +814,33 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 : null,
             color: isSelected
                 ? null
-                : (currentTheme.isDark
+                : (isDark
                     ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white),
+                    : lightBg),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected
-                  ? color.withValues(alpha: currentTheme.isDark ? 0.85 : 0.75)
-                  : (currentTheme.isDark
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : const Color(0xFFBAE6FD)),
-              width: isSelected ? 1.4 : 1.1,
+                  ? effectiveColor
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.20)
+                      : lightBorder),
+              width: isSelected ? 1.8 : 1.15,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.25),
+                      color: effectiveColor.withValues(alpha: isDark ? 0.35 : 0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
                   ]
-                : (currentTheme.isDark
+                : (isDark
                     ? null
                     : [
                         BoxShadow(
-                          color: const Color(0xFF0284C7).withValues(alpha: 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                          color: effectiveColor.withValues(alpha: 0.06),
+                          blurRadius: 5,
+                          offset: const Offset(0, 1.5),
                         ),
                       ]),
           ),
@@ -825,25 +855,25 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.16),
+                      color: effectiveColor.withValues(alpha: isDark ? 0.22 : 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
-                      child: Icon(icon, color: color, size: 12),
+                      child: Icon(icon, color: effectiveColor, size: 12.5),
                     ),
                   ),
                   Text(
                     count,
                     style: TextStyle(
-                      color: color,
-                      fontSize: 16,
+                      color: effectiveColor,
+                      fontSize: 16.5,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 6),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
@@ -852,9 +882,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   maxLines: 1,
                   style: TextStyle(
                     color: isSelected
-                        ? (currentTheme.isDark ? Colors.white : const Color(0xFF0F172A))
-                        : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
-                    fontSize: 10.5,
+                        ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
+                    fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
                   ),
                 ),
@@ -936,8 +966,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           gradient: isSelected
               ? LinearGradient(
                   colors: index == 0
-                      ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                      : [const Color(0xFFF43F5E), const Color(0xFFE11D48)],
+                      ? (currentTheme.isDark
+                          ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)])
+                      : const [Color(0xFFF43F5E), Color(0xFFBE123C)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )

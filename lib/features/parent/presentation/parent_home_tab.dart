@@ -54,8 +54,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   Text('parent.notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   _buildNotificationItem('parent.notif_rescheduled_title'.tr(), '${'parent.today_capitalized'.tr()} · 16:15', LucideIcons.clock, isDark),
-                  _buildNotificationItem('parent.notif_badge_title'.tr(), 'parent.notif_badge_desc'.tr(), LucideIcons.award, isDark),
                   _buildNotificationItem('parent.notif_sub_title'.tr(), 'parent.notif_sub_desc'.tr(), LucideIcons.creditCard, isDark),
+                  _buildNotificationItem('parent.notif_badge_title'.tr(), 'parent.notif_badge_desc'.tr(), LucideIcons.award, isDark),
                   const SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerRight,

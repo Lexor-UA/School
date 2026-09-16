@@ -110,14 +110,19 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                   ),
                   const SizedBox(height: 24),
                   
-                  // Style Selector (Tech Tabs)
-                  Padding(
+                  // Style Selector (Tech Tabs - single smooth scrollable row)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.center,
-                      children: _styleMuscles.keys.map((style) => _buildTechTab(style)).toList(),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: _styleMuscles.keys.map((style) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: _buildTechTab(style),
+                        );
+                      }).toList(),
                     ),
                   ).animate().fadeIn(delay: 400.ms),
                   
@@ -166,20 +171,25 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
       onTap: () => setState(() => _selectedStyle = style),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: isSelected ? Colors.cyanAccent.withValues(alpha: 0.15) : Colors.transparent,
-          border: Border.all(color: isSelected ? Colors.cyanAccent : Colors.white.withValues(alpha: 0.2), width: isSelected ? 2 : 1),
+          border: Border.all(
+            color: isSelected ? Colors.cyanAccent : Colors.white.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
           borderRadius: BorderRadius.circular(12), // Tech square look
-          boxShadow: isSelected ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 15)] : [],
+          boxShadow: isSelected
+              ? [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.4), blurRadius: 15)]
+              : [],
         ),
         child: Text(
           style.tr().toUpperCase(),
           style: TextStyle(
             color: isSelected ? Colors.cyanAccent : Colors.white54,
             fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
-            fontSize: 13,
+            letterSpacing: 1.5,
+            fontSize: 12.5,
           ),
         ),
       ),
@@ -188,31 +198,68 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
 
   Widget _buildTechStatsPanel() {
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF071426).withValues(alpha: 0.8),
+        color: const Color(0xFF071426).withValues(alpha: 0.85),
         border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4), width: 1.5),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.1), blurRadius: 30, spreadRadius: 5),
+          BoxShadow(
+            color: Colors.cyanAccent.withValues(alpha: 0.12),
+            blurRadius: 30,
+            spreadRadius: 2,
+          ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
-                  Icon(LucideIcons.target, color: Colors.cyanAccent, size: 20),
-                  SizedBox(width: 12),
-                  Text('parent.active_muscle_groups'.tr(), style: TextStyle(color: Colors.cyanAccent, letterSpacing: 2, fontSize: 13, fontWeight: FontWeight.bold)),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.cyanAccent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.cyanAccent.withValues(alpha: 0.5),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.cyanAccent.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(LucideIcons.target, color: Colors.cyanAccent, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'parent.active_muscle_groups'.tr(),
+                      style: const TextStyle(
+                        color: Colors.cyanAccent,
+                        letterSpacing: 2,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
               ..._styleMuscles[_selectedStyle]!.map((muscle) {
+                final percentage = (_progress[muscle]! * 100).toInt();
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Column(
@@ -221,18 +268,50 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('parent.$muscle'.tr().toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                          Text('${(_progress[muscle]! * 100).toInt()}%', style: const TextStyle(color: Colors.cyanAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text(
+                            'parent.$muscle'.tr().toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          Text(
+                            '$percentage%',
+                            style: const TextStyle(
+                              color: Colors.cyanAccent,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4), // Tech sharp edges
-                        child: LinearProgressIndicator(
-                          value: _progress[muscle],
-                          backgroundColor: Colors.white.withValues(alpha: 0.05),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
-                          minHeight: 8,
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 8,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: _progress[muscle],
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.cyanAccent.withValues(alpha: 0.45),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -242,6 +321,7 @@ class _AnatomyProgressScreenState extends State<AnatomyProgressScreen> with Tick
             ],
           ),
         ),
+      ),
     );
   }
 }

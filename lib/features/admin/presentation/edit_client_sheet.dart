@@ -48,6 +48,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isSuccess = false;
+  String _selectedSubOwner = '';
 
   final List<Map<String, dynamic>> _services = [
     {'name': 'Абонемент на 4 тренування', 'classes': 4, 'validityDays': 30},
@@ -67,6 +68,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     _ageController = TextEditingController(text: widget.initialAge?.toString() ?? '');
     _loginIdController = TextEditingController(text: widget.initialLoginId);
     _passwordController = TextEditingController(text: widget.initialPassword ?? '1');
+    _selectedSubOwner = widget.initialName;
   }
 
   @override
@@ -582,16 +584,26 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     }
   }
 
-  void _showAddSubscriptionDialog(List<String> availableOwners) {
+  void _showAddSubscriptionDialog(List<String> availableOwners, {String? preselectedOwner}) {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     String selectedService = _services.first['name'];
-    String selectedOwner = availableOwners.isNotEmpty ? availableOwners.first : widget.initialName;
+    String selectedOwner = (preselectedOwner != null && availableOwners.contains(preselectedOwner))
+        ? preselectedOwner
+        : (availableOwners.isNotEmpty ? availableOwners.first : widget.initialName);
 
     showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final allSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
+            final activeForOwner = allSubs.where((s) {
+              final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? widget.initialName : s.ownerName!;
+              return owner.trim() == selectedOwner.trim() && s.isActive && s.remainingClasses > 0;
+            }).toList();
+            final hasActiveSub = activeForOwner.isNotEmpty;
+            final existingSub = hasActiveSub ? activeForOwner.first : null;
+
             return AlertDialog(
               backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
               shape: RoundedRectangleBorder(
@@ -702,6 +714,38 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                         ),
                       ),
                     ),
+
+                  if (hasActiveSub)
+                    Container(
+                      margin: const EdgeInsets.only(top: 14),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.18 : 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFFD97706).withValues(alpha: 0.40),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(LucideIcons.alertTriangle, color: Color(0xFFD97706), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'У "$selectedOwner" вже є активний абонемент (${existingSub?.serviceName ?? 'Абонемент'}, залишилось ${existingSub?.remainingClasses} занять). Новий абонемент замінить та деактивує попередній.',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
               actions: [
@@ -725,6 +769,19 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     final validityDays = serviceDetails['validityDays'] as int;
                     final expiry = DateTime.now().add(Duration(days: validityDays));
                     
+                    // Deactivate any previous active subscription for selectedOwner
+                    final currentSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
+                    for (final oldSub in currentSubs.where((s) {
+                      final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? widget.initialName : s.ownerName!;
+                      return owner.trim() == selectedOwner.trim() && s.isActive;
+                    })) {
+                      try {
+                        await FirebaseFirestore.instance.collection('subscriptions').doc(oldSub.id).update({'isActive': false});
+                      } catch (e) {
+                        debugPrint('Error deactivating old sub: $e');
+                      }
+                    }
+
                     final newSub = Subscription(
                       id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${selectedOwner.hashCode}',
                       userId: widget.clientId,
@@ -985,36 +1042,185 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
           builder: (context, snapshot) {
+            List<Map<String, dynamic>> familyMembers = [
+              {'name': widget.initialName, 'isParent': true, 'age': widget.initialAge},
+            ];
             List<String> availableOwners = [widget.initialName];
-            List<String> allRelatedIds = [widget.clientId];
             
             if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-              availableOwners.addAll(snapshot.data!.docs.map((d) => (d.data() as Map<String, dynamic>)['name'] as String? ?? 'Дитина'));
-              allRelatedIds.addAll(snapshot.data!.docs.map((d) => d.id));
+              for (var doc in snapshot.data!.docs) {
+                final cData = doc.data() as Map<String, dynamic>;
+                final cName = (cData['name'] as String? ?? 'Дитина').trim();
+                familyMembers.add({
+                  'name': cName,
+                  'isParent': false,
+                  'age': cData['age'],
+                });
+                availableOwners.add(cName);
+              }
             }
 
+            String effectiveOwner = (_selectedSubOwner.isNotEmpty && availableOwners.contains(_selectedSubOwner))
+                ? _selectedSubOwner
+                : availableOwners.first;
+
+            final memberSubs = userSubs.where((sub) {
+              final owner = (sub.ownerName == null || sub.ownerName!.isEmpty) ? widget.initialName : sub.ownerName!;
+              return owner.trim() == effectiveOwner.trim();
+            }).toList();
+
+            memberSubs.sort((a, b) {
+              if (a.isActive && !b.isActive) return -1;
+              if (!a.isActive && b.isActive) return 1;
+              return 0;
+            });
+
+            final hasActiveSubForMember = memberSubs.any((s) => s.isActive && s.remainingClasses > 0);
+
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (userSubs.isEmpty)
+                // 1. Family Member Switcher Tabs
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: familyMembers.map((member) {
+                      final mName = member['name'] as String;
+                      final isParent = member['isParent'] as bool;
+                      final isSelected = effectiveOwner == mName;
+                      final memberHasActive = userSubs.any((s) {
+                        final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? widget.initialName : s.ownerName!;
+                        return owner.trim() == mName.trim() && s.isActive && s.remainingClasses > 0;
+                      });
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0, bottom: 4.0),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedSubOwner = mName;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: isSelected
+                                    ? LinearGradient(
+                                        colors: [
+                                          (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9)).withValues(alpha: isDark ? 0.30 : 0.18),
+                                          const Color(0xFF0284C7).withValues(alpha: isDark ? 0.20 : 0.10),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
+                                color: isSelected
+                                    ? null
+                                    : (isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9)),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                      : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1)),
+                                  width: isSelected ? 1.4 : 1.0,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isParent ? LucideIcons.user : LucideIcons.baby,
+                                    size: 15,
+                                    color: isSelected
+                                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                        : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                                  ),
+                                  const SizedBox(width: 7),
+                                  Text(
+                                    isParent ? '$mName (Клієнт)' : mName,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? (isDark ? Colors.white : const Color(0xFF0369A1))
+                                          : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  if (memberHasActive) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      width: 7,
+                                      height: 7,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 2. Subscription card(s) for selected member
+                if (memberSubs.isEmpty)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 14),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
+                      color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+                        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0),
+                        width: 1.1,
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        'admin.clients_no_subs'.tr(),
-                        style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
-                      ),
+                    child: Column(
+                      children: [
+                        Icon(LucideIcons.creditCard, color: isDark ? Colors.white38 : const Color(0xFF94A3B8), size: 36),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Немає активного абонемента для $effectiveOwner',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : const Color(0xFF475569),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Призначте 1 абонемент для цієї особи',
+                          style: TextStyle(
+                            color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else
-                  ...userSubs.map((sub) {
+                  ...memberSubs.map((sub) {
                     final isActive = sub.isActive;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -1060,7 +1266,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      'Для: ${sub.ownerName ?? 'Не вказано'}',
+                                      'Для: ${sub.ownerName ?? widget.initialName}',
                                       style: TextStyle(
                                         color: isDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
                                         fontSize: 12,
@@ -1183,17 +1389,20 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     );
                   }),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: OutlinedButton.icon(
                     icon: Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669)),
                     label: Text(
-                      'admin.assign_new_sub'.tr(),
+                      hasActiveSubForMember
+                          ? 'Призначити новий абонемент (замінить поточний)'
+                          : 'Призначити абонемент для "$effectiveOwner"',
                       style: TextStyle(
                         color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669),
                         fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -1201,7 +1410,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       side: BorderSide(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF10B981)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: () => _showAddSubscriptionDialog(availableOwners),
+                    onPressed: () => _showAddSubscriptionDialog(availableOwners, preselectedOwner: effectiveOwner),
                   ),
                 ),
               ],

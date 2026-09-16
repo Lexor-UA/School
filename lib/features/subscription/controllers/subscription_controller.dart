@@ -42,6 +42,30 @@ class SubscriptionController extends _$SubscriptionController {
     }
   }
 
+  bool hasActiveSubscriptionForOwner(String userId, String ownerName) {
+    final now = DateTime.now();
+    return state.any((sub) =>
+        sub.userId == userId &&
+        (sub.ownerName ?? '').trim() == ownerName.trim() &&
+        sub.isActive &&
+        sub.remainingClasses > 0 &&
+        (sub.expiryDate == null || sub.expiryDate!.isAfter(now)));
+  }
+
+  Subscription? getActiveSubscriptionForOwner(String userId, String ownerName) {
+    final now = DateTime.now();
+    try {
+      return state.firstWhere((sub) =>
+          sub.userId == userId &&
+          (sub.ownerName ?? '').trim() == ownerName.trim() &&
+          sub.isActive &&
+          sub.remainingClasses > 0 &&
+          (sub.expiryDate == null || sub.expiryDate!.isAfter(now)));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Subscription? getSubscriptionForOwner(String userId, String ownerName) {
     final userSubs = state.where((sub) => sub.userId == userId && sub.isActive && sub.remainingClasses > 0).toList();
     if (userSubs.isEmpty) return null;

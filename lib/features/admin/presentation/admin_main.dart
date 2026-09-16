@@ -3023,7 +3023,7 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                               child: Icon(widget.icon, color: Colors.white, size: isDark ? 20 : 22),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           // Titles
                           Expanded(
                             child: Column(
@@ -3063,8 +3063,8 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                           const SizedBox(width: 4),
                           // Chevron capsule with accent tint for light theme
                           Container(
-                            width: 26,
-                            height: 26,
+                            width: 24,
+                            height: 24,
                             decoration: BoxDecoration(
                               color: isDark
                                   ? Colors.white.withValues(alpha: _isHovered ? 0.16 : 0.08)
@@ -3093,7 +3093,7 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                             child: Center(
                               child: Icon(
                                 LucideIcons.chevronRight,
-                                size: 13,
+                                size: 12,
                                 color: _isHovered
                                     ? widget.accentColor
                                     : (isDark

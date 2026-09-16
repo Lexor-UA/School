@@ -278,9 +278,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                     child: Text(
                       'ГОДИНИ',
                       style: TextStyle(
-                        color: effectiveIsDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
+                        color: effectiveIsDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                         fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -292,9 +292,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                     child: Text(
                       'ХВИЛИНИ',
                       style: TextStyle(
-                        color: effectiveIsDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
+                        color: effectiveIsDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                         fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -363,9 +363,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                                 style: TextStyle(
                                   color: isSelected
                                       ? (effectiveIsDark ? Colors.white : const Color(0xFF0F172A))
-                                      : (effectiveIsDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF94A3B8)),
+                                      : (effectiveIsDark ? Colors.white.withValues(alpha: 0.48) : const Color(0xFF64748B)),
                                   fontSize: isSelected ? 22 : 17,
-                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -409,9 +409,9 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                                 style: TextStyle(
                                   color: isSelected
                                       ? (effectiveIsDark ? Colors.white : const Color(0xFF0F172A))
-                                      : (effectiveIsDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF94A3B8)),
+                                      : (effectiveIsDark ? Colors.white.withValues(alpha: 0.48) : const Color(0xFF64748B)),
                                   fontSize: isSelected ? 22 : 17,
-                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                                   letterSpacing: 0.5,
                                 ),
                               ),

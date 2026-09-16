@@ -67,6 +67,36 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     return count;
   }
 
+  String _formatClassesCount(int count) {
+    final mod100 = count % 100;
+    final mod10 = count % 10;
+    if (mod100 >= 11 && mod100 <= 14) {
+      return '$count занять';
+    }
+    if (mod10 == 1) {
+      return '$count заняття';
+    }
+    if (mod10 >= 2 && mod10 <= 4) {
+      return '$count заняття';
+    }
+    return '$count занять';
+  }
+
+  String _formatSpotsCount(int count) {
+    final mod100 = count % 100;
+    final mod10 = count % 10;
+    if (mod100 >= 11 && mod100 <= 14) {
+      return '$count місць';
+    }
+    if (mod10 == 1) {
+      return '$count місце';
+    }
+    if (mod10 >= 2 && mod10 <= 4) {
+      return '$count місця';
+    }
+    return '$count місць';
+  }
+
   String _getWeekdaysNamesSummary() {
     final Map<int, String> names = {
       1: 'понеділках',
@@ -232,7 +262,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       if (success) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Створено регулярну групу "${_titleController.text.trim()}" на $_durationWeeks тиж. ($createdCount занять)', admin.id);
+          await logAdminAction('Створено регулярну групу "${_titleController.text.trim()}" на $_durationWeeks тиж. (${_formatClassesCount(createdCount)})', admin.id);
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -416,7 +446,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                       ? 'admin.group_create_subtitle'.tr()
                                       : 'admin.class_single_subtitle'.tr()),
                               style: TextStyle(
-                                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                 fontSize: 12,
                               ),
                             ),
@@ -547,11 +577,21 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+                          color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+                            color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+                            width: 1.2,
                           ),
+                          boxShadow: isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1.5),
+                                  ),
+                                ],
                         ),
                         child: Row(
                           children: [
@@ -579,7 +619,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             const Spacer(),
                             Icon(
                               LucideIcons.chevronRight,
-                              color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                              color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                               size: 16,
                             ),
                           ],
@@ -628,7 +668,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           ),
                         ),
                         child: Text(
-                          'admin.class_spots_count'.tr(args: ['$_maxCapacity']),
+                          _formatSpotsCount(_maxCapacity),
                           style: TextStyle(
                             color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                             fontSize: 12,
@@ -640,10 +680,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: const Color(0xFF00E5FF),
+                      activeTrackColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       inactiveTrackColor: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFCBD5E1),
-                      thumbColor: const Color(0xFF00E5FF),
-                      overlayColor: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                      thumbColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      overlayColor: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.18),
                       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
                       trackHeight: 4,
                     ),
@@ -693,7 +733,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                     const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2)),
                                     const SizedBox(width: 10),
                                     Text(
-                                      _isRecurring ? 'Створення групи та $_calculatedRecurringCount занять...' : 'Збереження...',
+                                      _isRecurring ? 'Створення групи (${_formatClassesCount(_calculatedRecurringCount)})...' : 'Збереження...',
                                       style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
                                     ),
                                   ],
@@ -707,7 +747,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                       _isEditing
                                           ? 'Зберегти зміни'
                                           : (_isRecurring
-                                              ? 'Створити групу ($_calculatedRecurringCount занять)'
+                                              ? 'Створити групу (${_formatClassesCount(_calculatedRecurringCount)})'
                                               : 'admin.class_create_btn'.tr()),
                                       style: const TextStyle(
                                         color: Colors.white,
@@ -737,9 +777,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       child: Text(
         text,
         style: TextStyle(
-          color: isDark ? Colors.white.withValues(alpha: 0.90) : const Color(0xFF334155),
+          color: isDark ? Colors.white.withValues(alpha: 0.90) : const Color(0xFF0F172A),
           fontSize: 12.5,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
         ),
       ),
@@ -750,15 +790,17 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
-        color: isDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF94A3B8),
+        color: isDark ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF64748B),
         fontSize: 13.5,
+        fontWeight: FontWeight.w500,
       ),
       filled: true,
-      fillColor: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+      fillColor: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
-          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -773,11 +815,21 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -813,11 +865,21 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<AppUser>(
@@ -890,15 +952,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.users,
                       size: 15,
-                      color: _isRecurring ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                      color: _isRecurring ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '👥 Постійна група',
+                      'Постійна група',
                       style: TextStyle(
                         color: _isRecurring
                             ? Colors.white
-                            : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                            : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                         fontSize: 13,
                         fontWeight: _isRecurring ? FontWeight.w800 : FontWeight.w600,
                       ),
@@ -940,17 +1002,17 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       size: 15,
                       color: !_isRecurring
                           ? Colors.white
-                          : (isDark ? Colors.white60 : const Color(0xFF94A3B8)),
+                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '⏱ Разове заняття',
+                      'Разове заняття',
                       style: TextStyle(
                         color: !_isRecurring
                             ? Colors.white
-                            : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                            : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                         fontSize: 13,
-                        fontWeight: !_isRecurring ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: !_isRecurring ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                   ],
@@ -1030,7 +1092,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF00E5FF)
-                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
+                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
                         width: isSelected ? 1.2 : 1,
                       ),
                       boxShadow: isSelected
@@ -1049,9 +1111,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white
-                              : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                              : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
                           fontSize: 13.5,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1121,7 +1183,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF00E5FF)
-                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
+                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
                         width: isSelected ? 1.2 : 1,
                       ),
                       boxShadow: isSelected
@@ -1156,9 +1218,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           style: TextStyle(
                             color: isSelected
                                 ? Colors.white.withValues(alpha: 0.92)
-                                : (isDark ? Colors.white38 : const Color(0xFF64748B)),
+                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
                             fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -1260,7 +1322,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         ),
                       ),
                       child: Text(
-                        '$count занять',
+                        _formatClassesCount(count),
                         style: TextStyle(
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           fontSize: 11.5,
@@ -1272,11 +1334,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Група займатиметься щотижня по $weekdaysSummary о $timeStr на «$_selectedLane». Буде автоматично згенеровано $count занять на ${_getDurationPeriodSummary()}.',
+                  'Група займатиметься щотижня по $weekdaysSummary о $timeStr на «$_selectedLane». Буде автоматично згенеровано ${_formatClassesCount(count)} на ${_getDurationPeriodSummary()}.',
                   style: TextStyle(
-                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155),
                     fontSize: 12,
-                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -1345,7 +1408,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         Icon(
                           LucideIcons.waves,
                           size: 16,
-                          color: isSport ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                          color: isSport ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -1353,9 +1416,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           style: TextStyle(
                             color: isSport
                                 ? Colors.white
-                                : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                             fontSize: 13,
-                            fontWeight: isSport ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight: isSport ? FontWeight.w800 : FontWeight.w600,
                           ),
                         ),
                       ],
@@ -1399,7 +1462,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         Icon(
                           LucideIcons.baby,
                           size: 16,
-                          color: !isSport ? Colors.white : Colors.amberAccent,
+                          color: !isSport ? Colors.white : (isDark ? Colors.amberAccent : const Color(0xFF64748B)),
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -1407,9 +1470,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           style: TextStyle(
                             color: !isSport
                                 ? Colors.white
-                                : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                             fontSize: 13,
-                            fontWeight: !isSport ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight: !isSport ? FontWeight.w800 : FontWeight.w600,
                           ),
                         ),
                       ],
@@ -1430,7 +1493,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               Text(
                 'Оберіть доріжку:',
                 style: TextStyle(
-                  color: isDark ? Colors.white.withValues(alpha: 0.70) : const Color(0xFF475569),
+                  color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1483,7 +1546,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           border: Border.all(
                             color: isSelected
                                 ? const Color(0xFF00E5FF)
-                                : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
+                                : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
                             width: 1,
                           ),
                           boxShadow: isSelected
@@ -1508,9 +1571,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
-                                    : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                                    : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
                                 fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                               ),
                             ),
                           ],

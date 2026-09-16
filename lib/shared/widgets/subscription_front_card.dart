@@ -54,6 +54,7 @@ class SubscriptionFrontCard extends StatelessWidget {
     final expiryFormatted = currentSub?.expiryDate != null
         ? DateFormat('dd.MM.yyyy').format(currentSub!.expiryDate!)
         : '00.00.0000';
+    final ownerName = currentSub?.ownerName;
 
     return Container(
       width: double.infinity,
@@ -64,14 +65,21 @@ class SubscriptionFrontCard extends StatelessWidget {
           colorFilter: ColorFilter.mode(Colors.black12, BlendMode.darken),
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.28), width: 1.2),
+        boxShadow: isInteractive
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.10),
+                  blurRadius: 16,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Stack(
         children: [
@@ -173,7 +181,7 @@ class SubscriptionFrontCard extends StatelessWidget {
 
                 const Spacer(),
 
-                // Bottom row: Valid until
+                // Bottom row: Valid until & Cardholder Name
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -203,6 +211,20 @@ class SubscriptionFrontCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (ownerName != null && ownerName.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          ownerName.toUpperCase(),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 11,
+                            letterSpacing: 1.4,
+                            fontWeight: FontWeight.w800,
+                            shadows: const [Shadow(color: Colors.black45, blurRadius: 8)],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],

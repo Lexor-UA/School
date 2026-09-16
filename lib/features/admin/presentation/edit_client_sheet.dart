@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/admin/presentation/admin_booking_sheet.dart';
@@ -199,19 +201,33 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   void _showAddChildDialog() {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
     final nameCtrl = TextEditingController();
     final ageCtrl = TextEditingController();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
+        ),
         title: Row(
           children: [
-            const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 22),
+            Icon(LucideIcons.baby, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 22),
             const SizedBox(width: 8),
-            Text('admin.child_add_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'admin.child_add_title'.tr(),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -219,28 +235,48 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           children: [
             TextField(
               controller: nameCtrl,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 labelText: 'admin.child_name'.tr(),
-                labelStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
+                labelStyle: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                prefixIcon: Icon(LucideIcons.baby, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: ageCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 labelText: 'admin.child_age'.tr(),
-                labelStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: const Icon(LucideIcons.calendarDays, color: Color(0xFF00E5FF), size: 18),
+                labelStyle: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                prefixIcon: Icon(LucideIcons.calendarDays, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
               ),
             ),
           ],
@@ -248,12 +284,15 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+            child: Text(
+              'admin.cancel'.tr(),
+              style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: Colors.black,
+              backgroundColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
@@ -293,19 +332,33 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   void _showEditChildDialog(String childId, String currentName, int? currentAge) {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
     final nameCtrl = TextEditingController(text: currentName);
     final ageCtrl = TextEditingController(text: currentAge?.toString() ?? '');
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
+        ),
         title: Row(
           children: [
-            const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 20),
+            Icon(LucideIcons.pencil, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 20),
             const SizedBox(width: 8),
-            Text('admin.child_edit_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'admin.child_edit_title'.tr(),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -313,28 +366,48 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           children: [
             TextField(
               controller: nameCtrl,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 labelText: 'admin.child_name'.tr(),
-                labelStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: const Icon(LucideIcons.baby, color: Color(0xFF38BDF8), size: 18),
+                labelStyle: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                prefixIcon: Icon(LucideIcons.baby, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 18),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: ageCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 labelText: 'admin.child_age'.tr(),
-                labelStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: const Icon(LucideIcons.calendarDays, color: Color(0xFF38BDF8), size: 18),
+                labelStyle: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                prefixIcon: Icon(LucideIcons.calendarDays, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 18),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+                ),
               ),
             ),
           ],
@@ -342,12 +415,15 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+            child: Text(
+              'admin.cancel'.tr(),
+              style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF38BDF8),
-              foregroundColor: Colors.black,
+              backgroundColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
@@ -377,21 +453,31 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   void _deleteChild(String childId, String childName) {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('admin.child_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('admin.child_delete_confirm'.tr(namedArgs: {'name': childName}), style: const TextStyle(color: Colors.white70)),
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+        ),
+        title: Text(
+          'admin.child_delete_title'.tr(),
+          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'admin.child_delete_confirm'.tr(namedArgs: {'name': childName}),
+          style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF475569)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+            child: Text('admin.cancel'.tr(), style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: const Color(0xFFF43F5E),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -448,23 +534,27 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   void _deleteSubscription(Subscription sub) async {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
         ),
-        title: Text('admin.sub_delete_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'admin.sub_delete_title'.tr(),
+          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+        ),
         content: Text(
           'Ви дійсно бажаєте видалити абонемент "${sub.serviceName ?? 'Абонемент'}" для ${sub.ownerName ?? widget.initialName}?',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF475569)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+            child: Text('admin.cancel'.tr(), style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -493,6 +583,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   void _showAddSubscriptionDialog(List<String> availableOwners) {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
     String selectedService = _services.first['name'];
     String selectedOwner = availableOwners.isNotEmpty ? availableOwners.first : widget.initialName;
 
@@ -502,30 +593,57 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF0F172A),
-              title: Text('admin.assign_subscription'.tr(), style: const TextStyle(color: Colors.white)),
+              backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
+              ),
+              title: Text(
+                'admin.assign_subscription'.tr(),
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Абонемент:', style: TextStyle(color: Colors.white70)),
+                  Text(
+                    'Абонемент:',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                      ),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        dropdownColor: const Color(0xFF1E293B),
+                        dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                         value: selectedService,
                         isExpanded: true,
-                        icon: const Icon(LucideIcons.chevronDown, color: Colors.cyanAccent),
+                        icon: Icon(LucideIcons.chevronDown, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                         items: _services.map((s) {
                           return DropdownMenuItem<String>(
                             value: s['name'],
-                            child: Text(s['name'], style: const TextStyle(color: Colors.white, fontSize: 14)),
+                            child: Text(
+                              s['name'],
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
@@ -535,27 +653,47 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Для кого:', style: TextStyle(color: Colors.white70)),
+                  Text(
+                    'Для кого:',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   if (availableOwners.isEmpty)
-                    const Text('Немає дітей, буде призначено на клієнта', style: TextStyle(color: Colors.white54))
+                    Text(
+                      'Немає дітей, буде призначено на клієнта',
+                      style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+                    )
                   else
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                        ),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          dropdownColor: const Color(0xFF1E293B),
+                          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                           value: selectedOwner,
                           isExpanded: true,
-                          icon: const Icon(LucideIcons.chevronDown, color: Colors.cyanAccent),
+                          icon: Icon(LucideIcons.chevronDown, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                           items: availableOwners.map((owner) {
                             return DropdownMenuItem<String>(
                               value: owner,
-                              child: Text(owner, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                              child: Text(
+                                owner,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -569,10 +707,16 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54)),
+                  child: Text(
+                    'admin.cancel'.tr(),
+                    style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+                  ),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: () async {
                     Navigator.pop(context);
                     
@@ -603,7 +747,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       debugPrint('Error assigning sub: $e');
                     }
                   },
-                  child: Text('admin.assign_btn'.tr(), style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'admin.assign_btn'.tr(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             );
@@ -617,59 +764,81 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final maxHeight = mediaQuery.size.height * 0.90;
+    final themeConfig = ref.watch(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Dark slate
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.22),
+                  const Color(0xFF0284C7).withValues(alpha: 0.26),
+                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                ],
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+          color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.60),
-            blurRadius: 32,
-            offset: const Offset(0, -8),
+            color: isDark ? const Color(0xFF003B73).withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.12),
+            blurRadius: 30,
+            offset: const Offset(0, -6),
+          ),
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.20 : 0.08),
+            blurRadius: 28,
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Fixed Header (outside scroll view, full drag & dismiss zone)
-            _buildHeader(context),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Fixed Header (outside scroll view, full drag & dismiss zone)
+              _buildHeader(context, isDark: isDark),
 
-            // Scrollable Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  bottom: mediaQuery.viewInsets.bottom + 24,
-                  left: 24,
-                  right: 24,
-                  top: 16,
+              // Scrollable Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    bottom: mediaQuery.viewInsets.bottom + 24,
+                    left: 24,
+                    right: 24,
+                    top: 16,
+                  ),
+                  child: _isSuccess ? _buildSuccessState(isDark: isDark) : _buildFormState(isDark: isDark),
                 ),
-                child: _isSuccess ? _buildSuccessState() : _buildFormState(),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, {required bool isDark}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 14, 16, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.8),
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD).withValues(alpha: 0.6),
             width: 1,
           ),
         ),
@@ -683,7 +852,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               width: 44,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.30),
+                color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFFCBD5E1),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -698,17 +867,23 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                      color: isDark ? Colors.blueAccent.withValues(alpha: 0.15) : const Color(0xFFE0F2FE),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: isDark ? Colors.blueAccent.withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
+                      ),
                     ),
-                    child: const Icon(LucideIcons.edit2, color: Colors.blueAccent, size: 20),
+                    child: Icon(
+                      LucideIcons.pencil,
+                      color: isDark ? Colors.blueAccent : const Color(0xFF0284C7),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'admin.edit_client_title'.tr(),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.2,
@@ -725,11 +900,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFE2E8F0),
+                      ),
                     ),
-                    child: const Icon(LucideIcons.x, color: Colors.white70, size: 18),
+                    child: Icon(
+                      LucideIcons.x,
+                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
@@ -740,7 +921,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     );
   }
 
-  Widget _buildFormState() {
+  Widget _buildFormState({required bool isDark}) {
     final userSubs = ref.watch(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
     
     return Column(
@@ -749,6 +930,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           controller: _nameController,
           label: 'admin.add_client_name_hint'.tr(),
           icon: LucideIcons.user,
+          isDark: isDark,
         ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
         const SizedBox(height: 16),
         
@@ -757,6 +939,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           label: 'admin.add_client_phone_hint'.tr(),
           icon: LucideIcons.phone,
           keyboardType: TextInputType.phone,
+          isDark: isDark,
         ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
         const SizedBox(height: 16),
 
@@ -765,6 +948,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           label: 'Вік клієнта (років)',
           icon: LucideIcons.calendar,
           keyboardType: TextInputType.number,
+          isDark: isDark,
         ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1),
         const SizedBox(height: 16),
 
@@ -772,21 +956,29 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           controller: _loginIdController,
           label: '${'admin.clients_login_label'.tr()} (Client1)',
           icon: LucideIcons.key,
+          isDark: isDark,
         ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
         const SizedBox(height: 16),
 
         // Password & Access Management Section
-        _buildPasswordSection().animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
+        _buildPasswordSection(isDark: isDark).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
         const SizedBox(height: 32),
 
         // CHILDREN MANAGEMENT
-        _buildChildrenSection().animate().fadeIn(delay: 380.ms),
+        _buildChildrenSection(isDark: isDark).animate().fadeIn(delay: 380.ms),
         const SizedBox(height: 32),
 
         // SUBSCRIPTION MANAGEMENT
         Align(
           alignment: Alignment.centerLeft,
-          child: Text('admin.sub_management'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text(
+            'admin.sub_management'.tr(),
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ).animate().fadeIn(delay: 350.ms),
         const SizedBox(height: 12),
         
@@ -805,13 +997,20 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               children: [
                 if (userSubs.isEmpty)
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     child: Center(
-                      child: Text('admin.clients_no_subs'.tr(), style: const TextStyle(color: Colors.white54)),
+                      child: Text(
+                        'admin.clients_no_subs'.tr(),
+                        style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+                      ),
                     ),
                   )
                 else
@@ -821,13 +1020,23 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: isActive
-                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
-                              : const Color(0xFFF43F5E).withValues(alpha: 0.35),
+                              ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.45)
+                              : const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.35 : 0.45),
+                          width: 1.1,
                         ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: (isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.06),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -842,7 +1051,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     Text(
                                       sub.serviceName ?? 'admin.cat_subscriptions'.tr(),
                                       style: TextStyle(
-                                        color: isActive ? Colors.white : Colors.white70,
+                                        color: isDark
+                                            ? (isActive ? Colors.white : Colors.white70)
+                                            : const Color(0xFF0F172A),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14.5,
                                       ),
@@ -851,8 +1062,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     Text(
                                       'Для: ${sub.ownerName ?? 'Не вказано'}',
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.65),
+                                        color: isDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
                                         fontSize: 12,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ],
@@ -862,7 +1074,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: (isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.18),
+                                  color: (isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: isDark ? 0.18 : 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: (isActive ? const Color(0xFF10B981) : const Color(0xFFF43F5E)).withValues(alpha: 0.4),
@@ -889,7 +1101,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(
                                       '⚠️ Закінчується через $daysLeft ${daysLeft == 1 ? 'день' : 'днів'}',
-                                      style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(color: Color(0xFFD97706), fontSize: 12, fontWeight: FontWeight.bold),
                                     ),
                                   );
                                 }
@@ -903,8 +1115,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                               Expanded(
                                 child: Text(
                                   '${'parent.sub_left'.tr(args: ['${sub.remainingClasses}'])} (${sub.totalClasses})',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -914,9 +1126,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                  border: Border.all(
+                                    color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFCBD5E1),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -925,7 +1139,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       visualDensity: VisualDensity.compact,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                                      icon: const Icon(LucideIcons.minusCircle, color: Color(0xFFF59E0B), size: 18),
+                                      icon: const Icon(LucideIcons.minusCircle, color: Color(0xFFD97706), size: 18),
                                       onPressed: () => _updateSubscriptionClasses(sub, -1),
                                       tooltip: 'admin.tooltip_sub_minus'.tr(),
                                     ),
@@ -933,7 +1147,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       visualDensity: VisualDensity.compact,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                                      icon: const Icon(LucideIcons.plusCircle, color: Color(0xFF38BDF8), size: 18),
+                                      icon: Icon(LucideIcons.plusCircle, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 18),
                                       onPressed: () => _updateSubscriptionClasses(sub, 1),
                                       tooltip: 'admin.tooltip_sub_plus'.tr(),
                                     ),
@@ -941,14 +1155,14 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       visualDensity: VisualDensity.compact,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                                      icon: const Icon(LucideIcons.refreshCw, color: Color(0xFFFACC15), size: 16),
+                                      icon: const Icon(LucideIcons.refreshCw, color: Color(0xFFD97706), size: 16),
                                       onPressed: () => _updateSubscriptionClasses(sub, -sub.remainingClasses),
                                       tooltip: 'admin.tooltip_sub_reset'.tr(),
                                     ),
                                     Container(
                                       height: 16,
                                       width: 1,
-                                      color: Colors.white.withValues(alpha: 0.18),
+                                      color: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFCBD5E1),
                                       margin: const EdgeInsets.symmetric(horizontal: 3),
                                     ),
                                     IconButton(
@@ -974,10 +1188,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   width: double.infinity,
                   height: 48,
                   child: OutlinedButton.icon(
-                    icon: const Icon(LucideIcons.plus, color: Colors.greenAccent),
-                    label: Text('admin.assign_new_sub'.tr(), style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    icon: Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669)),
+                    label: Text(
+                      'admin.assign_new_sub'.tr(),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.greenAccent),
+                      backgroundColor: isDark ? null : const Color(0xFFECFDF5),
+                      side: BorderSide(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF10B981)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     onPressed: () => _showAddSubscriptionDialog(availableOwners),
@@ -991,7 +1212,14 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         const SizedBox(height: 32),
         Align(
           alignment: Alignment.centerLeft,
-          child: Text('admin.client_classes'.tr(), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text(
+            'admin.client_classes'.tr(),
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ).animate().fadeIn(delay: 400.ms),
         const SizedBox(height: 12),
         
@@ -1018,13 +1246,20 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               builder: (context, classSnap) {
                 if (!classSnap.hasData || classSnap.data!.docs.isEmpty) {
                   return Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+                      ),
                     ),
-                    child: const Center(
-                      child: Text('Немає активних записів', style: TextStyle(color: Colors.white54)),
+                    child: Center(
+                      child: Text(
+                        'Немає активних записів',
+                        style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+                      ),
                     ),
                   );
                 }
@@ -1044,9 +1279,20 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: isDark ? Colors.blueAccent.withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
+                        ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1057,18 +1303,29 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                               Expanded(
                                 child: Text(
                                   '${DateFormat('dd.MM.yyyy').format(session.startTime)} о ${session.startTime.hour.toString().padLeft(2, '0')}:${session.startTime.minute.toString().padLeft(2, '0')}',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.blueAccent.withValues(alpha: 0.2),
+                                  color: isDark ? Colors.blueAccent.withValues(alpha: 0.2) : const Color(0xFFE0F2FE),
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isDark ? Colors.blueAccent.withValues(alpha: 0.4) : const Color(0xFFBAE6FD),
+                                  ),
                                 ),
                                 child: Text(
                                   session.category,
-                                  style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: isDark ? Colors.blueAccent : const Color(0xFF0284C7),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1080,7 +1337,14 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(idToName[enrolledId] ?? 'Дитина', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                  Text(
+                                    idToName[enrolledId] ?? 'Дитина',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                   TextButton(
                                     onPressed: () async {
                                       final messenger = ScaffoldMessenger.of(context);
@@ -1110,7 +1374,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                       minimumSize: const Size(50, 24),
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
-                                    child: Text('admin.cancel_booking'.tr(), style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                                    child: Text(
+                                      'admin.cancel_booking'.tr(),
+                                      style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1144,10 +1411,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                icon: const Icon(LucideIcons.calendarPlus, color: Colors.blueAccent),
-                label: Text('admin.book_class'.tr(), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                icon: Icon(LucideIcons.calendarPlus, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                label: Text(
+                  'admin.book_class'.tr(),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.blueAccent),
+                  backgroundColor: isDark ? null : const Color(0xFFE0F2FE),
+                  side: BorderSide(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: () {
@@ -1186,38 +1460,66 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           const SizedBox(height: 16),
         ],
 
-        SizedBox(
+        // Submit Button (VisionOS Oceanic Gradient)
+        Container(
           width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _submit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
+          height: 52,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
             ),
-            child: _isLoading
-                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : Text('admin.add_client_save_btn'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.40),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00B4D8).withValues(alpha: 0.40),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.9, 0.9)),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _isLoading ? null : _submit,
+              borderRadius: BorderRadius.circular(16),
+              child: Center(
+                child: _isLoading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2))
+                    : Text(
+                        'admin.add_client_save_btn'.tr(),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+              ),
+            ),
+          ),
+        ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.95, 0.95)),
         const SizedBox(height: 40),
       ],
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState({required bool isDark}) {
     final trText = 'admin.edit_client_success'.tr();
     final displayText = (trText == 'admin.edit_client_success' || trText.isEmpty)
         ? 'Дані клієнта оновлено!'
         : trText;
     return Column(
       children: [
-        const Icon(LucideIcons.checkCircle, color: Colors.greenAccent, size: 64).animate().scale().fadeIn(),
+        const Icon(LucideIcons.checkCircle, color: Color(0xFF10B981), size: 64).animate().scale().fadeIn(),
         const SizedBox(height: 24),
         Text(
           displayText,
-          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 40),
@@ -1229,43 +1531,71 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    required bool isDark,
     TextInputType? keyboardType,
   }) {
     return TextField(
       controller: controller,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(
+        color: isDark ? Colors.white : const Color(0xFF0F172A),
+        fontSize: 14.5,
+        fontWeight: FontWeight.w600,
+      ),
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        labelStyle: TextStyle(
+          color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+          size: 18,
+        ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
+        fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.blueAccent),
+          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
         ),
       ),
     );
   }
 
-  Widget _buildPasswordSection() {
+  Widget _buildPasswordSection({required bool isDark}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
-          width: 1.1,
+          color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1273,8 +1603,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           TextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               fontSize: 15,
@@ -1283,12 +1613,20 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               labelText: 'admin.clients_password_label'.tr().replaceAll(':', '').trim().isEmpty
                   ? 'Пароль клієнта'
                   : 'admin.clients_password_label'.tr().replaceAll(':', '').trim(),
-              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
-              prefixIcon: const Icon(LucideIcons.keyRound, color: Color(0xFFF59E0B), size: 20),
+              labelStyle: TextStyle(
+                color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF64748B),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: Icon(
+                LucideIcons.keyRound,
+                color: isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706),
+                size: 20,
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                  color: Colors.white60,
+                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
                   size: 20,
                 ),
                 tooltip: _obscurePassword ? 'Показати пароль' : 'Приховати пароль',
@@ -1311,33 +1649,40 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     _buildPasswordActionButton(
                       icon: LucideIcons.rotateCcw,
                       label: 'Скинути на "1"',
-                      color: const Color(0xFFF59E0B),
+                      color: isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706),
                       onTap: _resetPasswordToDefault,
+                      isDark: isDark,
                     ),
                     _buildPasswordActionButton(
                       icon: LucideIcons.sparkles,
                       label: 'Згенерувати PIN',
-                      color: const Color(0xFF00E5FF),
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       onTap: _generateRandomPin,
+                      isDark: isDark,
                     ),
                     _buildPasswordActionButton(
                       icon: LucideIcons.copy,
                       label: 'Копіювати',
-                      color: const Color(0xFF38BDF8),
+                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0EA5E9),
                       onTap: _copyCredentials,
+                      isDark: isDark,
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(LucideIcons.info, size: 12, color: Colors.white.withValues(alpha: 0.40)),
+                    Icon(
+                      LucideIcons.info,
+                      size: 12,
+                      color: isDark ? Colors.white.withValues(alpha: 0.40) : const Color(0xFF64748B),
+                    ),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         'Збережіть зміни, щоб оновити пароль у базі даних',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: isDark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF64748B),
                           fontSize: 11,
                         ),
                       ),
@@ -1357,6 +1702,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    required bool isDark,
   }) {
     return Material(
       color: Colors.transparent,
@@ -1366,9 +1712,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: color.withValues(alpha: isDark ? 0.12 : 0.10),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withValues(alpha: 0.35), width: 0.9),
+            border: Border.all(color: color.withValues(alpha: isDark ? 0.35 : 0.30), width: 0.9),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1390,7 +1736,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     );
   }
 
-  Widget _buildChildrenSection() {
+  Widget _buildChildrenSection({required bool isDark}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1399,23 +1745,38 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           children: [
             Row(
               children: [
-                const Icon(LucideIcons.baby, color: Color(0xFF38BDF8), size: 20),
+                Icon(
+                  LucideIcons.baby,
+                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'admin.add_client_children_title'.tr(),
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
             TextButton.icon(
               onPressed: _showAddChildDialog,
-              icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
+              icon: Icon(
+                LucideIcons.plus,
+                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                size: 16,
+              ),
               label: Text(
                 'admin.add'.tr(),
-                style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                backgroundColor: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               ),
@@ -1431,14 +1792,19 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
+                  color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+                  ),
                 ),
                 child: Center(
                   child: Text(
                     'admin.clients_no_children'.tr(),
-                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               );
@@ -1456,16 +1822,27 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.2) : const Color(0xFFCBD5E1),
+                    ),
+                    boxShadow: isDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: const Color(0xFF003B73).withValues(alpha: 0.03),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                          color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.12) : const Color(0xFFE0F2FE),
                           shape: BoxShape.circle,
                         ),
                         child: const Text('🏊', style: TextStyle(fontSize: 16)),
@@ -1477,27 +1854,35 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                           children: [
                             Text(
                               cName,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               cAge != null ? '$cAge ${'admin.years_short'.tr()}' : 'Вік не вказано',
                               style: TextStyle(
-                                color: cAge != null ? const Color(0xFF00E5FF) : Colors.white38,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                 fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.pencil, color: Color(0xFF38BDF8), size: 16),
+                        icon: Icon(
+                          LucideIcons.pencil,
+                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                          size: 16,
+                        ),
                         tooltip: 'admin.edit'.tr(),
                         onPressed: () => _showEditChildDialog(cId, cName, cAge),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 16),
+                        icon: const Icon(LucideIcons.trash2, color: Color(0xFFF43F5E), size: 16),
                         tooltip: 'admin.delete'.tr(),
                         onPressed: () => _deleteChild(cId, cName),
                       ),

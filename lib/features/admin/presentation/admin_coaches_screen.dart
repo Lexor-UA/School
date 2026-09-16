@@ -28,6 +28,26 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  String _getInitials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'ТР';
+    final parts = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      final first = parts[0].characters.isNotEmpty ? parts[0].characters.first : '';
+      final second = parts[1].characters.isNotEmpty ? parts[1].characters.first : '';
+      return (first + second).toUpperCase();
+    }
+    final camelMatches = RegExp(r'[A-ZА-ЯІЇЄҐ]').allMatches(trimmed);
+    if (camelMatches.length >= 2) {
+      final chars = camelMatches.map((m) => m.group(0)!).take(2).join();
+      return chars.toUpperCase();
+    }
+    if (trimmed.characters.length >= 2) {
+      return trimmed.characters.take(2).toString().toUpperCase();
+    }
+    return trimmed.toUpperCase();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -129,29 +149,52 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
       backgroundColor: currentTheme.scaffoldBg,
       floatingActionButton: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            colors: currentTheme.accentGradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           boxShadow: [
             BoxShadow(
-              color: currentTheme.accentPrimary.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: currentTheme.accentPrimary.withValues(alpha: 0.45),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: FloatingActionButton.extended(
-          backgroundColor: currentTheme.accentPrimary,
-          foregroundColor: currentTheme.isDark ? const Color(0xFF061426) : Colors.white,
-          elevation: 0,
-          icon: const Icon(LucideIcons.userPlus, size: 18),
-          label: Text('admin.add_coach_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const AddCoachSheet(),
-            );
-          },
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const AddCoachSheet(),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(LucideIcons.userPlus, color: Colors.white, size: 19),
+                  const SizedBox(width: 8),
+                  Text(
+                    'admin.add_coach_title'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack),
       body: Stack(
@@ -261,7 +304,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       }
 
                       return ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                         physics: const BouncingScrollPhysics(),
                         itemCount: coaches.length,
                         separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
@@ -355,7 +398,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 Text(
                   'admin.coaches_subtitle'.tr(),
                   style: TextStyle(
-                    color: currentTheme.textSecondary,
+                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -371,34 +414,45 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
     return Container(
       decoration: BoxDecoration(
-        color: currentTheme.isDark
-            ? Colors.white.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.90),
+        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: currentTheme.isDark
-              ? Colors.white.withValues(alpha: 0.25)
-              : currentTheme.cardBorder,
+          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.3,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: currentTheme.cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: currentTheme.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: TextField(
         controller: _searchController,
-        style: TextStyle(color: currentTheme.textPrimary, fontSize: 13.5),
+        style: TextStyle(
+          color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         decoration: InputDecoration(
           hintText: 'admin.coaches_search_hint'.tr(),
-          hintStyle: TextStyle(color: currentTheme.textMuted, fontSize: 13),
-          prefixIcon: Icon(LucideIcons.search, color: currentTheme.accentPrimary, size: 18),
+          hintStyle: TextStyle(
+            color: currentTheme.isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Icon(
+            LucideIcons.search,
+            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            size: 18,
+          ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(LucideIcons.x, color: currentTheme.textMuted, size: 16),
+                  icon: Icon(LucideIcons.x, color: currentTheme.textSecondary, size: 16),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -468,29 +522,35 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                   Stack(
                     children: [
                       Container(
-                        width: 46,
-                        height: 46,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: currentTheme.accentGradient,
+                            colors: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.35) : Colors.white,
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                              color: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length].first.withValues(alpha: currentTheme.isDark ? 0.35 : 0.30),
                               blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Center(
                           child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'Т',
-                            style: TextStyle(
-                              color: currentTheme.isDark ? const Color(0xFF061426) : Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.bold,
+                            _getInitials(name),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
@@ -499,12 +559,12 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         bottom: 0,
                         right: 0,
                         child: Container(
-                          width: 12,
-                          height: 12,
+                          width: 13,
+                          height: 13,
                           decoration: BoxDecoration(
                             color: const Color(0xFF10B981),
                             shape: BoxShape.circle,
-                            border: Border.all(color: currentTheme.cardBg, width: 2),
+                            border: Border.all(color: currentTheme.isDark ? const Color(0xFF0D2542) : Colors.white, width: 2.2),
                           ),
                         ),
                       ),
@@ -525,7 +585,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 style: TextStyle(
                                   color: currentTheme.textPrimary,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -535,13 +595,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         const SizedBox(height: 3),
                         Row(
                           children: [
-                            Icon(LucideIcons.phone, size: 12, color: currentTheme.textMuted),
+                            Icon(LucideIcons.phone, size: 12.5, color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textMuted),
                             const SizedBox(width: 5),
                             Text(
                               phone,
                               style: TextStyle(
-                                color: currentTheme.textSecondary,
+                                color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                                 fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -555,13 +616,42 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: currentTheme.glassCardBg,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: currentTheme.cardBorder),
+                          gradient: currentTheme.isDark
+                              ? null
+                              : const LinearGradient(
+                                  colors: [Color(0xFFE0F2FE), Color(0xFFF0F9FF)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : null,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: currentTheme.isDark
+                                ? Colors.white.withValues(alpha: 0.20)
+                                : const Color(0xFFBAE6FD),
+                            width: 1.1,
+                          ),
+                          boxShadow: currentTheme.isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1.5),
+                                  ),
+                                ],
                         ),
                         child: IconButton(
-                          icon: Icon(LucideIcons.pencil, color: currentTheme.accentPrimary, size: 16),
+                          icon: Icon(
+                            LucideIcons.pencil,
+                            color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                            size: 16,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                           onPressed: () {
                             showModalBottomSheet(
                               context: context,
@@ -579,34 +669,37 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFFFF3B30).withValues(alpha: 0.24),
-                              const Color(0xFFFF1744).withValues(alpha: 0.14),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: currentTheme.isDark
+                              ? const Color(0xFFF43F5E).withValues(alpha: 0.15)
+                              : const Color(0xFFFFF1F2),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFFFF3B30).withValues(alpha: 0.60),
+                            color: currentTheme.isDark
+                                ? const Color(0xFFF43F5E).withValues(alpha: 0.35)
+                                : const Color(0xFFFECDD3),
                             width: 1.1,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF3B30).withValues(alpha: 0.28),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          boxShadow: currentTheme.isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFFE11D48).withValues(alpha: 0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1.5),
+                                  ),
+                                ],
                         ),
                         child: IconButton(
-                          icon: const Icon(LucideIcons.trash2, color: Color(0xFFFF3B30), size: 16),
+                          icon: Icon(
+                            LucideIcons.trash2,
+                            color: currentTheme.isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
+                            size: 16,
+                          ),
                           tooltip: 'admin.delete'.tr(),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -622,42 +715,60 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
               // Credentials Card with Instant Copy
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: currentTheme.isDark
                       ? Colors.white.withValues(alpha: 0.10)
-                      : currentTheme.glassCardBg,
+                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: currentTheme.isDark
                         ? Colors.white.withValues(alpha: 0.20)
-                        : currentTheme.cardBorder,
+                        : const Color(0xFFCBD5E1),
+                    width: 1.1,
                   ),
+                  boxShadow: currentTheme.isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: const Color(0xFF003B73).withValues(alpha: 0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1.5),
+                          ),
+                        ],
                 ),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.keyRound, color: currentTheme.accentPrimary, size: 15),
+                    Icon(
+                      LucideIcons.keyRound,
+                      color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                      size: 14,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: TextStyle(fontSize: 12, color: currentTheme.textSecondary),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
                           children: [
                             TextSpan(text: 'admin.clients_login_label'.tr()),
                             TextSpan(
                               text: loginId,
                               style: TextStyle(
-                                color: currentTheme.accentPrimary,
-                                fontWeight: FontWeight.bold,
+                                color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                                fontWeight: FontWeight.w800,
                                 fontFamily: 'monospace',
                               ),
                             ),
                             TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
-                            const TextSpan(
+                            TextSpan(
                               text: '1',
                               style: TextStyle(
-                                color: Color(0xFFF59E0B),
-                                fontWeight: FontWeight.bold,
+                                color: currentTheme.isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                                fontWeight: FontWeight.w800,
                                 fontFamily: 'monospace',
                               ),
                             ),
@@ -668,21 +779,31 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     GestureDetector(
                       onTap: () => _copyCredentials(loginId, name),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(
-                          color: currentTheme.accentPrimary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          gradient: LinearGradient(
+                            colors: currentTheme.accentGradient,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(7),
+                          boxShadow: [
+                            BoxShadow(
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.25),
+                              blurRadius: 5,
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.copy, color: currentTheme.accentPrimary, size: 12),
+                            const Icon(LucideIcons.copy, color: Colors.white, size: 11),
                             const SizedBox(width: 4),
                             Text(
                               'admin.clients_copy'.tr(),
-                              style: TextStyle(
-                                color: currentTheme.accentPrimary,
-                                fontSize: 10.5,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -699,32 +820,82 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               // Action: Manage Coach Schedule
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AdminCalendarScreen(
-                          initialCoachId: coachId,
-                          initialCoachName: name,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdminCalendarScreen(
+                            initialCoachId: coachId,
+                            initialCoachName: name,
+                          ),
                         ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      decoration: BoxDecoration(
+                        gradient: currentTheme.isDark
+                            ? LinearGradient(
+                                colors: [
+                                  currentTheme.accentPrimary.withValues(alpha: 0.20),
+                                  currentTheme.accentSecondary.withValues(alpha: 0.10),
+                                ],
+                              )
+                            : const LinearGradient(
+                                colors: [Color(0xFFE0F2FE), Color(0xFFF0F9FF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: currentTheme.isDark
+                              ? currentTheme.accentPrimary.withValues(alpha: 0.35)
+                              : const Color(0xFFBAE6FD),
+                          width: 1.2,
+                        ),
+                        boxShadow: currentTheme.isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                       ),
-                    );
-                  },
-                  icon: const Icon(LucideIcons.calendarClock, size: 14),
-                  label: Text(
-                    'admin.manage_schedule'.tr(),
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: currentTheme.accentPrimary.withValues(alpha: 0.12),
-                    foregroundColor: currentTheme.accentPrimary,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.calendarClock,
+                            size: 15,
+                            color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'admin.manage_schedule'.tr(),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 16,
+                            color: currentTheme.isDark
+                                ? currentTheme.accentPrimary.withValues(alpha: 0.7)
+                                : const Color(0xFF0284C7).withValues(alpha: 0.7),
+                          ),
+                        ],
                       ),
                     ),
                   ),

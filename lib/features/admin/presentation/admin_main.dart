@@ -309,7 +309,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 gradient: LinearGradient(
                   colors: [
                     currentTheme.isDark
-                        ? Colors.white.withValues(alpha: 0.18)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
                         : currentTheme.accentPrimary.withValues(alpha: 0.20),
                     Colors.transparent,
                   ],
@@ -425,29 +425,28 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   height: 40,
                   decoration: BoxDecoration(
                     color: currentTheme.isDark
-                        ? Colors.white.withValues(alpha: 0.12)
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.14)
                         : Colors.white.withValues(alpha: 0.85),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: currentTheme.isDark
-                          ? Colors.white.withValues(alpha: 0.20)
+                          ? const Color(0xFFEF4444).withValues(alpha: 0.35)
                           : Colors.redAccent.withValues(alpha: 0.30),
                     ),
-                    boxShadow: currentTheme.isDark
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 6,
-                            ),
-                          ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: (currentTheme.isDark ? const Color(0xFFEF4444) : Colors.black)
+                            .withValues(alpha: currentTheme.isDark ? 0.18 : 0.05),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints.tightFor(width: 40, height: 40),
                     icon: Icon(
                       LucideIcons.logOut,
-                      color: currentTheme.isDark ? Colors.white : Colors.redAccent,
+                      color: currentTheme.isDark ? const Color(0xFFF87171) : Colors.redAccent,
                       size: 20,
                     ),
                     tooltip: 'parent.logout_short'.tr(),
@@ -565,20 +564,20 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     const Color(0xFF102640).withValues(alpha: 0.80),
                   ],
                 )
-              : LinearGradient(
+              : const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white.withValues(alpha: 0.78),
-                    Colors.white.withValues(alpha: 0.52),
+                    Colors.white,
+                    Color(0xFFF8FAFC),
                   ],
                 ),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: currentTheme.isDark
                 ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
-                : Colors.white.withValues(alpha: 0.95),
-            width: currentTheme.isDark ? 1.2 : 1.0,
+                : const Color(0xFFBAE6FD),
+            width: 1.2,
           ),
           boxShadow: [
             if (currentTheme.isDark) ...[
@@ -591,14 +590,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ] else ...[
               // Premium glassmorphism shadow
               BoxShadow(
-                color: currentTheme.cardShadow,
+                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: currentTheme.accentPrimary.withValues(alpha: 0.06),
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.05),
                 blurRadius: 12,
-                spreadRadius: -2,
               ),
             ]
           ],
@@ -617,8 +615,14 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     decoration: BoxDecoration(
                       color: currentTheme.isDark
                           ? const Color(0xFF38BDF8).withValues(alpha: 0.15)
-                          : currentTheme.accentPrimary.withValues(alpha: 0.12),
+                          : const Color(0xFFE0F2FE),
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: currentTheme.isDark
+                            ? Colors.transparent
+                            : const Color(0xFFBAE6FD),
+                        width: 1,
+                      ),
                     ),
                     child: Center(
                       child: Icon(
@@ -633,8 +637,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     child: Text(
                       'admin.search_hint'.tr().replaceFirst('групи чи ', '').replaceFirst('группы или ', '').replaceFirst('group or ', '').replaceFirst('Gruppe oder ', ''),
                       style: TextStyle(
-                        color: currentTheme.textMuted,
+                        color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                         fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -650,19 +655,19 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: currentTheme.isDark
                             ? const Color(0xFF38BDF8).withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.85),
+                            : const Color(0xFFE0F2FE),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: currentTheme.isDark
                               ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
-                              : Colors.white,
-                          width: 1,
+                              : const Color(0xFFBAE6FD),
+                          width: 1.1,
                         ),
                         boxShadow: currentTheme.isDark
                             ? null
                             : [
                                 BoxShadow(
-                                  color: currentTheme.accentPrimary.withValues(alpha: 0.12),
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -682,7 +687,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             style: TextStyle(
                               color: currentTheme.accentPrimary,
                               fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -941,10 +946,33 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               : currentTheme.actionCardGradients[1],
                           accentColor: isDark
                               ? const Color(0xFF00E5FF)
-                              : currentTheme.actionCardGradients[1].first,
+                              : const Color(0xFF0284C7),
                           title: 'admin.classes_telemetry'.tr(),
                           value: '$classesValue',
                           status: 'admin.classes_status'.tr(),
+                        ),
+                      ),
+
+                      // Vertical Divider 1
+                      Container(
+                        width: 1,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: isDark
+                                ? [
+                                    Colors.transparent,
+                                    const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                                    Colors.transparent,
+                                  ]
+                                : [
+                                    Colors.transparent,
+                                    currentTheme.cardBorder,
+                                    Colors.transparent,
+                                  ],
+                          ),
                         ),
                       ),
 
@@ -957,10 +985,33 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               : currentTheme.actionCardGradients[0],
                           accentColor: isDark
                               ? const Color(0xFF10B981)
-                              : currentTheme.actionCardGradients[0].first,
+                              : const Color(0xFF059669),
                           title: 'admin.clients_telemetry'.tr(),
                           value: '$clientsValue',
                           status: 'admin.clients_status'.tr(),
+                        ),
+                      ),
+
+                      // Vertical Divider 2
+                      Container(
+                        width: 1,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: isDark
+                                ? [
+                                    Colors.transparent,
+                                    const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                                    Colors.transparent,
+                                  ]
+                                : [
+                                    Colors.transparent,
+                                    currentTheme.cardBorder,
+                                    Colors.transparent,
+                                  ],
+                          ),
                         ),
                       ),
 
@@ -973,7 +1024,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               : currentTheme.actionCardGradients[2],
                           accentColor: isDark
                               ? const Color(0xFFA855F7)
-                              : currentTheme.actionCardGradients[2].first,
+                              : const Color(0xFF7C3AED),
                           title: 'admin.coaches_telemetry'.tr(),
                           value: '$coachesValue',
                           status: 'admin.coaches_status'.tr(),
@@ -1355,9 +1406,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ? 'admin.new_messages_count'.tr(args: [unreadCount.toString()])
                               : 'admin.quick_answers'.tr(),
                           style: TextStyle(
-                            color: currentTheme.textSecondary,
+                            color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                             fontSize: 12,
-                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1399,18 +1450,27 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.12)
-                            : const Color(0xFFF1F5F9),
+                            : Colors.white.withValues(alpha: 0.85),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.20)
-                              : currentTheme.cardBorder,
+                              : Colors.white,
                         ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                       ),
                       child: Center(
                         child: Icon(
                           LucideIcons.chevronRight,
-                          color: isDark ? Colors.white : currentTheme.textSecondary,
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           size: 18,
                         ),
                       ),
@@ -1543,7 +1603,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             ),
                             Expanded(
                               child: Text(
-                                '$unpaidCount ${'admin.unpaid_subs_title'.tr()}',
+                                unpaidCount == 1
+                                    ? '1 неоплачений абонемент'
+                                    : (unpaidCount >= 2 && unpaidCount <= 4)
+                                        ? '$unpaidCount неоплачені абонементи'
+                                        : '$unpaidCount неоплачених абонементів',
                                 style: TextStyle(
                                   color: isDark ? Colors.white : const Color(0xFF9F1239),
                                   fontSize: 14,
@@ -1558,7 +1622,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         Text(
                           'admin.awaiting_payment_desc'.tr(),
                           style: TextStyle(
-                            color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                            color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                             fontSize: 12,
                           ),
                         ),
@@ -1722,6 +1786,18 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         );
       },
     );
+  }
+
+  String _formatStudentsCount(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return '$count учень';
+    } else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+      return '$count учні';
+    } else {
+      return '$count учнів';
+    }
   }
 
   // ==========================================
@@ -1973,13 +2049,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     Text(
                       'Заповненість групи',
                       style: TextStyle(
-                        color: isDark ? Colors.white.withValues(alpha: 0.8) : currentTheme.textSecondary,
+                        color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
-                      '$occupancy / $maxCapacity учнів',
+                      '$occupancy / ${_formatStudentsCount(maxCapacity)}',
                       style: TextStyle(
                         color: isDark ? Colors.white : currentTheme.textPrimary,
                         fontSize: 12,
@@ -2108,6 +2184,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   }
 
   Widget _buildEnrolledFacepile(List<String> childIds, bool isDark) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
     final displayIds = childIds.take(4).toList();
     final remainingCount = childIds.length - displayIds.length;
 
@@ -2125,6 +2202,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: isDark ? const Color(0xFF003B73) : Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isDark ? Colors.black : currentTheme.cardShadow).withValues(alpha: 0.20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
@@ -2134,24 +2218,45 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   builder: (context, snapshot) {
                     final data = snapshot.data?.data() as Map<String, dynamic>?;
                     final avatarUrl = data?['avatarUrl'] as String?;
-                    final name = data?['name'] as String? ?? 'У';
+                    final rawName = data?['name'] as String? ?? '';
+                    final cleanName = (rawName.trim().isEmpty || rawName.trim().toLowerCase() == 'user') ? 'Учень' : rawName.trim();
 
-                    if (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+                    final parts = cleanName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+                    final initials = parts.length >= 2
+                        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+                        : (cleanName.length >= 2 ? cleanName.substring(0, 2).toUpperCase() : cleanName.toUpperCase());
+
+                    final hash = displayIds[i].hashCode.abs();
+                    final gradient = currentTheme.actionCardGradients[hash % currentTheme.actionCardGradients.length];
+
+                    if (avatarUrl != null &&
+                        avatarUrl.isNotEmpty &&
+                        avatarUrl.startsWith('http') &&
+                        !avatarUrl.contains('ui-avatars.com')) {
                       return CircleAvatar(
                         radius: 13,
                         backgroundImage: NetworkImage(avatarUrl),
                         backgroundColor: Colors.white24,
                       );
                     }
-                    return CircleAvatar(
-                      radius: 13,
-                      backgroundColor: const Color(0xFF00B4D8),
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'У',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: gradient,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
                     );
@@ -2166,9 +2271,16 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+                  color: isDark ? Colors.white.withValues(alpha: 0.25) : Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(color: isDark ? const Color(0xFF003B73) : Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Text(
@@ -2344,7 +2456,7 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
               color: isDark
-                  ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
                   : currentTheme.cardBorder,
               width: 1.2,
             ),
@@ -2422,8 +2534,9 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                           Text(
                             'Журнал активностей адміністратора',
                             style: TextStyle(
-                              color: currentTheme.textSecondary,
+                              color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                               fontSize: 12,
+                              fontWeight: isDark ? FontWeight.w500 : FontWeight.normal,
                             ),
                           ),
                         ],
@@ -2450,12 +2563,12 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.05)
+                      ? Colors.white.withValues(alpha: 0.08)
                       : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withValues(alpha: 0.10)
+                        ? Colors.white.withValues(alpha: 0.14)
                         : currentTheme.cardBorder,
                   ),
                 ),
@@ -2551,17 +2664,31 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                           return Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.035)
-                                  : Colors.white,
+                              gradient: isDark
+                                  ? LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.08),
+                                        Colors.white.withValues(alpha: 0.03),
+                                      ],
+                                    )
+                                  : null,
+                              color: isDark ? null : Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isDark
-                                    ? Colors.white.withValues(alpha: 0.07)
+                                    ? Colors.white.withValues(alpha: 0.12)
                                     : currentTheme.cardBorder,
                               ),
                               boxShadow: isDark
-                                  ? null
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.20),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
                                   : [
                                       BoxShadow(
                                         color: Colors.black.withValues(alpha: 0.03),
@@ -2577,11 +2704,20 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: actionColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                                    color: actionColor.withValues(alpha: isDark ? 0.22 : 0.12),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: actionColor.withValues(alpha: isDark ? 0.35 : 0.25),
+                                      color: actionColor.withValues(alpha: isDark ? 0.45 : 0.25),
                                     ),
+                                    boxShadow: isDark
+                                        ? [
+                                            BoxShadow(
+                                              color: actionColor.withValues(alpha: 0.28),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
                                   ),
                                   child: Center(
                                     child: Icon(
@@ -2611,15 +2747,15 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                                           Icon(
                                             LucideIcons.clock,
                                             size: 11,
-                                            color: currentTheme.textMuted,
+                                            color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textMuted,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             timeStr,
                                             style: TextStyle(
-                                              color: currentTheme.textMuted,
+                                              color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textMuted,
                                               fontSize: 11.5,
-                                              fontWeight: FontWeight.w500,
+                                              fontWeight: isDark ? FontWeight.w600 : FontWeight.w500,
                                             ),
                                           ),
                                         ],
@@ -2690,7 +2826,7 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                 style: TextStyle(
                   color: isSelected
                       ? Colors.white
-                      : (isDark ? Colors.white70 : currentTheme.textSecondary),
+                      : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
@@ -2701,7 +2837,7 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.28)
-                      : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                      : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.06)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -2709,7 +2845,7 @@ class _AdminActivityLogSheetState extends ConsumerState<_AdminActivityLogSheet> 
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : (isDark ? Colors.white60 : currentTheme.textSecondary),
+                        : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2803,12 +2939,12 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                                   widget.accentColor.withValues(alpha: _isHovered ? 0.15 : 0.07),
                                 ],
                               )
-                            : LinearGradient(
+                            : const LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Colors.white.withValues(alpha: _isHovered ? 0.90 : 0.78),
-                                  Colors.white.withValues(alpha: _isHovered ? 0.68 : 0.52),
+                                  Colors.white,
+                                  Color(0xFFF8FAFC),
                                 ],
                               ),
                         borderRadius: BorderRadius.circular(18),
@@ -2819,8 +2955,8 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                                   : widget.accentColor.withValues(alpha: 0.65))
                               : (isDark
                                   ? Colors.white.withValues(alpha: 0.28)
-                                  : Colors.white.withValues(alpha: 0.95)),
-                          width: _isHovered ? 1.2 : 1.0,
+                                  : const Color(0xFFBAE6FD)),
+                          width: _isHovered ? 1.2 : 1.15,
                         ),
                         boxShadow: [
                           if (isDark) ...[
@@ -2839,16 +2975,15 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                           ] else ...[
                             // Layer 1: Ambient Jewel Bloom (colored reflection on the water)
                             BoxShadow(
-                              color: widget.accentColor.withValues(alpha: _isHovered ? 0.32 : 0.16),
-                              blurRadius: _isHovered ? 22 : 14,
-                              offset: Offset(0, _isHovered ? 6 : 4),
-                              spreadRadius: _isHovered ? 1 : 0,
+                              color: widget.accentColor.withValues(alpha: _isHovered ? 0.28 : 0.12),
+                              blurRadius: _isHovered ? 16 : 10,
+                              offset: Offset(0, _isHovered ? 4 : 2),
                             ),
                             // Layer 2: Deep grounding shadow
                             BoxShadow(
-                              color: currentTheme.cardShadow,
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.06),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
                             ),
                           ]
                         ],
@@ -2914,10 +3049,10 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                                   widget.sublabel,
                                   style: TextStyle(
                                     color: isDark
-                                        ? Colors.white.withValues(alpha: _isHovered ? 0.90 : 0.70)
-                                        : currentTheme.textSecondary,
+                                        ? const Color(0xFFB0D4EC)
+                                        : const Color(0xFF64748B),
                                     fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -2934,22 +3069,22 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                               color: isDark
                                   ? Colors.white.withValues(alpha: _isHovered ? 0.16 : 0.08)
                                   : (_isHovered
-                                      ? widget.accentColor.withValues(alpha: 0.16)
-                                      : Colors.white.withValues(alpha: 0.70)),
+                                      ? widget.accentColor.withValues(alpha: 0.18)
+                                      : const Color(0xFFF0F9FF)),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.20)
                                     : (_isHovered
-                                        ? widget.accentColor.withValues(alpha: 0.40)
-                                        : Colors.white.withValues(alpha: 0.90)),
+                                        ? widget.accentColor.withValues(alpha: 0.45)
+                                        : const Color(0xFFBAE6FD)),
                                 width: 1.0,
                               ),
                               boxShadow: isDark
                                   ? null
                                   : [
                                       BoxShadow(
-                                        color: widget.accentColor.withValues(alpha: 0.10),
+                                        color: widget.accentColor.withValues(alpha: 0.12),
                                         blurRadius: 4,
                                         offset: const Offset(0, 1),
                                       ),
@@ -2962,8 +3097,8 @@ class _InteractiveActionCardState extends ConsumerState<_InteractiveActionCard> 
                                 color: _isHovered
                                     ? widget.accentColor
                                     : (isDark
-                                        ? Colors.white.withValues(alpha: 0.60)
-                                        : currentTheme.textSecondary),
+                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.75)
+                                        : widget.accentColor),
                               ),
                             ),
                           ),

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 class ParentChatScreen extends ConsumerStatefulWidget {
   final String? title;
@@ -69,6 +70,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
+    final theme = ref.watch(appThemeControllerProvider);
     final dialogId = user?.id ?? '';
     final messagesAsync = ref.watch(chatMessagesStreamProvider(dialogId));
 
@@ -81,16 +83,19 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(context),
+                _buildHeader(context, theme),
                 Expanded(
                   child: messagesAsync.when(
                     data: (messages) {
                       if (messages.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Немає повідомлень.\nНапишіть нам, і ми обов\'язково допоможемо!',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white54, fontSize: 16),
+                            style: TextStyle(
+                              color: theme.isDark ? Colors.white54 : theme.textSecondary,
+                              fontSize: 16,
+                            ),
                           ),
                         );
                       }
@@ -111,15 +116,15 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                           final msg = messages[index];
                           final isMe = msg.senderId == user?.id;
                           final timeString = "${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}";
-                          return _buildMessageBubble(msg.text, isMe, timeString, index);
+                          return _buildMessageBubble(msg.text, isMe, timeString, index, theme);
                         },
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
-                    error: (err, stack) => Center(child: Text('Помилка завантаження: $err', style: const TextStyle(color: Colors.white))),
+                    error: (err, stack) => Center(child: Text('Помилка завантаження: $err', style: TextStyle(color: theme.textPrimary))),
                   ),
                 ),
-                _buildInputArea(),
+                _buildInputArea(theme),
               ],
             ),
           ),
@@ -128,7 +133,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppThemeConfig theme) {
+    final isDark = theme.isDark;
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
@@ -138,23 +144,50 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.12),
-                Colors.white.withValues(alpha: 0.04),
-              ],
+              colors: isDark
+                  ? [
+                      const Color(0xFF0E3D64).withValues(alpha: 0.85),
+                      const Color(0xFF092842).withValues(alpha: 0.90),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.94),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
             ),
-            border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1.1)),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                    : const Color(0xFFBAE6FD),
+                width: 1.1,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? const Color(0xFF003B73) : const Color(0xFF0284C7))
+                    .withValues(alpha: isDark ? 0.30 : 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.white.withValues(alpha: 0.90),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                        : const Color(0xFFBAE6FD),
+                    width: 1.0,
+                  ),
                 ),
                 child: IconButton(
-                  icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
+                  icon: Icon(LucideIcons.arrowLeft, color: theme.textPrimary, size: 20),
                   onPressed: () => context.pop(),
                 ),
               ),
@@ -163,14 +196,14 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
                       blurRadius: 14,
                       spreadRadius: 1,
                     ),
@@ -185,12 +218,23 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   children: [
                     Text(
                       widget.title ?? 'Підтримка CitySwim',
-                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: -0.2),
+                      style: TextStyle(
+                        color: theme.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       widget.subtitle ?? 'Служба турботи про клієнтів',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.85)
+                            : theme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -202,7 +246,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(String text, bool isMe, String time, int index) {
+  Widget _buildMessageBubble(String text, bool isMe, String time, int index, AppThemeConfig theme) {
+    final isDark = theme.isDark;
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -222,14 +267,18 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isMe
-                      ? [
-                          const Color(0xFF06B6D4).withValues(alpha: 0.90),
-                          const Color(0xFF0284C7).withValues(alpha: 0.90),
-                        ]
-                      : [
-                          Colors.white.withValues(alpha: 0.14),
-                          Colors.white.withValues(alpha: 0.05),
-                        ],
+                      ? (isDark
+                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)])
+                      : (isDark
+                          ? [
+                              const Color(0xFF0E3D64).withValues(alpha: 0.75),
+                              const Color(0xFF092842).withValues(alpha: 0.85),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.95),
+                              const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                            ]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -241,21 +290,25 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                 ),
                 border: Border.all(
                   color: isMe
-                      ? const Color(0xFF06B6D4).withValues(alpha: 0.6)
-                      : Colors.white.withValues(alpha: 0.18),
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : (isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                          : const Color(0xFFBAE6FD)),
                   width: 1.1,
                 ),
                 boxShadow: isMe
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                              .withValues(alpha: 0.35),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
                       ]
                     : [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
+                          color: (isDark ? const Color(0xFF003B73) : const Color(0xFF0284C7))
+                              .withValues(alpha: isDark ? 0.30 : 0.08),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -267,9 +320,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   Text(
                     text,
                     style: TextStyle(
-                      color: isMe ? Colors.white : Colors.white.withValues(alpha: 0.95),
+                      color: isMe ? Colors.white : theme.textPrimary,
                       fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: isMe ? FontWeight.w600 : FontWeight.w500,
                       height: 1.35,
                     ),
                   ),
@@ -277,7 +330,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   Text(
                     time,
                     style: TextStyle(
-                      color: isMe ? Colors.white.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.5),
+                      color: isMe
+                          ? Colors.white.withValues(alpha: 0.75)
+                          : (isDark ? Colors.white60 : theme.textSecondary),
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -291,7 +346,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     );
   }
 
-  Widget _buildInputArea() {
+  Widget _buildInputArea(AppThemeConfig theme) {
+    final isDark = theme.isDark;
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
@@ -301,33 +357,64 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.06),
-                Colors.white.withValues(alpha: 0.02),
-              ],
+              colors: isDark
+                  ? [
+                      const Color(0xFF0E3D64).withValues(alpha: 0.85),
+                      const Color(0xFF092842).withValues(alpha: 0.92),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.94),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
             ),
-            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1.1)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
+                    : const Color(0xFFBAE6FD),
+                width: 1.1,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? const Color(0xFF003B73) : const Color(0xFF0284C7))
+                    .withValues(alpha: isDark ? 0.25 : 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, -3),
+              ),
+            ],
           ),
           child: Row(
             children: [
               IconButton(
-                icon: Icon(LucideIcons.paperclip, color: Colors.white.withValues(alpha: 0.6)),
+                icon: Icon(
+                  LucideIcons.paperclip,
+                  color: isDark ? const Color(0xFF00E5FF) : theme.accentPrimary,
+                ),
                 onPressed: () {},
               ),
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : Colors.white.withValues(alpha: 0.90),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.18)
+                          : const Color(0xFFBAE6FD),
+                    ),
                   ),
                   child: TextField(
                     controller: _messageController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: theme.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Повідомлення...',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                      hintStyle: TextStyle(
+                        color: isDark ? Colors.white54 : theme.textMuted,
+                      ),
                       border: InputBorder.none,
                     ),
                     onSubmitted: (_) => _sendMessage(),
@@ -337,15 +424,18 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               const SizedBox(width: 10),
               Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                          .withValues(alpha: 0.40),
                       blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),

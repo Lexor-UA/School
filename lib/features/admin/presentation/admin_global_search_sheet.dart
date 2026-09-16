@@ -48,6 +48,28 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     'admin.cat_coaches'.tr(),
   ];
 
+  String _formatClassesGenitive(int total) {
+    if (total % 10 == 1 && total % 100 != 11) {
+      return '$total заняття';
+    }
+    return '$total занять';
+  }
+
+  String _getInitials(String name, [String fallback = 'К']) {
+    final clean = name.trim();
+    if (clean.isEmpty) return fallback;
+    final parts = clean.split(RegExp(r'\s+'));
+    if (parts.length > 1 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    // Check if CamelCase (e.g. CitySwim -> CS)
+    final uppercaseLetters = clean.replaceAll(RegExp(r'[^A-ZА-ЯІЇЄ]'), '');
+    if (uppercaseLetters.length >= 2) {
+      return uppercaseLetters.substring(0, 2);
+    }
+    return clean.length >= 2 ? clean.substring(0, 2).toUpperCase() : clean[0].toUpperCase();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -350,12 +372,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 ],
               )
             : null,
-        color: _isDark ? null : const Color(0xFFF1F5F9),
+        color: _isDark ? null : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: _isDark
               ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
-              : _theme.cardBorder,
+              : const Color(0xFFBAE6FD),
           width: 1.4,
         ),
         boxShadow: _isDark
@@ -372,7 +394,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -389,8 +411,9 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         decoration: InputDecoration(
           hintText: 'admin.smart_search_hint'.tr(),
           hintStyle: TextStyle(
-            color: _isDark ? Colors.white.withValues(alpha: 0.70) : _theme.textMuted,
+            color: _isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF475569),
             fontSize: 13.5,
+            fontWeight: FontWeight.w500,
           ),
           prefixIcon: Icon(
             LucideIcons.search,
@@ -425,7 +448,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         children: List.generate(_categories.length, (idx) {
           final isSelected = _selectedCategoryIndex == idx;
           final activeIconColor = Colors.white;
-          final inactiveIconColor = _isDark ? Colors.white70 : _theme.textSecondary;
+          final inactiveIconColor = _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -444,12 +467,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                       : null,
                   color: isSelected
                       ? null
-                      : (_isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFF1F5F9)),
+                      : (_isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF1F5F9)),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
                         ? Colors.white.withValues(alpha: 0.60)
-                        : (_isDark ? Colors.white.withValues(alpha: 0.25) : _theme.cardBorder),
+                        : (_isDark ? Colors.white.withValues(alpha: 0.20) : _theme.cardBorder),
                   ),
                   boxShadow: isSelected
                       ? [
@@ -475,7 +498,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                       style: TextStyle(
                         color: isSelected
                             ? Colors.white
-                            : (_isDark ? Colors.white.withValues(alpha: 0.90) : _theme.textSecondary),
+                            : (_isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary),
                         fontSize: 12,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                       ),
@@ -734,7 +757,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                        color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -934,7 +957,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         color: _isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: _isDark
@@ -951,7 +974,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -963,13 +986,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF00E5FF),
-                Color(0xFF0284C7),
-              ],
+              colors: _theme.actionCardGradients[name.hashCode.abs() % _theme.actionCardGradients.length],
             ),
             shape: BoxShape.circle,
             border: Border.all(
@@ -978,7 +998,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                color: _theme.actionCardGradients[name.hashCode.abs() % _theme.actionCardGradients.length].first
+                    .withValues(alpha: 0.40),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -986,11 +1007,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           ),
           alignment: Alignment.center,
           child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : 'К',
+            _getInitials(name, 'К'),
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
-              fontSize: 16,
+              fontSize: 14,
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -1002,13 +1024,45 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          '$phone • Логін: $loginId',
-          style: TextStyle(
-            color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+        subtitle: Row(
+          children: [
+            Text(
+              phone,
+              style: TextStyle(
+                color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (phone.isNotEmpty && loginId.isNotEmpty) ...[
+              Text(
+                ' • ',
+                style: TextStyle(
+                  color: _isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.6) : _theme.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+            if (loginId.isNotEmpty) ...[
+              Text(
+                'Логін: ',
+                style: TextStyle(
+                  color: _isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF64748B),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                loginId,
+                style: TextStyle(
+                  color: _isDark ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1125,7 +1179,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         color: _isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: _isDark
@@ -1142,7 +1196,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1191,7 +1245,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 Text(
                   'Батьки: $parentName',
                   style: TextStyle(
-                    color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                    color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1257,7 +1311,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         color: _isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: _isDark
@@ -1274,7 +1328,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1290,8 +1344,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFA855F7),
-                Color(0xFF7C3AED),
+                Color(0xFF10B981),
+                Color(0xFF0284C7),
               ],
             ),
             shape: BoxShape.circle,
@@ -1301,7 +1355,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFA855F7).withValues(alpha: 0.40),
+                color: const Color(0xFF10B981).withValues(alpha: 0.40),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1309,11 +1363,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           ),
           alignment: Alignment.center,
           child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : 'Т',
+            _getInitials(name, 'Т'),
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
-              fontSize: 16,
+              fontSize: 14,
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -1325,13 +1380,45 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          '$phone • Логін: $loginId',
-          style: TextStyle(
-            color: _isDark ? const Color(0xFFE9D5FF) : _theme.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+        subtitle: Row(
+          children: [
+            Text(
+              phone,
+              style: TextStyle(
+                color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (phone.isNotEmpty && loginId.isNotEmpty) ...[
+              Text(
+                ' • ',
+                style: TextStyle(
+                  color: _isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.6) : _theme.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+            if (loginId.isNotEmpty) ...[
+              Text(
+                'Логін: ',
+                style: TextStyle(
+                  color: _isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF64748B),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                loginId,
+                style: TextStyle(
+                  color: _isDark ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ],
         ),
         trailing: Container(
           width: 36,
@@ -1400,7 +1487,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         color: _isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: _isDark
@@ -1417,7 +1504,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1473,7 +1560,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 Text(
                   'Тренер: ${cl.coachName} • ${cl.lane}',
                   style: TextStyle(
-                    color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                    color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1524,7 +1611,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         color: _isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _isDark ? Colors.white.withValues(alpha: 0.28) : _theme.cardBorder,
+          color: _isDark ? Colors.white.withValues(alpha: 0.28) : const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: _isDark
@@ -1541,7 +1628,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1590,7 +1677,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 Text(
                   'Учень: ${s.ownerName} • До: $expiryStr',
                   style: TextStyle(
-                    color: _isDark ? const Color(0xFFBAE6FD) : _theme.textSecondary,
+                    color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1620,7 +1707,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ],
             ),
             child: Text(
-              '${s.remainingClasses} з ${s.totalClasses}',
+              '${s.remainingClasses} з ${_formatClassesGenitive(s.totalClasses)}',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,

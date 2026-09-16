@@ -33,6 +33,24 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
   String? _selectedCoachId;
   String? _selectedCoachName;
 
+  String _formatSpotsCount(int capacity) {
+    if (context.locale.languageCode == 'uk') {
+      final mod100 = capacity % 100;
+      final mod10 = capacity % 10;
+      if (mod100 >= 11 && mod100 <= 14) {
+        return 'місць';
+      }
+      if (mod10 == 1) {
+        return 'місце';
+      }
+      if (mod10 >= 2 && mod10 <= 4) {
+        return 'місця';
+      }
+      return 'місць';
+    }
+    return 'admin.spots_label'.tr();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -280,14 +298,17 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 children: daysOfWeek.asMap().entries.map((entry) {
                   final idx = entry.key;
                   final d = entry.value;
+                  final isWeekend = idx == 5 || idx == 6;
                   return Expanded(
                     child: Center(
                       child: Text(
                         d,
                         style: TextStyle(
-                          color: (idx == 5 || idx == 6) ? currentTheme.accentPrimary : currentTheme.textSecondary,
+                          color: isWeekend
+                              ? (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                              : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                           fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: isWeekend ? FontWeight.w800 : FontWeight.w700,
                         ),
                       ),
                     ),
@@ -431,16 +452,30 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           decoration: BoxDecoration(
             color: currentTheme.isDark
                 ? Colors.white.withValues(alpha: 0.15)
-                : const Color(0xFFE2E8F0).withValues(alpha: 0.70),
+                : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: currentTheme.isDark
                   ? Colors.white.withValues(alpha: 0.28)
-                  : const Color(0xFFCBD5E1),
+                  : const Color(0xFFBAE6FD),
+              width: 1.1,
             ),
+            boxShadow: currentTheme.isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ],
           ),
           child: Center(
-            child: Icon(icon, color: Colors.white, size: 16),
+            child: Icon(
+              icon,
+              color: currentTheme.isDark ? Colors.white : const Color(0xFF0284C7),
+              size: 16,
+            ),
           ),
         ),
       ),
@@ -479,31 +514,55 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7.5),
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
+                    gradient: _selectedCoachId == null
+                        ? LinearGradient(colors: currentTheme.accentGradient)
+                        : null,
                     color: _selectedCoachId == null
-                        ? (currentTheme.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD).withValues(alpha: 0.60))
-                        : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
+                        ? null
+                        : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _selectedCoachId == null
                           ? currentTheme.accentPrimary
-                          : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
-                      width: _selectedCoachId == null ? 1.4 : 1,
+                          : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1)),
+                      width: 1.1,
                     ),
+                    boxShadow: _selectedCoachId == null
+                        ? [
+                            BoxShadow(
+                              color: currentTheme.accentPrimary.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : (currentTheme.isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         LucideIcons.users,
                         size: 13,
-                        color: _selectedCoachId == null ? currentTheme.accentPrimary : (currentTheme.isDark ? Colors.white70 : currentTheme.textMuted),
+                        color: _selectedCoachId == null
+                            ? Colors.white
+                            : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF0284C7)),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Всі тренери',
                         style: TextStyle(
-                          color: _selectedCoachId == null ? currentTheme.accentPrimary : (currentTheme.isDark ? Colors.white : currentTheme.textSecondary),
+                          color: _selectedCoachId == null
+                              ? Colors.white
+                              : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
                           fontSize: 12,
-                          fontWeight: _selectedCoachId == null ? FontWeight.bold : FontWeight.w600,
+                          fontWeight: _selectedCoachId == null ? FontWeight.w800 : FontWeight.w600,
                         ),
                       ),
                     ],
@@ -535,36 +594,60 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7.5),
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? LinearGradient(colors: currentTheme.accentGradient)
+                          : null,
                       color: isSelected
-                          ? (currentTheme.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD).withValues(alpha: 0.60))
-                          : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
+                          ? null
+                          : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
                             ? currentTheme.accentPrimary
-                            : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFE2E8F0)),
-                        width: isSelected ? 1.4 : 1,
+                            : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1)),
+                        width: 1.1,
                       ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: currentTheme.accentPrimary.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : (currentTheme.isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           LucideIcons.waves,
                           size: 13,
-                          color: isSelected ? currentTheme.accentPrimary : (currentTheme.isDark ? const Color(0xFF38BDF8) : currentTheme.accentSecondary),
+                          color: isSelected
+                              ? Colors.white
+                              : (currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           cName,
                           style: TextStyle(
-                            color: isSelected ? currentTheme.accentPrimary : (currentTheme.isDark ? Colors.white : currentTheme.textSecondary),
+                            color: isSelected
+                                ? Colors.white
+                                : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                           ),
                         ),
                         if (isSelected) ...[
                           const SizedBox(width: 6),
-                          Icon(LucideIcons.x, size: 12, color: currentTheme.accentPrimary),
+                          const Icon(LucideIcons.x, size: 12, color: Colors.white),
                         ],
                       ],
                     ),
@@ -1060,10 +1143,12 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = c.enrolledChildIds.length;
     final progress = c.maxCapacity > 0 ? (enrolledCount / c.maxCapacity).clamp(0.0, 1.0) : 0.0;
+    final isUnassigned = c.coachName.isEmpty ||
+        c.coachName == 'Тренер не призначений' ||
+        c.coachName.toLowerCase().contains('не призначен');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: currentTheme.isDark
             ? Colors.white.withValues(alpha: 0.14)
@@ -1072,210 +1157,321 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         border: Border.all(
           color: currentTheme.isDark
               ? Colors.white.withValues(alpha: 0.28)
-              : const Color(0xFFE2E8F0),
-          width: 1.1,
+              : const Color(0xFFBAE6FD),
+          width: 1.15,
         ),
         boxShadow: [
           BoxShadow(
             color: currentTheme.isDark
                 ? Colors.black.withValues(alpha: 0.25)
-                : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                : const Color(0xFF0284C7).withValues(alpha: 0.07),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // Time Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8.5, vertical: 4),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: currentTheme.accentGradient,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$timeStr - $endTimeStr',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => CreateClassSheet(
+                classToEdit: c,
               ),
-              const SizedBox(width: 8),
-              if (c.lane.isNotEmpty && c.lane != 'Будь-яка')
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF162D4A)
-                        : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: currentTheme.isDark
-                          ? const Color(0xFF38BDF8).withValues(alpha: 0.25)
-                          : const Color(0xFFE2E8F0),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.waves, color: currentTheme.accentPrimary, size: 11),
-                      const SizedBox(width: 4),
-                      Text(
-                        c.lane,
-                        style: TextStyle(
-                          color: currentTheme.isDark ? Colors.white70 : currentTheme.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Time Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.5, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: currentTheme.accentGradient,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$timeStr - $endTimeStr',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              const Spacer(),
-              PopupMenuButton<String>(
-                icon: Icon(LucideIcons.moreHorizontal, color: currentTheme.textSecondary, size: 18),
-                color: currentTheme.isDark ? const Color(0xFF162D4A) : Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: BorderSide(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
-                        : const Color(0xFFCBD5E1),
-                  ),
-                ),
-                onSelected: (value) async {
-                  if (value == 'edit') {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => CreateClassSheet(
-                        classToEdit: c,
-                      ),
-                    );
-                  } else if (value == 'delete') {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: currentTheme.isDark ? const Color(0xFF162D4A) : Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        title: Text('admin.cal_delete_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
-                        content: Text('admin.cal_delete_confirm'.tr(args: [c.title]), style: TextStyle(color: currentTheme.textSecondary)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false), 
-                            child: Text('admin.no'.tr(), style: TextStyle(color: currentTheme.textMuted)),
+                    ),
+                    const SizedBox(width: 8),
+                    if (c.lane.isNotEmpty && c.lane != 'Будь-яка')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: currentTheme.isDark
+                              ? const Color(0xFF162D4A)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: currentTheme.isDark
+                                ? const Color(0xFF38BDF8).withValues(alpha: 0.25)
+                                : const Color(0xFFE2E8F0),
                           ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF43F5E),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.waves, color: currentTheme.accentPrimary, size: 11),
+                            const SizedBox(width: 4),
+                            Text(
+                              c.lane,
+                              style: TextStyle(
+                                color: currentTheme.isDark ? Colors.white70 : currentTheme.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            onPressed: () => Navigator.pop(context, true), 
-                            child: Text('admin.yes_delete'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
+                    const Spacer(),
+                    PopupMenuButton<String>(
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: currentTheme.isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: currentTheme.isDark
+                                ? Colors.white.withValues(alpha: 0.15)
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Icon(
+                          LucideIcons.moreHorizontal,
+                          color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                          size: 16,
+                        ),
+                      ),
+                      color: currentTheme.isDark ? const Color(0xFF162D4A) : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(
+                          color: currentTheme.isDark
+                              ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
+                              : const Color(0xFFCBD5E1),
+                        ),
+                      ),
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => CreateClassSheet(
+                              classToEdit: c,
+                            ),
+                          );
+                        } else if (value == 'delete') {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: currentTheme.isDark ? const Color(0xFF162D4A) : Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              title: Text('admin.cal_delete_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                              content: Text('admin.cal_delete_confirm'.tr(args: [c.title]), style: TextStyle(color: currentTheme.textSecondary)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false), 
+                                  child: Text('admin.no'.tr(), style: TextStyle(color: currentTheme.textMuted)),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF43F5E),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: () => Navigator.pop(context, true), 
+                                  child: Text('admin.yes_delete'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          );
 
-                    if (confirm == true) {
-                      final success = await ref.read(scheduleControllerProvider.notifier).deleteClass(c.id);
-                      if (success) {
-                        final admin = ref.read(authControllerProvider);
-                        if (admin != null) {
-                          await logAdminAction('Скасовано заняття "${c.title}" (${c.startTime.day}.${c.startTime.month})', admin.id);
+                          if (confirm == true) {
+                            final success = await ref.read(scheduleControllerProvider.notifier).deleteClass(c.id);
+                            if (success) {
+                              final admin = ref.read(authControllerProvider);
+                              if (admin != null) {
+                                await logAdminAction('Скасовано заняття "${c.title}" (${c.startTime.day}.${c.startTime.month})', admin.id);
+                              }
+                            }
+                          }
                         }
-                      }
-                    }
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(LucideIcons.pencil, size: 16, color: currentTheme.accentPrimary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Редагувати заняття',
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.pencil, size: 16, color: currentTheme.accentPrimary),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Редагувати заняття',
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.trash2, size: 16, color: Color(0xFFFF3B30)),
+                              const SizedBox(width: 8),
+                              Text('admin.cal_cancel_class'.tr(), style: const TextStyle(color: Color(0xFFFF3B30), fontSize: 13, fontWeight: FontWeight.w600)),
+                            ],
                           ),
                         ),
                       ],
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  c.title,
+                  style: TextStyle(
+                    color: currentTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
                   ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        const Icon(LucideIcons.trash2, size: 16, color: Color(0xFFFF3B30)),
-                        const SizedBox(width: 8),
-                        Text('admin.cal_cancel_class'.tr(), style: const TextStyle(color: Color(0xFFFF3B30), fontSize: 13, fontWeight: FontWeight.w600)),
-                      ],
+                ),
+                const SizedBox(height: 8),
+
+                // Coach & Capacity
+                Row(
+                  children: [
+                    if (c.coachName.isNotEmpty) ...[
+                      if (isUnassigned)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD97706).withValues(alpha: currentTheme.isDark ? 0.20 : 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFFD97706).withValues(alpha: currentTheme.isDark ? 0.40 : 0.30),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.alertCircle, color: Color(0xFFD97706), size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                c.coachName,
+                                style: const TextStyle(
+                                  color: Color(0xFFD97706),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: currentTheme.isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                                : const Color(0xFFE0F2FE),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: currentTheme.isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                  : const Color(0xFFBAE6FD),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.award,
+                                color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                c.coachName,
+                                style: TextStyle(
+                                  color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(width: 10),
+                    ],
+                    Icon(
+                      LucideIcons.users,
+                      color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                      size: 13,
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            c.title,
-            style: TextStyle(
-              color: currentTheme.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.2,
+                    const SizedBox(width: 4),
+                    Text(
+                      '$enrolledCount / ${c.maxCapacity} ${_formatSpotsCount(c.maxCapacity)}',
+                      style: TextStyle(
+                        color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          height: 6,
+                          color: currentTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progress,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                                gradient: LinearGradient(
+                                  colors: progress >= 1.0
+                                      ? const [Color(0xFFF43F5E), Color(0xFFE11D48)]
+                                      : (currentTheme.isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF38BDF8), Color(0xFF0284C7)]),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
-
-          // Coach & Capacity
-          Row(
-            children: [
-              if (c.coachName.isNotEmpty) ...[
-                Icon(LucideIcons.award, color: currentTheme.accentPrimary, size: 13),
-                const SizedBox(width: 4),
-                Text(
-                  c.coachName,
-                  style: TextStyle(color: currentTheme.accentPrimary, fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(width: 14),
-              ],
-              Icon(LucideIcons.users, color: currentTheme.textMuted, size: 13),
-              const SizedBox(width: 4),
-              Text(
-                '$enrolledCount / ${c.maxCapacity} ${'admin.spots_label'.tr()}',
-                style: TextStyle(color: currentTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: currentTheme.isDark ? const Color(0xFF162D4A) : currentTheme.chipBg,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      progress >= 1.0 ? const Color(0xFFF43F5E) : currentTheme.accentPrimary,
-                    ),
-                    minHeight: 4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

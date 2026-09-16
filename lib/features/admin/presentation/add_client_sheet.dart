@@ -264,22 +264,45 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         const SizedBox(height: 6),
         Text(
           _nameController.text,
-          style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF475569), fontSize: 15, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
         ).animate().fadeIn(delay: 350.ms),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF003B73).withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
           ),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('admin.add_client_credentials_title'.tr(), style: const TextStyle(color: Colors.white60, fontSize: 12.5)),
+                  Text(
+                    'admin.add_client_credentials_title'.tr(),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   GestureDetector(
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}\n${'admin.clients_password_label'.tr()}1'));
@@ -288,30 +311,67 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
-                        borderRadius: BorderRadius.circular(6),
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
+                            : const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                              : const Color(0xFFBAE6FD),
+                          width: 1,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.copy, color: Color(0xFF00E5FF), size: 12),
+                          Icon(
+                            LucideIcons.copy,
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                            size: 12,
+                          ),
                           const SizedBox(width: 4),
-                          Text('admin.clients_copy'.tr(), style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text(
+                            'admin.clients_copy'.tr(),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Text('${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}', style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 16, fontWeight: FontWeight.bold)),
-                  Container(width: 1, height: 16, color: Colors.white24),
-                  Text('${'admin.clients_password_label'.tr()}1', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 18,
+                    color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                  ),
+                  Text(
+                    '${'admin.clients_password_label'.tr()}1',
+                    style: const TextStyle(
+                      color: Color(0xFFD97706),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -320,15 +380,42 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          height: 52,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            onPressed: () => Navigator.pop(context),
-            child: Text('admin.done'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => Navigator.pop(context),
+                child: Center(
+                  child: Text(
+                    'admin.done'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -402,8 +489,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                     Text(
                       'admin.add_client_subtitle'.tr(),
                       style: TextStyle(
-                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                        fontSize: 12,
+                        color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -420,10 +508,10 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                       color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFCBD5E1),
+                        color: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFCBD5E1),
                       ),
                     ),
-                    child: Icon(LucideIcons.x, color: isDark ? Colors.white70 : const Color(0xFF475569), size: 18),
+                    child: Icon(LucideIcons.x, color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569), size: 18),
                   ),
                 ),
               ),
@@ -439,11 +527,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, isDark: isDark),
+          _buildTextField('admin.add_client_name_hint'.tr() == 'admin.add_client_name_hint' ? "ПІБ або ім'я клієнта" : 'admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, isDark: isDark),
           const SizedBox(height: 14),
-          _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true, isDark: isDark),
+          _buildTextField('admin.add_client_phone_hint'.tr() == 'admin.add_client_phone_hint' ? 'Номер телефону' : 'admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true, isDark: isDark),
           const SizedBox(height: 14),
-          _buildTextField('Вік клієнта (років)', LucideIcons.calendar, _ageController, isNumber: true, isDark: isDark),
+          _buildTextField('admin.add_client_age_hint'.tr() == 'admin.add_client_age_hint' ? 'Вік клієнта (років)' : 'admin.add_client_age_hint'.tr(), LucideIcons.calendar, _ageController, isNumber: true, isDark: isDark),
           const SizedBox(height: 20),
           
           if (_childrenEntries.isNotEmpty) ...[
@@ -451,7 +539,14 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               children: [
                 const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 16),
                 const SizedBox(width: 8),
-                Text('admin.add_client_children_title'.tr(), style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(
+                  'admin.add_client_children_title'.tr() == 'admin.add_client_children_title' ? 'Діти / Учні' : 'admin.add_client_children_title'.tr(),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -465,25 +560,31 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController, isDark: isDark),
+                    child: _buildTextField('admin.add_client_child_name_hint'.tr() == 'admin.add_client_child_name_hint' ? "Ім'я дитини" : 'admin.add_client_child_name_hint'.tr(), LucideIcons.baby, entry.nameController, isDark: isDark),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
-                    child: _buildTextField('Вік (р.)', LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
+                    child: _buildTextField('admin.add_client_child_age_hint'.tr() == 'admin.add_client_child_age_hint' ? 'Вік (р.)' : 'admin.add_client_child_age_hint'.tr(), LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
                   ),
                   const SizedBox(width: 8),
                   Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF43F5E).withValues(alpha: 0.12),
+                      color: isDark
+                          ? const Color(0xFFF43F5E).withValues(alpha: 0.15)
+                          : const Color(0xFFFFF1F2),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
+                            : const Color(0xFFFECDD3),
+                      ),
                     ),
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFF43F5E), size: 18),
+                      icon: const Icon(LucideIcons.trash2, color: Color(0xFFE11D48), size: 18),
                       onPressed: () => _removeChildField(index),
                     ),
                   ),
@@ -494,12 +595,54 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _addChildField,
-              icon: const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 16),
-              label: Text(
-                _childrenEntries.isEmpty ? 'admin.add_client_add_child'.tr() : 'admin.add_client_add_more_child'.tr(),
-                style: const TextStyle(color: Color(0xFF00E5FF), fontWeight: FontWeight.w600, fontSize: 13),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _addChildField,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                        : const Color(0xFFE0F2FE),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                          : const Color(0xFFBAE6FD),
+                      width: 1.15,
+                    ),
+                    boxShadow: isDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.plus,
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        size: 15,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _childrenEntries.isEmpty ? 'admin.add_client_add_child'.tr() : 'admin.add_client_add_more_child'.tr(),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -533,10 +676,12 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             width: double.infinity,
             height: 52,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                colors: isDark
+                    ? const [Color(0xFF00D2FF), Color(0xFF0077B6)]
+                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -545,7 +690,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                  color: (isDark ? const Color(0xFF00B4D8) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -569,7 +714,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15.5,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 letterSpacing: 0.3,
                               ),
                             ),
@@ -584,21 +729,58 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
   }
 
   Widget _buildTextField(String hint, IconData icon, TextEditingController controller, {bool isNumber = false, required bool isDark}) {
+    String displayHint = hint;
+    if (displayHint == 'admin.add_client_age_hint' || displayHint.isEmpty) {
+      displayHint = 'Вік клієнта (років)';
+    } else if (displayHint == 'admin.add_client_child_age_hint') {
+      displayHint = 'Вік (р.)';
+    } else if (displayHint == 'admin.add_client_name_hint') {
+      displayHint = "ПІБ або ім'я клієнта";
+    } else if (displayHint == 'admin.add_client_phone_hint') {
+      displayHint = 'Номер телефону';
+    } else if (displayHint == 'admin.add_client_child_name_hint') {
+      displayHint = "Ім'я дитини";
+    }
+
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+          width: 1.2,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
-        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14.5),
+        style: TextStyle(
+          color: isDark ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
         decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.45) : const Color(0xFF94A3B8), fontSize: 13.5),
-          prefixIcon: Icon(icon, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 18),
+          hintText: displayHint,
+          hintStyle: TextStyle(
+            color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF94A3B8),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w400,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            size: 18,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),

@@ -157,7 +157,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                   colorFilter: ColorFilter.mode(Colors.black54, BlendMode.darken),
                 ),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.20), width: 1.5),
+                border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.28), width: 1.2),
               ),
               child: Stack(
                 children: [

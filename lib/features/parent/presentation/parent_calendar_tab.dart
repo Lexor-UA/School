@@ -128,42 +128,45 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
   Widget _buildChildSelector(AppThemeConfig currentTheme, String parentId, String parentName) {
     final childrenAsync = ref.watch(childrenControllerProvider);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          _buildChildChip(
-            id: parentId,
-            name: parentName,
-            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-            isSelected: selectedChildId == parentId,
-            currentTheme: currentTheme,
-            isParent: true,
-          ),
-          ...childrenAsync.when(
-            data: (children) => children.map((c) => _buildChildChip(
-              id: c.id,
-              name: c.name,
-              color: Color(int.tryParse(c.colorHex) ?? 0xFF10B981),
-              isSelected: selectedChildId == c.id,
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildChildChip(
+              id: parentId,
+              name: parentName,
+              color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+              isSelected: selectedChildId == parentId,
               currentTheme: currentTheme,
-              isParent: false,
-            )).toList(),
-            loading: () => [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            ],
-            error: (_, _) => const [],
-          ),
-        ],
+              isParent: true,
+            ),
+            ...childrenAsync.when(
+              data: (children) => children.map((c) => _buildChildChip(
+                id: c.id,
+                name: c.name,
+                color: Color(int.tryParse(c.colorHex) ?? 0xFF10B981),
+                isSelected: selectedChildId == c.id,
+                currentTheme: currentTheme,
+                isParent: false,
+              )).toList(),
+              loading: () => [
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              ],
+              error: (_, _) => const [],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -191,10 +194,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
-                      colors: [
-                        color.withValues(alpha: isDark ? 0.35 : 0.22),
-                        color.withValues(alpha: isDark ? 0.18 : 0.10),
-                      ],
+                      colors: isDark
+                          ? [
+                              color.withValues(alpha: 0.35),
+                              color.withValues(alpha: 0.18),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.95),
+                              const Color(0xFFF0F9FF).withValues(alpha: 0.92),
+                            ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
@@ -203,22 +211,22 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   ? null
                   : (isDark
                       ? Colors.white.withValues(alpha: 0.10)
-                      : Colors.white.withValues(alpha: 0.75)),
+                      : Colors.white.withValues(alpha: 0.80)),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
-                    ? (isDark ? color : color.withValues(alpha: 0.85))
+                    ? (isDark ? const Color(0xFF00E5FF) : color)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.20)
-                        : currentTheme.cardBorder),
-                width: isSelected ? 1.4 : 1,
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : const Color(0xFFBAE6FD)),
+                width: isSelected ? 1.4 : 1.0,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: color.withValues(alpha: isDark ? 0.35 : 0.20),
+                        color: (isDark ? const Color(0xFF00E5FF) : color).withValues(alpha: isDark ? 0.30 : 0.14),
                         blurRadius: 10,
-                        offset: const Offset(0, 2),
+                        offset: const Offset(0, 3),
                       ),
                     ]
                   : null,
@@ -230,9 +238,12 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? color.withValues(alpha: 0.25)
-                        : (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.05)),
+                    gradient: isSelected
+                        ? (isDark
+                            ? LinearGradient(colors: [color.withValues(alpha: 0.4), color.withValues(alpha: 0.2)])
+                            : const LinearGradient(colors: [Color(0xFF00E5FF), Color(0xFF0284C7)]))
+                        : null,
+                    color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE0F2FE)),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -240,8 +251,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       isParent ? LucideIcons.user : LucideIcons.baby,
                       size: 13,
                       color: isSelected
-                          ? (isDark ? Colors.white : color)
-                          : (isDark ? Colors.white70 : currentTheme.textSecondary),
+                          ? Colors.white
+                          : (isDark ? Colors.white70 : const Color(0xFF0284C7)),
                     ),
                   ),
                 ),
@@ -250,10 +261,10 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   name,
                   style: TextStyle(
                     color: isSelected
-                        ? (isDark ? Colors.white : currentTheme.textPrimary)
+                        ? (isDark ? Colors.white : const Color(0xFF0F172A))
                         : (isDark ? Colors.white70 : currentTheme.textSecondary),
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13.5,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ],
@@ -290,52 +301,62 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final isDark = currentTheme.isDark;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  Colors.white.withValues(alpha: 0.18),
-                  const Color(0xFF0284C7).withValues(alpha: 0.22),
-                  const Color(0xFF0D2542).withValues(alpha: 0.45),
-                ]
-              : [
-                  Colors.white.withValues(alpha: 0.94),
-                  const Color(0xFFF0F9FF).withValues(alpha: 0.94),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.35)
-              : const Color(0xFFBAE6FD),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? const Color(0xFF003B73).withValues(alpha: 0.35)
-                : const Color(0xFF0284C7).withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      const Color(0xFF0E3D64).withValues(alpha: 0.60),
+                      const Color(0xFF092842).withValues(alpha: 0.72),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                  : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF003B73).withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.10),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
-          BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.18 : 0.08),
-            blurRadius: 24,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
                 // Month Switcher Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -402,8 +423,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                           d,
                           style: TextStyle(
                             color: (idx == 5 || idx == 6)
-                                ? currentTheme.accentPrimary
-                                : (isDark ? Colors.white54 : currentTheme.textSecondary),
+                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -446,7 +467,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                         c.startTime.day == cellDate.day &&
                         c.enrolledChildIds.contains(targetChildId));
 
-                    final hasAvailableClasses = !hasEnrolledClasses && allClasses.any((c) =>
+                    final hasAvailableClasses = allClasses.any((c) =>
                         c.startTime.year == cellDate.year &&
                         c.startTime.month == cellDate.month &&
                         c.startTime.day == cellDate.day &&
@@ -473,7 +494,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                 ? null
                                 : (isToday
                                     ? (isDark
-                                        ? Colors.white.withValues(alpha: 0.15)
+                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
                                         : currentTheme.accentPrimary.withValues(alpha: 0.12))
                                     : Colors.transparent),
                             borderRadius: BorderRadius.circular(10),
@@ -481,7 +502,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                               color: isSelected
                                   ? Colors.white.withValues(alpha: 0.8)
                                   : (isToday
-                                      ? currentTheme.accentPrimary.withValues(alpha: 0.7)
+                                      ? (isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.75)
+                                          : currentTheme.accentPrimary.withValues(alpha: 0.7))
                                       : Colors.transparent),
                               width: (isSelected || isToday) ? 1.2 : 0,
                             ),
@@ -504,32 +527,72 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                   color: isSelected
                                       ? Colors.white
                                       : (isToday
-                                          ? currentTheme.accentPrimary
+                                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                                           : (isDark ? Colors.white : currentTheme.textPrimary)),
-                                  fontWeight: (isSelected || isToday) ? FontWeight.bold : FontWeight.w500,
-                                  fontSize: 13,
+                                  fontWeight: (isSelected || isToday) ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 13.5,
                                 ),
                               ),
-                              if (hasEnrolledClasses || hasAvailableClasses)
+                              if (hasEnrolledClasses && hasAvailableClasses && !isSelected)
                                 Positioned(
-                                  bottom: 3,
+                                  bottom: 4,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 4.5,
+                                        height: 4.5,
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: (isDark ? const Color(0xFF34D399) : const Color(0xFF059669)).withValues(alpha: 0.7),
+                                              blurRadius: 3,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Container(
+                                        width: 4.5,
+                                        height: 4.5,
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.7),
+                                              blurRadius: 3,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else if (hasEnrolledClasses || hasAvailableClasses)
+                                Positioned(
+                                  bottom: 4,
                                   child: Container(
-                                    width: hasEnrolledClasses ? 12 : 5,
-                                    height: 3,
+                                    width: 5,
+                                    height: 5,
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? Colors.white
                                           : (hasEnrolledClasses
-                                              ? const Color(0xFF10B981)
-                                              : (isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary)),
-                                      borderRadius: BorderRadius.circular(2),
+                                              ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                                              : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))),
+                                      shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: (hasEnrolledClasses
-                                                  ? const Color(0xFF10B981)
-                                                  : const Color(0xFF38BDF8))
-                                              .withValues(alpha: 0.7),
-                                          blurRadius: 4,
+                                          color: isSelected
+                                              ? Colors.white.withValues(alpha: 0.8)
+                                              : (hasEnrolledClasses
+                                                  ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                                                  : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)))
+                                                .withValues(alpha: 0.6),
+                                          blurRadius: 3,
                                         ),
                                       ],
                                     ),
@@ -546,8 +609,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildMonthNavButton({
@@ -567,13 +629,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           height: 32,
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
+                ? Colors.white.withValues(alpha: 0.10)
                 : Colors.white.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.22)
-                  : currentTheme.cardBorder,
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                  : const Color(0xFFBAE6FD),
               width: 0.8,
             ),
           ),
@@ -581,7 +643,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             child: Icon(
               icon,
               size: 16,
-              color: isDark ? Colors.white : currentTheme.textPrimary,
+              color: isDark ? const Color(0xFF00E5FF) : currentTheme.textPrimary,
             ),
           ),
         ),
@@ -623,7 +685,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               children: [
                 Icon(
                   LucideIcons.sparkles,
-                  color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                   size: 16,
                 ),
                 const SizedBox(width: 8),
@@ -641,14 +703,20 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             GestureDetector(
               onTap: () => _showBookingSheet(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isDark
                         ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.45),
+                    width: 0.8,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
@@ -678,68 +746,129 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         ),
         const SizedBox(height: 10),
 
-        // Scrollable List of classes
+        // Non-scrollable List of classes
         Expanded(
           child: (enrolledClasses.isEmpty && availableClasses.isEmpty)
               ? _buildEmptyDayState(currentTheme)
-              : ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 90),
-                  children: [
-                    if (enrolledClasses.isNotEmpty) ...[
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF065F46),
-                              shape: BoxShape.circle,
+              : SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (enrolledClasses.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.88),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.40)
+                                  : const Color(0xFFBAE6FD),
+                              width: 0.8,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isDark ? const Color(0xFF10B981) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Ваші заплановані заняття (${enrolledClasses.length})',
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: 0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Text(
+                                'Ваші заплановані заняття (${enrolledClasses.length})',
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF34D399) : currentTheme.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...enrolledClasses.map((c) => _buildEnrolledClassCard(c, targetChildId, currentTheme)),
+                        const SizedBox(height: 12),
+                      ],
+                      if (availableClasses.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF0284C7).withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.88),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF38BDF8).withValues(alpha: 0.40)
+                                  : const Color(0xFFBAE6FD),
+                              width: 0.8,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ...enrolledClasses.map((c) => _buildEnrolledClassCard(c, targetChildId, currentTheme)),
-                      const SizedBox(height: 14),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Text(
+                                'Доступні для запису (${availableClasses.length})',
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF38BDF8) : currentTheme.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...availableClasses.map((c) => _buildAvailableClassCard(c, targetChildId, currentTheme)),
+                      ],
                     ],
-                    if (availableClasses.isNotEmpty) ...[
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Доступні для запису (${availableClasses.length})',
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ...availableClasses.map((c) => _buildAvailableClassCard(c, targetChildId, currentTheme)),
-                    ],
-                  ],
+                  ),
                 ),
         ),
       ],
@@ -753,23 +882,22 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               gradient: isDark
                   ? LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.15),
-                        const Color(0xFF0284C7).withValues(alpha: 0.10),
-                        const Color(0xFF0D2542).withValues(alpha: 0.35),
+                        const Color(0xFF0E3D64).withValues(alpha: 0.55),
+                        const Color(0xFF092842).withValues(alpha: 0.70),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.90),
+                        Colors.white.withValues(alpha: 0.95),
                         const Color(0xFFF0F9FF).withValues(alpha: 0.90),
                       ],
                       begin: Alignment.topLeft,
@@ -777,15 +905,29 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.25) : currentTheme.cardBorder,
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
+                width: 1.2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: isDark
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF003B73).withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -832,22 +974,46 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                ElevatedButton.icon(
-                  onPressed: () => _showBookingSheet(context),
-                  icon: const Icon(LucideIcons.plus, color: Colors.black, size: 16),
-                  label: const Text(
-                    'Забронювати тренування',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12.5,
+                GestureDetector(
+                  onTap: () => _showBookingSheet(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                            : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.50),
+                        width: 0.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00E5FF),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 4,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.plus, color: Colors.white, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Забронювати тренування',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -866,18 +1032,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               gradient: isDark
                   ? LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.22),
-                        const Color(0xFF059669).withValues(alpha: 0.22),
-                        const Color(0xFF042F2E).withValues(alpha: 0.45),
+                        const Color(0xFF0E3D64).withValues(alpha: 0.60),
+                        const Color(0xFF092842).withValues(alpha: 0.72),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -885,23 +1050,36 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   : LinearGradient(
                       colors: [
                         Colors.white.withValues(alpha: 0.95),
-                        const Color(0xFFECFDF5).withValues(alpha: 0.90),
+                        const Color(0xFFF0F9FF).withValues(alpha: 0.90),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.75 : 0.55),
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
                 width: 1.2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.10),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              boxShadow: isDark
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF003B73).withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -912,22 +1090,26 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.30 : 0.15),
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE0F2FE),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
                           width: 0.8,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.clock, size: 12, color: Color(0xFF10B981)),
+                          Icon(
+                            LucideIcons.clock,
+                            size: 12,
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             timeFormatted,
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF065F46),
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                               fontWeight: FontWeight.w800,
                               fontSize: 12,
                             ),
@@ -937,28 +1119,36 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     ),
                     const SizedBox(width: 8),
 
-                    // Confirmation badge
+                    // Confirmation badge (Emerald)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.18 : 0.15),
+                        color: isDark
+                            ? const Color(0xFF10B981).withValues(alpha: 0.16)
+                            : const Color(0xFFECFDF5),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.4 : 0.3),
+                          color: isDark
+                              ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                              : const Color(0xFFA7F3D0),
                           width: 0.8,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.checkCircle2, size: 12, color: isDark ? const Color(0xFF10B981) : const Color(0xFF065F46)),
+                          Icon(
+                            LucideIcons.checkCircle2,
+                            size: 12,
+                            color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'parent.booking_confirmed'.tr(),
                             style: TextStyle(
-                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF065F46),
+                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
                               fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -1039,16 +1229,21 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   children: [
                     if (c.coachName.isNotEmpty) ...[
                       Icon(
-                        LucideIcons.userCheck,
+                        (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
+                            ? LucideIcons.clock
+                            : LucideIcons.userCheck,
                         size: 13,
-                        color: isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary,
+                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Тренер: ${c.coachName}',
+                        (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
+                            ? 'Тренер призначається'
+                            : 'Тренер: ${c.coachName}',
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                          color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1057,14 +1252,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       Icon(
                         LucideIcons.waves,
                         size: 13,
-                        color: isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary,
+                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         c.lane,
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                          color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -1087,18 +1283,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               gradient: isDark
                   ? LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.18),
-                        const Color(0xFF0284C7).withValues(alpha: 0.16),
-                        const Color(0xFF0A223D).withValues(alpha: 0.45),
+                        const Color(0xFF0E3D64).withValues(alpha: 0.55),
+                        const Color(0xFF092842).withValues(alpha: 0.68),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1111,18 +1306,31 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.30) : currentTheme.cardBorder,
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
                 width: 1.2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              boxShadow: isDark
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF003B73).withValues(alpha: 0.30),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1133,21 +1341,27 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.05),
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE0F2FE),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
+                          width: 0.8,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.clock, size: 12, color: isDark ? Colors.white70 : currentTheme.textSecondary),
+                          Icon(
+                            LucideIcons.clock,
+                            size: 12,
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             timeFormatted,
                             style: TextStyle(
-                              color: currentTheme.textPrimary,
-                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.w800,
                               fontSize: 12,
                             ),
                           ),
@@ -1192,18 +1406,25 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: isDark
                                 ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
-                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.45),
+                            width: 0.8,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
                               blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
@@ -1237,16 +1458,21 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   children: [
                     if (c.coachName.isNotEmpty) ...[
                       Icon(
-                        LucideIcons.user,
+                        (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
+                            ? LucideIcons.clock
+                            : LucideIcons.user,
                         size: 13,
-                        color: isDark ? Colors.white60 : currentTheme.textSecondary,
+                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Тренер: ${c.coachName}',
+                        (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
+                            ? 'Тренер призначається'
+                            : 'Тренер: ${c.coachName}',
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                          color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1255,14 +1481,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       Icon(
                         LucideIcons.waves,
                         size: 13,
-                        color: isDark ? Colors.white60 : currentTheme.textSecondary,
+                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         c.lane,
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                          color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],

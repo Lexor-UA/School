@@ -49,6 +49,21 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     super.dispose();
   }
 
+  String _getInitials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '?';
+    final words = trimmed.split(RegExp(r'\s+'));
+    if (words.length >= 2) {
+      final first = words[0].isNotEmpty ? words[0][0].toUpperCase() : '';
+      final second = words[1].isNotEmpty ? words[1][0].toUpperCase() : '';
+      return '$first$second';
+    }
+    if (trimmed.length >= 2) {
+      return trimmed.substring(0, 2).toUpperCase();
+    }
+    return trimmed[0].toUpperCase();
+  }
+
   bool _isSubActive(Subscription sub) {
     if (!sub.isActive) return false;
     if (sub.remainingClasses <= 0) return false;
@@ -100,22 +115,22 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           const Color(0xFF0A223D).withValues(alpha: 0.65),
                         ]
                       : [
-                          Colors.white.withValues(alpha: 0.98),
-                          const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                          Colors.white,
+                          const Color(0xFFF8FAFC),
                         ],
                 ),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.35)
-                      : currentTheme.cardBorder,
+                      : const Color(0xFFBAE6FD),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: isDark
                         ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                        : currentTheme.cardShadow,
+                        : const Color(0xFF0284C7).withValues(alpha: 0.12),
                     blurRadius: 28,
                     offset: const Offset(0, -6),
                   ),
@@ -130,7 +145,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: currentTheme.textSecondary.withValues(alpha: 0.35),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.35)
+                            : const Color(0xFF94A3B8),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -139,12 +156,23 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
+                          color: isDark
+                              ? const Color(0xFF38BDF8).withValues(alpha: 0.15)
+                              : const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
+                                : const Color(0xFFBAE6FD),
+                          ),
                         ),
-                        child: const Icon(LucideIcons.messageSquareQuote, color: Color(0xFF38BDF8), size: 20),
+                        child: Icon(
+                          LucideIcons.messageSquareQuote,
+                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -153,11 +181,20 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           children: [
                             Text(
                               'Нагадування для $clientName',
-                              style: TextStyle(color: currentTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
                               'Учень: $ownerName • ${phone ?? "Немає тел."}',
-                              style: TextStyle(color: currentTheme.textSecondary, fontSize: 12),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -168,15 +205,33 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF1F5F9),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.20)
+                            : const Color(0xFFBAE6FD),
                       ),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: Text(
                       text,
-                      style: TextStyle(color: currentTheme.textPrimary, fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                        color: isDark ? currentTheme.textPrimary : const Color(0xFF1E293B),
+                        fontSize: 13,
+                        height: 1.45,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -185,17 +240,18 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: currentTheme.textPrimary,
+                            backgroundColor: isDark ? Colors.transparent : const Color(0xFFF0F9FF),
+                            foregroundColor: isDark ? currentTheme.textPrimary : const Color(0xFF0369A1),
                             side: BorderSide(
                               color: isDark
                                   ? Colors.white.withValues(alpha: 0.25)
-                                  : currentTheme.cardBorder,
+                                  : const Color(0xFFBAE6FD),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           icon: const Icon(LucideIcons.copy, size: 16),
-                          label: Text('admin.copy'.tr()),
+                          label: Text('admin.copy'.tr(), style: const TextStyle(fontWeight: FontWeight.w700)),
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: text));
                             Navigator.pop(ctx);
@@ -212,18 +268,19 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF38BDF8),
-                            foregroundColor: const Color(0xFF081424),
+                            backgroundColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                            foregroundColor: isDark ? const Color(0xFF081424) : Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            elevation: 0,
+                            elevation: isDark ? 0 : 2,
+                            shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.35),
                           ),
                           icon: const Icon(LucideIcons.send, size: 16),
-                          label: Text('admin.send_to_chat'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          label: Text('admin.send_to_chat'.tr(), style: const TextStyle(fontWeight: FontWeight.w800)),
                           onPressed: () async {
                             final messenger = ScaffoldMessenger.of(context);
                             final navigator = Navigator.of(ctx);
-                            final dialogId = 'chat_$clientId';
+                            final dialogId = clientId;
                             await ChatRepository().sendMessage(
                               dialogId: dialogId,
                               clientId: clientId,
@@ -343,10 +400,19 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
         String reason;
         if (sub.remainingClasses <= 0) {
-          reason = 'Вичерпано заняття (0 з ${sub.totalClasses})';
+          final total = sub.totalClasses;
+          reason = 'Вичерпано заняття (0 з $total ${total % 10 == 1 && total % 100 != 11 ? "заняття" : "занять"})';
         } else if (sub.expiryDate != null && DateTime.now().isAfter(sub.expiryDate!)) {
           final days = DateTime.now().difference(sub.expiryDate!).inDays;
-          reason = 'Закінчився термін (прострочено $days дн.)';
+          String dayWord;
+          if (days % 10 == 1 && days % 100 != 11) {
+            dayWord = 'день';
+          } else if (days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20)) {
+            dayWord = 'дні';
+          } else {
+            dayWord = 'днів';
+          }
+          reason = 'Закінчився термін (прострочено $days $dayWord)';
         } else {
           reason = 'Неактивний абонемент';
         }
@@ -411,22 +477,22 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       const Color(0xFF0A223D).withValues(alpha: 0.55),
                     ]
                   : [
-                      Colors.white.withValues(alpha: 0.98),
-                      const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                      Colors.white,
+                      const Color(0xFFF8FAFC),
                     ],
             ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.35)
-                  : currentTheme.cardBorder,
+                  : const Color(0xFFBAE6FD),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
                     ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                    : currentTheme.cardShadow,
+                    : const Color(0xFF0284C7).withValues(alpha: 0.12),
                 blurRadius: 32,
                 offset: const Offset(0, -8),
               ),
@@ -500,7 +566,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               width: 44,
               height: 5,
               decoration: BoxDecoration(
-                color: currentTheme.textSecondary.withValues(alpha: 0.35),
+                color: currentTheme.isDark
+                    ? currentTheme.textSecondary.withValues(alpha: 0.35)
+                    : const Color(0xFF94A3B8),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -542,7 +610,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     Text(
                       'admin.payment_title'.tr(),
                       style: TextStyle(
-                        color: currentTheme.textPrimary,
+                        color: currentTheme.isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.2,
@@ -552,7 +620,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     Text(
                       'admin.payment_subtitle'.tr(),
                       style: TextStyle(
-                        color: currentTheme.textSecondary,
+                        color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                         fontSize: 11.5,
                         height: 1.25,
                       ),
@@ -563,14 +631,27 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : currentTheme.glassCardBg,
+                  color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.20) : currentTheme.cardBorder,
+                    color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
                   ),
+                  boxShadow: currentTheme.isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
                 child: IconButton(
-                  icon: Icon(LucideIcons.x, color: currentTheme.textPrimary, size: 18),
+                  icon: Icon(
+                    LucideIcons.x,
+                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155),
+                    size: 18,
+                  ),
                   onPressed: () => Navigator.pop(context),
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   padding: EdgeInsets.zero,
@@ -694,8 +775,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      color.withValues(alpha: 0.28),
-                      color.withValues(alpha: 0.08),
+                      color.withValues(alpha: currentTheme.isDark ? 0.28 : 0.20),
+                      color.withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -705,15 +786,15 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 ? null
                 : (currentTheme.isDark
                     ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.04)),
+                    : Colors.white),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected
-                  ? color.withValues(alpha: 0.85)
+                  ? color.withValues(alpha: currentTheme.isDark ? 0.85 : 0.75)
                   : (currentTheme.isDark
                       ? Colors.white.withValues(alpha: 0.18)
-                      : currentTheme.cardBorder),
-              width: isSelected ? 1.4 : 1,
+                      : const Color(0xFFBAE6FD)),
+              width: isSelected ? 1.4 : 1.1,
             ),
             boxShadow: isSelected
                 ? [
@@ -723,7 +804,15 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       offset: const Offset(0, 2),
                     ),
                   ]
-                : null,
+                : (currentTheme.isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -762,9 +851,11 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   label,
                   maxLines: 1,
                   style: TextStyle(
-                    color: isSelected ? (currentTheme.isDark ? Colors.white : const Color(0xFF0F172A)) : currentTheme.textSecondary,
+                    color: isSelected
+                        ? (currentTheme.isDark ? Colors.white : const Color(0xFF0F172A))
+                        : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
                     fontSize: 10.5,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
                   ),
                 ),
               ),
@@ -795,7 +886,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           border: Border.all(
             color: currentTheme.isDark
                 ? Colors.white.withValues(alpha: 0.18)
-                : currentTheme.cardBorder,
+                : const Color(0xFFBAE6FD),
+            width: 1.1,
           ),
         ),
         child: Row(
@@ -869,35 +961,46 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             Icon(
               icon,
               size: 15,
-              color: isSelected ? Colors.white : currentTheme.textSecondary,
+              color: isSelected
+                  ? Colors.white
+                  : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
             ),
             const SizedBox(width: 7),
             Text(
               title,
               style: TextStyle(
-                color: isSelected ? Colors.white : currentTheme.textSecondary,
+                color: isSelected
+                    ? Colors.white
+                    : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
               ),
             ),
             if (badge != null) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.25)
                       : (currentTheme.isDark
                           ? Colors.white.withValues(alpha: 0.12)
-                          : const Color(0xFFE2E8F0)),
+                          : Colors.white),
                   borderRadius: BorderRadius.circular(10),
+                  border: isSelected
+                      ? null
+                      : (currentTheme.isDark
+                          ? null
+                          : Border.all(color: const Color(0xFFCBD5E1))),
                 ),
                 child: Text(
                   badge,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : currentTheme.textPrimary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Colors.white
+                        : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -912,27 +1015,40 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.90),
+        color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.25) : currentTheme.cardBorder,
+          color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: currentTheme.cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: isDark ? Colors.transparent : const Color(0xFF0284C7).withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: TextField(
         controller: _searchController,
-        style: TextStyle(color: currentTheme.textPrimary, fontSize: 13.5),
+        style: TextStyle(
+          color: isDark ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         decoration: InputDecoration(
           hintText: 'Пошук за ім\'ям учня, клієнта чи телефоном...',
-          hintStyle: TextStyle(color: currentTheme.textMuted, fontSize: 12.5),
-          prefixIcon: Icon(LucideIcons.search, color: currentTheme.accentPrimary, size: 17),
+          hintStyle: TextStyle(
+            color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF94A3B8),
+            fontSize: 12.5,
+            fontWeight: FontWeight.w400,
+          ),
+          prefixIcon: Icon(
+            LucideIcons.search,
+            color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+            size: 17,
+          ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(LucideIcons.x, color: currentTheme.textMuted, size: 16),
@@ -1089,14 +1205,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final purchaseStr = purchaseDate != null ? DateFormat('dd.MM.yyyy').format(purchaseDate) : null;
 
     final isActive = _isSubActive(sub);
+    final isDark = currentTheme.isDark;
+
+    // Jewel avatar gradient from app theme palette
+    final avatarGradient = currentTheme.actionCardGradients[ownerName.hashCode.abs() % currentTheme.actionCardGradients.length];
+
     final accentColor = !isActive
         ? const Color(0xFF64748B)
-        : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF10B981));
+        : (isExpiringSoon ? const Color(0xFFF59E0B) : (isDark ? const Color(0xFF34D399) : const Color(0xFF10B981)));
     final secondaryAccent = !isActive
         ? const Color(0xFF475569)
         : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00D2FF));
-
-    final isDark = currentTheme.isDark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1115,28 +1234,27 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   const Color(0xFF0D2542).withValues(alpha: 0.45),
                 ]
               : [
-                  Colors.white.withValues(alpha: 0.94),
+                  Colors.white,
                   (isExpiringSoon
-                          ? const Color(0xFFFFFBEB)
-                          : (!isActive ? const Color(0xFFF8FAFC) : const Color(0xFFF0F9FF)))
-                      .withValues(alpha: 0.90),
+                      ? const Color(0xFFFFFBEB)
+                      : (!isActive ? const Color(0xFFF8FAFC) : const Color(0xFFF0F9FF))),
                 ],
         ),
         border: Border.all(
           color: isExpiringSoon
-              ? const Color(0xFFF59E0B).withValues(alpha: 0.60)
+              ? const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.60 : 0.75)
               : (isDark
                   ? Colors.white.withValues(alpha: 0.30)
-                  : currentTheme.cardBorder),
-          width: isExpiringSoon ? 1.3 : 1.1,
+                  : const Color(0xFFBAE6FD)),
+          width: isExpiringSoon ? 1.3 : 1.15,
         ),
         boxShadow: [
           BoxShadow(
             color: isExpiringSoon
-                ? const Color(0xFFF59E0B).withValues(alpha: 0.18)
-                : currentTheme.cardShadow,
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+                ? const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.12)
+                : (isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF0284C7).withValues(alpha: 0.07)),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1151,7 +1269,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               children: [
                 Row(
                   children: [
-                    // Squircle avatar with gradient glow
+                    // Squircle avatar with 2-letter monogram & jewel glow
                     Container(
                       width: 44,
                       height: 44,
@@ -1159,15 +1277,19 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            accentColor,
-                            secondaryAccent,
-                          ],
+                          colors: !isActive
+                              ? [const Color(0xFF64748B), const Color(0xFF475569)]
+                              : (isExpiringSoon
+                                  ? [const Color(0xFFF59E0B), const Color(0xFFFB923C)]
+                                  : avatarGradient),
                         ),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: accentColor.withValues(alpha: 0.35),
+                            color: (!isActive
+                                    ? const Color(0xFF64748B)
+                                    : (isExpiringSoon ? const Color(0xFFF59E0B) : avatarGradient.first))
+                                .withValues(alpha: 0.35),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -1175,11 +1297,12 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ),
                       child: Center(
                         child: Text(
-                          ownerName.isNotEmpty ? ownerName[0].toUpperCase() : '?',
+                          _getInitials(ownerName),
                           style: const TextStyle(
-                            color: Color(0xFF061524),
+                            color: Colors.white,
                             fontWeight: FontWeight.w900,
-                            fontSize: 18,
+                            fontSize: 16,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
@@ -1216,7 +1339,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   child: const Text(
                                     'НЕАКТИВНИЙ',
                                     style: TextStyle(
-                                      color: Color(0xFF94A3B8),
+                                      color: Color(0xFF64748B),
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.5,
@@ -1227,21 +1350,25 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                                    color: isDark
+                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                                        : const Color(0xFFFEF3C7),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                                      color: isDark
+                                          ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
+                                          : const Color(0xFFFDE68A),
                                     ),
                                   ),
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(LucideIcons.alertTriangle, size: 10, color: Color(0xFFF59E0B)),
+                                      Icon(LucideIcons.alertTriangle, size: 10, color: Color(0xFFD97706)),
                                       SizedBox(width: 4),
                                       Text(
                                         'ЗАКІНЧУЄТЬСЯ',
                                         style: TextStyle(
-                                          color: Color(0xFFF59E0B),
+                                          color: Color(0xFFD97706),
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 0.5,
@@ -1258,14 +1385,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               Icon(
                                 LucideIcons.user,
                                 size: 11,
-                                color: currentTheme.textSecondary,
+                                color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   clientName,
                                   style: TextStyle(
-                                    color: currentTheme.textSecondary,
+                                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1275,13 +1402,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               if (phone.isNotEmpty && phone != 'Немає номеру') ...[
                                 Text(
                                   ' • ',
-                                  style: TextStyle(color: currentTheme.textMuted),
+                                  style: TextStyle(color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.5) : const Color(0xFF94A3B8)),
                                 ),
                                 Text(
                                   phone,
                                   style: TextStyle(
-                                    color: currentTheme.textSecondary,
+                                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                     fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -1302,7 +1430,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0),
+                      color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFBAE6FD),
+                      width: 1.1,
                     ),
                   ),
                   child: Column(
@@ -1325,14 +1454,22 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.16),
+                              color: isDark
+                                  ? accentColor.withValues(alpha: 0.20)
+                                  : (isExpiringSoon ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5)),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+                              border: Border.all(
+                                color: isDark
+                                    ? accentColor.withValues(alpha: 0.50)
+                                    : (isExpiringSoon ? const Color(0xFFFDE68A) : const Color(0xFFA7F3D0)),
+                              ),
                             ),
                             child: Text(
-                              '$remaining з ${sub.totalClasses} занять',
+                              '$remaining з ${sub.totalClasses} ${sub.totalClasses % 10 == 1 && sub.totalClasses % 100 != 11 ? "заняття" : "занять"}',
                               style: TextStyle(
-                                color: accentColor,
+                                color: isDark
+                                    ? accentColor
+                                    : (isExpiringSoon ? const Color(0xFFD97706) : const Color(0xFF047857)),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -1383,13 +1520,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 Icon(
                                   LucideIcons.calendarPlus,
                                   size: 12,
-                                  color: currentTheme.textSecondary,
+                                  color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
                                   'Придбано: $purchaseStr',
                                   style: TextStyle(
-                                    color: currentTheme.textSecondary,
+                                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1403,25 +1540,31 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 Icon(
                                   LucideIcons.calendarClock,
                                   size: 12,
-                                  color: isExpiringSoon ? const Color(0xFFF59E0B) : currentTheme.textSecondary,
+                                  color: isExpiringSoon
+                                      ? const Color(0xFFD97706)
+                                      : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
                                   'Діє до $expiryStr',
                                   style: TextStyle(
-                                    color: isExpiringSoon ? const Color(0xFFF59E0B) : currentTheme.textSecondary,
+                                    color: isExpiringSoon
+                                        ? const Color(0xFFD97706)
+                                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                                     fontSize: 11,
                                     fontWeight: isExpiringSoon ? FontWeight.w700 : FontWeight.w500,
                                   ),
                                 ),
                                 if (daysLeftStr.isNotEmpty) ...[
-                                  Text(' • ', style: TextStyle(color: currentTheme.textMuted)),
+                                  Text(' • ', style: TextStyle(color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.5) : const Color(0xFF94A3B8))),
                                   Text(
                                     daysLeftStr,
                                     style: TextStyle(
-                                      color: isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                                      color: isExpiringSoon
+                                          ? const Color(0xFFD97706)
+                                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ],
@@ -1451,13 +1594,27 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
                         decoration: BoxDecoration(
-                          color: (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: isDark ? 0.15 : 0.10),
+                          color: isDark
+                              ? (isExpiringSoon ? const Color(0xFFFBBF24) : const Color(0xFF00E5FF)).withValues(alpha: 0.15)
+                              : (isExpiringSoon ? const Color(0xFFFEF3C7) : const Color(0xFFE0F2FE)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.35),
+                            color: isDark
+                                ? (isExpiringSoon ? const Color(0xFFFBBF24) : const Color(0xFF00E5FF)).withValues(alpha: 0.40)
+                                : (isExpiringSoon ? const Color(0xFFFDE68A) : const Color(0xFFBAE6FD)),
+                            width: 1.1,
                           ),
+                          boxShadow: isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF0284C7)).withValues(alpha: 0.08),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1465,13 +1622,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             Icon(
                               LucideIcons.bellRing,
                               size: 13,
-                              color: isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                              color: isDark
+                                  ? (isExpiringSoon ? const Color(0xFFFBBF24) : const Color(0xFF00E5FF))
+                                  : (isExpiringSoon ? const Color(0xFFD97706) : const Color(0xFF0284C7)),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               isExpiringSoon ? 'Нагадати клієнту' : 'Повідомлення клієнту',
                               style: TextStyle(
-                                color: isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                                color: isExpiringSoon
+                                    ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B))
+                                    : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1541,19 +1702,23 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   const Color(0xFF0D2542).withValues(alpha: 0.50),
                 ]
               : [
-                  Colors.white.withValues(alpha: 0.95),
-                  const Color(0xFFFFF1F2).withValues(alpha: 0.90),
+                  Colors.white,
+                  const Color(0xFFFFF1F2),
                 ],
         ),
         border: Border.all(
-          color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.35),
+          color: isDark
+              ? const Color(0xFFF43F5E).withValues(alpha: 0.45)
+              : const Color(0xFFFECDD3),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF43F5E).withValues(alpha: 0.18),
+            color: isDark
+                ? const Color(0xFFF43F5E).withValues(alpha: 0.18)
+                : const Color(0xFFE11D48).withValues(alpha: 0.08),
             blurRadius: 16,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -1572,13 +1737,21 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFF43F5E), Color(0xFFFB7185)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? const [Color(0xFFF43F5E), Color(0xFFFB7185)]
+                              : const [Color(0xFFE11D48), Color(0xFFF43F5E)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: isDark ? 0.25 : 0.60),
+                          width: 1.1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
+                            color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.4 : 0.25),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -1586,11 +1759,12 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ),
                       child: Center(
                         child: Text(
-                          item.ownerName.isNotEmpty ? item.ownerName[0].toUpperCase() : '?',
+                          _getInitials(item.ownerName),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
-                            fontSize: 18,
+                            fontSize: 16,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ),
@@ -1603,9 +1777,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           Text(
                             item.ownerName,
                             style: TextStyle(
-                              color: currentTheme.textPrimary,
+                              color: isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
                               fontWeight: FontWeight.w800,
-                              fontSize: 15,
+                              fontSize: 15.5,
                               letterSpacing: 0.2,
                             ),
                           ),
@@ -1614,16 +1788,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             children: [
                               Icon(
                                 LucideIcons.user,
-                                size: 11,
-                                color: currentTheme.textSecondary,
+                                size: 12,
+                                color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 5),
                               Flexible(
                                 child: Text(
                                   '${item.clientName} • ${item.phone ?? "Немає тел."}',
                                   style: TextStyle(
-                                    color: currentTheme.textSecondary,
-                                    fontSize: 11.5,
+                                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1640,24 +1815,33 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
                 // Reason alert banner
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.16 : 0.10),
-                    borderRadius: BorderRadius.circular(10),
+                    color: isDark
+                        ? const Color(0xFFF43F5E).withValues(alpha: 0.18)
+                        : const Color(0xFFFFF1F2),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.35 : 0.25),
+                      color: isDark
+                          ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
+                          : const Color(0xFFFECDD3),
+                      width: 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(LucideIcons.circleAlert, color: Color(0xFFFB7185), size: 14),
+                      Icon(
+                        LucideIcons.circleAlert,
+                        color: isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           item.reason,
                           style: TextStyle(
-                            color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFE11D48),
-                            fontSize: 12,
+                            color: isDark ? const Color(0xFFFFE4E6) : const Color(0xFF9F1239),
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1677,34 +1861,51 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     phone: item.phone,
                     reason: item.reason,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    height: 46,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.35)
+                            : const Color(0xFF38BDF8).withValues(alpha: 0.60),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                          color: isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                              : const Color(0xFF0284C7).withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.bellRing, size: 15, color: Color(0xFF082F49)),
-                        SizedBox(width: 8),
+                        Icon(
+                          LucideIcons.bellRing,
+                          size: 16,
+                          color: isDark ? const Color(0xFF03192E) : Colors.white,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           'Надіслати нагадування',
                           style: TextStyle(
-                            color: Color(0xFF082F49),
-                            fontSize: 13,
+                            color: isDark ? const Color(0xFF03192E) : Colors.white,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
@@ -1731,11 +1932,20 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
           decoration: BoxDecoration(
-            color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.08) : currentTheme.glassCardBg,
+            color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.18) : currentTheme.cardBorder,
+              color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
             ),
+            boxShadow: currentTheme.isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1746,22 +1956,37 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 height: 60,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF00D2FF).withValues(alpha: 0.16),
-                      const Color(0xFF0072FF).withValues(alpha: 0.08),
-                    ],
+                    colors: currentTheme.isDark
+                        ? [
+                            const Color(0xFF00D2FF).withValues(alpha: 0.16),
+                            const Color(0xFF0072FF).withValues(alpha: 0.08),
+                          ]
+                        : [
+                            const Color(0xFFE0F2FE),
+                            const Color(0xFFBAE6FD).withValues(alpha: 0.5),
+                          ],
                   ),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF00D2FF).withValues(alpha: 0.25)),
+                  border: Border.all(
+                    color: currentTheme.isDark
+                        ? const Color(0xFF00D2FF).withValues(alpha: 0.25)
+                        : const Color(0xFFBAE6FD),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00D2FF).withValues(alpha: 0.12),
+                      color: currentTheme.isDark
+                          ? const Color(0xFF00D2FF).withValues(alpha: 0.12)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.12),
                       blurRadius: 16,
                     ),
                   ],
                 ),
                 child: Center(
-                  child: Icon(icon, size: 26, color: const Color(0xFF38BDF8)),
+                  child: Icon(
+                    icon,
+                    size: 26,
+                    color: currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1769,7 +1994,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: currentTheme.textPrimary,
+                  color: currentTheme.isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
@@ -1780,9 +2005,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: currentTheme.textSecondary,
+                  color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                   fontSize: 12.5,
                   height: 1.4,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

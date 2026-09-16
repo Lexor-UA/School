@@ -177,9 +177,39 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(
-                  '${'parent.hello'.tr()}, ${user?.name ?? 'Гість'} 👋',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: textColor, fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'parent.hello'.tr(),
+                          style: TextStyle(
+                            color: textSubColor,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('👋', style: TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user?.name ?? 'Гість',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 18.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
                 ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0),
               ),
               const SizedBox(width: 8),
@@ -188,15 +218,23 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               Stack(
                 children: [
                   Container(
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.92),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.white,
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
                         width: 1,
                       ),
                       boxShadow: isDark
-                          ? []
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ]
                           : [
                               BoxShadow(
                                 color: const Color(0xFF0284C7).withValues(alpha: 0.08),
@@ -206,16 +244,17 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                             ],
                     ),
                     child: IconButton(
-                      icon: Icon(LucideIcons.bell, color: textColor, size: 22),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(LucideIcons.bell, color: isDark ? const Color(0xFF00E5FF) : textColor, size: 19),
                       onPressed: () => _showNotifications(context, isDark),
                     ),
                   ).animate().fade(delay: 200.ms),
                   Positioned(
-                    right: 10,
-                    top: 10,
+                    right: 2,
+                    top: 2,
                     child: Container(
-                      width: 10,
-                      height: 10,
+                      width: 9,
+                      height: 9,
                       decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
                     ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1,1), end: const Offset(1.3,1.3), duration: 1.seconds),
                   ),
@@ -223,10 +262,49 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ],
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 28),
           
           // 2. MAIN CLASS CARDS
-          Text('Найближчі заняття', style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w700)),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(9),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(LucideIcons.calendarCheck, color: Colors.white, size: 14),
+                  ),
+                  const SizedBox(width: 9),
+                  Text(
+                    'Найближчі заняття',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           
           if (hasClassesToday)
@@ -247,28 +325,26 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
             },
           ),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
-          // 5. PROGRESS ROW
-          _buildActionRow(
+          // 4. AQUAPRO PROGRESS CARD
+          _buildProgressCard(
             context: context,
-            title: 'parent.progress'.tr(),
-            subtitle: '24 тренування · 15 км',
-            icon: LucideIcons.trendingUp,
             isDark: isDark,
+            accentColor: accentColor,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ParentProgressTab()),
               );
-            }
+            },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
-          // 6. 3D POOL SIMPLIFIED BUTTON
-          _build3DPoolButton(context, isDark, accentColor),
+          // 5. 3D POOL MAP CARD
+          _build3DPoolCard(context, isDark, accentColor),
 
-          const SizedBox(height: 140), // Space for bottom nav
+          const SizedBox(height: 120), // Space for bottom nav
         ],
       ),
     );
@@ -297,118 +373,237 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     
     final iconData = isParent ? LucideIcons.user : LucideIcons.baby;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white, width: 1.5),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(LucideIcons.waves, color: accentColor, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: isDark ? 0.15 : 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(iconData, size: 10, color: accentColor),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      personName.toUpperCase(),
-                                      style: TextStyle(
-                                        color: accentColor,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                '${DateFormat('HH:mm').format(nextClass.startTime)} - ${DateFormat('HH:mm').format(nextClass.endTime)}',
-                                style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          const Color(0xFF0E3D64).withValues(alpha: 0.60),
+                          const Color(0xFF092842).withValues(alpha: 0.72),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.95),
+                          const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? const Color(0xFF003B73).withValues(alpha: 0.35)
+                        : const Color(0xFF0284C7).withValues(alpha: 0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text('🏊 ${nextClass.title}', style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(
-                            nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка' ? 'HappyLand · ${nextClass.lane}' : 'HappyLand',
-                            style: TextStyle(color: textSubColor, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Деталі заняття будуть доступні незабаром")));
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color(0xFFF0F9FF),
-                      border: Border(
-                        top: BorderSide(
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFBAE6FD).withValues(alpha: 0.6),
+                          child: const Icon(LucideIcons.waves, color: Colors.white, size: 22),
                         ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('parent.open_class'.tr(), style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                        Icon(LucideIcons.arrowRight, color: accentColor, size: 16),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+                                          : const Color(0xFFE0F2FE),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                                            : const Color(0xFFBAE6FD),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(iconData, size: 11, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          personName.toUpperCase(),
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.clock,
+                                        size: 13,
+                                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${DateFormat('HH:mm').format(nextClass.startTime)} – ${DateFormat('HH:mm').format(nextClass.endTime)}',
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 7),
+                              Text(
+                                nextClass.title,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.mapPin,
+                                    size: 12,
+                                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
+                                        ? 'HappyLand · ${nextClass.lane}'
+                                        : 'HappyLand',
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  if (nextClass.coachName.isNotEmpty) ...[
+                                    const SizedBox(width: 10),
+                                    Icon(
+                                      (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
+                                          ? LucideIcons.clock
+                                          : LucideIcons.userCheck,
+                                      size: 12,
+                                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
+                                          ? 'Тренер призначається'
+                                          : nextClass.coachName,
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Деталі заняття будуть доступні незабаром")),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
+                          border: Border(
+                            top: BorderSide(
+                              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
+                              width: 0.9,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'parent.open_class'.tr(),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            Icon(
+                              LucideIcons.arrowRight,
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -416,156 +611,376 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
   }
 
   Widget _buildEmptyStateCard(BuildContext context, WidgetRef ref, bool isDark, Color accentColor, Color textColor) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white, width: 1.5),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-          ),
-          child: Column(
-            children: [
-              Icon(LucideIcons.calendarX2, color: isDark ? Colors.white54 : const Color(0xFF64748B), size: 32),
-              const SizedBox(height: 12),
-              Text('У вас немає запланованих занять.\nДодайте заняття в календарі!', textAlign: TextAlign.center, style: TextStyle(color: textColor, fontSize: 14)),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => ref.read(parentTabProvider.notifier).setTab(1), // Go to calendar tab
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text('Відкрити календар', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          const Color(0xFF0E3D64).withValues(alpha: 0.60),
+                          const Color(0xFF092842).withValues(alpha: 0.72),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.95),
+                          const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                        ],
                 ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? const Color(0xFF003B73).withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-            ],
+              child: Column(
+                children: [
+                  Icon(LucideIcons.calendarX2, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 34),
+                  const SizedBox(height: 12),
+                  Text(
+                    'У вас немає запланованих занять.\nДодайте заняття в календарі!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => ref.read(parentTabProvider.notifier).setTab(1),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                              : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.45),
+                          width: 0.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Відкрити календар',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     ).animate().fadeIn();
   }
 
-  Widget _buildActionRow({required BuildContext context, required String title, required String subtitle, required IconData icon, required bool isDark, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.90),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
-              boxShadow: isDark
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.06),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFF0284C7).withValues(alpha: 0.10),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: isDark ? Colors.white : const Color(0xFF0284C7), size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 15, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF475569), fontSize: 13)),
-                    ],
-                  ),
-                ),
-                Icon(LucideIcons.chevronRight, color: isDark ? Colors.white54 : const Color(0xFF64748B), size: 18),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ).animate().fadeIn(delay: 200.ms);
-  }
+  Widget _buildProgressCard({
+    required BuildContext context,
+    required bool isDark,
+    required Color accentColor,
+    required VoidCallback onTap,
+  }) {
+    final cardBgColors = isDark
+        ? [
+            const Color(0xFF0E3D64).withValues(alpha: 0.60),
+            const Color(0xFF092842).withValues(alpha: 0.72),
+          ]
+        : [
+            Colors.white.withValues(alpha: 0.95),
+            const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+          ];
 
-  Widget _build3DPoolButton(BuildContext context, bool isDark, Color accentColor) {
+    final borderColor = isDark
+        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+        : const Color(0xFFBAE6FD);
+
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subColor = isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569);
+
     return Center(
-      child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PoolMapScreen())),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.92),
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.white,
-                  width: 1.2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: cardBgColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: borderColor, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? const Color(0xFF003B73).withValues(alpha: 0.35)
+                            : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                      if (isDark)
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Glowing Activity Badge
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            LucideIcons.activity,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Title & Subtitle
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'parent.progress'.tr() == 'parent.progress'
+                                  ? 'Мій прогрес'
+                                  : 'parent.progress'.tr(),
+                              style: TextStyle(
+                                color: titleColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'parent.progress_subtitle'.tr() == 'parent.progress_subtitle'
+                                  ? 'Особисті досягнення та активність'
+                                  : 'parent.progress_subtitle'.tr(),
+                              style: TextStyle(
+                                color: subColor,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Chevron Right
+                      Icon(
+                        LucideIcons.chevronRight,
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.75) : const Color(0xFF0284C7),
+                        size: 20,
+                      ),
+                    ],
+                  ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDark ? Colors.black : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.cyanAccent.withValues(alpha: 0.15) : const Color(0xFF0284C7).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(LucideIcons.box, size: 18, color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7)),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'parent.pool_map'.tr(),
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08, end: 0, curve: Curves.easeOutQuart);
+  }
+
+  Widget _build3DPoolCard(BuildContext context, bool isDark, Color accentColor) {
+    final cardBgColors = isDark
+        ? [
+            const Color(0xFF0E3D64).withValues(alpha: 0.60),
+            const Color(0xFF092842).withValues(alpha: 0.72),
+          ]
+        : [
+            Colors.white.withValues(alpha: 0.95),
+            const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+          ];
+
+    final borderColor = isDark
+        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+        : const Color(0xFFBAE6FD);
+
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subColor = isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PoolMapScreen())),
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: cardBgColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: borderColor, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? const Color(0xFF003B73).withValues(alpha: 0.35)
+                            : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                      if (isDark)
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Glowing 3D Pool Badge
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.40),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            LucideIcons.box,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Title & Subtitle
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'parent.pool_map'.tr() == 'parent.pool_map'
+                                  ? '3D Карта Басейну'
+                                  : 'parent.pool_map'.tr(),
+                              style: TextStyle(
+                                color: titleColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Інтерактивний план комплексу та доріжок',
+                              style: TextStyle(
+                                color: subColor,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Chevron Right
+                      Icon(
+                        LucideIcons.chevronRight,
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.75) : const Color(0xFF0284C7),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08, end: 0, curve: Curves.easeOutQuart);
   }
 }

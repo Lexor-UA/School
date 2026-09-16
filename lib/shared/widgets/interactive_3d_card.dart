@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 /// A premium interactive 3D card that tilts in space on touch/drag/hover,
@@ -11,6 +12,8 @@ class Interactive3DCard extends StatefulWidget {
   final bool enableHologram;
   final VoidCallback? onTap;
   final Duration springDuration;
+  final Color? shadowColor;
+  final Color? glowColor;
 
   const Interactive3DCard({
     super.key,
@@ -21,6 +24,8 @@ class Interactive3DCard extends StatefulWidget {
     this.enableHologram = false,
     this.onTap,
     this.springDuration = const Duration(milliseconds: 650),
+    this.shadowColor,
+    this.glowColor,
   });
 
   @override
@@ -62,24 +67,32 @@ class _Interactive3DCardState extends State<Interactive3DCard> with SingleTicker
     super.dispose();
   }
 
-  void _onPointerDown(PointerDownEvent event, BoxConstraints constraints) {
+  void _onInteractionStart(Offset localPosition, BoxConstraints constraints) {
     _springController.stop();
     _isInteracting = true;
-    _updateTilt(event.localPosition, constraints);
+    _updateTilt(localPosition, constraints);
   }
 
-  void _onPointerMove(PointerMoveEvent event, BoxConstraints constraints) {
-    _updateTilt(event.localPosition, constraints);
+  void _onInteractionUpdate(Offset localPosition, BoxConstraints constraints) {
+    _updateTilt(localPosition, constraints);
   }
 
-  void _onPointerUp(PointerUpEvent event) {
+  void _onInteractionEnd() {
     _isInteracting = false;
     _releaseSpring();
   }
 
-  void _onPointerCancel(PointerCancelEvent event) {
-    _isInteracting = false;
-    _releaseSpring();
+  void _onHover(Offset localPosition, BoxConstraints constraints) {
+    if (!_isInteracting) {
+      _springController.stop();
+      _updateTilt(localPosition, constraints);
+    }
+  }
+
+  void _onHoverExit() {
+    if (!_isInteracting) {
+      _releaseSpring();
+    }
   }
 
   void _updateTilt(Offset localPosition, BoxConstraints constraints) {
@@ -115,6 +128,16 @@ class _Interactive3DCardState extends State<Interactive3DCard> with SingleTicker
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final baseShadowColor = widget.shadowColor ??
+            (isDark
+                ? Colors.black.withValues(alpha: _isInteracting ? 0.45 : 0.28)
+                : const Color(0xFF003B73).withValues(alpha: _isInteracting ? 0.20 : 0.12));
+        final baseGlowColor = widget.glowColor ??
+            (isDark
+                ? const Color(0xFF00E5FF).withValues(alpha: _isInteracting ? 0.22 : 0.10)
+                : const Color(0xFF0284C7).withValues(alpha: _isInteracting ? 0.12 : 0.05));
+
         final rotX = -_currentTilt.dy * widget.maxTiltAngle;
         final rotY = _currentTilt.dx * widget.maxTiltAngle;
 
@@ -129,37 +152,46 @@ class _Interactive3DCardState extends State<Interactive3DCard> with SingleTicker
         final shadowDy = 10.0 - _currentTilt.dy * 12.0;
         final shadowBlur = 24.0 + (_isInteracting ? 8.0 : 0.0);
 
-        return Listener(
-          onPointerDown: (e) => _onPointerDown(e, constraints),
-          onPointerMove: (e) => _onPointerMove(e, constraints),
-          onPointerUp: _onPointerUp,
-          onPointerCancel: _onPointerCancel,
-          child: GestureDetector(
-            onTap: widget.onTap,
-            behavior: HitTestBehavior.opaque,
+        return RawGestureDetector(
+          gestures: <Type, GestureRecognizerFactory>{
+            Card3DGestureRecognizer: GestureRecognizerFactoryWithHandlers<Card3DGestureRecognizer>(
+              () => Card3DGestureRecognizer(),
+              (Card3DGestureRecognizer instance) {
+                instance.onDown = (loc) => _onInteractionStart(loc, constraints);
+                instance.onUpdate = (loc) => _onInteractionUpdate(loc, constraints);
+                instance.onUp = _onInteractionEnd;
+                instance.onCancel = _onInteractionEnd;
+                instance.onTap = widget.onTap;
+              },
+            ),
+          },
+          behavior: HitTestBehavior.opaque,
+          child: MouseRegion(
+            onHover: (e) => _onHover(e.localPosition, constraints),
+            onExit: (_) => _onHoverExit(),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: _isInteracting ? 0.45 : 0.28),
-                    blurRadius: shadowBlur,
-                    offset: Offset(shadowDx, shadowDy),
-                    spreadRadius: _isInteracting ? 2.0 : -2.0,
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    borderRadius: radius,
+                    boxShadow: [
+                      BoxShadow(
+                        color: baseShadowColor,
+                        blurRadius: shadowBlur,
+                        offset: Offset(shadowDx, shadowDy),
+                        spreadRadius: _isInteracting ? 2.0 : -2.0,
+                      ),
+                      BoxShadow(
+                        color: baseGlowColor,
+                        blurRadius: 28,
+                        offset: Offset(shadowDx * 0.5, shadowDy * 0.5),
+                      ),
+                    ],
                   ),
-                  BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: _isInteracting ? 0.22 : 0.10),
-                    blurRadius: 28,
-                    offset: Offset(shadowDx * 0.5, shadowDy * 0.5),
-                  ),
-                ],
-              ),
-              child: Transform(
-                transform: matrix,
-                alignment: FractionalOffset.center,
-                child: ClipRRect(
+                  child: Transform(
+                    transform: matrix,
+                    alignment: FractionalOffset.center,
+                    child: ClipRRect(
                   borderRadius: radius,
                   child: Stack(
                     children: [
@@ -316,4 +348,80 @@ class _SpecularReflectionOverlay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Custom OneSequenceGestureRecognizer that claims the Flutter gesture arena
+/// as soon as the user drags/swipes across the card, thereby blocking the parent
+/// scroll view (ListView / SingleChildScrollView / PageView) from scrolling
+/// while the user is interacting with the 3D card on mobile devices.
+class Card3DGestureRecognizer extends OneSequenceGestureRecognizer {
+  Card3DGestureRecognizer({super.debugOwner});
+
+  void Function(Offset localPosition)? onDown;
+  void Function(Offset localPosition)? onUpdate;
+  VoidCallback? onUp;
+  VoidCallback? onCancel;
+  VoidCallback? onTap;
+
+  Offset? _startGlobalPosition;
+  DateTime? _pointerDownTime;
+  bool _hasMoved = false;
+  bool _rejected = false;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    startTrackingPointer(event.pointer, event.transform);
+    _startGlobalPosition = event.position;
+    _pointerDownTime = DateTime.now();
+    _hasMoved = false;
+    _rejected = false;
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event is PointerDownEvent) {
+      onDown?.call(event.localPosition);
+    } else if (event is PointerMoveEvent) {
+      if (_startGlobalPosition != null) {
+        final distance = (event.position - _startGlobalPosition!).distance;
+        if (distance >= 4.0 && !_hasMoved) {
+          _hasMoved = true;
+          // Claim the gesture arena exclusively! This prevents parent ListView/SingleChildScrollView
+          // from intercepting the drag and scrolling the page on mobile devices.
+          resolve(GestureDisposition.accepted);
+        }
+      }
+      onUpdate?.call(event.localPosition);
+    } else if (event is PointerUpEvent) {
+      final now = DateTime.now();
+      final duration = _pointerDownTime != null ? now.difference(_pointerDownTime!) : Duration.zero;
+
+      if (!_hasMoved && !_rejected && duration.inMilliseconds < 450) {
+        onTap?.call();
+      }
+      onUp?.call();
+      stopTrackingPointer(event.pointer);
+    } else if (event is PointerCancelEvent) {
+      onCancel?.call();
+      stopTrackingPointer(event.pointer);
+    }
+  }
+
+  @override
+  void acceptGesture(int pointer) {
+    super.acceptGesture(pointer);
+    _rejected = false;
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    super.rejectGesture(pointer);
+    _rejected = true;
+  }
+
+  @override
+  String get debugDescription => 'Card3DGestureRecognizer';
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
 }

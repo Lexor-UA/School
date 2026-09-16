@@ -12,6 +12,7 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/shared/widgets/subscription_flip_card.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
 class ParentSubscriptionTab extends ConsumerStatefulWidget {
   const ParentSubscriptionTab({super.key});
@@ -84,7 +85,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     }
   }
 
-  void _showPaymentSheet(String userId, String effectiveOwner) {
+  void _showPaymentSheet(String userId, String effectiveOwner, bool isDark, AppThemeConfig themeConfig) {
     String? selectedService;
 
     showModalBottomSheet(
@@ -111,14 +112,19 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFF0F1E32).withValues(alpha: 0.94),
-                        const Color(0xFF070E1A).withValues(alpha: 0.98),
-                      ],
+                      colors: isDark
+                          ? [
+                              const Color(0xFF0E3D64).withValues(alpha: 0.94),
+                              const Color(0xFF092842).withValues(alpha: 0.98),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.96),
+                              const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                            ],
                     ),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.18),
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
                       width: 1.2,
                     ),
                   ),
@@ -132,7 +138,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           height: 4,
                           margin: const EdgeInsets.only(bottom: 24),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF94A3B8),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -150,7 +156,11 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           const SizedBox(width: 12),
                           Text(
                             'parent.choose_subscription'.tr(),
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : themeConfig.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -181,27 +191,27 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                   gradient: LinearGradient(
                                     colors: isSelected
                                         ? [
-                                            AppTheme.accentTeal.withValues(alpha: 0.22),
-                                            AppTheme.accentTeal.withValues(alpha: 0.08),
+                                            (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9)).withValues(alpha: isDark ? 0.22 : 0.16),
+                                            const Color(0xFF0284C7).withValues(alpha: isDark ? 0.10 : 0.06),
                                           ]
                                         : [
-                                            Colors.white.withValues(alpha: 0.06),
-                                            Colors.white.withValues(alpha: 0.02),
+                                            isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.85),
+                                            isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white.withValues(alpha: 0.60),
                                           ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   border: Border.all(
                                     color: isSelected
-                                        ? AppTheme.accentTeal
-                                        : Colors.white.withValues(alpha: 0.12),
+                                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                        : (isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFBAE6FD)),
                                     width: isSelected ? 1.5 : 1.0,
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: isSelected
                                       ? [
                                           BoxShadow(
-                                            color: AppTheme.accentTeal.withValues(alpha: 0.25),
+                                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.15),
                                             blurRadius: 12,
                                             offset: const Offset(0, 3),
                                           ),
@@ -216,13 +226,13 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: isSelected ? AppTheme.accentTeal : Colors.white38,
+                                          color: isSelected ? (isDark ? AppTheme.accentTeal : const Color(0xFF0284C7)) : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
                                           width: 2,
                                         ),
-                                        color: isSelected ? AppTheme.accentTeal : Colors.transparent,
+                                        color: isSelected ? (isDark ? AppTheme.accentTeal : const Color(0xFF0284C7)) : Colors.transparent,
                                       ),
                                       child: isSelected
-                                          ? const Icon(LucideIcons.check, size: 14, color: Colors.black)
+                                          ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
                                           : null,
                                     ),
                                     const SizedBox(width: 14),
@@ -230,7 +240,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                       child: Text(
                                         serviceName,
                                         style: TextStyle(
-                                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                                          color: isDark ? (isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9)) : themeConfig.textPrimary,
                                           fontSize: 14,
                                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                                         ),
@@ -240,17 +250,17 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
-                                        color: Colors.greenAccent.withValues(alpha: 0.15),
+                                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.15 : 0.12),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                          color: Colors.greenAccent.withValues(alpha: 0.35),
+                                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.40),
                                           width: 1,
                                         ),
                                       ),
                                       child: Text(
                                         service['price'],
-                                        style: const TextStyle(
-                                          color: Colors.greenAccent,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.greenAccent : const Color(0xFF047857),
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -270,17 +280,20 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         decoration: BoxDecoration(
                           gradient: totalPrice > 0 && selectedService != null
                               ? const LinearGradient(
-                                  colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 )
                               : null,
                           borderRadius: BorderRadius.circular(18),
+                          border: totalPrice > 0 && selectedService != null
+                              ? Border.all(color: Colors.white.withValues(alpha: 0.30), width: 1.2)
+                              : null,
                           boxShadow: totalPrice > 0 && selectedService != null
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
-                                    blurRadius: 16,
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                    blurRadius: 18,
                                     offset: const Offset(0, 4),
                                   ),
                                 ]
@@ -364,6 +377,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         title: Text('parent.my_subscription'.tr()),
         titleTextStyle: TextStyle(
@@ -371,6 +387,12 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 14),
+            child: ThemeHeaderButton(size: 38),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -380,61 +402,96 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             const SizedBox(height: 12),
             
             // Filters
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: filterOwners.map((owner) {
-                  final isSelected = effectiveOwner == owner['id'];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            owner['isParent'] == true ? LucideIcons.user : LucideIcons.baby,
-                            size: 16,
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark ? Colors.white70 : themeConfig.textSecondary),
+            Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: filterOwners.map((owner) {
+                    final isSelected = effectiveOwner == owner['id'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedOwner = owner['id'] as String;
+                              _currentIndex = 0;
+                              if (_pageController.hasClients) {
+                                _pageController.jumpToPage(0);
+                              }
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? LinearGradient(
+                                      colors: [
+                                        (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9)).withValues(alpha: isDark ? 0.32 : 0.20),
+                                        const Color(0xFF0284C7).withValues(alpha: isDark ? 0.20 : 0.10),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
+                              color: isSelected
+                                  ? null
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.white.withValues(alpha: 0.85)),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected
+                                    ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7).withValues(alpha: 0.60))
+                                    : (isDark
+                                        ? Colors.white.withValues(alpha: 0.15)
+                                        : const Color(0xFFBAE6FD)),
+                                width: isSelected ? 1.2 : 1.0,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.16),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  owner['isParent'] == true ? LucideIcons.user : LucideIcons.baby,
+                                  size: 15,
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                      : (isDark ? Colors.white70 : themeConfig.textSecondary),
+                                ),
+                                const SizedBox(width: 7),
+                                Text(
+                                  owner['name'] as String,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? (isDark ? Colors.white : const Color(0xFF0369A1))
+                                        : (isDark ? Colors.white70 : themeConfig.textPrimary),
+                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: 6),
-                          Text(owner['name'] as String),
-                        ],
+                        ),
                       ),
-                      selected: isSelected,
-                      selectedColor: isDark ? AppTheme.accentTeal : const Color(0xFF0284C7),
-                      backgroundColor: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.white.withValues(alpha: 0.85),
-                      side: BorderSide(
-                        color: isSelected
-                            ? (isDark ? AppTheme.accentTeal : const Color(0xFF0284C7))
-                            : (isDark ? Colors.white24 : const Color(0xFFBAE6FD)),
-                        width: 1,
-                      ),
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white70 : themeConfig.textPrimary),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      ),
-                      onSelected: (val) {
-                        if (val) {
-                          setState(() {
-                            _selectedOwner = owner['id'] as String;
-                            _currentIndex = 0;
-                            // Optionally jump to page 0 if using page controller
-                            if (_pageController.hasClients) {
-                              _pageController.jumpToPage(0);
-                            }
-                          });
-                        }
-                      },
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -488,9 +545,17 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       height: 8.0,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? (isDark ? AppTheme.accentTeal : const Color(0xFF0284C7))
+                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                             : (isDark ? Colors.white24 : const Color(0xFFBAE6FD)),
                         borderRadius: BorderRadius.circular(4.0),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.5),
+                                  blurRadius: 6,
+                                ),
+                              ]
+                            : null,
                       ),
                     );
                   }),
@@ -499,143 +564,182 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             
             const SizedBox(height: 24),
 
-            // Info Details (VisionOS Frosted Glass Card)
+            // Info Details (Oceanic Sapphire Glass Panel)
             if (currentSub != null)
               ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                    padding: const EdgeInsets.all(18),
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: isDark
                             ? [
-                                const Color(0xFF0F1E32).withValues(alpha: 0.88),
-                                const Color(0xFF070E1A).withValues(alpha: 0.95),
+                                const Color(0xFF0E3D64).withValues(alpha: 0.60),
+                                const Color(0xFF092842).withValues(alpha: 0.75),
                               ]
                             : [
-                                Colors.white.withValues(alpha: 0.92),
-                                const Color(0xFFF0F9FF).withValues(alpha: 0.88),
+                                Colors.white.withValues(alpha: 0.95),
+                                const Color(0xFFF0F9FF).withValues(alpha: 0.90),
                               ],
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.white,
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
                         width: 1.2,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isDark ? Colors.black : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF003B73).withValues(alpha: 0.35),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                     child: Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'parent.owner'.tr(),
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : themeConfig.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                        // Row 1: Власник
+                        _buildDetailRow(
+                          icon: LucideIcons.user,
+                          label: 'parent.owner'.tr(),
+                          valueWidget: Text(
+                            currentSub.ownerName ?? 'Клієнт',
+                            style: TextStyle(
+                              color: themeConfig.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
                             ),
-                            Text(
-                              currentSub.ownerName ?? 'Клієнт',
-                              style: TextStyle(
-                                color: themeConfig.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                          ),
+                          isDark: isDark,
+                          themeConfig: themeConfig,
+                          iconColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF2563EB),
                         ),
-                        Divider(color: isDark ? Colors.white12 : const Color(0xFF0284C7).withValues(alpha: 0.12), height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Залишилось занять',
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : themeConfig.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              '${currentSub.remainingClasses} з ${currentSub.totalClasses > 0 ? currentSub.totalClasses : currentSub.remainingClasses}',
-                              style: TextStyle(
-                                color: themeConfig.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Divider(color: isDark ? Colors.white12 : const Color(0xFF0284C7).withValues(alpha: 0.12), height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'parent.valid_until'.tr(),
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : themeConfig.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              currentSub.expiryDate != null
-                                  ? DateFormat('dd.MM.yyyy').format(currentSub.expiryDate!)
-                                  : 'parent.unlimited'.tr(),
-                              style: TextStyle(
-                                color: themeConfig.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Divider(color: isDark ? Colors.white12 : const Color(0xFF0284C7).withValues(alpha: 0.12), height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'parent.status'.tr(),
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : themeConfig.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.15),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.4 : 0.3),
-                                  width: 0.8,
+
+                        _buildRowDivider(isDark),
+
+                        // Row 2: Залишилось занять
+                        _buildDetailRow(
+                          icon: LucideIcons.waves,
+                          label: 'Залишилось занять',
+                          valueWidget: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${currentSub.remainingClasses}',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                'parent.active'.tr(),
-                                style: TextStyle(
-                                  color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                                TextSpan(
+                                  text: ' з ${currentSub.totalClasses > 0 ? currentSub.totalClasses : currentSub.remainingClasses}',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white70 : themeConfig.textPrimary,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
+                          isDark: isDark,
+                          themeConfig: themeConfig,
+                          iconColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        ),
+
+                        _buildRowDivider(isDark),
+
+                        // Row 3: Діє до
+                        _buildDetailRow(
+                          icon: LucideIcons.calendar,
+                          label: 'parent.valid_until'.tr(),
+                          valueWidget: Text(
+                            currentSub.expiryDate != null
+                                ? DateFormat('dd.MM.yyyy').format(currentSub.expiryDate!)
+                                : 'parent.unlimited'.tr(),
+                            style: TextStyle(
+                              color: themeConfig.textPrimary,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          isDark: isDark,
+                          themeConfig: themeConfig,
+                          iconColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1),
+                        ),
+
+                        _buildRowDivider(isDark),
+
+                        // Row 4: Статус
+                        _buildDetailRow(
+                          icon: LucideIcons.shieldCheck,
+                          label: 'parent.status'.tr(),
+                          valueWidget: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.16 : 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                                    : const Color(0xFF059669).withValues(alpha: 0.40),
+                                width: 0.9,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5.5),
+                                Text(
+                                  'parent.active'.tr(),
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          isDark: isDark,
+                          themeConfig: themeConfig,
+                          iconColor: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                         ),
                       ],
                     ),
@@ -647,45 +751,123 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
             // Action Button
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8.0),
+              margin: const EdgeInsets.symmetric(horizontal: 4.0),
               width: double.infinity,
-              height: 52,
+              height: 54,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
-                      ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
-                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                      : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.45),
+                  width: 1.2,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                    blurRadius: 14,
+                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.40 : 0.30),
+                    blurRadius: 18,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: ElevatedButton.icon(
-                onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner),
+                onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig),
                 icon: _isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
                 label: Text(
                   _isLoading ? 'parent.processing'.tr() : 'parent.pay_subscription'.tr(),
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.2),
+                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 ),
               ),
             ).animate().fadeIn(delay: 450.ms).scale(begin: const Offset(0.95, 0.95)),
             
             const SizedBox(height: 120), // spacing for bottom nav bar
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required Widget valueWidget,
+    required bool isDark,
+    required AppThemeConfig themeConfig,
+    Color? iconColor,
+    Color? iconBgColor,
+  }) {
+    final effectiveIconColor = iconColor ?? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7));
+    final effectiveIconBg = iconBgColor ?? effectiveIconColor.withValues(alpha: isDark ? 0.12 : 0.10);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: effectiveIconBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark
+                      ? effectiveIconColor.withValues(alpha: 0.25)
+                      : effectiveIconColor.withValues(alpha: 0.20),
+                  width: 0.8,
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 15,
+                color: effectiveIconColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDark ? const Color(0xFFB0D4EC) : themeConfig.textSecondary,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+        valueWidget,
+      ],
+    );
+  }
+
+  Widget _buildRowDivider(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  Colors.transparent,
+                  const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                  Colors.transparent,
+                ]
+              : [
+                  Colors.transparent,
+                  const Color(0xFF0284C7).withValues(alpha: 0.20),
+                  Colors.transparent,
+                ],
         ),
       ),
     );

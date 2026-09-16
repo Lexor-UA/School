@@ -76,47 +76,79 @@ class _ParentMainState extends ConsumerState<ParentMain> {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          margin: const EdgeInsets.only(left: 18, right: 18, bottom: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: themeConfig.accentPrimary.withValues(alpha: themeConfig.isDark ? 0.3 : 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              )
-            ],
+            boxShadow: themeConfig.isDark
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF003B73).withValues(alpha: 0.40),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.14),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
+                  duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
                     color: themeConfig.isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.white.withValues(alpha: 0.92),
+                        ? const Color(0xFF092842).withValues(alpha: 0.75)
+                        : Colors.white.withValues(alpha: 0.94),
                     border: Border.all(
                       color: themeConfig.isDark
-                          ? Colors.white.withValues(alpha: 0.2)
-                          : themeConfig.accentPrimary.withValues(alpha: 0.25),
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                          : const Color(0xFFBAE6FD),
+                      width: 1.2,
                     ),
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 7),
                   child: GNav(
                     rippleColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
                     hoverColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
-                    gap: 6,
+                    gap: 8,
                     activeColor: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
-                    iconSize: 22,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    duration: const Duration(milliseconds: 350),
+                    iconSize: 21,
+                    textStyle: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5,
+                      color: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
+                      letterSpacing: 0.2,
+                    ),
+                    tabBorderRadius: 18,
+                    tabActiveBorder: Border.all(
+                      color: themeConfig.isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                          : const Color(0xFFBAE6FD),
+                      width: 1.0,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    duration: const Duration(milliseconds: 300),
                     tabBackgroundColor: themeConfig.isDark
                         ? themeConfig.accentPrimary.withValues(alpha: 0.35)
-                        : const Color(0xFF0284C7).withValues(alpha: 0.15),
-                    color: themeConfig.isDark ? Colors.white70 : const Color(0xFF475569),
+                        : const Color(0xFF0284C7).withValues(alpha: 0.12),
+                    color: themeConfig.isDark ? Colors.white70 : const Color(0xFF64748B),
                     tabs: [
                       GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
                       GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_calendar'.tr()),

@@ -84,16 +84,29 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(7),
+                                padding: const EdgeInsets.all(7.5),
                                 decoration: BoxDecoration(
-                                  color: themeConfig.isDark
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.2)
-                                      : const Color(0xFF0284C7).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                    width: 1.1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFF59E0B).withValues(alpha: themeConfig.isDark ? 0.35 : 0.28),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                child: Icon(
+                                child: const Icon(
                                   LucideIcons.bellRing,
-                                  color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  color: Colors.white,
                                   size: 16,
                                 ),
                               ),
@@ -189,8 +202,8 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                     end: Alignment.bottomRight,
                     colors: themeConfig.isDark
                         ? [
-                            Colors.white.withValues(alpha: 0.12),
-                            Colors.white.withValues(alpha: 0.04),
+                            const Color(0xFF0F2D50),
+                            const Color(0xFF081C33),
                           ]
                         : [
                             Colors.white.withValues(alpha: 0.78),
@@ -200,14 +213,14 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: themeConfig.isDark
-                        ? Colors.white.withValues(alpha: 0.18)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
                         : Colors.white.withValues(alpha: 0.95),
                     width: 1.1,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: themeConfig.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.14)
                           : const Color(0xFF003B73).withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
@@ -224,20 +237,53 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                       behavior: HitTestBehavior.opaque,
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: todayCount > 0
-                                    ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                                    : [
-                                        themeConfig.isDark ? Colors.white24 : const Color(0xFFCBD5E1),
-                                        themeConfig.isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                                      ],
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7.5),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                    width: 1.1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFF59E0B).withValues(alpha: themeConfig.isDark ? 0.35 : 0.30),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(LucideIcons.bellRing, color: Colors.white, size: 16),
                               ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(LucideIcons.bellRing, color: Colors.white, size: 15),
+                              if (todayCount > 0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    width: 9,
+                                    height: 9,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF4444),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 1.5),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFFEF4444).withValues(alpha: 0.60),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -486,19 +532,19 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: themeConfig.isDark
-            ? Colors.white.withValues(alpha: 0.06)
+            ? const Color(0xFF0B223D).withValues(alpha: 0.70)
             : Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: themeConfig.isDark
-              ? Colors.white.withValues(alpha: 0.14)
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
               : const Color(0xFFBAE6FD).withValues(alpha: 0.70),
           width: 1.1,
         ),
         boxShadow: [
           BoxShadow(
             color: themeConfig.isDark
-                ? Colors.black.withValues(alpha: 0.20)
+                ? Colors.black.withValues(alpha: 0.35)
                 : const Color(0xFF0284C7).withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 3),

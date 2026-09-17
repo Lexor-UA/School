@@ -68,20 +68,30 @@ class _ThemeHeaderButtonState extends ConsumerState<ThemeHeaderButton>
                 height: widget.size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  gradient: isDark
+                      ? LinearGradient(
+                          colors: [
+                            const Color(0xFF1E3A8A).withValues(alpha: _isHovered ? 0.85 : 0.65),
+                            const Color(0xFF0F172A).withValues(alpha: 0.90),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
                   color: isDark
-                      ? Colors.white.withValues(alpha: _isHovered ? 0.22 : 0.12)
+                      ? null
                       : Colors.white.withValues(alpha: _isHovered ? 0.95 : 0.85),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withValues(alpha: 0.20)
+                        ? const Color(0xFF38BDF8).withValues(alpha: _isHovered ? 0.70 : 0.45)
                         : currentTheme.accentPrimary.withValues(alpha: 0.35),
                     width: 1.2,
                   ),
                   boxShadow: isDark
                       ? [
                           BoxShadow(
-                            color: currentTheme.accentPrimary.withValues(alpha: glowAlpha),
-                            blurRadius: _isHovered ? 14 : (8 + pulse * 6),
+                            color: const Color(0xFF38BDF8).withValues(alpha: glowAlpha + 0.10),
+                            blurRadius: _isHovered ? 16 : (10 + pulse * 6),
                             spreadRadius: glowSpread,
                           ),
                         ]
@@ -110,8 +120,16 @@ class _ThemeHeaderButtonState extends ConsumerState<ThemeHeaderButton>
                     child: Icon(
                       isDark ? LucideIcons.moon : LucideIcons.sun,
                       key: ValueKey(isDark ? 'moon' : 'sun'),
-                      color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       size: widget.size * 0.50,
+                      shadows: isDark
+                          ? [
+                              const Shadow(
+                                color: Color(0xFF00E5FF),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 ),

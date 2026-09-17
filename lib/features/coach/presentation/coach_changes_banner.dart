@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/class_activity.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 class CoachChangesBanner extends ConsumerStatefulWidget {
   const CoachChangesBanner({super.key});
@@ -35,7 +36,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
     }
   }
 
-  void _showAllActivitiesModal(BuildContext context, List<ClassActivity> activities) {
+  void _showAllActivitiesModal(BuildContext context, List<ClassActivity> activities, AppThemeConfig themeConfig) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -43,9 +44,16 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF09182B).withValues(alpha: 0.96),
+            color: themeConfig.isDark
+                ? const Color(0xFF09182B).withValues(alpha: 0.96)
+                : const Color(0xFFF0F9FF).withValues(alpha: 0.98),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35), width: 1.2),
+            border: Border.all(
+              color: themeConfig.isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                  : const Color(0xFF0284C7).withValues(alpha: 0.35),
+              width: 1.2,
+            ),
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
@@ -64,7 +72,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                           width: 44,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.white24,
+                            color: themeConfig.isDark ? Colors.white24 : const Color(0xFF94A3B8),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -78,16 +86,22 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                               Container(
                                 padding: const EdgeInsets.all(7),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                                  color: themeConfig.isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.2)
+                                      : const Color(0xFF0284C7).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(LucideIcons.bellRing, color: Color(0xFF00E5FF), size: 16),
+                                child: Icon(
+                                  LucideIcons.bellRing,
+                                  color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  size: 16,
+                                ),
                               ),
                               const SizedBox(width: 10),
-                              const Text(
+                              Text(
                                 'ІСТОРІЯ ЗМІН ТА ОНОВЛЕНЬ',
                                 style: TextStyle(
-                                  color: Color(0xFF00E5FF),
+                                  color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.2,
@@ -96,7 +110,11 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                             ],
                           ),
                           IconButton(
-                            icon: const Icon(LucideIcons.x, color: Colors.white70, size: 20),
+                            icon: Icon(
+                              LucideIcons.x,
+                              color: themeConfig.isDark ? Colors.white70 : themeConfig.textMuted,
+                              size: 20,
+                            ),
                             onPressed: () => Navigator.pop(ctx),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -106,17 +124,17 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                       const SizedBox(height: 14),
                       Expanded(
                         child: activities.isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Text(
                                   'Змін за останній час не зафіксовано',
-                                  style: TextStyle(color: Colors.white54),
+                                  style: TextStyle(color: themeConfig.textMuted),
                                 ),
                               )
                             : ListView.separated(
                                 physics: const BouncingScrollPhysics(),
                                 itemCount: activities.length,
                                 separatorBuilder: (context, index) => const SizedBox(height: 10),
-                                itemBuilder: (context, index) => _buildActivityItem(activities[index]),
+                                itemBuilder: (context, index) => _buildActivityItem(activities[index], themeConfig),
                               ),
                       ),
                     ],
@@ -133,6 +151,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
+    final themeConfig = ref.watch(appThemeControllerProvider);
     final activitiesAsync = ref.watch(classActivitiesStreamProvider);
 
     return activitiesAsync.when(
@@ -159,28 +178,42 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: todayCount > 0
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                  : Colors.white.withValues(alpha: 0.12),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (todayCount > 0 ? const Color(0xFF00E5FF) : Colors.black).withValues(alpha: 0.18),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Padding(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: themeConfig.isDark
+                        ? [
+                            Colors.white.withValues(alpha: 0.12),
+                            Colors.white.withValues(alpha: 0.04),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.78),
+                            Colors.white.withValues(alpha: 0.62),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: themeConfig.isDark
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.95),
+                    width: 1.1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: themeConfig.isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                          : const Color(0xFF003B73).withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,31 +230,34 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                               gradient: LinearGradient(
                                 colors: todayCount > 0
                                     ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                                    : [Colors.white24, Colors.white12],
+                                    : [
+                                        themeConfig.isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                                        themeConfig.isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                      ],
                               ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(LucideIcons.bellRing, color: Colors.white, size: 15),
                           ),
                           const SizedBox(width: 10),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'ОСТАННІ ЗМІНИ ПО ЗАНЯТТЯХ',
                                   style: TextStyle(
-                                    color: Color(0xFF00E5FF),
+                                    color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.2,
                                   ),
                                 ),
-                                SizedBox(height: 1),
+                                const SizedBox(height: 1),
                                 Text(
                                   'Записи, скасування та оновлення',
                                   style: TextStyle(
-                                    color: Colors.white70,
+                                    color: themeConfig.textSecondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -239,8 +275,8 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                               ),
                               child: Text(
                                 '+$todayCount сьогодні',
-                                style: const TextStyle(
-                                  color: Color(0xFF10B981),
+                                style: TextStyle(
+                                  color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -248,10 +284,31 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                             ),
                             const SizedBox(width: 8),
                           ],
-                          Icon(
-                            _isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                            color: Colors.white60,
-                            size: 18,
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: themeConfig.isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.10),
+                              border: Border.all(
+                                color: themeConfig.isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                    : const Color(0xFF0284C7).withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Center(
+                              child: AnimatedRotation(
+                                turns: _isExpanded ? 0.5 : 0.0,
+                                duration: const Duration(milliseconds: 250),
+                                child: Icon(
+                                  LucideIcons.chevronDown,
+                                  color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  size: 16,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -262,44 +319,109 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                     // Activities list
                     ...topActivities.map((act) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: _buildActivityItem(act),
+                          child: _buildActivityItem(act, themeConfig),
                         )),
 
                     // Bottom actions
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        TextButton(
-                          onPressed: () => setState(() => _isExpanded = !_isExpanded),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(50, 30),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            _isExpanded ? 'Згорнути' : 'Показати ще (${activities.length})',
-                            style: const TextStyle(
-                              color: Color(0xFF00E5FF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => setState(() => _isExpanded = !_isExpanded),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                              decoration: BoxDecoration(
+                                color: themeConfig.isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.white.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: themeConfig.isDark
+                                      ? Colors.white.withValues(alpha: 0.16)
+                                      : const Color(0xFF0284C7).withValues(alpha: 0.30),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: themeConfig.isDark ? 0.0 : 0.05),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _isExpanded ? 'Згорнути' : 'Показати ще (${activities.length})',
+                                    style: TextStyle(
+                                      color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                                    size: 13,
+                                    color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => _showAllActivitiesModal(context, activities),
-                          child: const Row(
-                            children: [
-                              Text(
-                                'Вся історія',
-                                style: TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showAllActivitiesModal(context, activities, themeConfig),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                              decoration: BoxDecoration(
+                                color: themeConfig.isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                                    : const Color(0xFFE0F2FE).withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: themeConfig.isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.32)
+                                      : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                                  width: 1.0,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: themeConfig.isDark ? 0.0 : 0.05),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
                               ),
-                              SizedBox(width: 4),
-                              Icon(LucideIcons.arrowRight, size: 13, color: Colors.white60),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Вся історія',
+                                    style: TextStyle(
+                                      color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    LucideIcons.arrowRight,
+                                    size: 12,
+                                    color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -316,56 +438,90 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
     );
   }
 
-  Widget _buildActivityItem(ClassActivity act) {
+  Widget _buildActivityItem(ClassActivity act, AppThemeConfig themeConfig) {
     Color iconColor;
+    Color badgeTextColor;
+    Color badgeBgColor;
     IconData iconData;
     String badgeText;
 
     switch (act.type) {
       case ClassActivityType.booking:
         iconColor = const Color(0xFF10B981);
+        badgeTextColor = themeConfig.isDark ? const Color(0xFF34D399) : const Color(0xFF047857);
+        badgeBgColor = const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.userPlus;
         badgeText = 'Запис';
         break;
       case ClassActivityType.cancellation:
-        iconColor = const Color(0xFFEF4444);
+        iconColor = const Color(0xFFF43F5E);
+        badgeTextColor = themeConfig.isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C);
+        badgeBgColor = const Color(0xFFF43F5E).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.userMinus;
         badgeText = 'Скасування';
         break;
       case ClassActivityType.rescheduled:
         iconColor = const Color(0xFFF59E0B);
+        badgeTextColor = themeConfig.isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309);
+        badgeBgColor = const Color(0xFFF59E0B).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.calendarClock;
         badgeText = 'Розклад';
         break;
       case ClassActivityType.classCancelled:
-        iconColor = const Color(0xFFE11D48);
+        iconColor = const Color(0xFFF43F5E);
+        badgeTextColor = themeConfig.isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C);
+        badgeBgColor = const Color(0xFFF43F5E).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.alertTriangle;
         badgeText = 'Заняття скасовано';
         break;
       default:
         iconColor = const Color(0xFF00E5FF);
+        badgeTextColor = themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+        badgeBgColor = const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.info;
         badgeText = 'Зміна';
     }
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: themeConfig.isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: themeConfig.isDark
+              ? Colors.white.withValues(alpha: 0.14)
+              : const Color(0xFFBAE6FD).withValues(alpha: 0.70),
+          width: 1.1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: themeConfig.isDark
+                ? Colors.black.withValues(alpha: 0.20)
+                : const Color(0xFF0284C7).withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.16),
+              color: iconColor.withValues(alpha: themeConfig.isDark ? 0.18 : 0.14),
               shape: BoxShape.circle,
-              border: Border.all(color: iconColor.withValues(alpha: 0.35)),
+              border: Border.all(color: iconColor.withValues(alpha: 0.40)),
+              boxShadow: [
+                BoxShadow(
+                  color: iconColor.withValues(alpha: themeConfig.isDark ? 0.28 : 0.16),
+                  blurRadius: 10,
+                ),
+              ],
             ),
-            child: Icon(iconData, color: iconColor, size: 14),
+            child: Icon(iconData, color: badgeTextColor, size: 14),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -376,48 +532,51 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(
-                        color: iconColor.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(6),
+                        color: badgeBgColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: iconColor.withValues(alpha: 0.45)),
                       ),
                       child: Text(
                         badgeText,
                         style: TextStyle(
-                          color: iconColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          color: badgeTextColor,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
                     Text(
                       _formatTimeAgo(act.timestamp),
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 10.5,
+                      style: TextStyle(
+                        color: themeConfig.textMuted,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   act.message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12.5,
+                  style: TextStyle(
+                    color: themeConfig.textPrimary,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
+                    height: 1.35,
                   ),
                 ),
                 if (act.parentPhone != null && act.parentPhone!.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(LucideIcons.phone, size: 11, color: Colors.white54),
+                      Icon(LucideIcons.phone, size: 11, color: themeConfig.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         act.parentPhone!,
-                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: themeConfig.textMuted, fontSize: 11),
                       ),
                     ],
                   ),

@@ -69,27 +69,40 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         ),
       ),
 
-      // 5. Floating Apple VisionOS Frosted Dock
+      // 5. Floating Apple VisionOS Frosted Dock (Luminous Liquid Glass)
       bottomNavigationBar: SafeArea(
         child: Container(
-          margin: const EdgeInsets.only(left: 14, right: 14, bottom: 16),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: themeConfig.isDark
-                    ? Colors.black.withValues(alpha: 0.45)
-                    : const Color(0xFF0F172A).withValues(alpha: 0.08),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
-              ),
-              if (themeConfig.isDark)
-                BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                  blurRadius: 22,
-                  spreadRadius: 1,
-                ),
-            ],
+            boxShadow: themeConfig.isDark
+                ? [
+                    // Ambient ocean cyan aura dispelling any black look
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                      blurRadius: 28,
+                      spreadRadius: -2,
+                      offset: const Offset(0, 4),
+                    ),
+                    // Luminous royal ocean lift (rich deep sapphire depth)
+                    BoxShadow(
+                      color: const Color(0xFF021D38).withValues(alpha: 0.55),
+                      blurRadius: 22,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(32),
@@ -97,13 +110,24 @@ class _CoachMainState extends ConsumerState<CoachMain> {
               filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
               child: Container(
                 decoration: BoxDecoration(
-                  color: themeConfig.isDark
-                      ? const Color(0xFF0B1B30).withValues(alpha: 0.78)
-                      : Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(32),
+                  // Luminous aqua-sapphire frosted glass gradient (not black)
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: themeConfig.isDark
+                        ? [
+                            const Color(0xFF164472).withValues(alpha: 0.68),
+                            const Color(0xFF0A2542).withValues(alpha: 0.72),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.94),
+                            const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                          ],
+                  ),
                   border: Border.all(
                     color: themeConfig.isDark
-                        ? Colors.white.withValues(alpha: 0.16)
+                        ? const Color(0xFF38BDF8).withValues(alpha: 0.42)
                         : themeConfig.cardBorder,
                     width: 1.2,
                   ),
@@ -166,31 +190,43 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 15 : 12,
+          horizontal: isSelected ? 16 : 12,
           vertical: 10,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? (themeConfig.isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
-                  : themeConfig.accentPrimary.withValues(alpha: 0.12))
-              : Colors.transparent,
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: themeConfig.isDark
+                      ? [
+                          const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                          const Color(0xFF0284C7).withValues(alpha: 0.22),
+                        ]
+                      : [
+                          themeConfig.accentPrimary.withValues(alpha: 0.18),
+                          themeConfig.accentPrimary.withValues(alpha: 0.10),
+                        ],
+                )
+              : null,
+          color: isSelected ? null : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: isSelected
                 ? (themeConfig.isDark
-                    ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
-                    : themeConfig.accentPrimary.withValues(alpha: 0.40))
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.75)
+                    : themeConfig.accentPrimary.withValues(alpha: 0.50))
                 : Colors.transparent,
-            width: 1.2,
+            width: 1.3,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : themeConfig.accentPrimary).withValues(alpha: 0.20),
+                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : themeConfig.accentPrimary)
+                        .withValues(alpha: 0.35),
                     blurRadius: 14,
-                    spreadRadius: -2,
-                  )
+                    spreadRadius: -1,
+                  ),
                 ]
               : [],
         ),
@@ -202,7 +238,15 @@ class _CoachMainState extends ConsumerState<CoachMain> {
               size: 20,
               color: isSelected
                   ? (themeConfig.isDark ? const Color(0xFF00E5FF) : themeConfig.accentPrimary)
-                  : (themeConfig.isDark ? Colors.white60 : themeConfig.textMuted),
+                  : (themeConfig.isDark ? const Color(0xFFD4EEFC).withValues(alpha: 0.85) : themeConfig.textMuted),
+              shadows: isSelected && themeConfig.isDark
+                  ? [
+                      const Shadow(
+                        color: Color(0xFF00E5FF),
+                        blurRadius: 10,
+                      ),
+                    ]
+                  : null,
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
@@ -213,7 +257,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     label,
                     style: TextStyle(
                       color: themeConfig.isDark ? Colors.white : themeConfig.accentPrimary,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                       fontSize: 13,
                       letterSpacing: 0.4,
                     ),

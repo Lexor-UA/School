@@ -74,7 +74,8 @@ class _ThemeHeaderButtonState extends ConsumerState<ThemeHeaderButton>
                   border: Border.all(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.20)
-                        : currentTheme.accentPrimary.withValues(alpha: 0.30),
+                        : currentTheme.accentPrimary.withValues(alpha: 0.35),
+                    width: 1.2,
                   ),
                   boxShadow: isDark
                       ? [
@@ -86,8 +87,9 @@ class _ThemeHeaderButtonState extends ConsumerState<ThemeHeaderButton>
                         ]
                       : [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 6,
+                            color: const Color(0xFF0284C7).withValues(alpha: _isHovered ? 0.20 : 0.10),
+                            blurRadius: _isHovered ? 12 : 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                 ),

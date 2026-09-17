@@ -146,15 +146,25 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
             ),
             if (widget.showCameraIcon)
               Container(
-                decoration: const BoxDecoration(
-                  color: Colors.cyanAccent,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF030D1B),
+                    width: 2.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                      blurRadius: 6,
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.all(6),
-                child: const Icon(
+                padding: EdgeInsets.all(widget.radius <= 30 ? 3.5 : 5.5),
+                child: Icon(
                   Icons.camera_alt,
-                  color: Colors.black,
-                  size: 16,
+                  color: const Color(0xFF030D1B),
+                  size: widget.radius <= 30 ? 11 : 15,
                 ),
               ),
           ],

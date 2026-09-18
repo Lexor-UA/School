@@ -8,20 +8,37 @@ import 'package:swimming_school_app/features/parent/controllers/parent_notificat
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 
-class ParentNotificationsSheet extends ConsumerWidget {
+class ParentNotificationsSheet extends ConsumerStatefulWidget {
   const ParentNotificationsSheet({super.key});
 
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
       isScrollControlled: true,
+      useSafeArea: false,
       builder: (_) => const ParentNotificationsSheet(),
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ParentNotificationsSheet> createState() => _ParentNotificationsSheetState();
+}
+
+class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSheet> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(parentNotificationsControllerProvider.notifier).markAllAsRead();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notifState = ref.watch(parentNotificationsControllerProvider);
     final notifications = notifState.notifications;
     final themeConfig = ref.watch(appThemeControllerProvider);
@@ -29,205 +46,239 @@ class ParentNotificationsSheet extends ConsumerWidget {
     final textColor = themeConfig.textPrimary;
     final textSubColor = themeConfig.textSecondary;
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 500,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+          maxWidth: 550,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
         ),
         child: Container(
+          width: double.infinity,
           decoration: BoxDecoration(
             color: isDarkMode
-                ? const Color(0xFF09182B).withValues(alpha: 0.96)
-                : Colors.white.withValues(alpha: 0.98),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: isDarkMode
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                  : const Color(0xFFBAE6FD),
-              width: 1.2,
+                ? const Color(0xFF09182B)
+                : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border(
+              top: BorderSide(
+                color: isDarkMode
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                    : const Color(0xFFBAE6FD),
+                width: 1.2,
+              ),
+              left: BorderSide(
+                color: isDarkMode
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
+                    : const Color(0xFFBAE6FD),
+                width: 1.0,
+              ),
+              right: BorderSide(
+                color: isDarkMode
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
+                    : const Color(0xFFBAE6FD),
+                width: 1.0,
+              ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.6 : 0.2),
-                blurRadius: 32,
-                offset: const Offset(0, -6),
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.75 : 0.25),
+                blurRadius: 36,
+                offset: const Offset(0, -10),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Top handle
-                    Center(
-                      child: Container(
-                        width: 44,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.white24 : const Color(0xFFCBD5E1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Header row
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
+              child: SafeArea(
+                top: false,
+                bottom: true,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Top drag handle
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4.5,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(LucideIcons.bell, color: Colors.white, size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'parent.notifications'.tr() == 'parent.notifications'
-                                    ? 'Сповіщення'
-                                    : 'parent.notifications'.tr(),
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 18.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                notifState.hasUnread
-                                    ? 'Непрочитаних: ${notifState.unreadCount}'
-                                    : 'Усі сповіщення прочитані',
-                                style: TextStyle(
-                                  color: notifState.hasUnread
-                                      ? (isDarkMode ? const Color(0xFFFBBF24) : const Color(0xFFD97706))
-                                      : textSubColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (notifications.isNotEmpty)
-                          TextButton.icon(
-                            onPressed: () {
-                              ref.read(parentNotificationsControllerProvider.notifier).markAllAsRead();
-                            },
-                            icon: const Icon(LucideIcons.checkCheck, size: 15),
-                            label: const Text('Прочитати все', style: TextStyle(fontSize: 12)),
-                            style: TextButton.styleFrom(
-                              foregroundColor: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                          ),
-                        IconButton(
-                          icon: Icon(LucideIcons.x, color: textSubColor, size: 20),
-                          onPressed: () => Navigator.pop(context),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Notifications list
-                    Expanded(
-                      child: notifications.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(18),
-                                    decoration: BoxDecoration(
-                                      color: (isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                          .withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      LucideIcons.bellOff,
-                                      size: 38,
-                                      color: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Text(
-                                    'Сповіщень немає',
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Тут з\'являтимуться нагадування про заняття, абонементи та повідомлення',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: textSubColor, fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ListView.separated(
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: notifications.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 10),
-                              itemBuilder: (ctx, index) {
-                                final notif = notifications[index];
-                                return _buildNotificationCard(
-                                  context: context,
-                                  ref: ref,
-                                  notif: notif,
-                                  isDark: isDarkMode,
-                                  textColor: textColor,
-                                  textSubColor: textSubColor,
-                                );
-                              },
-                            ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Close Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                          side: BorderSide(
                             color: isDarkMode ? Colors.white24 : const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(3),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          'parent.close'.tr() == 'parent.close' ? 'Закрити' : 'parent.close'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+
+                      // Header row
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8.5),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(LucideIcons.bell, color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'parent.notifications'.tr() == 'parent.notifications'
+                                      ? 'Сповіщення'
+                                      : 'parent.notifications'.tr(),
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 18.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.checkCheck,
+                                      size: 13.5,
+                                      color: isDarkMode ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Усі сповіщення прочитані',
+                                      style: TextStyle(
+                                        color: isDarkMode ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Sleek Circular Glass Close Button (no redundant "Прочитати все")
+                          InkWell(
+                            onTap: () => Navigator.pop(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.12)
+                                      : const Color(0xFFCBD5E1),
+                                  width: 0.9,
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(LucideIcons.x, color: textSubColor, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notifications list
+                      Expanded(
+                        child: notifications.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(18),
+                                      decoration: BoxDecoration(
+                                        color: (isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                            .withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        LucideIcons.bellOff,
+                                        size: 38,
+                                        color: isDarkMode ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Text(
+                                      'Сповіщень немає',
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Тут з\'являтимуться нагадування про заняття, абонементи та повідомлення',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: textSubColor, fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: notifications.length,
+                                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                                itemBuilder: (ctx, index) {
+                                  final notif = notifications[index];
+                                  return _buildNotificationCard(
+                                    context: context,
+                                    ref: ref,
+                                    notif: notif,
+                                    isDark: isDarkMode,
+                                    textColor: textColor,
+                                    textSubColor: textSubColor,
+                                  );
+                                },
+                              ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Close Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                            side: BorderSide(
+                              color: isDarkMode ? Colors.white24 : const Color(0xFFCBD5E1),
+                              width: 1.1,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'parent.close'.tr() == 'parent.close' ? 'Закрити' : 'parent.close'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

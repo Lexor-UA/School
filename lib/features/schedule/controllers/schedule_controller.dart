@@ -387,8 +387,10 @@ class ScheduleController extends _$ScheduleController {
       );
 
       if (subscription != null) {
+        final activeSub = subscription;
+        final String subId = activeSub.id;
         await FirebaseFirestore.instance.runTransaction((transaction) async {
-          final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subscription!.id);
+          final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subId);
           final subDoc = await transaction.get(subRef);
           
           if (!subDoc.exists) throw Exception("Subscription missing");
@@ -403,7 +405,7 @@ class ScheduleController extends _$ScheduleController {
           final classMap = newClass.toJson();
           if (enrolledChildIds.isNotEmpty) {
             classMap['bookedSubscriptions'] = {
-              enrolledChildIds.first: subscription.id,
+              enrolledChildIds.first: subId,
             };
           }
 

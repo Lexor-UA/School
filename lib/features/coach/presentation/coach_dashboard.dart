@@ -4574,33 +4574,37 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   }
 
   Widget _buildIdentityCard(AppUser user) {
+    final displayName = user.name.isNotEmpty
+        ? user.name
+        : (user.loginId?.isNotEmpty == true ? user.loginId! : 'coach.title'.tr());
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: _isLight
-                ? const Color(0xFF0284C7).withValues(alpha: 0.08)
-                : const Color(0xFF00E5FF).withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 3),
+                ? const Color(0xFF0284C7).withValues(alpha: 0.10)
+                : const Color(0xFF00E5FF).withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
           ),
           BoxShadow(
             color: _isLight
-                ? const Color(0xFF0F172A).withValues(alpha: 0.04)
-                : Colors.black.withValues(alpha: 0.35),
+                ? const Color(0xFF0F172A).withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.40),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -4615,173 +4619,215 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         const Color(0xFF07192F),
                       ],
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: _isLight
-                    ? const Color(0xFF0284C7).withValues(alpha: 0.30)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                width: 1.1,
+                    ? const Color(0xFF0284C7).withValues(alpha: 0.35)
+                    : const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                width: 1.2,
               ),
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Concentric Glowing Avatar
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: _isLight
-                          ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
-                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                            .withValues(alpha: _isLight ? 0.25 : 0.45),
-                        blurRadius: 8,
+                // Upper Tier: Avatar, Coach Name, Pro Rank, Theme Toggle Button
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Concentric Glowing Avatar
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: _isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                .withValues(alpha: _isLight ? 0.30 : 0.50),
+                            blurRadius: 10,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(1.5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isLight ? Colors.white : const Color(0xFF05172A),
+                      child: Container(
+                        padding: const EdgeInsets.all(1.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isLight ? Colors.white : const Color(0xFF05172A),
+                        ),
+                        child: const AvatarPicker(
+                          heroTag: 'hero_avatar_Тренерам_profile',
+                          radius: 25,
+                        ),
+                      ),
                     ),
-                    child: const AvatarPicker(
-                      heroTag: 'hero_avatar_Тренерам_profile',
-                      radius: 20,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 9),
+                    const SizedBox(width: 11),
 
-                // Coach Name, Pro Badge & Credentials
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
+                    // Coach Name and Pro Rank Badge
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Flexible(
-                            child: Text(
-                              user.name.isNotEmpty ? user.name : 'coach.title'.tr(),
-                              style: TextStyle(
-                                color: _isLight ? const Color(0xFF0F172A) : Colors.white,
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              color: _isLight ? const Color(0xFF0F172A) : Colors.white,
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.2,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(height: 3.5),
                           // Certified Coach Pro Rank Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: _isLight
-                                    ? const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)]
-                                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: _isLight
-                                    ? const Color(0xFF0284C7)
-                                    : Colors.white.withValues(alpha: 0.9),
-                                width: 0.9,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  LucideIcons.shieldCheck,
-                                  color: _isLight ? const Color(0xFF0369A1) : Colors.white,
-                                  size: 10,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: _isLight
+                                      ? const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)]
+                                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                 ),
-                                const SizedBox(width: 3.5),
-                                Text(
-                                  'coach.pro_rank'.tr(),
-                                  style: TextStyle(
+                                borderRadius: BorderRadius.circular(7),
+                                border: Border.all(
+                                  color: _isLight
+                                      ? const Color(0xFF0284C7)
+                                      : Colors.white.withValues(alpha: 0.9),
+                                  width: 0.9,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                        .withValues(alpha: _isLight ? 0.15 : 0.25),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.shieldCheck,
                                     color: _isLight ? const Color(0xFF0369A1) : Colors.white,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.3,
+                                    size: 11,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          // Online indicator beacon
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: _isLight
-                                  ? const Color(0xFFECFDF5)
-                                  : const Color(0xFF10B981).withValues(alpha: 0.20),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: _isLight
-                                    ? const Color(0xFF059669)
-                                    : const Color(0xFF10B981).withValues(alpha: 0.60),
-                                width: 0.9,
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'coach.pro_rank'.tr(),
+                                    style: TextStyle(
+                                      color: _isLight ? const Color(0xFF0369A1) : Colors.white,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 5.5,
-                                  height: 5.5,
-                                  decoration: BoxDecoration(
-                                    color: _isLight ? const Color(0xFF059669) : const Color(0xFF10B981),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 3.5),
-                                Text(
-                                  'Онлайн',
-                                  style: TextStyle(
-                                    color: _isLight ? const Color(0xFF047857) : const Color(0xFF10B981),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2.5),
+                    ),
+                    const SizedBox(width: 10),
 
-                      // Sleek Credentials Micro-Capsule
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    // Dedicated Theme Switcher Button (Top-Right, safe from badges)
+                    _buildThemeToggleBtn(),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // Lower Tier: Online Beacon & Credentials Micro-Capsule
+                Row(
+                  children: [
+                    // Online indicator beacon (Always completely visible, never truncated)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: _isLight
+                            ? const Color(0xFFECFDF5)
+                            : const Color(0xFF10B981).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _isLight
+                              ? const Color(0xFF059669)
+                              : const Color(0xFF10B981).withValues(alpha: 0.55),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withValues(alpha: _isLight ? 0.15 : 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF10B981),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Онлайн',
+                            style: TextStyle(
+                              color: _isLight ? const Color(0xFF047857) : const Color(0xFF34D399),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Sleek Credentials Micro-Capsule
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                         decoration: BoxDecoration(
                           color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF07192F),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                            color: _isLight
+                                ? const Color(0xFFCBD5E1)
+                                : const Color(0xFF00E5FF).withValues(alpha: 0.25),
                             width: 0.9,
                           ),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               LucideIcons.user,
-                              size: 10,
+                              size: 11,
                               color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                             ),
-                            const SizedBox(width: 3.5),
+                            const SizedBox(width: 4),
                             Text(
                               user.loginId ?? 'coach',
                               style: TextStyle(
@@ -4803,26 +4849,28 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             ),
                             Icon(
                               LucideIcons.phone,
-                              size: 10,
+                              size: 11,
                               color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                             ),
-                            const SizedBox(width: 3.5),
-                            Text(
-                              user.phone ?? '+380 (50) 123-45-67',
-                              style: TextStyle(
-                                color: _isLight ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                user.phone ?? '+380 (50) 123-45-67',
+                                style: TextStyle(
+                                  color: _isLight ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                _buildThemeToggleBtn(),
               ],
             ),
           ),
@@ -4839,27 +4887,31 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           final newMode = _isLight ? AppThemeMode.darkOcean : AppThemeMode.lightAzure;
           ref.read(appThemeControllerProvider.notifier).setTheme(newMode);
         },
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(7.5),
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF0A223D),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-              width: 0.9,
+              color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF00E5FF).withValues(alpha: 0.40),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.15),
-                blurRadius: 6,
+                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: _isLight ? 0.15 : 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Icon(
-            _isLight ? LucideIcons.sun : LucideIcons.moon,
-            size: 15,
-            color: _isLight ? const Color(0xFFD97706) : const Color(0xFF00E5FF),
+          child: Center(
+            child: Icon(
+              _isLight ? LucideIcons.sun : LucideIcons.moon,
+              size: 17,
+              color: _isLight ? const Color(0xFFD97706) : const Color(0xFF00E5FF),
+            ),
           ),
         ),
       ),

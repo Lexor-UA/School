@@ -354,3 +354,26 @@ final parentNotificationsControllerProvider =
     NotifierProvider<ParentNotificationsController, ParentNotificationsState>(() {
   return ParentNotificationsController();
 });
+
+final pushNotificationsEnabledProvider =
+    NotifierProvider<PushNotificationsController, bool>(() {
+  return PushNotificationsController();
+});
+
+class PushNotificationsController extends Notifier<bool> {
+  static const _key = 'push_notifications_enabled';
+
+  @override
+  bool build() {
+    final prefs = ref.watch(sharedPrefsProvider);
+    return prefs.getBool(_key) ?? true;
+  }
+
+  Future<void> toggle(bool value) async {
+    state = value;
+    final prefs = ref.read(sharedPrefsProvider);
+    await prefs.setBool(_key, value);
+  }
+}
+
+

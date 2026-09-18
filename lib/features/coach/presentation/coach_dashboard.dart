@@ -1756,66 +1756,123 @@ void showAwardMedalSheet(BuildContext context, Child child) {
 
 void showCoachNoteDialog(BuildContext context, Child child) {
   final textController = TextEditingController();
+  bool isSaving = false;
+
+  // Asynchronously load note from children or users collection
   FirebaseFirestore.instance.collection('children').doc(child.id).get().then((doc) {
     if (doc.exists && doc.data() != null && doc.data()!['notes'] != null) {
       textController.text = doc.data()!['notes'].toString();
+    } else {
+      FirebaseFirestore.instance.collection('users').doc(child.id).get().then((userDoc) {
+        if (userDoc.exists && userDoc.data() != null && userDoc.data()!['notes'] != null) {
+          textController.text = userDoc.data()!['notes'].toString();
+        }
+      }).catchError((_) {});
     }
-  });
+  }).catchError((_) {});
 
   showDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      scrollable: true,
-      backgroundColor: const Color(0xFF09182B),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
-      ),
-      title: Text(
-        _coachTr('coach.note_for', 'Нотатка про плавця {0}', args: [child.name]),
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-      ),
-      content: TextField(
-        controller: textController,
-        style: const TextStyle(color: Colors.white),
-        maxLines: 3,
-        decoration: InputDecoration(
-          hintText: _coachTr('coach.note_hint', 'Наприклад: Відпрацювати вдих під праву руку...'),
-          hintStyle: const TextStyle(color: Colors.white38),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+    builder: (ctx) => StatefulBuilder(
+      builder: (dialogCtx, setDialogState) => AlertDialog(
+        scrollable: true,
+        backgroundColor: const Color(0xFF09182B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+        ),
+        title: Text(
+          _coachTr('coach.note_for', 'Нотатка про плавця {0}', args: [child.name]),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: textController,
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: _coachTr('coach.note_hint', 'Наприклад: Відпрацювати вдих під праву руку...'),
+            hintStyle: const TextStyle(color: Colors.white38),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+            ),
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(_coachTr('coach.btn_cancel', 'Скасувати'), style: const TextStyle(color: Colors.white54)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00E5FF),
-            foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: isSaving ? null : () => Navigator.pop(ctx),
+            child: Text(_coachTr('coach.btn_cancel', 'Скасувати'), style: const TextStyle(color: Colors.white54)),
           ),
-          onPressed: () async {
-            final note = textController.text.trim();
-            await FirebaseFirestore.instance.collection('children').doc(child.id).update({
-              'notes': note,
-            });
-            if (ctx.mounted) Navigator.pop(ctx);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(_coachTr('coach.save_success', 'Нотатку збережено!'))),
-              );
-            }
-          },
-          child: Text(_coachTr('admin.save', 'Зберегти'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ],
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: isSaving
+                ? null
+                : () async {
+                    setDialogState(() => isSaving = true);
+                    final note = textController.text.trim();
+                    try {
+                      // 1. Always save to children collection with merge (creates doc if it didn't exist)
+                      await FirebaseFirestore.instance.collection('children').doc(child.id).set({
+                        'notes': note,
+                        'name': child.name,
+                        'lastUpdated': FieldValue.serverTimestamp(),
+                      }, SetOptions(merge: true));
+
+                      // 2. Also save to users collection in case this swimmer is an adult client/user
+                      try {
+                        final userDoc = await FirebaseFirestore.instance.collection('users').doc(child.id).get();
+                        if (userDoc.exists) {
+                          await FirebaseFirestore.instance.collection('users').doc(child.id).set({
+                            'notes': note,
+                            'lastUpdated': FieldValue.serverTimestamp(),
+                          }, SetOptions(merge: true));
+                        }
+                      } catch (e) {
+                        debugPrint('Could not update note in users collection: $e');
+                      }
+
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(_coachTr('coach.save_success', 'Нотатку збережено!')),
+                            backgroundColor: const Color(0xFF10B981),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('Error saving coach note: $e');
+                      if (ctx.mounted) {
+                        setDialogState(() => isSaving = false);
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Помилка збереження: $e'),
+                            backgroundColor: Colors.redAccent,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
+            child: isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                  )
+                : Text(_coachTr('admin.save', 'Зберегти'), style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -4105,13 +4162,13 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(14, 6, 14, 75),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
                 child: Column(
                   children: [
                     // 1. Coach Identity Card (with integrated Theme Switcher)
                     _buildIdentityCard(user),
 
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 12),
 
                     // 2. Interactive Salary Card (VisionOS Compact Executive)
                     _buildSalaryCard(
@@ -4131,12 +4188,12 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                       allFilteredClasses: filteredClasses,
                     ),
 
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 12),
 
                     // 3. Admin Support Chat Bar
                     _buildAdminChatCard(context),
 
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 12),
 
                     // 4. Performance KPI Grid (2x2 Compact Horizontal Mini-Tiles)
                     Row(
@@ -4149,7 +4206,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                           ),
                         ),
-                        const SizedBox(width: 7),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _buildKpiCard(
                             '96%',
@@ -4160,7 +4217,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -4171,7 +4228,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             _isLight ? const Color(0xFFD97706) : const Color(0xFFF59E0B),
                           ),
                         ),
-                        const SizedBox(width: 7),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _buildKpiCard(
                             '5.0 ★',
@@ -4186,11 +4243,11 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
                     // 5. Today's Express Mission / Upcoming Class (Visible ONLY if there is an upcoming class today)
                     if (upcomingClass != null) ...[
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 10),
                       _buildTodayMissionCard(upcomingClass, context),
                     ],
 
-                    const SizedBox(height: 9),
+                    const SizedBox(height: 14),
 
                     // 6. Logout Action & System Version
                     _buildLogoutSection(context, ref),
@@ -4263,11 +4320,11 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 },
                 borderRadius: BorderRadius.circular(14),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10.5),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: _isLight
@@ -4282,9 +4339,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             ),
                           ],
                         ),
-                        child: const Icon(LucideIcons.messageSquare, color: Colors.white, size: 13),
+                        child: const Icon(LucideIcons.messageSquare, color: Colors.white, size: 14),
                       ),
-                      const SizedBox(width: 9),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Row(
                           children: [
@@ -4293,7 +4350,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               style: TextStyle(
                                 color: _isLight ? const Color(0xFF0F172A) : Colors.white,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 12.5,
+                                fontSize: 13.5,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -4483,7 +4540,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFDC2626).withValues(alpha: _isLight ? 0.08 : 0.16),
@@ -4493,7 +4550,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
@@ -4511,7 +4568,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isLight
                     ? const Color(0xFFFCA5A5)
@@ -4523,23 +4580,23 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => _confirmCoachLogout(context, ref),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         LucideIcons.logOut,
                         color: _isLight ? const Color(0xFFB91C1C) : Colors.redAccent,
-                        size: 13,
+                        size: 16,
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: 8),
                       Text(
                         'coach.end_shift_btn'.tr(),
                         style: TextStyle(
                           color: _isLight ? const Color(0xFFB91C1C) : Colors.redAccent,
-                          fontSize: 12.5,
+                          fontSize: 14,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.3,
                         ),
@@ -4604,7 +4661,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -4659,7 +4716,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     ),
                     child: const AvatarPicker(
                       heroTag: 'hero_avatar_Тренерам_profile',
-                      radius: 30,
+                      radius: 33,
                     ),
                   ),
                 ),
@@ -4959,7 +5016,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -5005,7 +5062,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   ),
                 ),
 
-                const SizedBox(height: 7),
+                const SizedBox(height: 10),
 
                 // Executive Balance & Details Row
                 Row(
@@ -5178,7 +5235,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   ),
                 ],
 
-                const SizedBox(height: 7),
+                const SizedBox(height: 9),
 
                 // 3 Category Triptych (VisionOS Glass Tri-Column)
                 _buildCategoryTriptych(
@@ -5331,7 +5388,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   }) {
     final hasEarnings = sum > 0;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -5378,7 +5435,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
             children: [
               Icon(
                 icon,
-                size: 11.5,
+                size: 12,
                 color: hasEarnings
                     ? accentColor
                     : (_isLight ? const Color(0xFF64748B) : Colors.white60),
@@ -5390,20 +5447,20 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   color: hasEarnings
                       ? (_isLight ? const Color(0xFF0F172A) : Colors.white)
                       : (_isLight ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2.5),
+          const SizedBox(height: 3.5),
           Text(
             _isIncomeHidden ? '••••' : '${currencyFormat.format(sum)} ₴',
             style: TextStyle(
               color: hasEarnings
                   ? accentColor
                   : (_isLight ? const Color(0xFF475569) : Colors.white60),
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.2,
               shadows: (hasEarnings && !_isLight)
@@ -5416,14 +5473,14 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   : null,
             ),
           ),
-          const SizedBox(height: 1),
+          const SizedBox(height: 2),
           Text(
             _formatClassesCount(count),
             style: TextStyle(
               color: hasEarnings
                   ? (_isLight ? const Color(0xFF334155) : Colors.white70)
                   : (_isLight ? const Color(0xFF64748B) : Colors.white60),
-              fontSize: 9.5,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -5706,7 +5763,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
   Widget _buildKpiCard(String value, String label, IconData icon, Color color, {bool isRating = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10.5),
       decoration: BoxDecoration(
         gradient: _isLight
             ? LinearGradient(
@@ -5725,7 +5782,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   const Color(0xFF081C33),
                 ],
               ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: _isLight ? color.withValues(alpha: 0.40) : color.withValues(alpha: 0.40),
           width: 1.0,
@@ -5747,7 +5804,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6.5),
+            padding: const EdgeInsets.all(7.5),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: _isLight
@@ -5760,9 +5817,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 width: 0.9,
               ),
             ),
-            child: Icon(icon, color: color, size: 14),
+            child: Icon(icon, color: color, size: 15),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -5776,13 +5833,13 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         value.replaceAll('★', '').trim(),
                         style: TextStyle(
                           color: _isLight ? const Color(0xFF0F172A) : Colors.white,
-                          fontSize: 16,
+                          fontSize: 17.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(width: 3),
-                      const Icon(LucideIcons.star, size: 13, color: Color(0xFFF59E0B)),
+                      const SizedBox(width: 3.5),
+                      const Icon(LucideIcons.star, size: 14, color: Color(0xFFF59E0B)),
                     ],
                   ),
                 ] else ...[
@@ -5790,7 +5847,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     value,
                     style: TextStyle(
                       color: _isLight ? const Color(0xFF0F172A) : Colors.white,
-                      fontSize: 16,
+                      fontSize: 17.5,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.2,
                     ),
@@ -5798,12 +5855,12 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 1),
+                const SizedBox(height: 1.5),
                 Text(
                   label.replaceAll('\n', ' '),
                   style: TextStyle(
                     color: _isLight ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     height: 1.15,
                   ),

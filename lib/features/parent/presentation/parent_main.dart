@@ -74,56 +74,60 @@ class _ParentMainState extends ConsumerState<ParentMain> {
         ],
       ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.only(left: 18, right: 18, bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: themeConfig.isDark
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF003B73).withValues(alpha: 0.40),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0284C7).withValues(alpha: 0.14),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-              child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  decoration: BoxDecoration(
-                    color: themeConfig.isDark
-                        ? const Color(0xFF092842).withValues(alpha: 0.75)
-                        : Colors.white.withValues(alpha: 0.94),
-                    border: Border.all(
-                      color: themeConfig.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
-                          : const Color(0xFFBAE6FD),
-                      width: 1.2,
-                    ),
-                    borderRadius: BorderRadius.circular(30),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          boxShadow: themeConfig.isDark
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                    blurRadius: 20,
+                    offset: const Offset(0, -3),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 7),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 24,
+                    offset: const Offset(0, -6),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              decoration: BoxDecoration(
+                color: themeConfig.isDark
+                    ? const Color(0xFF071E36).withValues(alpha: 0.85)
+                    : Colors.white.withValues(alpha: 0.93),
+                border: Border(
+                  top: BorderSide(
+                    color: themeConfig.isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                        : const Color(0xFFBAE6FD),
+                    width: 1.2,
+                  ),
+                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+              ),
+              child: SafeArea(
+                top: false,
+                bottom: true,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
                   child: GNav(
                     rippleColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
                     hoverColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
@@ -159,7 +163,9 @@ class _ParentMainState extends ConsumerState<ParentMain> {
                     onTabChange: (i) {
                       ref.read(parentTabProvider.notifier).setTab(i);
                     },
-                  )),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

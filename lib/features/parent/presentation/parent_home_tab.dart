@@ -98,7 +98,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24.0, 60.0, 24.0, 24.0),
+      padding: const EdgeInsets.fromLTRB(24.0, 60.0, 24.0, 115.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

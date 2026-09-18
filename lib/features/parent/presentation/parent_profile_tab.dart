@@ -121,7 +121,7 @@ class ParentProfileTab extends ConsumerWidget {
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 2, 16, 110),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
         children: [
           // 1. Hero Profile Card with Swimming Quick Stats
           _buildHeroProfileWithStats(
@@ -134,7 +134,7 @@ class ParentProfileTab extends ConsumerWidget {
             accentColor,
             medalsCount,
           ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
 
           // 2. Family & Children Section
           _buildFamilySection(
@@ -146,7 +146,7 @@ class ParentProfileTab extends ConsumerWidget {
             textSubColor,
             accentColor,
           ).animate().fadeIn(delay: 50.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
 
           // 3. 2-Column Bento Sport Cards (Trophies + Progress)
           _buildBentoSportCards(
@@ -156,18 +156,19 @@ class ParentProfileTab extends ConsumerWidget {
             textColor,
             textSubColor,
           ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
 
           // 4. VisionOS Grouped Settings Card
           _buildGroupedSettingsCard(
             context,
+            ref,
             themeConfig,
             isDark,
             textColor,
             textSubColor,
             notifState,
           ).animate().fadeIn(delay: 150.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
 
           // 5. Luminous Ruby Logout Button (Clean, no version text)
           _buildLogoutFooter(
@@ -175,7 +176,7 @@ class ParentProfileTab extends ConsumerWidget {
             ref,
             isDark,
           ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
         ],
       ),
     );
@@ -203,7 +204,7 @@ class ParentProfileTab extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -234,7 +235,7 @@ class ParentProfileTab extends ConsumerWidget {
                 children: [
                   // Avatar with glowing halo
                   Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(2.5),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
@@ -256,7 +257,7 @@ class ParentProfileTab extends ConsumerWidget {
                         color: isDark ? const Color(0xFF0F1E32) : Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: const AvatarPicker(heroTag: 'hero_avatar_profile', radius: 22.5),
+                      child: const AvatarPicker(heroTag: 'hero_avatar_profile', radius: 25.5),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -295,7 +296,7 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                   // Status Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -314,7 +315,7 @@ class ParentProfileTab extends ConsumerWidget {
                       children: [
                         Icon(
                           LucideIcons.shieldCheck,
-                          size: 11,
+                          size: 12,
                           color: isDark ? accentColor : const Color(0xFF0284C7),
                         ),
                         const SizedBox(width: 4),
@@ -322,7 +323,7 @@ class ParentProfileTab extends ConsumerWidget {
                           hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
                           style: TextStyle(
                             color: isDark ? accentColor : const Color(0xFF0284C7),
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.1,
                           ),
@@ -333,10 +334,10 @@ class ParentProfileTab extends ConsumerWidget {
                 ],
               ),
 
-              const SizedBox(height: 7),
+              const SizedBox(height: 9),
               // Subtle Divider
               Container(
-                margin: const EdgeInsets.symmetric(vertical: 1),
+                margin: const EdgeInsets.symmetric(vertical: 2),
                 height: 1,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -354,7 +355,7 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
 
               // Swimming Quick Stats Counters
               Row(
@@ -462,36 +463,36 @@ class ParentProfileTab extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Icon(icon, size: 12.5, color: color),
-            const SizedBox(width: 4),
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4.5),
             Text(
               value,
               style: TextStyle(
                 color: textColor,
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.4,
               ),
             ),
             if (unit != null) ...[
-              const SizedBox(width: 1.5),
+              const SizedBox(width: 2),
               Text(
                 unit,
                 style: TextStyle(
                   color: color,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ],
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
             color: isDark ? const Color(0xFFB0D4EC) : subColor,
-            fontSize: 10.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
           ),
@@ -515,7 +516,7 @@ class ParentProfileTab extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -534,18 +535,18 @@ class ParentProfileTab extends ConsumerWidget {
           child: Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF10B981), Color(0xFF059669)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.users, color: Colors.white, size: 14),
+                  child: Icon(LucideIcons.users, color: Colors.white, size: 15),
                 ),
               ),
               const SizedBox(width: 10),
@@ -625,7 +626,7 @@ class ParentProfileTab extends ConsumerWidget {
                         'Моя родина',
                         style: TextStyle(
                           color: textColor,
-                          fontSize: 13.5,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -633,7 +634,7 @@ class ParentProfileTab extends ConsumerWidget {
                         'Додайте дитину для занять',
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : subColor,
-                          fontSize: 11,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           height: 1.15,
                         ),
@@ -650,7 +651,7 @@ class ParentProfileTab extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => _showAddChildDialog(context, ref, isDark),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -730,11 +731,11 @@ class ParentProfileTab extends ConsumerWidget {
             subColor: subColor,
             visualWidget: const Row(
               children: [
-                Text('🥇', style: TextStyle(fontSize: 13.5)),
-                SizedBox(width: 3),
-                Text('🥈', style: TextStyle(fontSize: 13.5)),
-                SizedBox(width: 3),
-                Text('🥉', style: TextStyle(fontSize: 13.5)),
+                Text('🥇', style: TextStyle(fontSize: 15)),
+                SizedBox(width: 4),
+                Text('🥈', style: TextStyle(fontSize: 15)),
+                SizedBox(width: 4),
+                Text('🥉', style: TextStyle(fontSize: 15)),
               ],
             ),
             onTap: () => Navigator.push(context, FadeScaleRoute(page: const TrophyRoomScreen())),
@@ -757,13 +758,13 @@ class ParentProfileTab extends ConsumerWidget {
             visualWidget: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _buildMiniBar(height: 6.5, color: progressPrimaryColor.withValues(alpha: 0.35)),
-                const SizedBox(width: 2.5),
-                _buildMiniBar(height: 10.5, color: progressPrimaryColor.withValues(alpha: 0.65)),
-                const SizedBox(width: 2.5),
-                _buildMiniBar(height: 14.5, color: progressPrimaryColor),
-                const SizedBox(width: 3),
-                Icon(LucideIcons.arrowUpRight, size: 11.5, color: progressPrimaryColor),
+                _buildMiniBar(height: 8.0, color: progressPrimaryColor.withValues(alpha: 0.35)),
+                const SizedBox(width: 3.0),
+                _buildMiniBar(height: 12.5, color: progressPrimaryColor.withValues(alpha: 0.65)),
+                const SizedBox(width: 3.0),
+                _buildMiniBar(height: 17.0, color: progressPrimaryColor),
+                const SizedBox(width: 3.5),
+                Icon(LucideIcons.arrowUpRight, size: 13, color: progressPrimaryColor),
               ],
             ),
             onTap: () => Navigator.push(context, FadeScaleRoute(page: const ParentProgressTab())),
@@ -775,7 +776,7 @@ class ParentProfileTab extends ConsumerWidget {
 
   Widget _buildMiniBar({required double height, required Color color}) {
     return Container(
-      width: 4.5,
+      width: 5.0,
       height: height,
       decoration: BoxDecoration(
         color: color,
@@ -810,8 +811,8 @@ class ParentProfileTab extends ConsumerWidget {
             borderRadius: BorderRadius.circular(18),
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
-              height: 74,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+              height: 88,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -836,8 +837,8 @@ class ParentProfileTab extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        width: 22,
-                        height: 22,
+                        width: 24,
+                        height: 24,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: gradientColors,
@@ -847,11 +848,11 @@ class ParentProfileTab extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: Center(
-                          child: Icon(icon, color: Colors.white, size: 12.5),
+                          child: Icon(icon, color: Colors.white, size: 13.5),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: effectiveBadgeColor.withValues(alpha: isDark ? 0.20 : 0.12),
                           borderRadius: BorderRadius.circular(6),
@@ -864,7 +865,7 @@ class ParentProfileTab extends ConsumerWidget {
                           badgeText,
                           style: TextStyle(
                             color: effectiveBadgeColor,
-                            fontSize: 9.5,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -884,7 +885,7 @@ class ParentProfileTab extends ConsumerWidget {
                           title,
                           style: TextStyle(
                             color: textColor,
-                            fontSize: 12.5,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.bold,
                             letterSpacing: -0.2,
                           ),
@@ -894,7 +895,7 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                       Icon(
                         LucideIcons.chevronRight,
-                        size: 13,
+                        size: 14,
                         color: isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.8)
                             : subColor.withValues(alpha: 0.7),
@@ -913,6 +914,7 @@ class ParentProfileTab extends ConsumerWidget {
   // 4. VisionOS Grouped Settings Card
   Widget _buildGroupedSettingsCard(
     BuildContext context,
+    WidgetRef ref,
     AppThemeConfig themeConfig,
     bool isDark,
     Color textColor,
@@ -1021,16 +1023,12 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                 ),
               ),
-              // Row 2: Settings Dialog
-              _buildGroupedItem(
-                icon: LucideIcons.settings,
-                gradientColors: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                title: 'parent.settings'.tr(),
-                subtitle: 'Сповіщення та параметри',
+              // Row 2: Push-сповіщення (Direct Switch Toggle)
+              _buildPushNotificationRow(
+                ref: ref,
+                isDark: isDark,
                 textColor: textColor,
                 subColor: subColor,
-                isDark: isDark,
-                onTap: () => _showSettingsDialog(context, isDark, themeConfig),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 54, right: 14),
@@ -1092,25 +1090,25 @@ class ParentProfileTab extends ConsumerWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
           child: Row(
             children: [
               Container(
-                width: 26,
-                height: 26,
+                width: 29,
+                height: 29,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: gradientColors,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.5),
                 ),
                 child: Center(
-                  child: Icon(icon, color: Colors.white, size: 13.5),
+                  child: Icon(icon, color: Colors.white, size: 15),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1120,7 +1118,7 @@ class ParentProfileTab extends ConsumerWidget {
                       title,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 13.5,
+                        fontSize: 14,
                         color: textColor,
                         letterSpacing: -0.1,
                       ),
@@ -1128,7 +1126,7 @@ class ParentProfileTab extends ConsumerWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         color: isDark ? const Color(0xFFB0D4EC) : subColor,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1157,17 +1155,17 @@ class ParentProfileTab extends ConsumerWidget {
     final rubyColor = isDark ? const Color(0xFFF87171) : const Color(0xFFE11D48);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             onTap: () => _confirmLogout(context, ref, isDark),
             child: Container(
               width: double.infinity,
-              height: 38,
+              height: 44,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
@@ -1182,7 +1180,7 @@ class ParentProfileTab extends ConsumerWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark
                       ? const Color(0xFFEF4444).withValues(alpha: 0.40)
@@ -1201,13 +1199,13 @@ class ParentProfileTab extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(LucideIcons.logOut, color: rubyColor, size: 15),
-                  const SizedBox(width: 7),
+                  Icon(LucideIcons.logOut, color: rubyColor, size: 16),
+                  const SizedBox(width: 8),
                   Text(
                     'parent.logout_short'.tr(),
                     style: TextStyle(
                       color: rubyColor,
-                      fontSize: 13.5,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.1,
                     ),
@@ -1271,326 +1269,84 @@ class ParentProfileTab extends ConsumerWidget {
     );
   }
 
-  void _showSettingsDialog(BuildContext context, bool isDark, AppThemeConfig themeConfig) {
-    bool pushNotificationsEnabled = true;
+  Widget _buildPushNotificationRow({
+    required WidgetRef ref,
+    required bool isDark,
+    required Color textColor,
+    required Color subColor,
+  }) {
+    final pushEnabled = ref.watch(pushNotificationsEnabledProvider);
 
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF0E3D64).withValues(alpha: 0.85),
-                          const Color(0xFF092842).withValues(alpha: 0.90),
-                        ]
-                      : [
-                          Colors.white.withValues(alpha: 0.96),
-                          const Color(0xFFF0F9FF).withValues(alpha: 0.94),
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
-                      : const Color(0xFFBAE6FD),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDark ? const Color(0xFF003B73) : const Color(0xFF0284C7))
-                        .withValues(alpha: isDark ? 0.45 : 0.12),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4.5),
+      child: Row(
+        children: [
+          Container(
+            width: 29,
+            height: 29,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF059669)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(LucideIcons.settings, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 14),
-                      Text(
-                        'Налаштування',
-                        style: TextStyle(
-                          color: themeConfig.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.06)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : const Color(0xFFE2E8F0),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                          leading: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-                                  : const Color(0xFFE0F2FE),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              LucideIcons.palette,
-                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                              size: 18,
-                            ),
-                          ),
-                          title: Text(
-                            'Тема додатку',
-                            style: TextStyle(
-                              color: themeConfig.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14.5,
-                            ),
-                          ),
-                          subtitle: Text(
-                            themeConfig.title,
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFFB0D4EC) : themeConfig.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          trailing: Icon(
-                            LucideIcons.chevronRight,
-                            size: 18,
-                            color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
-                          ),
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            ThemeSwitcherSheet.show(context);
-                          },
-                        ),
-                        Divider(
-                          height: 1,
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : const Color(0xFFE2E8F0),
-                        ),
-                        StatefulBuilder(
-                          builder: (context, setLocalState) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                                          : const Color(0xFFECFDF5),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      LucideIcons.bell,
-                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
-                                      size: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Push-сповіщення',
-                                          style: TextStyle(
-                                            color: themeConfig.textPrimary,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          'Нагадування про тренування',
-                                          style: TextStyle(
-                                            color: isDark
-                                                ? const Color(0xFFB0D4EC)
-                                                : themeConfig.textSecondary,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Switch(
-                                    value: pushNotificationsEnabled,
-                                    onChanged: (v) {
-                                      setLocalState(() => pushNotificationsEnabled = v);
-                                    },
-                                    activeThumbColor: Colors.white,
-                                    activeTrackColor: const Color(0xFF0284C7),
-                                    inactiveThumbColor: isDark ? const Color(0xFF94A3B8) : Colors.white,
-                                    inactiveTrackColor: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Shortcut to open Notifications Sheet directly
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            ParentNotificationsSheet.show(context);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.15) : const Color(0xFFE0F2FE),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    LucideIcons.bellRing,
-                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                    size: 17,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Переглянути всі сповіщення',
-                                        style: TextStyle(
-                                          color: themeConfig.textPrimary,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Нагадування про абонемент та тренування',
-                                        style: TextStyle(
-                                          color: isDark ? const Color(0xFFB0D4EC) : themeConfig.textSecondary,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(
-                                  LucideIcons.chevronRight,
-                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(ctx),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDark
-                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                  .withValues(alpha: 0.35),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'Закрити',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13.5,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.30),
+                  blurRadius: 5,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(LucideIcons.bell, color: Colors.white, size: 14),
             ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Push-сповіщення',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 1.5),
+                Text(
+                  'Нагадування про тренування',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFB0D4EC) : subColor,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.85,
+            child: Switch(
+              value: pushEnabled,
+              onChanged: (v) {
+                ref.read(pushNotificationsEnabledProvider.notifier).toggle(v);
+              },
+              activeThumbColor: Colors.white,
+              activeTrackColor: const Color(0xFF0284C7),
+              inactiveThumbColor: isDark ? const Color(0xFF94A3B8) : Colors.white,
+              inactiveTrackColor: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+

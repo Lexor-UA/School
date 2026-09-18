@@ -69,6 +69,16 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       });
       return;
     }
+
+    for (var child in validChildren) {
+      final a = int.tryParse(child.ageController.text.trim());
+      if (a == null || a < 1 || a > 17) {
+        setState(() {
+          _errorMessage = 'Вік дитини "${child.nameController.text.trim()}" має бути від 1 до 17 років';
+        });
+        return;
+      }
+    }
     
     setState(() {
       _isLoading = true;

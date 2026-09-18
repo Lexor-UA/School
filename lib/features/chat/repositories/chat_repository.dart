@@ -34,6 +34,7 @@ class ChatRepository {
     required String senderId, // 'admin' or clientId
     required String text,
     String? clientRole,
+    String? imageUrl,
   }) async {
     final messageId = _chats.doc(dialogId).collection('messages').doc().id;
     final now = DateTime.now();
@@ -45,6 +46,7 @@ class ChatRepository {
       text: text,
       timestamp: now,
       isRead: false,
+      imageUrl: imageUrl,
     );
 
     final batch = _firestore.batch();
@@ -59,12 +61,16 @@ class ChatRepository {
     final unreadAdminCount = senderId != 'admin' ? FieldValue.increment(1) : FieldValue.increment(0);
     final unreadClientCount = senderId == 'admin' ? FieldValue.increment(1) : FieldValue.increment(0);
 
+    final summaryText = text.isNotEmpty
+        ? text
+        : (imageUrl != null ? '📷 Фотографія' : '');
+
     batch.set(dialogRef, {
       'id': dialogId,
       'clientId': clientId,
       'clientName': clientName,
       'clientAvatar': clientAvatar,
-      'lastMessage': text,
+      'lastMessage': summaryText,
       'lastMessageTime': Timestamp.fromDate(now),
       'updatedAt': Timestamp.fromDate(now),
       'unreadAdminCount': unreadAdminCount,

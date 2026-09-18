@@ -14,6 +14,18 @@ import 'package:swimming_school_app/features/subscription/models/subscription.da
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
+class SelectedSubscriptionOwnerNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setSelectedOwner(String? name) {
+    state = name;
+  }
+}
+
+final selectedSubscriptionOwnerProvider =
+    NotifierProvider<SelectedSubscriptionOwnerNotifier, String?>(SelectedSubscriptionOwnerNotifier.new);
+
 class ParentSubscriptionTab extends ConsumerStatefulWidget {
   const ParentSubscriptionTab({super.key});
 
@@ -371,6 +383,16 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     final childrenAsync = ref.watch(childrenControllerProvider);
     final children = childrenAsync.value ?? [];
 
+    final presetOwner = ref.watch(selectedSubscriptionOwnerProvider);
+    if (presetOwner != null && presetOwner.isNotEmpty && _selectedOwner != presetOwner) {
+      _selectedOwner = presetOwner;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(null);
+        }
+      });
+    }
+
     final subscriptions = ref.watch(subscriptionControllerProvider);
     final allSubs = user != null ? subscriptions.where((s) => s.userId == user.id).toList() : <Subscription>[];
     
@@ -391,6 +413,11 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
     final currentSub = activeForMember.isNotEmpty ? activeForMember.first : null;
     final bool hasActiveSubscription = currentSub != null;
+    final safeRemaining = currentSub != null
+        ? (currentSub.totalClasses > 0
+            ? currentSub.remainingClasses.clamp(0, currentSub.totalClasses)
+            : currentSub.remainingClasses)
+        : 0;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -669,7 +696,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '${currentSub.remainingClasses}',
+                                  text: '$safeRemaining',
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 16,
@@ -677,7 +704,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: ' з ${currentSub.totalClasses > 0 ? currentSub.totalClasses : currentSub.remainingClasses}',
+                                  text: ' з ${currentSub.totalClasses > 0 ? currentSub.totalClasses : safeRemaining}',
                                   style: TextStyle(
                                     color: isDark ? Colors.white70 : themeConfig.textPrimary,
                                     fontSize: 14.5,
@@ -832,7 +859,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Для "$effectiveOwner" вже діє абонемент (залишилось ${currentSub.remainingClasses} занять). Новий абонемент буде доступний після завершення занять.',
+                            'Для "$effectiveOwner" вже діє абонемент (залишилось $safeRemaining занять). Новий абонемент буде доступний після завершення занять.',
                             style: TextStyle(
                               color: isDark ? Colors.white70 : const Color(0xFF047857),
                               fontSize: 12.5,

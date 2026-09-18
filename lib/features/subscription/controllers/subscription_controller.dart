@@ -39,6 +39,15 @@ class SubscriptionController extends _$SubscriptionController {
           });
         }
       }
+
+      // Auto-heal overflowed subscriptions (e.g. 13 of 12) back to totalClasses
+      if (sub.totalClasses > 0 && sub.remainingClasses > sub.totalClasses) {
+        FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
+          'remainingClasses': sub.totalClasses,
+        }).catchError((e) {
+          debugPrint('Failed to auto-heal subscription ${sub.id}: $e');
+        });
+      }
     }
   }
 
@@ -70,9 +79,11 @@ class SubscriptionController extends _$SubscriptionController {
     final userSubs = state.where((sub) => sub.userId == userId && sub.isActive && sub.remainingClasses > 0).toList();
     if (userSubs.isEmpty) return null;
 
+    final cleanOwner = ownerName.trim().toLowerCase();
+
     // 1. Direct owner match
     try {
-      return userSubs.firstWhere((sub) => sub.ownerName == ownerName);
+      return userSubs.firstWhere((sub) => (sub.ownerName ?? '').trim().toLowerCase() == cleanOwner);
     } catch (_) {}
 
     // 2. Split or family subscription matching
@@ -90,23 +101,33 @@ class SubscriptionController extends _$SubscriptionController {
       return userSubs.first;
     }
 
-    return null;
+    // 4. Look for an unassigned / generic owner sub among multiple subscriptions
+    try {
+      return userSubs.firstWhere((sub) {
+        return sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
+      });
+    } catch (_) {}
+
+    // 5. Fallback to any active user subscription (enables children to use parent's account sub)
+    return userSubs.first;
   }
 
   Subscription? getAnySubscriptionForOwner(String userId, String ownerName) {
     final userSubs = state.where((sub) => sub.userId == userId).toList();
     if (userSubs.isEmpty) return null;
 
+    final cleanOwner = ownerName.trim().toLowerCase();
+
     // 1. Exact owner match
     try {
-      return userSubs.firstWhere((sub) => sub.ownerName == ownerName);
+      return userSubs.firstWhere((sub) => (sub.ownerName ?? '').trim().toLowerCase() == cleanOwner);
     } catch (_) {}
 
     // 2. Split or generic owner
     try {
       return userSubs.firstWhere((sub) {
         final sName = sub.serviceName?.toLowerCase() ?? '';
-        return sName.contains('спліт') || sName.contains('сім') || sub.ownerName == null || sub.ownerName!.isEmpty;
+        return sName.contains('спліт') || sName.contains('сім') || sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
       });
     } catch (_) {}
 

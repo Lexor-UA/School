@@ -23,18 +23,74 @@ class ChildrenController extends _$ChildrenController {
     });
   }
 
-  Future<void> addChild(String name, int? age) async {
+  Future<void> addChild(
+    String name, {
+    int? age,
+    DateTime? birthDate,
+    String? colorHex,
+  }) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return;
+
+    int? calculatedAge = age;
+    if (birthDate != null) {
+      final now = DateTime.now();
+      int years = now.year - birthDate.year;
+      if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+        years--;
+      }
+      calculatedAge = years >= 0 ? years : 0;
+    }
 
     final docRef = FirebaseFirestore.instance.collection('children').doc();
     final newChild = Child(
       id: docRef.id,
       parentId: user.id,
       name: name,
-      age: age,
+      age: calculatedAge,
+      birthDate: birthDate,
+      colorHex: colorHex ?? '0xFF40C4FF',
     );
 
     await docRef.set(newChild.toJson());
+  }
+
+  Future<void> deleteChild(String childId) async {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+
+    await FirebaseFirestore.instance.collection('children').doc(childId).delete();
+  }
+
+  Future<void> updateChild(
+    String childId,
+    String name, {
+    int? age,
+    DateTime? birthDate,
+    String? colorHex,
+  }) async {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+
+    int? calculatedAge = age;
+    if (birthDate != null) {
+      final now = DateTime.now();
+      int years = now.year - birthDate.year;
+      if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+        years--;
+      }
+      calculatedAge = years >= 0 ? years : 0;
+    }
+
+    final updates = <String, dynamic>{
+      'name': name,
+      'age': calculatedAge,
+      'birthDate': birthDate?.toIso8601String(),
+    };
+    if (colorHex != null) {
+      updates['colorHex'] = colorHex;
+    }
+
+    await FirebaseFirestore.instance.collection('children').doc(childId).update(updates);
   }
 }

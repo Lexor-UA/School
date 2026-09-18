@@ -31,6 +31,7 @@ enum BookingStatus {
   classFull,
   noSubscription,
   alreadyBooked,
+  classPast,
   error,
 }
 
@@ -69,6 +70,12 @@ class BookingResult {
     status: BookingStatus.alreadyBooked,
   );
 
+  static const classPast = BookingResult(
+    isSuccess: false,
+    message: 'Це тренування вже завершилося. Запис неможливий.',
+    status: BookingStatus.classPast,
+  );
+
   static const error = BookingResult(
     isSuccess: false,
     message: 'Помилка запису. Спробуйте пізніше.',
@@ -86,11 +93,23 @@ class ScheduleController extends _$ScheduleController {
         .orderBy('startTime')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data() as Map);
-        data['id'] = doc.id;
-        return GroupClass.fromJson(data);
-      }).toList();
+      final List<GroupClass> classes = [];
+      for (final doc in snapshot.docs) {
+        try {
+          final data = Map<String, dynamic>.from(doc.data() as Map);
+          data['id'] = doc.id;
+          if (data['startTime'] is Timestamp) {
+            data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+          }
+          if (data['endTime'] is Timestamp) {
+            data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+          }
+          classes.add(GroupClass.fromJson(data));
+        } catch (e) {
+          debugPrint('Warning: Failed to parse class document ${doc.id}: $e');
+        }
+      }
+      return classes;
     });
   }
 
@@ -147,6 +166,11 @@ class ScheduleController extends _$ScheduleController {
         final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
         final remainingClasses = subData['remainingClasses'] as int;
 
+        if (groupClass.startTime.isBefore(DateTime.now())) {
+          result = BookingResult.classPast;
+          return;
+        }
+
         if (groupClass.enrolledChildIds.contains(childId)) {
           result = BookingResult.alreadyBooked;
           return;
@@ -165,7 +189,10 @@ class ScheduleController extends _$ScheduleController {
         List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..add(childId);
         int newRemaining = remainingClasses - 1;
         
-        transaction.update(classRef, {'enrolledChildIds': newEnrolled});
+        transaction.update(classRef, {
+          'enrolledChildIds': newEnrolled,
+          'bookedSubscriptions.$childId': subscription.id,
+        });
         transaction.update(subRef, {
           'remainingClasses': newRemaining,
           'isActive': newRemaining > 0
@@ -236,12 +263,24 @@ class ScheduleController extends _$ScheduleController {
         final groupClass = GroupClass.fromJson(data);
         cancelledClass = groupClass;
         
+        if (groupClass.startTime.isBefore(DateTime.now())) {
+          return;
+        }
+
         if (groupClass.enrolledChildIds.contains(childId)) {
           List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..remove(childId);
           
           DocumentSnapshot? subDoc;
           DocumentReference? subRef;
-          if (subscription != null) {
+
+          // Check if a specific subscription was recorded for this child's booking
+          final bookedSubMap = data['bookedSubscriptions'] as Map?;
+          final bookedSubId = bookedSubMap?[childId] as String?;
+
+          if (bookedSubId != null) {
+            subRef = FirebaseFirestore.instance.collection('subscriptions').doc(bookedSubId);
+            subDoc = await transaction.get(subRef);
+          } else if (subscription != null) {
             subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subscription.id);
             subDoc = await transaction.get(subRef);
           }
@@ -249,17 +288,26 @@ class ScheduleController extends _$ScheduleController {
           if (newEnrolled.isEmpty && (groupClass.category == 'Індивідуальне' || groupClass.maxCapacity <= 2)) {
             transaction.delete(classRef);
           } else {
-            transaction.update(classRef, {'enrolledChildIds': newEnrolled});
+            final Map<String, dynamic> classUpdates = {'enrolledChildIds': newEnrolled};
+            if (bookedSubId != null) {
+              classUpdates['bookedSubscriptions.$childId'] = FieldValue.delete();
+            }
+            transaction.update(classRef, classUpdates);
           }
 
           if (subDoc != null && subDoc.exists && subRef != null) {
             final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
-            final remainingClasses = subData['remainingClasses'] as int;
-            int newRemaining = remainingClasses + 1;
-            transaction.update(subRef, {
-              'remainingClasses': newRemaining,
-              'isActive': true
-            });
+            final remainingClasses = subData['remainingClasses'] as int? ?? 0;
+            final totalClasses = subData['totalClasses'] as int? ?? remainingClasses;
+            
+            // Critical safeguard: Never refund beyond totalClasses (prevents 13 of 12)
+            if (remainingClasses < totalClasses) {
+              int newRemaining = (remainingClasses + 1).clamp(0, totalClasses);
+              transaction.update(subRef, {
+                'remainingClasses': newRemaining,
+                'isActive': true,
+              });
+            }
           }
           
           success = true;
@@ -352,7 +400,14 @@ class ScheduleController extends _$ScheduleController {
           
           int newRemaining = remainingClasses - 1;
           
-          transaction.set(newClassRef, newClass.toJson());
+          final classMap = newClass.toJson();
+          if (enrolledChildIds.isNotEmpty) {
+            classMap['bookedSubscriptions'] = {
+              enrolledChildIds.first: subscription.id,
+            };
+          }
+
+          transaction.set(newClassRef, classMap);
           transaction.update(subRef, {
             'remainingClasses': newRemaining,
             'isActive': newRemaining > 0

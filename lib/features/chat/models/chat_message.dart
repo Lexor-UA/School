@@ -14,6 +14,7 @@ abstract class ChatMessage with _$ChatMessage {
     @JsonKey(fromJson: _dateTimeFromTimestamp, toJson: _dateTimeToTimestamp)
     required DateTime timestamp,
     @Default(false) bool isRead,
+    String? imageUrl,
   }) = _ChatMessage;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);

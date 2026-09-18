@@ -10,6 +10,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 
 class ParentBookingScreen extends ConsumerStatefulWidget {
   final DateTime date;
@@ -108,7 +110,13 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   Widget _buildAvailableClasses(bool isDark) {
     return ref.watch(scheduleControllerProvider).when(
       data: (classes) {
-        final available = classes.where((c) => c.startTime.year == widget.date.year && c.startTime.month == widget.date.month && c.startTime.day == widget.date.day).toList();
+        final now = DateTime.now();
+        final available = classes.where((c) {
+          final isSameDay = c.startTime.year == widget.date.year &&
+              c.startTime.month == widget.date.month &&
+              c.startTime.day == widget.date.day;
+          return isSameDay && c.startTime.isAfter(now);
+        }).toList();
         
         if (available.isEmpty) {
           return Center(
@@ -346,13 +354,26 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                   Navigator.pop(context); // Close booking modal
+                  ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(ownerName);
+                  ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab!
                 },
-                child: const Text('Зрозуміло', style: TextStyle(color: Colors.cyanAccent)),
+                child: const Text('Придбати абонемент', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
         );
       }
+      return;
+    }
+
+    if (selectedClass!.startTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Це тренування вже завершилося.'),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 

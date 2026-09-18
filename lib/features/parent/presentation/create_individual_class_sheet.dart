@@ -6,6 +6,8 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 
 class CreateIndividualClassSheet extends ConsumerStatefulWidget {
   final DateTime selectedDate;
@@ -92,10 +94,18 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Close bottom sheet
+                  ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(ownerName);
+                  ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
                 },
-                child: Text('Зрозуміло', style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Придбати абонемент',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -112,6 +122,17 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       widget.selectedDate.day,
       _selectedHour!,
     );
+
+    if (startTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Неможливо обрати минулий час для тренування'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final endTime = startTime.add(const Duration(hours: 1));
 
     try {
@@ -316,55 +337,75 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   ),
                 ),
                 const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _allHours.map((hour) {
-                    final isOccupied = occupiedHours.contains(hour);
-                    final isSelected = _selectedHour == hour;
-                    
-                    return InkWell(
-                      onTap: isOccupied ? null : () => setState(() => _selectedHour = hour),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isOccupied 
-                              ? (isDark ? Colors.redAccent.withValues(alpha: 0.12) : const Color(0xFFFEE2E2)) 
-                              : (isSelected
-                                  ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                  : (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white.withValues(alpha: 0.85))),
+                Builder(
+                  builder: (context) {
+                    final now = DateTime.now();
+                    final todayDate = DateTime(now.year, now.month, now.day);
+                    final selectedDateOnly = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day);
+                    final isPastDay = selectedDateOnly.isBefore(todayDate);
+                    final isToday = selectedDateOnly.isAtSameMomentAs(todayDate);
+
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _allHours.map((hour) {
+                        final isPastHour = isPastDay || (isToday && hour <= now.hour);
+                        final isOccupied = occupiedHours.contains(hour);
+                        final isDisabled = isOccupied || isPastHour;
+                        final isSelected = _selectedHour == hour;
+                        
+                        return InkWell(
+                          onTap: isDisabled ? null : () => setState(() => _selectedHour = hour),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD)),
-                            width: isSelected ? 1.4 : 1.0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isOccupied 
+                                  ? (isDark ? Colors.redAccent.withValues(alpha: 0.12) : const Color(0xFFFEE2E2)) 
+                                  : isPastHour
+                                      ? (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04))
+                                      : (isSelected
+                                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                          : (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white.withValues(alpha: 0.85))),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : isOccupied
+                                        ? (isDark ? Colors.redAccent.withValues(alpha: 0.3) : const Color(0xFFFECACA))
+                                        : isPastHour
+                                            ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08))
+                                            : (isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD)),
+                                width: isSelected ? 1.4 : 1.0,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              '${hour.toString().padLeft(2, '0')}:00',
+                              style: TextStyle(
+                                color: isOccupied 
+                                    ? Colors.redAccent.withValues(alpha: 0.6) 
+                                    : isPastHour
+                                        ? (isDark ? Colors.white30 : Colors.black38)
+                                        : (isSelected ? Colors.white : currentTheme.textPrimary),
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 13,
+                                decoration: isDisabled ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          '${hour.toString().padLeft(2, '0')}:00',
-                          style: TextStyle(
-                            color: isOccupied 
-                                ? Colors.redAccent.withValues(alpha: 0.6) 
-                                : (isSelected ? Colors.white : currentTheme.textPrimary),
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            fontSize: 13,
-                            decoration: isOccupied ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
-                      ),
+                        );
+                      }).toList(),
                     );
-                  }).toList(),
+                  },
                 ),
                 
                 const SizedBox(height: 26),

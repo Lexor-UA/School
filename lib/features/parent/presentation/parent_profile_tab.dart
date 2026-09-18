@@ -18,6 +18,9 @@ import 'package:swimming_school_app/features/parent/presentation/parent_main.dar
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_switcher_sheet.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
+import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
+import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
+import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -38,6 +41,8 @@ class ParentProfileTab extends ConsumerWidget {
     final totalTrophies = childrenList.fold<int>(0, (sum, c) => sum + c.achievements.length);
     final medalsCount = totalTrophies > 0 ? totalTrophies : 3;
 
+    final notifState = ref.watch(parentNotificationsControllerProvider);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -51,8 +56,64 @@ class ParentProfileTab extends ConsumerWidget {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
-        actions: const [
-          Padding(
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.85),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.3)
+                        : const Color(0xFFBAE6FD),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(LucideIcons.bell, color: isDark ? const Color(0xFF00E5FF) : textColor, size: 18),
+                  onPressed: () => ParentNotificationsSheet.show(context),
+                ),
+              ),
+              if (notifState.hasUnread)
+                Positioned(
+                  right: 2,
+                  top: 2,
+                  child: Container(
+                    padding: const EdgeInsets.all(3.5),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withValues(alpha: 0.7),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                    child: Center(
+                      child: Text(
+                        '${notifState.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15), duration: 1.seconds),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
+          const Padding(
             padding: EdgeInsets.only(right: 14),
             child: ThemeHeaderButton(size: 38),
           ),
@@ -104,6 +165,7 @@ class ParentProfileTab extends ConsumerWidget {
             isDark,
             textColor,
             textSubColor,
+            notifState,
           ).animate().fadeIn(delay: 150.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
           const SizedBox(height: 12),
 
@@ -495,48 +557,58 @@ class ParentProfileTab extends ConsumerWidget {
                     child: Row(
                       children: children.map((child) {
                         final childColor = Color(int.tryParse(child.colorHex) ?? 0xFF06B6D4);
-                        return Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.40),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: childColor.withValues(alpha: isDark ? 0.35 : 0.25),
-                              width: 1,
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => _showEditChildDialog(context, ref, child, isDark),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.40),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: childColor.withValues(alpha: isDark ? 0.35 : 0.25),
+                                width: 1,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: childColor,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    color: childColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 7),
-                              Text(
-                                child.name,
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
+                                const SizedBox(width: 7),
+                                Text(
+                                  child.currentAge != null ? '${child.name} (${formatAgeUk(child.currentAge!)})' : child.name,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 5),
+                                Icon(
+                                  LucideIcons.pencil,
+                                  size: 12,
+                                  color: childColor.withValues(alpha: isDark ? 0.75 : 0.85),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),
@@ -845,6 +917,7 @@ class ParentProfileTab extends ConsumerWidget {
     bool isDark,
     Color textColor,
     Color subColor,
+    ParentNotificationsState notifState,
   ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -869,6 +942,55 @@ class ParentProfileTab extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Row 0: Notifications Center
+              _buildGroupedItem(
+                icon: LucideIcons.bellRing,
+                gradientColors: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                title: 'Центр сповіщень',
+                subtitle: notifState.hasUnread
+                    ? 'Нових нагадувань: ${notifState.unreadCount}'
+                    : 'Всі повідомлення та нагадування',
+                textColor: textColor,
+                subColor: notifState.hasUnread ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706)) : subColor,
+                isDark: isDark,
+                trailingWidget: notifState.hasUnread
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${notifState.unreadCount} нових',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      )
+                    : null,
+                onTap: () => ParentNotificationsSheet.show(context),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 54, right: 14),
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                              Colors.transparent,
+                            ]
+                          : [
+                              const Color(0xFFBAE6FD).withValues(alpha: 0.50),
+                              Colors.transparent,
+                            ],
+                    ),
+                  ),
+                ),
+              ),
               // Row 1: Theme Switcher
               _buildGroupedItem(
                 icon: LucideIcons.palette,
@@ -878,20 +1000,6 @@ class ParentProfileTab extends ConsumerWidget {
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
-                trailingWidget: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: themeConfig.accentPrimary,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: themeConfig.accentPrimary.withValues(alpha: 0.5),
-                        blurRadius: 5,
-                      ),
-                    ],
-                  ),
-                ),
                 onTap: () => ThemeSwitcherSheet.show(context),
               ),
               Padding(
@@ -1150,7 +1258,16 @@ class ParentProfileTab extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _AddChildSheet(isDark: isDark),
+      builder: (ctx) => AddChildSheet(isDark: isDark),
+    );
+  }
+
+  void _showEditChildDialog(BuildContext context, WidgetRef ref, Child child, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => EditChildSheet(child: child, isDark: isDark),
     );
   }
 
@@ -1364,6 +1481,70 @@ class ParentProfileTab extends ConsumerWidget {
                             );
                           },
                         ),
+                        const SizedBox(height: 12),
+                        // Shortcut to open Notifications Sheet directly
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            ParentNotificationsSheet.show(context);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.15) : const Color(0xFFE0F2FE),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    LucideIcons.bellRing,
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                    size: 17,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Переглянути всі сповіщення',
+                                        style: TextStyle(
+                                          color: themeConfig.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Нагадування про абонемент та тренування',
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFFB0D4EC) : themeConfig.textSecondary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  LucideIcons.chevronRight,
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1407,324 +1588,6 @@ class ParentProfileTab extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-}
-
-class _AddChildSheet extends ConsumerStatefulWidget {
-  final bool isDark;
-  const _AddChildSheet({required this.isDark});
-
-  @override
-  ConsumerState<_AddChildSheet> createState() => _AddChildSheetState();
-}
-
-class _AddChildSheetState extends ConsumerState<_AddChildSheet> {
-  int _childCount = 1;
-  final List<TextEditingController> _nameControllers = [TextEditingController()];
-  final List<TextEditingController> _ageControllers = [TextEditingController()];
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    for (var c in _nameControllers) {
-      c.dispose();
-    }
-    for (var c in _ageControllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _addChild() {
-    setState(() {
-      _childCount++;
-      _nameControllers.add(TextEditingController());
-      _ageControllers.add(TextEditingController());
-    });
-  }
-
-  void _removeChild() {
-    if (_childCount > 1) {
-      setState(() {
-        _childCount--;
-        _nameControllers.last.dispose();
-        _ageControllers.last.dispose();
-        _nameControllers.removeLast();
-        _ageControllers.removeLast();
-      });
-    }
-  }
-
-  Future<void> _save() async {
-    setState(() => _isLoading = true);
-    final futures = <Future>[];
-    for (int i = 0; i < _childCount; i++) {
-      final name = _nameControllers[i].text.trim();
-      if (name.isNotEmpty) {
-        final age = int.tryParse(_ageControllers[i].text.trim());
-        futures.add(ref.read(childrenControllerProvider.notifier).addChild(name, age));
-      }
-    }
-
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pop(context);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-            top: 16,
-            left: 24,
-            right: 24,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.94),
-                isDark ? const Color(0xFF070E1A).withValues(alpha: 0.97) : const Color(0xFFF1F5F9).withValues(alpha: 0.97),
-              ],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top drag indicator
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(LucideIcons.userPlus, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'parent.add_child'.tr(),
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          iconSize: 20,
-                          icon: Icon(LucideIcons.minusCircle, color: isDark ? Colors.white70 : Colors.black87),
-                          onPressed: _removeChild,
-                        ),
-                        Text(
-                          '$_childCount',
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          iconSize: 20,
-                          icon: Icon(LucideIcons.plusCircle, color: isDark ? Colors.white70 : Colors.black87),
-                          onPressed: _addChild,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: _childCount,
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) {
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.45),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.5),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: Colors.cyanAccent.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Дитина ${index + 1}',
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black87,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _nameControllers[index],
-                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                            decoration: InputDecoration(
-                              labelText: "parent.child_name".tr(),
-                              labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                              filled: true,
-                              fillColor: Colors.white.withValues(alpha: isDark ? 0.05 : 0.5),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.3)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _ageControllers[index],
-                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: "parent.child_age".tr(),
-                              labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                              filled: true,
-                              fillColor: Colors.white.withValues(alpha: isDark ? 0.05 : 0.5),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.3)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF06B6D4), Color(0xFF0284C7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text(
-                            'parent.save'.tr(),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.3),
-                          ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ),

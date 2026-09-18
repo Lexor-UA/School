@@ -281,6 +281,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             final messenger = ScaffoldMessenger.of(context);
                             final navigator = Navigator.of(ctx);
                             final dialogId = clientId;
+
+                            // 1. Send to client-admin chat
                             await ChatRepository().sendMessage(
                               dialogId: dialogId,
                               clientId: clientId,
@@ -289,6 +291,24 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               senderId: 'admin',
                               text: text,
                             );
+
+                            // 2. Save official notification to Firestore for client profile & notification center
+                            try {
+                              await FirebaseFirestore.instance.collection('notifications').add({
+                                'userId': clientId,
+                                'title': 'Закінчення абонементу ($ownerName)',
+                                'message': text,
+                                'timestamp': FieldValue.serverTimestamp(),
+                                'icon': 'creditCard',
+                                'iconColor': 0xFFF59E0B, // Amber gold
+                                'type': 'subscription_reminder',
+                                'isRead': false,
+                                'actionType': 'subscription',
+                                'senderName': 'Адміністрація CitySwim',
+                              });
+                            } catch (e) {
+                              debugPrint('Error writing to notifications collection: $e');
+                            }
 
                             final admin = ref.read(authControllerProvider);
                             if (admin != null) {

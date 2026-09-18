@@ -3260,7 +3260,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 'name': child.name,
                 'isAdult': false,
                 'child': child,
-                'age': child.age,
+                'age': child.currentAge ?? child.age,
               });
             }
 

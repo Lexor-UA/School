@@ -19,6 +19,8 @@ import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
+import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
+import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -29,77 +31,17 @@ class ParentHomeTab extends ConsumerStatefulWidget {
 
 class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
 
-  void _showNotifications(BuildContext context, bool isDark) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: AlertDialog(
-          backgroundColor: Colors.transparent,
-          contentPadding: EdgeInsets.zero,
-          content: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.3) : const Color(0xFFBAE6FD)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('parent.notifications'.tr(), style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  _buildNotificationItem('parent.notif_rescheduled_title'.tr(), '${'parent.today_capitalized'.tr()} · 16:15', LucideIcons.clock, isDark),
-                  _buildNotificationItem('parent.notif_sub_title'.tr(), 'parent.notif_sub_desc'.tr(), LucideIcons.creditCard, isDark),
-                  _buildNotificationItem('parent.notif_badge_title'.tr(), 'parent.notif_badge_desc'.tr(), LucideIcons.award, isDark),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('parent.close'.tr(), style: TextStyle(color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7), fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildNotificationItem(String title, String desc, IconData icon, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7), size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(desc, style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF475569), fontSize: 14)),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
+
+  void _showNotifications(BuildContext context, bool isDark) {
+    ParentNotificationsSheet.show(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
     ref.watch(subscriptionControllerProvider);
+    final notifState = ref.watch(parentNotificationsControllerProvider);
 
     final themeConfig = ref.watch(appThemeControllerProvider);
     final isDark = themeConfig.isDark;
@@ -249,15 +191,26 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       onPressed: () => _showNotifications(context, isDark),
                     ),
                   ).animate().fade(delay: 200.ms),
-                  Positioned(
-                    right: 2,
-                    top: 2,
-                    child: Container(
-                      width: 9,
-                      height: 9,
-                      decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-                    ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1,1), end: const Offset(1.3,1.3), duration: 1.seconds),
-                  ),
+                  if (notifState.hasUnread)
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.redAccent.withValues(alpha: 0.7),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1,1), end: const Offset(1.3,1.3), duration: 1.seconds),
+                    ),
                 ],
               ),
             ],

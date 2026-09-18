@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -271,18 +272,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.child_name_error'.tr() : null,
                                       ),
                                       const SizedBox(height: 10),
-                                      _buildTextField(
-                                        controller: child.ageController,
-                                        icon: LucideIcons.calendarDays,
-                                        hint: 'onboarding.child_age_hint'.tr(),
-                                        keyboardType: TextInputType.number,
-                                        validator: (v) {
-                                          if (v == null || v.trim().isEmpty) return 'onboarding.child_age_error'.tr();
-                                          final a = int.tryParse(v.trim());
-                                          if (a == null || a < 1 || a > 25) return 'onboarding.child_age_error'.tr();
-                                          return null;
-                                        },
-                                      ),
+                                       _buildTextField(
+                                         controller: child.ageController,
+                                         icon: LucideIcons.calendarDays,
+                                         hint: '${'onboarding.child_age_hint'.tr()} (1-17)',
+                                         keyboardType: TextInputType.number,
+                                         inputFormatters: [
+                                           FilteringTextInputFormatter.digitsOnly,
+                                           LengthLimitingTextInputFormatter(2),
+                                         ],
+                                         validator: (v) {
+                                           if (v == null || v.trim().isEmpty) return 'onboarding.child_age_error'.tr();
+                                           final a = int.tryParse(v.trim());
+                                           if (a == null || a < 1 || a > 17) return 'Вік дитини має бути від 1 до 17 років';
+                                           return null;
+                                         },
+                                       ),
                                     ],
                                   ),
                                 );
@@ -386,11 +391,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     required IconData icon,
     required String hint,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       validator: validator,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(

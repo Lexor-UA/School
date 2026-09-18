@@ -12,6 +12,7 @@ abstract class Child with _$Child {
     required String parentId,
     required String name,
     int? age,
+    DateTime? birthDate,
     @Default('0xFF40C4FF') String colorHex, // Default cyan-ish
     @Default(1) int level,
     @Default(0) int xp,
@@ -20,4 +21,18 @@ abstract class Child with _$Child {
   }) = _Child;
 
   factory Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);
+}
+
+extension ChildAgeX on Child {
+  int? get currentAge {
+    if (birthDate != null) {
+      final now = DateTime.now();
+      int years = now.year - birthDate!.year;
+      if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
+        years--;
+      }
+      return years >= 0 ? years : 0;
+    }
+    return age;
+  }
 }

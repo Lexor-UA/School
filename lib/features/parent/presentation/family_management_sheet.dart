@@ -10,6 +10,7 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
 
 class FamilyManagementSheet extends ConsumerStatefulWidget {
@@ -381,7 +382,17 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       ),
                       const SizedBox(height: 18),
 
-                      if (isPaired && family != null) ...[
+                      if (familyAsync.isLoading && family == null) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF00E5FF),
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                        ),
+                      ] else if (isPaired && family != null) ...[
                         // Paired Family Card
                         _buildPairedCard(context, family, user?.id ?? '', isDark),
                         const SizedBox(height: 18),
@@ -492,8 +503,15 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
   }
 
   Widget _buildPairedCard(BuildContext context, Family family, String currentUserId, bool isDark) {
-    final currentUserName = family.parentNames[currentUserId] ?? 'Ви';
-    final currentUserPhone = family.parentPhones[currentUserId] ?? '';
+    final user = ref.watch(authControllerProvider);
+    final currentUserName = (user?.name != null && user!.name.trim().isNotEmpty)
+        ? user.name.trim()
+        : (family.parentNames[currentUserId]?.trim().isNotEmpty == true
+            ? family.parentNames[currentUserId]!.trim()
+            : 'Ви');
+    final currentUserPhone = (user?.phone != null && user!.phone!.trim().isNotEmpty)
+        ? user.phone!.trim()
+        : (family.parentPhones[currentUserId]?.trim() ?? '');
     final partnerName = family.getOtherParentName(currentUserId) ?? 'Другий з батьків';
     final partnerPhone = family.getOtherParentPhone(currentUserId) ?? '';
 
@@ -578,6 +596,9 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     required Color badgeColor,
     required bool isDark,
   }) {
+    final cleanName = name.trim().isNotEmpty ? name.trim() : 'Користувач';
+    final initialLetter = cleanName[0].toUpperCase();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -593,7 +614,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             radius: 18,
             backgroundColor: badgeColor.withValues(alpha: 0.25),
             child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              initialLetter,
               style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
@@ -603,7 +624,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  cleanName,
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
                     fontWeight: FontWeight.bold,
@@ -638,7 +659,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     );
   }
 
-  Widget _buildChildrenSection(List dynamicChildren, bool isDark) {
+  Widget _buildChildrenSection(List<Child> children, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -647,7 +668,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
             const SizedBox(width: 8),
             Text(
-              'Спільні діти (${dynamicChildren.length})',
+              'Спільні діти (${children.length})',
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black87,
                 fontSize: 14.5,
@@ -657,7 +678,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           ],
         ),
         const SizedBox(height: 10),
-        if (dynamicChildren.isEmpty)
+        if (children.isEmpty)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -673,8 +694,12 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           )
         else
           Column(
-            children: dynamicChildren.map((child) {
+            children: children.map((child) {
               final childColor = Color(int.tryParse(child.colorHex) ?? 0xFF00E5FF);
+              final age = child.currentAge;
+              final ageFormatted = age != null ? ' (${formatAgeUk(age)})' : '';
+              final displayName = '${child.name}$ageFormatted';
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -698,9 +723,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        child.currentAge != null
-                            ? '${child.name} (${formatAgeUk(child.currentAge!)})'
-                            : child.name,
+                        displayName,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black87,
                           fontWeight: FontWeight.bold,

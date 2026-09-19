@@ -16,7 +16,20 @@ final familyStreamProvider = StreamProvider<Family?>((ref) {
       .map((snap) {
     if (snap.docs.isEmpty) return null;
     final doc = snap.docs.first;
-    return Family.fromJson({'id': doc.id, ...doc.data()});
+    try {
+      final family = Family.fromJson({'id': doc.id, ...doc.data()});
+      // Check if any parent names need backfilling
+      final hasMissingNames = family.parentIds.any(
+        (id) => !family.parentNames.containsKey(id) || family.parentNames[id]!.trim().isEmpty,
+      );
+      if (hasMissingNames) {
+        Future.microtask(() => ref.read(familyControllerProvider).syncFamilyParentNames(family));
+      }
+      return family;
+    } catch (e) {
+      debugPrint('Error parsing family document: $e');
+      return null;
+    }
   });
 });
 
@@ -34,19 +47,65 @@ class FamilyController {
     return 'FAM-$number';
   }
 
+  Future<void> syncFamilyParentNames(Family family) async {
+    bool needsUpdate = false;
+    final updatedNames = Map<String, String>.from(family.parentNames);
+    final updatedPhones = Map<String, String>.from(family.parentPhones);
+
+    for (final id in family.parentIds) {
+      if (!updatedNames.containsKey(id) || updatedNames[id]!.trim().isEmpty) {
+        try {
+          final uDoc = await FirebaseFirestore.instance.collection('users').doc(id).get();
+          if (uDoc.exists && uDoc.data() != null) {
+            final n = uDoc.data()!['name'] as String? ?? '';
+            final p = uDoc.data()!['phone'] as String? ?? '';
+            if (n.trim().isNotEmpty) {
+              updatedNames[id] = n.trim();
+              needsUpdate = true;
+            }
+            if (p.trim().isNotEmpty && (!updatedPhones.containsKey(id) || updatedPhones[id]!.isEmpty)) {
+              updatedPhones[id] = p.trim();
+              needsUpdate = true;
+            }
+          }
+        } catch (e) {
+          debugPrint('Error fetching user info for family sync ($id): $e');
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      try {
+        await FirebaseFirestore.instance.collection('families').doc(family.id).update({
+          'parentNames': updatedNames,
+          'parentPhones': updatedPhones,
+        });
+      } catch (e) {
+        debugPrint('Error syncing family parent names: $e');
+      }
+    }
+  }
+
   Future<Family?> getCurrentFamily() async {
     final user = _ref.read(authControllerProvider);
     if (user == null) return null;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('families')
-        .where('parentIds', arrayContains: user.id)
-        .limit(1)
-        .get();
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('families')
+          .where('parentIds', arrayContains: user.id)
+          .limit(1)
+          .get();
 
-    if (snap.docs.isEmpty) return null;
-    final doc = snap.docs.first;
-    return Family.fromJson({'id': doc.id, ...doc.data()});
+      if (snap.docs.isEmpty) return null;
+      final doc = snap.docs.first;
+      final family = Family.fromJson({'id': doc.id, ...doc.data()});
+      await syncFamilyParentNames(family);
+      return family;
+    } catch (e) {
+      debugPrint('Error getting current family: $e');
+      return null;
+    }
   }
 
   Future<Family> getOrCreateFamily() async {
@@ -61,10 +120,11 @@ class FamilyController {
     final docRef = FirebaseFirestore.instance.collection('families').doc();
     final inviteCode = _generateInviteCode();
 
-    final parentNames = {user.id: user.name};
+    final userName = user.name.trim().isNotEmpty ? user.name.trim() : 'Клієнт';
+    final parentNames = {user.id: userName};
     final parentPhones = <String, String>{};
-    if (user.phone != null && user.phone!.isNotEmpty) {
-      parentPhones[user.id] = user.phone!;
+    if (user.phone != null && user.phone!.trim().isNotEmpty) {
+      parentPhones[user.id] = user.phone!.trim();
     }
 
     final newFamily = Family(
@@ -129,10 +189,32 @@ class FamilyController {
       }
 
       final updatedParentIds = [...family.parentIds, user.id];
-      final updatedParentNames = Map<String, String>.from(family.parentNames)..[user.id] = user.name;
+      final updatedParentNames = Map<String, String>.from(family.parentNames);
       final updatedParentPhones = Map<String, String>.from(family.parentPhones);
-      if (user.phone != null && user.phone!.isNotEmpty) {
-        updatedParentPhones[user.id] = user.phone!;
+
+      final myName = user.name.trim().isNotEmpty ? user.name.trim() : 'Партнер';
+      updatedParentNames[user.id] = myName;
+      if (user.phone != null && user.phone!.trim().isNotEmpty) {
+        updatedParentPhones[user.id] = user.phone!.trim();
+      }
+
+      // Ensure all parents have verified names and phones from Firestore
+      for (final pId in updatedParentIds) {
+        if (!updatedParentNames.containsKey(pId) || updatedParentNames[pId]!.trim().isEmpty) {
+          try {
+            final uDoc = await FirebaseFirestore.instance.collection('users').doc(pId).get();
+            if (uDoc.exists && uDoc.data() != null) {
+              final n = uDoc.data()!['name'] as String? ?? '';
+              final p = uDoc.data()!['phone'] as String? ?? '';
+              if (n.trim().isNotEmpty) updatedParentNames[pId] = n.trim();
+              if (p.trim().isNotEmpty && (!updatedParentPhones.containsKey(pId) || updatedParentPhones[pId]!.isEmpty)) {
+                updatedParentPhones[pId] = p.trim();
+              }
+            }
+          } catch (e) {
+            debugPrint('Error retrieving parent info during join: $e');
+          }
+        }
       }
 
       await FirebaseFirestore.instance.collection('families').doc(family.id).update({

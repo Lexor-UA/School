@@ -16,7 +16,6 @@ import 'package:swimming_school_app/features/parent/controllers/children_control
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
-import 'package:swimming_school_app/shared/widgets/theme_switcher_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
@@ -164,11 +163,9 @@ class ParentProfileTab extends ConsumerWidget {
           _buildGroupedSettingsCard(
             context,
             ref,
-            themeConfig,
             isDark,
             textColor,
             textSubColor,
-            notifState,
           ).animate().fadeIn(delay: 150.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
           const SizedBox(height: 10),
 
@@ -518,6 +515,11 @@ class ParentProfileTab extends ConsumerWidget {
     final user = ref.watch(authControllerProvider);
     final isPaired = family?.isPaired ?? false;
     final partnerName = family?.getOtherParentName(user?.id ?? '') ?? '';
+    final partnerPhone = family?.getOtherParentPhone(user?.id ?? '') ?? '';
+    final partnerDisplayName = partnerName.trim().isNotEmpty 
+        ? partnerName.trim() 
+        : (partnerPhone.isNotEmpty ? partnerPhone : 'Другий з батьків');
+    final partnerInitial = partnerDisplayName.isNotEmpty ? partnerDisplayName[0].toUpperCase() : 'П';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -604,7 +606,7 @@ class ParentProfileTab extends ConsumerWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            isPaired ? 'Сім\'я: $partnerName' : 'Сімейний акаунт',
+                            isPaired ? 'Сім\'я: $partnerDisplayName' : 'Сімейний акаунт',
                             style: TextStyle(
                               color: isPaired
                                   ? (isDark ? const Color(0xFF34D399) : const Color(0xFF047857))
@@ -628,6 +630,127 @@ class ParentProfileTab extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 10),
+
+              // Prominent Partner Tile (when paired)
+              if (isPaired) ...[
+                InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => FamilyManagementSheet.show(context),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [
+                                const Color(0xFF10B981).withValues(alpha: 0.16),
+                                Colors.white.withValues(alpha: 0.03),
+                              ]
+                            : [
+                                const Color(0xFFECFDF5),
+                                Colors.white.withValues(alpha: 0.85),
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.28),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              partnerInitial,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      partnerDisplayName,
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Партнер',
+                                      style: TextStyle(
+                                        color: Color(0xFF10B981),
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                partnerPhone.isNotEmpty
+                                    ? '$partnerPhone • Спільний доступ'
+                                    : 'Спільний доступ активний',
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFFB0D4EC) : subColor,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          LucideIcons.chevronRight,
+                          size: 15,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
 
               // Bottom Row: Children List & Add Button
               Row(
@@ -975,11 +1098,9 @@ class ParentProfileTab extends ConsumerWidget {
   Widget _buildGroupedSettingsCard(
     BuildContext context,
     WidgetRef ref,
-    AppThemeConfig themeConfig,
     bool isDark,
     Color textColor,
     Color subColor,
-    ParentNotificationsState notifState,
   ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -1004,86 +1125,7 @@ class ParentProfileTab extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Row 0: Notifications Center
-              _buildGroupedItem(
-                icon: LucideIcons.bellRing,
-                gradientColors: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                title: 'Центр сповіщень',
-                subtitle: notifState.hasUnread
-                    ? 'Нових нагадувань: ${notifState.unreadCount}'
-                    : 'Всі повідомлення та нагадування',
-                textColor: textColor,
-                subColor: notifState.hasUnread ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706)) : subColor,
-                isDark: isDark,
-                trailingWidget: notifState.hasUnread
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${notifState.unreadCount} нових',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      )
-                    : null,
-                onTap: () => ParentNotificationsSheet.show(context),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 54, right: 14),
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [
-                              const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                              Colors.transparent,
-                            ]
-                          : [
-                              const Color(0xFFBAE6FD).withValues(alpha: 0.50),
-                              Colors.transparent,
-                            ],
-                    ),
-                  ),
-                ),
-              ),
-              // Row 1: Theme Switcher
-              _buildGroupedItem(
-                icon: LucideIcons.palette,
-                gradientColors: const [Color(0xFF8B5CF6), Color(0xFF6366F1)],
-                title: 'Тема додатку',
-                subtitle: themeConfig.title,
-                textColor: textColor,
-                subColor: subColor,
-                isDark: isDark,
-                onTap: () => ThemeSwitcherSheet.show(context),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 54, right: 14),
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [
-                              const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                              Colors.transparent,
-                            ]
-                          : [
-                              const Color(0xFFBAE6FD).withValues(alpha: 0.50),
-                              Colors.transparent,
-                            ],
-                    ),
-                  ),
-                ),
-              ),
-              // Row 2: Push-сповіщення (Direct Switch Toggle)
+              // Push-сповіщення (Direct Switch Toggle)
               _buildPushNotificationRow(
                 ref: ref,
                 isDark: isDark,

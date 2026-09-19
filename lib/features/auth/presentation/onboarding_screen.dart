@@ -470,7 +470,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 18),
                                         const SizedBox(width: 8),
                                         Text(
-                                          'onboarding.add_more_child_btn'.tr(),
+                                          'onboarding.add_more_child_btn'.tr().replaceFirst(RegExp(r'^\+\s*'), ''),
                                           style: const TextStyle(
                                             color: Color(0xFF00E5FF),
                                             fontWeight: FontWeight.w700,

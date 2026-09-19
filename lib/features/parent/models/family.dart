@@ -30,14 +30,29 @@ class Family {
 
   String? getOtherParentName(String currentUserId) {
     for (final entry in parentNames.entries) {
-      if (entry.key != currentUserId) return entry.value;
+      if (entry.key != currentUserId && entry.value.trim().isNotEmpty) {
+        return entry.value.trim();
+      }
+    }
+    // Fallback: if currentUserId is not in parentNames or matches, find first non-empty name
+    for (final entry in parentNames.entries) {
+      if (entry.value.trim().isNotEmpty && entry.key != currentUserId) {
+        return entry.value.trim();
+      }
     }
     return null;
   }
 
   String? getOtherParentPhone(String currentUserId) {
     for (final entry in parentPhones.entries) {
-      if (entry.key != currentUserId) return entry.value;
+      if (entry.key != currentUserId && entry.value.trim().isNotEmpty) {
+        return entry.value.trim();
+      }
+    }
+    for (final entry in parentPhones.entries) {
+      if (entry.value.trim().isNotEmpty && entry.key != currentUserId) {
+        return entry.value.trim();
+      }
     }
     return null;
   }
@@ -49,12 +64,23 @@ class Family {
       return DateTime.now();
     }
 
+    Map<String, String> parseStringMap(dynamic map) {
+      if (map is! Map) return {};
+      final result = <String, String>{};
+      map.forEach((k, v) {
+        if (k != null && v != null) {
+          result[k.toString()] = v.toString();
+        }
+      });
+      return result;
+    }
+
     return Family(
       id: json['id'] as String? ?? '',
       primaryParentId: json['primaryParentId'] as String? ?? '',
       parentIds: (json['parentIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      parentNames: (json['parentNames'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v.toString())) ?? {},
-      parentPhones: (json['parentPhones'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v.toString())) ?? {},
+      parentNames: parseStringMap(json['parentNames']),
+      parentPhones: parseStringMap(json['parentPhones']),
       inviteCode: json['inviteCode'] as String? ?? '',
       createdAt: parseDate(json['createdAt']),
     );

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dart';
@@ -24,6 +25,7 @@ class RoleSelectionScreen extends ConsumerStatefulWidget {
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   bool _isLoading = false;
   bool _splashFinished = false;
+  bool _isAuthenticatingBiometrics = false;
   final LocalAuthentication _auth = LocalAuthentication();
 
   @override
@@ -33,71 +35,77 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
       setState(() => _splashFinished = true);
-      
+
       final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
       final authState = ref.read(authControllerProvider);
-      
+      final savedRole = prefs.getString('userRole');
+      final clientId = prefs.getString('clientId');
+
+      // Check if user was already authorized
       UserRole? targetRole;
       if (authState != null) {
         targetRole = authState.role;
-      } else {
-        final savedRole = prefs.getString('userRole');
-        if (savedRole != null) {
-          targetRole = UserRole.values.firstWhere((e) => e.name == savedRole, orElse: () => UserRole.parent);
-        }
+      } else if (savedRole != null && (clientId != null || savedRole == 'admin' || savedRole == 'owner')) {
+        targetRole = UserRole.values.firstWhereOrNull((e) => e.name == savedRole);
       }
 
       if (targetRole != null) {
-        // User is authorized, attempt Face ID / Biometrics
-        bool authenticated = false;
-        if (kIsWeb) {
-          // Skip biometrics on Web
-          authenticated = true;
-        } else {
-          try {
-            final canCheckBiometrics = await _auth.canCheckBiometrics;
-            final isDeviceSupported = await _auth.isDeviceSupported();
-            
-            if (canCheckBiometrics || isDeviceSupported) {
-              authenticated = await _auth.authenticate(
-                localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
-                biometricOnly: false,
-                persistAcrossBackgrounding: true,
-              );
-            } else {
-              // Device doesn't support biometrics, just let them in
-              authenticated = true;
-            }
-          } catch (e) {
-            debugPrint('Biometric auth error: $e');
-            // If biometrics fail unexpectedly, fallback to requiring manual login
-            authenticated = false; 
-          }
-        }
-
-        if (authenticated) {
-          if (mounted) _navigateBasedOnRole(targetRole, authState);
-        } else {
-          // User cancelled biometrics or it failed. 
-          // Show the login buttons so they can log in manually.
-          // Optional: clear the session so they are forced to log in again.
-          ref.read(authControllerProvider.notifier).logout();
-          if (mounted) {
-
-          }
-        }
-      } else {
-        // No saved session, show login buttons
-
+        // User WAS authorized! Trigger Face ID automatically as requested
+        await _authenticateWithBiometrics(targetRole: targetRole, user: authState);
       }
     });
+  }
+
+  Future<void> _authenticateWithBiometrics({
+    required UserRole targetRole,
+    AppUser? user,
+  }) async {
+    if (_isAuthenticatingBiometrics) return;
+    if (mounted) setState(() => _isAuthenticatingBiometrics = true);
+
+    if (kIsWeb) {
+      if (mounted) {
+        setState(() => _isAuthenticatingBiometrics = false);
+        _navigateBasedOnRole(targetRole, user);
+      }
+      return;
+    }
+
+    try {
+      final canCheckBiometrics = await _auth.canCheckBiometrics;
+      final isDeviceSupported = await _auth.isDeviceSupported();
+
+      if (canCheckBiometrics || isDeviceSupported) {
+        final authenticated = await _auth.authenticate(
+          localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
+          biometricOnly: false,
+          persistAcrossBackgrounding: true,
+        );
+
+        if (authenticated && mounted) {
+          final currentUser = user ?? ref.read(authControllerProvider);
+          _navigateBasedOnRole(targetRole, currentUser);
+        }
+      } else {
+        // Device doesn't support biometrics, let them in directly
+        if (mounted) {
+          _navigateBasedOnRole(targetRole, user);
+        }
+      }
+    } catch (e) {
+      debugPrint('Biometric auth error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isAuthenticatingBiometrics = false);
+      }
+    }
   }
 
   void _navigateBasedOnRole(UserRole role, [AppUser? user]) {
     final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
     final needsOnboarding = prefs.getBool('needsOnboarding') ?? false;
 
-    if (role == UserRole.parent && user != null && (user.phone == null || needsOnboarding)) {
+    if (role == UserRole.parent && (needsOnboarding || (user != null && user.phone == null))) {
       context.go('/onboarding');
       return;
     }
@@ -124,11 +132,30 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     final splashOffset =
         screenHeight * 0.25; // Відступ для центрування логотипу
 
+    final authState = ref.watch(authControllerProvider);
+    final prefs = ref.watch(swimming_school_app.sharedPrefsProvider);
+    final savedRoleString = prefs.getString('userRole');
+    final clientId = prefs.getString('clientId');
+
+    final isAuthorized = authState != null ||
+        (savedRoleString != null &&
+            (clientId != null ||
+                savedRoleString == 'admin' ||
+                savedRoleString == 'owner'));
+
+    UserRole? targetRole;
+    if (authState != null) {
+      targetRole = authState.role;
+    } else if (savedRoleString != null) {
+      targetRole =
+          UserRole.values.firstWhereOrNull((e) => e.name == savedRoleString);
+    }
+
     ref.listen(authControllerProvider, (previous, next) {
       if (!_splashFinished) return;
 
-      if (next != null) {
-        // Dismiss any open modal bottom sheet or dialog on root navigator first
+      // Only navigate from ref.listen if an active manual login occurred (e.g. from modal or Google Sign-In)
+      if (next != null && (previous == null || _isLoading)) {
         final rootNav = Navigator.of(context, rootNavigator: true);
         if (rootNav.canPop()) {
           rootNav.pop();
@@ -249,169 +276,22 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       curve: Curves.easeOutQuint,
                                     ),
 
-                                const SizedBox(height: 80),
+                                const SizedBox(height: 50),
 
-                                // Google Button
-                                OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        side: BorderSide(
-                                          color: Colors.blue.withValues(alpha: 0.5),
-                                          width: 1.5,
-                                        ),
-                                        minimumSize: const Size(double.infinity, 56),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
-                                      ),
-                                      onPressed: _isLoading
-                                          ? null
-                                          : () async {
-                                              try {
-                                                setState(
-                                                  () => _isLoading = true,
-                                                );
-                                                await ref
-                                                    .read(
-                                                      authControllerProvider
-                                                          .notifier,
-                                                    )
-                                                    .signInWithGoogle();
-                                              } catch (e) {
-                                                if (!context.mounted) return;
-                                                setState(
-                                                  () => _isLoading = false,
-                                                );
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Помилка Google Sign In: $e',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Image.asset(
-                                            'assets/images/google_logo.png',
-                                            height: 24,
-                                            errorBuilder: (c, e, s) =>
-                                                const Icon(
-                                                  LucideIcons.globe,
-                                                  color: Colors.blue,
-                                                ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            'auth.login_google'.tr(),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                    .animate()
-                                    .fadeIn(delay: 3200.ms, duration: 1000.ms)
-                                    .slideY(
-                                      begin: 0.1,
-                                      end: 0,
-                                      duration: 1000.ms,
-                                      delay: 3200.ms,
-                                      curve: Curves.easeOutExpo,
-                                    ),
-
-                                const SizedBox(height: 24),
-
-                                // OR Divider
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Divider(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.2,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                      ),
-                                      child: Text(
-                                        'auth.or'.tr(),
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.6,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Divider(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.2,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ).animate().fadeIn(
-                                  delay: 3300.ms,
-                                  duration: 1000.ms,
-                                ),
-
-                                const SizedBox(height: 24),
-
-                                // Primary Client Hub Login Button
-                                OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: BorderSide(
-                                      color: Colors.blue.withValues(alpha: 0.5),
-                                      width: 1.5,
-                                    ),
-                                    minimumSize: const Size(double.infinity, 56),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                  onPressed: () => _showClientAuthModal(context, ref, initialTab: 0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        LucideIcons.logIn,
-                                        size: 20,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'auth.tab_login'.tr().isNotEmpty &&
-                                                !'auth.tab_login'.tr().startsWith('auth.')
-                                            ? 'auth.tab_login'.tr()
-                                            : 'Увійти',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                                .animate()
-                                .fadeIn(delay: 3400.ms, duration: 1000.ms)
-                                .slideY(
-                                  begin: 0.1,
-                                  end: 0,
-                                  duration: 1000.ms,
-                                  delay: 3400.ms,
-                                  curve: Curves.easeOutExpo,
-                                ),
+                                if (!_splashFinished)
+                                  const SizedBox(height: 180)
+                                else if (isAuthorized && targetRole != null)
+                                  _buildBiometricLoginView(
+                                    context: context,
+                                    targetRole: targetRole,
+                                    user: authState,
+                                    displayName: authState?.name ??
+                                        prefs.getString('userName') ??
+                                        'Користувач',
+                                    avatarUrl: authState?.avatarUrl,
+                                  )
+                                else
+                                  _buildStandardLoginView(context),
 
                                 const SizedBox(height: 20),
                               ],
@@ -424,35 +304,35 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 ),
 
                 // Bottom Isolated Staff Access Portal Button
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12, top: 4),
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white.withValues(alpha: 0.85),
-                      backgroundColor: Colors.white.withValues(alpha: 0.08),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          width: 1,
+                if (!isAuthorized)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12, top: 4),
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white.withValues(alpha: 0.85),
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      onPressed: () => _showStaffLoginModal(context, ref),
+                      icon: const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF00E5FF)),
+                      label: Text(
+                        'auth.staff_portal'.tr().isNotEmpty && !'auth.staff_portal'.tr().startsWith('auth.')
+                            ? 'auth.staff_portal'.tr()
+                            : '🔐 Вхід для співробітників (Команда)',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    onPressed: () => _showStaffLoginModal(context, ref),
-                    icon: const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF00E5FF)),
-                    label: Text(
-                      'auth.staff_portal'.tr().isNotEmpty && !'auth.staff_portal'.tr().startsWith('auth.')
-                          ? 'auth.staff_portal'.tr()
-                          : '🔐 Вхід для співробітників (Команда)',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 3600.ms, duration: 1000.ms),
+                  ).animate().fadeIn(delay: 3600.ms, duration: 1000.ms),
               ],
             ),
           ),
@@ -550,6 +430,362 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildBiometricLoginView({
+    required BuildContext context,
+    required UserRole targetRole,
+    required AppUser? user,
+    required String displayName,
+    required String? avatarUrl,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Glowing Neon-Cyan Ring for Avatar
+        Container(
+          width: 84,
+          height: 84,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                blurRadius: 24,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(3.5),
+          child: ClipOval(
+            child: user?.avatarBytes != null
+                ? Image.memory(
+                    user!.avatarBytes!,
+                    fit: BoxFit.cover,
+                  )
+                : (avatarUrl != null && avatarUrl.isNotEmpty
+                    ? Image.network(
+                        avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildAvatarFallback(displayName),
+                      )
+                    : _buildAvatarFallback(displayName)),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Greeting
+        Text(
+          'auth.welcome_back'.tr().isNotEmpty &&
+                  !'auth.welcome_back'.tr().startsWith('auth.')
+              ? 'auth.welcome_back'.tr()
+              : 'З поверненням,',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.75),
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          displayName,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // Primary Face ID Button
+        Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _isAuthenticatingBiometrics
+                  ? null
+                  : () => _authenticateWithBiometrics(
+                        targetRole: targetRole,
+                        user: user,
+                      ),
+              child: Center(
+                child: _isAuthenticatingBiometrics
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.scanFace,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Увійти через Face ID',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Secondary Button: Enter password
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: BorderSide(
+              color: Colors.white.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+            minimumSize: const Size(double.infinity, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          onPressed: () {
+            if (targetRole == UserRole.parent) {
+              _showClientAuthModal(context, ref, initialTab: 0);
+            } else {
+              _showStaffLoginModal(context, ref);
+            }
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                LucideIcons.keyRound,
+                size: 18,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Ввести пароль',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // TextButton: Switch account (logout)
+        TextButton(
+          onPressed: () async {
+            await ref.read(authControllerProvider.notifier).logout();
+            if (mounted) {
+              setState(() {});
+            }
+          },
+          child: Text(
+            'Увійти як інший користувач',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.white.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 600.ms).slideY(
+          begin: 0.08,
+          end: 0,
+          duration: 600.ms,
+          curve: Curves.easeOutExpo,
+        );
+  }
+
+  Widget _buildAvatarFallback(String name) {
+    final initial =
+        name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'U';
+    return Container(
+      color: const Color(0xFF003B73),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStandardLoginView(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Google Button
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: BorderSide(
+              color: Colors.blue.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          onPressed: _isLoading
+              ? null
+              : () async {
+                  try {
+                    setState(() => _isLoading = true);
+                    await ref
+                        .read(authControllerProvider.notifier)
+                        .signInWithGoogle();
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    setState(() => _isLoading = false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Помилка Google Sign In: $e'),
+                      ),
+                    );
+                  }
+                },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/google_logo.png',
+                height: 24,
+                errorBuilder: (c, e, s) => const Icon(
+                  LucideIcons.globe,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'auth.login_google'.tr(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // OR Divider
+        Row(
+          children: [
+            Expanded(
+              child: Divider(
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'auth.or'.tr(),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Divider(
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Primary Client Hub Login Button
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: BorderSide(
+              color: Colors.blue.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          onPressed: () => _showClientAuthModal(context, ref, initialTab: 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                LucideIcons.logIn,
+                size: 20,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'auth.tab_login'.tr().isNotEmpty &&
+                        !'auth.tab_login'.tr().startsWith('auth.')
+                    ? 'auth.tab_login'.tr()
+                    : 'Увійти',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 600.ms).slideY(
+          begin: 0.08,
+          end: 0,
+          duration: 600.ms,
+          curve: Curves.easeOutExpo,
+        );
   }
 
   void _showLanguageSelector(BuildContext context) {

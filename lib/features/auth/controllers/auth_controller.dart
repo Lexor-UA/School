@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
+import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 
 part 'auth_controller.g.dart';
 
@@ -19,29 +20,47 @@ class AuthController extends _$AuthController {
     // Ensure default admin account exists in Firestore
     ensureAdminInFirestore();
 
-    FirebaseAuth.instance.authStateChanges().listen((user) async {
-      if (user == null) {
-        final prefs = await SharedPreferences.getInstance();
+    // Synchronously restore cached user from SharedPreferences for instant UI state
+    AppUser? initialUser;
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      final cachedJsonStr = prefs.getString('cachedUserJson');
+      if (cachedJsonStr != null && cachedJsonStr.isNotEmpty) {
+        final json = jsonDecode(cachedJsonStr) as Map<String, dynamic>;
+        initialUser = AppUser.fromJson(json);
+      } else {
         final savedRoleString = prefs.getString('userRole');
-        final mockUserId = prefs.getString('mockUserId');
-        
-        // Check if this is a mock session (admin, coach, owner, or mock active client)
-        if (savedRoleString == 'admin' || savedRoleString == 'coach' || savedRoleString == 'owner' || mockUserId == 'mock_active_client') {
-          if (state == null) {
-            if (mockUserId == 'mock_active_client') {
-              try {
-                final doc = await FirebaseFirestore.instance.collection('users').doc('mock_active_client').get();
-                if (doc.exists) {
-                  state = AppUser.fromJson(doc.data()!);
-                } else {
-                  state = const AppUser(
-                    id: 'mock_active_client',
-                    name: 'Андрій',
-                    role: UserRole.parent,
-                    avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
-                  );
-                }
-              } catch (_) {
+        final clientId = prefs.getString('clientId');
+        if (savedRoleString != null) {
+          final role = UserRole.values.firstWhereOrNull((e) => e.name == savedRoleString) ?? UserRole.parent;
+          if (clientId != null || role == UserRole.admin || role == UserRole.owner) {
+            initialUser = AppUser(
+              id: clientId ?? (role == UserRole.admin ? 'admin' : 'mock_owner'),
+              name: prefs.getString('userName') ?? (role == UserRole.admin ? 'Адміністратор' : 'Користувач'),
+              role: role,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error restoring initial user in build(): $e');
+    }
+
+    FirebaseAuth.instance.authStateChanges().listen((user) async {
+      final prefs = await SharedPreferences.getInstance();
+      final savedRoleString = prefs.getString('userRole');
+      final mockUserId = prefs.getString('mockUserId');
+      final clientId = prefs.getString('clientId');
+
+      if (user == null) {
+        // Check if there is a saved session (client, admin, coach, owner)
+        if (savedRoleString != null || clientId != null || mockUserId != null) {
+          if (mockUserId == 'mock_active_client') {
+            try {
+              final doc = await FirebaseFirestore.instance.collection('users').doc('mock_active_client').get();
+              if (doc.exists) {
+                state = AppUser.fromJson(doc.data()!);
+              } else {
                 state = const AppUser(
                   id: 'mock_active_client',
                   name: 'Андрій',
@@ -49,88 +68,109 @@ class AuthController extends _$AuthController {
                   avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
                 );
               }
-            } else if (savedRoleString == 'coach') {
-              // Real coach session restoration from Firestore
-              final coachId = mockUserId ?? prefs.getString('clientId');
-              if (coachId != null && coachId != 'mock_coach') {
-                try {
-                  final doc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
-                  if (doc.exists) {
-                    state = AppUser.fromJson(doc.data()!);
-                    return;
-                  }
-                } catch (_) {}
-              }
-              // If it was mock_coach or coach was not found, cleanly reset session
-              state = null;
-              await _syncRoleToPrefs(null);
-              await prefs.remove('mockUserId');
-              await prefs.remove('clientId');
-            } else if (savedRoleString == 'admin') {
+              await _syncRoleToPrefs(state);
+            } catch (_) {
+              state = const AppUser(
+                id: 'mock_active_client',
+                name: 'Андрій',
+                role: UserRole.parent,
+                avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
+              );
+            }
+          } else if (savedRoleString == 'coach') {
+            // Coach session restoration
+            final coachId = mockUserId ?? clientId;
+            if (coachId != null && coachId != 'mock_coach') {
               try {
-                final doc = await FirebaseFirestore.instance.collection('users').doc('admin').get();
+                final doc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
                 if (doc.exists) {
                   state = AppUser.fromJson(doc.data()!);
-                } else {
-                  state = const AppUser(
-                    id: 'admin',
-                    name: 'Адміністратор',
-                    role: UserRole.admin,
-                    loginId: 'Admin',
-                    phone: '+380 (99) 000-00-01',
-                    avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
-                  );
+                  await _syncRoleToPrefs(state);
+                  return;
                 }
-              } catch (_) {
-                state = const AppUser(id: 'admin', name: 'Admin', role: UserRole.admin);
+              } catch (_) {}
+            }
+            state = null;
+            await _syncRoleToPrefs(null);
+            await prefs.remove('mockUserId');
+            await prefs.remove('clientId');
+          } else if (savedRoleString == 'admin') {
+            try {
+              final doc = await FirebaseFirestore.instance.collection('users').doc('admin').get();
+              if (doc.exists) {
+                state = AppUser.fromJson(doc.data()!);
+              } else {
+                state = const AppUser(
+                  id: 'admin',
+                  name: 'Адміністратор',
+                  role: UserRole.admin,
+                  loginId: 'Admin',
+                  phone: '+380 (99) 000-00-01',
+                  avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+                );
               }
-            } else {
-              final role = UserRole.values.firstWhere((e) => e.name == savedRoleString);
-              state = AppUser(
-                id: 'mock_$savedRoleString',
-                name: 'Owner',
-                role: role,
-              );
+              await _syncRoleToPrefs(state);
+            } catch (_) {
+              state = const AppUser(id: 'admin', name: 'Admin', role: UserRole.admin);
+            }
+          } else if (savedRoleString == 'owner') {
+            state = const AppUser(
+              id: 'mock_owner',
+              name: 'Owner',
+              role: UserRole.owner,
+            );
+            await _syncRoleToPrefs(state);
+          } else if (savedRoleString == 'parent' || clientId != null) {
+            // Real client / parent session restoration!
+            final targetId = clientId ?? mockUserId;
+            if (targetId != null) {
+              await _fetchUserFromFirestore(targetId, hasCachedState: state != null);
             }
           }
         } else {
-          // Only clear if it was a parent (Firebase) session
+          // Genuinely unauthenticated - only clear when there is no saved role or clientId
           state = null;
           await _syncRoleToPrefs(null);
         }
       } else {
-        final prefs = await SharedPreferences.getInstance();
-        final savedRoleString = prefs.getString('userRole');
-        // If user logged in as client via loginId, their UID in Firebase Auth might not match the client's Firestore ID.
-        // We should check if they have a saved 'clientId' in SharedPreferences, otherwise fetch by user.uid.
-        final clientId = prefs.getString('clientId');
-        bool hasCachedState = false;
-        
+        // Firebase Auth user exists
+        final effectiveId = clientId ?? user.uid;
+        bool hasCachedState = state != null;
+
         if (savedRoleString != null) {
-          final role = UserRole.values.firstWhere((e) => e.name == savedRoleString, orElse: () => UserRole.parent);
-          // Don't overwrite state if we already have the correct user (e.g. from signInWithEmail)
-          if (state == null || state!.id != (clientId ?? user.uid)) {
+          final role = UserRole.values.firstWhereOrNull((e) => e.name == savedRoleString) ?? UserRole.parent;
+          if (state == null || state!.id != effectiveId) {
             state = AppUser(
-              id: clientId ?? user.uid,
-              name: user.displayName ?? 'User',
+              id: effectiveId,
+              name: user.displayName ?? prefs.getString('userName') ?? 'User',
               role: role,
             );
+            hasCachedState = true;
           }
-          hasCachedState = true;
         }
-        
-        await _fetchUserFromFirestore(clientId ?? user.uid, hasCachedState: hasCachedState);
+
+        await _fetchUserFromFirestore(effectiveId, hasCachedState: hasCachedState);
       }
     });
-    return null;
+    return initialUser;
   }
 
   Future<void> _syncRoleToPrefs(AppUser? user) async {
     final prefs = await SharedPreferences.getInstance();
     if (user != null) {
       await prefs.setString('userRole', user.role.name);
+      await prefs.setString('clientId', user.id);
+      await prefs.setString('userName', user.name);
+      try {
+        await prefs.setString('cachedUserJson', jsonEncode(user.toJson()));
+      } catch (e) {
+        debugPrint('Error caching user json: $e');
+      }
     } else {
       await prefs.remove('userRole');
+      await prefs.remove('clientId');
+      await prefs.remove('userName');
+      await prefs.remove('cachedUserJson');
     }
   }
 
@@ -147,15 +187,18 @@ class AuthController extends _$AuthController {
         await _syncRoleToPrefs(state);
       } else {
         if (!_isLoggingIn) {
-          // Якщо це перезапуск додатку, а не активний процес логіну, і в базі клієнта ще немає,
-          // ми просто викидаємо його з сесії, щоб він почав зі стандартного меню.
-          state = null;
-          await _syncRoleToPrefs(null);
-          try {
-            await FirebaseAuth.instance.signOut();
-            await GoogleSignIn().signOut();
-          } catch (_) {}
-          return;
+          // If we already have a cached state, do not drop session on transient cache miss
+          if (!hasCachedState) {
+            state = null;
+            await _syncRoleToPrefs(null);
+            try {
+              await FirebaseAuth.instance.signOut();
+              await GoogleSignIn().signOut();
+            } catch (_) {}
+            return;
+          } else {
+            return;
+          }
         }
 
         final currentUser = FirebaseAuth.instance.currentUser;
@@ -545,13 +588,17 @@ class AuthController extends _$AuthController {
   }
 
   Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
-    await GoogleSignIn().signOut();
+    try {
+      await FirebaseAuth.instance.signOut();
+      await GoogleSignIn().signOut();
+    } catch (_) {}
     state = null;
     await _syncRoleToPrefs(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('mockUserId');
     await prefs.remove('clientId');
+    await prefs.remove('userName');
+    await prefs.remove('cachedUserJson');
     await prefs.remove('needsOnboarding');
   }
 
@@ -573,6 +620,7 @@ class AuthController extends _$AuthController {
 
       // Update local state permanently
       state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
+      await _syncRoleToPrefs(state);
       debugPrint('Successfully uploaded and updated avatar!');
       if (onSuccess != null) onSuccess();
       
@@ -699,6 +747,7 @@ class AuthController extends _$AuthController {
       await prefs.remove('needsOnboarding');
 
       state = updatedUser;
+      await _syncRoleToPrefs(state);
     } catch (e) {
       debugPrint('Error completing onboarding: $e');
       rethrow;
@@ -714,6 +763,7 @@ class AuthController extends _$AuthController {
       
       // Оптимістичне оновлення
       state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
+      await _syncRoleToPrefs(state);
 
       await FirebaseFirestore.instance.collection('users').doc(user.id).update({
         'avatarUrl': newUrl,

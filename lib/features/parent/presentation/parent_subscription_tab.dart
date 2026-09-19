@@ -12,6 +12,7 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/shared/widgets/subscription_flip_card.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 
 class SelectedSubscriptionOwnerNotifier extends Notifier<String?> {
@@ -38,13 +39,18 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   String _selectedOwner = '';
 
   final List<Map<String, dynamic>> _services = [
-    {'name': 'Абонемент на 4 тренування', 'price': '1200 грн', 'classes': 4, 'validityDays': 30},
-    {'name': 'Абонемент на 8 тренуваннь', 'price': '1900 грн', 'classes': 8, 'validityDays': 30},
-    {'name': 'Абонемент на 12 тренуваннь', 'price': '2600 грн', 'classes': 12, 'validityDays': 30},
-    {'name': 'Разове тренування у групі', 'price': '500 грн', 'classes': 1, 'validityDays': 1},
-    {'name': 'Разове відвідування/доросла група', 'price': '600 грн', 'classes': 1, 'validityDays': 2},
-    {'name': 'Абонемент на 4 тренування (ДОРОСЛА ГРУПА)', 'price': '1600 грн', 'classes': 4, 'validityDays': 30},
-    {'name': 'Абонемент на 8 тренувань (ДОРОСЛА ГРУПА)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30},
+    // Дитячі абонементи
+    {'name': 'Дитячий абонемент на 4 тренування', 'price': '1200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false},
+    {'name': 'Дитячий абонемент на 8 тренувань', 'price': '1900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false},
+    {'name': 'Дитячий абонемент на 12 тренувань', 'price': '2600 грн', 'classes': 12, 'validityDays': 30, 'isAdult': false},
+    {'name': 'Разове дитяче тренування у групі', 'price': '500 грн', 'classes': 1, 'validityDays': 1, 'isAdult': false},
+    // Дорослі абонементи
+    {'name': 'Абонемент на 4 тренування (Доросла група)', 'price': '1600 грн', 'classes': 4, 'validityDays': 30, 'isAdult': true},
+    {'name': 'Абонемент на 8 тренувань (Доросла група)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': true},
+    {'name': 'Разове відвідування (Доросла група)', 'price': '600 грн', 'classes': 1, 'validityDays': 2, 'isAdult': true},
+    // Спліт абонементи (2 особи: дитина + дорослий або 2 дитини)
+    {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'price': '3400 грн', 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
+    {'name': 'Разове спліт-тренування (2 особи)', 'price': '900 грн', 'classes': 1, 'validityDays': 2, 'isAdult': null, 'isSplit': true},
   ];
 
   void _payForSubscription(String userId, String owner, String selectedService) async {
@@ -53,11 +59,53 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     try {
       await Future.delayed(const Duration(seconds: 1)); // Імітація оплати
 
-      // Check if this owner already has an active subscription
+      final currentUser = ref.read(authControllerProvider);
+      final isOwnerAdult = owner == currentUser?.name;
+      final serviceDetails = _services.firstWhere((s) => s['name'] == selectedService);
+      final isServiceAdult = serviceDetails['isAdult'] as bool?;
+      final isSplit = serviceDetails['isSplit'] as bool? ?? false;
+
+      if (!isSplit) {
+        if (isServiceAdult == true && !isOwnerAdult) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Дорослий абонемент не може бути оформлений для дитини.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+          return;
+        }
+
+        if (isServiceAdult == false && isOwnerAdult) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Дитячий абонемент не може бути оформлений для дорослого.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      // Check if this owner already has an active subscription in this family
+      final familyDoc = await FirebaseFirestore.instance
+          .collection('families')
+          .where('parentIds', arrayContains: userId)
+          .limit(1)
+          .get();
+      final List<String> relevantUserIds = familyDoc.docs.isNotEmpty
+          ? List<String>.from(familyDoc.docs.first.data()['parentIds'] ?? [userId])
+          : [userId];
+      final queryUserIds = isServiceAdult == true ? [userId] : relevantUserIds;
+
       final existingSubSnap = await FirebaseFirestore.instance
           .collection('subscriptions')
-          .where('userId', isEqualTo: userId)
-          .where('ownerName', isEqualTo: owner)
+          .where('userId', whereIn: queryUserIds)
+          .where('ownerName', isEqualTo: isSplit ? 'Всі (Спліт)' : owner)
           .where('isActive', isEqualTo: true)
           .get();
 
@@ -81,7 +129,6 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         return;
       }
 
-      final serviceDetails = _services.firstWhere((s) => s['name'] == selectedService);
       final classes = serviceDetails['classes'] as int;
       final validityDays = serviceDetails['validityDays'] as int;
       final expiry = DateTime.now().add(Duration(days: validityDays));
@@ -94,7 +141,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         isActive: true,
         serviceName: selectedService,
         expiryDate: expiry,
-        ownerName: owner,
+        ownerName: isSplit ? 'Всі (Спліт)' : owner,
       );
       
       await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
@@ -124,7 +171,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   }
 
   void _showPaymentSheet(String userId, String effectiveOwner, bool isDark, AppThemeConfig themeConfig) {
+    final currentUser = ref.read(authControllerProvider);
+    final bool isOwnerAdult = effectiveOwner == currentUser?.name;
     String? selectedService;
+    String categoryFilter = isOwnerAdult ? 'adult' : 'child';
 
     showModalBottomSheet(
       context: context,
@@ -139,6 +189,25 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               final priceStr = service['price'] as String;
               totalPrice = int.tryParse(priceStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
             }
+
+            final displayedServices = _services.where((s) {
+              final isServiceAdult = s['isAdult'] as bool?;
+              final isSplit = s['isSplit'] as bool? ?? false;
+
+              if (isOwnerAdult) {
+                // Adult owner: strictly exclude child-only subscriptions
+                if (isServiceAdult == false && !isSplit) return false;
+                if (categoryFilter == 'adult') return isServiceAdult == true && !isSplit;
+                if (categoryFilter == 'split') return isSplit;
+                return true; // 'all': only adult & split
+              } else {
+                // Child owner: strictly exclude all adult subscriptions!
+                if (isServiceAdult == true) return false;
+                if (categoryFilter == 'child') return isServiceAdult == false && !isSplit;
+                if (categoryFilter == 'split') return isSplit;
+                return true; // 'all': only child & split
+              }
+            }).toList();
 
             return ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -174,7 +243,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         child: Container(
                           width: 44,
                           height: 4,
-                          margin: const EdgeInsets.only(bottom: 24),
+                          margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF94A3B8),
                             borderRadius: BorderRadius.circular(2),
@@ -192,25 +261,90 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             child: const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          Text(
-                            'parent.choose_subscription'.tr(),
-                            style: TextStyle(
-                              color: isDark ? Colors.white : themeConfig.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'parent.choose_subscription'.tr(),
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : themeConfig.textPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Для: $effectiveOwner (${isOwnerAdult ? "Дорослий" : "Дитина"})',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+
+                      // Audience Tabs (Strictly filtered by owner role)
+                      Row(
+                        children: [
+                          if (!isOwnerAdult) ...[
+                            _buildModalCategoryTab('child', 'Для дітей', LucideIcons.baby, categoryFilter == 'child', isDark, () {
+                              setModalState(() {
+                                categoryFilter = 'child';
+                                if (selectedService != null) {
+                                  final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                  if (s['isAdult'] != false || s['isSplit'] == true) selectedService = null;
+                                }
+                              });
+                            }),
+                            const SizedBox(width: 6),
+                          ],
+                          if (isOwnerAdult) ...[
+                            _buildModalCategoryTab('adult', 'Дорослі', LucideIcons.user, categoryFilter == 'adult', isDark, () {
+                              setModalState(() {
+                                categoryFilter = 'adult';
+                                if (selectedService != null) {
+                                  final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                  if (s['isAdult'] != true) selectedService = null;
+                                }
+                              });
+                            }),
+                            const SizedBox(width: 6),
+                          ],
+                          _buildModalCategoryTab('split', 'Спліт (2 ос.)', LucideIcons.users, categoryFilter == 'split', isDark, () {
+                            setModalState(() {
+                              categoryFilter = 'split';
+                              if (selectedService != null) {
+                                final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                if (s['isSplit'] != true) selectedService = null;
+                              }
+                            });
+                          }),
+                          const SizedBox(width: 6),
+                          _buildModalCategoryTab('all', isOwnerAdult ? 'Всі дорослі' : 'Всі дитячі', LucideIcons.layers, categoryFilter == 'all', isDark, () {
+                            setModalState(() {
+                              categoryFilter = 'all';
+                            });
+                          }),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
                       Expanded(
                         child: ListView.builder(
                           physics: const BouncingScrollPhysics(),
-                          itemCount: _services.length,
+                          itemCount: displayedServices.length,
                           itemBuilder: (context, index) {
-                            final service = _services[index];
+                            final service = displayedServices[index];
                             final serviceName = service['name'] as String;
                             final isSelected = selectedService == serviceName;
+                            final bool isServiceAdult = service['isAdult'] as bool? ?? false;
+                            final bool isSplit = service['isSplit'] as bool? ?? false;
 
                             return GestureDetector(
                               onTap: () {
@@ -275,13 +409,50 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
-                                      child: Text(
-                                        serviceName,
-                                        style: TextStyle(
-                                          color: isDark ? (isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9)) : themeConfig.textPrimary,
-                                          fontSize: 14,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            serviceName,
+                                            style: TextStyle(
+                                              color: isDark ? (isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9)) : themeConfig.textPrimary,
+                                              fontSize: 14,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isSplit
+                                                  ? const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.12)
+                                                  : (isServiceAdult
+                                                      ? const Color(0xFF6366F1).withValues(alpha: isDark ? 0.25 : 0.12)
+                                                      : const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: isSplit
+                                                    ? const Color(0xFFA78BFA).withValues(alpha: 0.5)
+                                                    : (isServiceAdult
+                                                        ? const Color(0xFF818CF8).withValues(alpha: 0.45)
+                                                        : const Color(0xFF10B981).withValues(alpha: 0.45)),
+                                                width: 0.8,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              isSplit ? 'Спліт (2 особи)' : (isServiceAdult ? 'Дорослий' : 'Дитячий'),
+                                              style: TextStyle(
+                                                color: isSplit
+                                                    ? (isDark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED))
+                                                    : (isServiceAdult
+                                                        ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
+                                                        : (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(width: 10),
@@ -347,16 +518,20 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: totalPrice > 0 ? Colors.transparent : Colors.white.withValues(alpha: 0.08),
                             shadowColor: Colors.transparent,
+                            padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                             disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
                             disabledForegroundColor: Colors.white38,
                           ),
                           child: Text(
-                            totalPrice > 0 ? '${'parent.pay_subscription'.tr()} $totalPrice грн' : 'parent.choose_subscription'.tr(),
+                            totalPrice > 0
+                                ? '${'parent.pay'.tr()} $totalPrice грн'
+                                : 'parent.choose_subscription'.tr(),
                             style: TextStyle(
+                              color: totalPrice > 0 ? Colors.white : (isDark ? Colors.white38 : themeConfig.textMuted),
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: totalPrice > 0 ? Colors.white : Colors.white38,
+                              height: 1.25,
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -371,6 +546,51 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildModalCategoryTab(String tabKey, String label, IconData icon, bool isSelected, bool isDark, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                  )
+                : null,
+            color: isSelected
+                ? null
+                : (isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1)),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 13, color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569))),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -393,8 +613,22 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       });
     }
 
+    final familyAsync = ref.watch(familyStreamProvider);
+    final family = familyAsync.value;
+    final familyUserIds = (family != null && family.parentIds.isNotEmpty)
+        ? family.parentIds
+        : (user != null ? [user.id] : <String>[]);
+
     final subscriptions = ref.watch(subscriptionControllerProvider);
-    final allSubs = user != null ? subscriptions.where((s) => s.userId == user.id).toList() : <Subscription>[];
+    final allSubs = user != null
+        ? subscriptions.where((s) {
+            if (s.isAdultSubscription) {
+              return s.userId == user.id;
+            } else {
+              return familyUserIds.contains(s.userId);
+            }
+          }).toList()
+        : <Subscription>[];
     
     final filterOwners = [
       if (user != null) {'id': user.name, 'name': user.name, 'isParent': true},
@@ -408,7 +642,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
     final activeForMember = allSubs.where((s) {
       final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? (user?.name ?? '') : s.ownerName!;
-      return owner.trim() == effectiveOwner.trim() && s.isActive && s.remainingClasses > 0;
+      final matchesDirect = owner.trim().toLowerCase() == effectiveOwner.trim().toLowerCase();
+      final isSplitShared = s.isSplitSubscription || (s.ownerName != null && s.ownerName!.contains('Спліт'));
+      return (matchesDirect || isSplitShared) && s.isActive && s.remainingClasses > 0;
     }).toList();
 
     final currentSub = activeForMember.isNotEmpty ? activeForMember.first : null;
@@ -794,6 +1030,32 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           themeConfig: themeConfig,
                           iconColor: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                         ),
+
+                        if (family != null && family.isPaired && currentSub.userId != user?.id && !currentSub.isAdultSubscription) ...[
+                          _buildRowDivider(isDark),
+                          _buildDetailRow(
+                            icon: LucideIcons.heartHandshake,
+                            label: 'Спільний доступ',
+                            valueWidget: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.users, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Оформив(-ла): ${family.getOtherParentName(user?.id ?? "")}',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            isDark: isDark,
+                            themeConfig: themeConfig,
+                            iconColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          ),
+                        ],
                       ],
                     ),
                   ),

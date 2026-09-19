@@ -17,10 +17,12 @@ import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_switcher_sheet.dart';
-import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
-import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/parent/presentation/family_management_sheet.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
+import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -511,12 +513,18 @@ class ParentProfileTab extends ConsumerWidget {
     Color subColor,
     Color accentColor,
   ) {
+    final familyAsync = ref.watch(familyStreamProvider);
+    final family = familyAsync.value;
+    final user = ref.watch(authControllerProvider);
+    final isPaired = family?.isPaired ?? false;
+    final partnerName = family?.getOtherParentName(user?.id ?? '') ?? '';
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -532,170 +540,222 @@ class ParentProfileTab extends ConsumerWidget {
               width: 1.0,
             ),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF059669)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: const Center(
-                  child: Icon(LucideIcons.users, color: Colors.white, size: 15),
-                ),
-              ),
-              const SizedBox(width: 10),
-              if (children.isNotEmpty) ...[
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: children.map((child) {
-                        final childColor = Color(int.tryParse(child.colorHex) ?? 0xFF06B6D4);
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => _showEditChildDialog(context, ref, child, isDark),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.40),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: childColor.withValues(alpha: isDark ? 0.35 : 0.25),
-                                width: 0.9,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    color: childColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  child.currentAge != null ? '${child.name} (${formatAgeUk(child.currentAge!)})' : child.name,
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  LucideIcons.pencil,
-                                  size: 11,
-                                  color: childColor.withValues(alpha: isDark ? 0.75 : 0.85),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ] else ...[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+              // Top Row: Family header & Family Access Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
                     children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Icon(LucideIcons.users, color: Colors.white, size: 14),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        'Моя родина',
+                        'Родина та діти',
                         style: TextStyle(
                           color: textColor,
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
-                        'Додайте дитину для занять',
+                    ],
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => FamilyManagementSheet.show(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isPaired
+                            ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
+                            : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFF0284C7).withValues(alpha: 0.10)),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isPaired
+                              ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                              : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.4) : const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isPaired ? LucideIcons.heartHandshake : LucideIcons.userPlus,
+                            size: 13,
+                            color: isPaired
+                                ? const Color(0xFF10B981)
+                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            isPaired ? 'Сім\'я: $partnerName' : 'Сімейний акаунт',
+                            style: TextStyle(
+                              color: isPaired
+                                  ? (isDark ? const Color(0xFF34D399) : const Color(0xFF047857))
+                                  : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 12,
+                            color: isPaired
+                                ? const Color(0xFF10B981)
+                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Bottom Row: Children List & Add Button
+              Row(
+                children: [
+                  if (children.isNotEmpty) ...[
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: children.map((child) {
+                            final childColor = Color(int.tryParse(child.colorHex) ?? 0xFF06B6D4);
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => _showEditChildDialog(context, ref, child, isDark),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.40),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: childColor.withValues(alpha: isDark ? 0.35 : 0.25),
+                                    width: 0.9,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: childColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      child.currentAge != null ? '${child.name} (${formatAgeUk(child.currentAge!)})' : child.name,
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      LucideIcons.pencil,
+                                      size: 11,
+                                      color: childColor.withValues(alpha: isDark ? 0.75 : 0.85),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Expanded(
+                      child: Text(
+                        'Додайте дитину для тренувань',
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : subColor,
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          height: 1.15,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(width: 8),
-              // Add child button
-              InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () => _showAddChildDialog(context, ref, isDark),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.14),
-                        const Color(0xFF059669).withValues(alpha: isDark ? 0.15 : 0.06),
-                      ],
                     ),
+                  ],
+                  const SizedBox(width: 8),
+                  // Add child button
+                  InkWell(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                          : const Color(0xFF059669).withValues(alpha: 0.45),
-                      width: 0.9,
-                    ),
-                    boxShadow: isDark
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.20),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.plus,
-                        size: 13,
-                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Додати',
-                        style: TextStyle(
-                          color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                    onTap: () => _showAddChildDialog(context, ref, isDark),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.14),
+                            const Color(0xFF059669).withValues(alpha: isDark ? 0.15 : 0.06),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                              : const Color(0xFF059669).withValues(alpha: 0.45),
+                          width: 0.9,
                         ),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.plus,
+                            size: 13,
+                            color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Додати',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -1049,7 +1109,39 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                 ),
               ),
-              // Row 3: Support Chat
+              // Row 3: Family Account Tile
+              _buildGroupedItem(
+                icon: LucideIcons.heartHandshake,
+                gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
+                title: 'Сімейний акаунт',
+                subtitle: ref.watch(familyStreamProvider).value?.isPaired == true
+                    ? 'Спільний доступ активний'
+                    : 'Підключити чоловіка / дружину',
+                textColor: textColor,
+                subColor: subColor,
+                isDark: isDark,
+                onTap: () => FamilyManagementSheet.show(context),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 54, right: 14),
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                              Colors.transparent,
+                            ]
+                          : [
+                              const Color(0xFFBAE6FD).withValues(alpha: 0.50),
+                              Colors.transparent,
+                            ],
+                    ),
+                  ),
+                ),
+              ),
+              // Row 4: Support Chat
               _buildGroupedItem(
                 icon: LucideIcons.messageCircle,
                 gradientColors: const [Color(0xFF06B6D4), Color(0xFF0D9488)],

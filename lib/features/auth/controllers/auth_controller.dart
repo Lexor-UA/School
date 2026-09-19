@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:collection/collection.dart';
 
 part 'auth_controller.g.dart';
 
@@ -226,12 +227,9 @@ class AuthController extends _$AuthController {
         final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
         final docSnap = await docRef.get();
         final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-        if (password.trim() != storedPassword.trim() && password.trim() != '1') {
+        if (password.trim() != storedPassword.trim()) {
           throw Exception('Невірний пароль');
         }
-        try {
-          await FirebaseAuth.instance.signOut();
-        } catch (_) {}
 
         if (docSnap.exists) {
           final data = docSnap.data()!;
@@ -269,21 +267,34 @@ class AuthController extends _$AuthController {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mockUserId', 'admin');
         await prefs.setString('clientId', 'admin');
+        try {
+          if (FirebaseAuth.instance.currentUser == null) {
+            await FirebaseAuth.instance.signInAnonymously();
+          }
+        } catch (_) {}
         return;
       } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
-        if (password.trim() != '1') throw Exception('Невірний пароль');
-        try {
-          await FirebaseAuth.instance.signOut();
-        } catch (_) {}
+        final docRef = FirebaseFirestore.instance.collection('users').doc('mock_owner');
+        final docSnap = await docRef.get();
+        final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
+        if (password.trim() != storedPassword.trim()) throw Exception('Невірний пароль');
         state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
         await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mockUserId', 'mock_owner');
+        await prefs.setString('clientId', 'mock_owner');
+        try {
+          if (FirebaseAuth.instance.currentUser == null) {
+            await FirebaseAuth.instance.signInAnonymously();
+          }
+        } catch (_) {}
         return;
       } else if (login.startsWith('coach')) {
         final usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
         if (usersSnap.docs.isNotEmpty) {
           final userData = usersSnap.docs.first.data();
           final storedPassword = (userData['password'] as String?) ?? '1';
-          if (password.trim() != storedPassword.trim() && password.trim() != '1') {
+          if (password.trim() != storedPassword.trim()) {
             throw Exception('Невірний пароль');
           }
           state = AppUser.fromJson(userData);
@@ -291,14 +302,33 @@ class AuthController extends _$AuthController {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('clientId', state!.id);
           await prefs.setString('mockUserId', state!.id);
+          try {
+            if (FirebaseAuth.instance.currentUser == null) {
+              await FirebaseAuth.instance.signInAnonymously();
+            }
+          } catch (_) {}
           return;
         } else {
           throw Exception('Тренера з логіном $login не знайдено');
         }
       } else if (login == 'client' || login == 'client1' || login == 'parent' || login.startsWith('client') || !login.contains('@')) {
+        final normalizedPhone = _normalizePhone(email);
+        final rawDigits = email.replaceAll(RegExp(r'\D'), '');
+
         var usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
         if (usersSnap.docs.isEmpty) {
-          usersSnap = await FirebaseFirestore.instance.collection('users').where('phone', isEqualTo: email.trim()).get();
+          usersSnap = await FirebaseFirestore.instance.collection('users').where('phone', isEqualTo: normalizedPhone).get();
+        }
+        if (usersSnap.docs.isEmpty && rawDigits.length >= 9) {
+          final allParents = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'parent').get();
+          final last9 = rawDigits.substring(rawDigits.length - 9);
+          final matchedDoc = allParents.docs.firstWhereOrNull((d) {
+            final p = (d.data()['phone'] as String? ?? '').replaceAll(RegExp(r'\D'), '');
+            return p.endsWith(last9);
+          });
+          if (matchedDoc != null) {
+            usersSnap = await FirebaseFirestore.instance.collection('users').where(FieldPath.documentId, isEqualTo: matchedDoc.id).get();
+          }
         }
         if (usersSnap.docs.isEmpty && (login == 'client' || login == 'client1' || login == 'parent')) {
           usersSnap = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'parent').limit(1).get();
@@ -306,13 +336,18 @@ class AuthController extends _$AuthController {
         if (usersSnap.docs.isNotEmpty) {
           final userData = usersSnap.docs.first.data();
           final storedPassword = (userData['password'] as String?) ?? '1';
-          if (password.trim() != storedPassword.trim() && password.trim() != '1') {
+          if (password.trim() != storedPassword.trim()) {
             throw Exception('Невірний пароль');
           }
           state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('clientId', state!.id);
+          try {
+            if (FirebaseAuth.instance.currentUser == null) {
+              await FirebaseAuth.instance.signInAnonymously();
+            }
+          } catch (_) {}
           return;
         } else if (login == 'client' || login == 'client1' || login == 'parent') {
           final demoClient = {
@@ -337,26 +372,36 @@ class AuthController extends _$AuthController {
           await _syncRoleToPrefs(state);
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('clientId', 'demo_client');
+          try {
+            if (FirebaseAuth.instance.currentUser == null) {
+              await FirebaseAuth.instance.signInAnonymously();
+            }
+          } catch (_) {}
           return;
         } else if (login.startsWith('client')) {
           throw Exception('Клієнта з логіном $login не знайдено');
         }
       }
 
-      if (password.trim() == '1') {
-        // Now that SharedPreferences are set, we can sign in. The listener will pick up the correct clientId.
-        try {
-          await FirebaseAuth.instance.signInAnonymously();
-        } catch (_) {
-          try {
-            await FirebaseAuth.instance.signInWithEmailAndPassword(email: 'mock_$login@cityswim.com', password: 'password123');
-          } catch (e) {
-            try {
-              await FirebaseAuth.instance.createUserWithEmailAndPassword(email: 'mock_$login@cityswim.com', password: 'password123');
-            } catch (_) {}
+      if (login.contains('@')) {
+        final emailSnap = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: login).get();
+        if (emailSnap.docs.isNotEmpty) {
+          final userData = emailSnap.docs.first.data();
+          final storedPassword = (userData['password'] as String?) ?? '1';
+          if (password.trim() != storedPassword.trim()) {
+            throw Exception('Невірний пароль');
           }
+          state = AppUser.fromJson(userData);
+          await _syncRoleToPrefs(state);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('clientId', state!.id);
+          try {
+            if (FirebaseAuth.instance.currentUser == null) {
+              await FirebaseAuth.instance.signInAnonymously();
+            }
+          } catch (_) {}
+          return;
         }
-        return;
       }
 
       final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
@@ -369,6 +414,136 @@ class AuthController extends _$AuthController {
     }
   }
 
+  String _normalizePhone(String phone) {
+    String digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('380') && digits.length >= 12) {
+      return '+$digits';
+    } else if (digits.startsWith('0') && digits.length == 10) {
+      return '+38$digits';
+    } else if (digits.length == 9) {
+      return '+380$digits';
+    }
+    return phone.trim();
+  }
+
+  Future<AppUser> registerParentWithPhoneOrEmail({
+    required String name,
+    required String phone,
+    required String password,
+    String? email,
+  }) async {
+    try {
+      final rawLogin = phone.trim();
+      if (rawLogin.isEmpty) {
+        throw Exception('Введіть логін');
+      }
+      if (password.trim().length < 4) {
+        throw Exception('Пароль має містити щонайменше 4 символи');
+      }
+
+      final rawDigits = rawLogin.replaceAll(RegExp(r'\D'), '');
+      final isPhone = !rawLogin.contains('@') && rawDigits.length >= 9;
+
+      String? normalizedPhone;
+      String? userEmail;
+      String? customLoginId;
+
+      final allUsers = await FirebaseFirestore.instance.collection('users').get();
+
+      if (isPhone) {
+        normalizedPhone = _normalizePhone(rawLogin);
+        final last9 = rawDigits.substring(rawDigits.length - 9);
+        final duplicate = allUsers.docs.firstWhereOrNull((d) {
+          final p = (d.data()['phone'] as String? ?? '').replaceAll(RegExp(r'\D'), '');
+          return p.endsWith(last9);
+        });
+        if (duplicate != null) {
+          throw Exception('Користувач із таким номером вже існує в системі. Будь ласка, увійдіть.');
+        }
+      } else if (rawLogin.contains('@')) {
+        userEmail = rawLogin.toLowerCase();
+        final duplicate = allUsers.docs.firstWhereOrNull((d) {
+          final e = (d.data()['email'] as String? ?? '').toLowerCase();
+          return e == userEmail;
+        });
+        if (duplicate != null) {
+          throw Exception('Користувач із таким email вже існує в системі. Будь ласка, увійдіть.');
+        }
+      } else {
+        customLoginId = rawLogin.toLowerCase();
+        final duplicate = allUsers.docs.firstWhereOrNull((d) {
+          final l = (d.data()['loginId'] as String? ?? '').toLowerCase();
+          return l == customLoginId;
+        });
+        if (duplicate != null) {
+          throw Exception('Користувач із таким логіном вже існує в системі. Будь ласка, увійдіть.');
+        }
+      }
+
+      // Calculate sequential loginId for CRM if not a custom login
+      int maxClientNum = 0;
+      for (var doc in allUsers.docs) {
+        final loginId = doc.data()['loginId'] as String?;
+        if (loginId != null && loginId.startsWith('client')) {
+          final numStr = loginId.replaceAll('client', '');
+          final num = int.tryParse(numStr);
+          if (num != null && num > maxClientNum) {
+            maxClientNum = num;
+          }
+        }
+      }
+      final sequentialLoginId = 'client${maxClientNum + 1}';
+      final assignedLoginId = customLoginId ?? sequentialLoginId;
+
+      // Create new user document
+      final newDocRef = FirebaseFirestore.instance.collection('users').doc();
+      final parts = name.trim().split(' ').where((s) => s.isNotEmpty).toList();
+      final avatarInitials = parts.isNotEmpty
+          ? (parts.length > 1 ? '${parts[0][0]}+${parts[1][0]}' : parts[0][0])
+          : 'Client';
+
+      final newClientData = {
+        'id': newDocRef.id,
+        'name': name.trim(),
+        'role': 'parent',
+        'phone': ?normalizedPhone,
+        'loginId': assignedLoginId,
+        'password': password.trim(),
+        'email': ?userEmail,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await newDocRef.set(newClientData);
+
+      final newUser = AppUser(
+        id: newDocRef.id,
+        name: name.trim(),
+        role: UserRole.parent,
+        phone: normalizedPhone,
+        loginId: assignedLoginId,
+        avatarUrl: 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
+      );
+
+      state = newUser;
+      await _syncRoleToPrefs(state);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('clientId', newUser.id);
+      await prefs.setBool('needsOnboarding', true);
+
+      try {
+        if (FirebaseAuth.instance.currentUser == null) {
+          await FirebaseAuth.instance.signInAnonymously();
+        }
+      } catch (_) {}
+
+      return newUser;
+    } catch (e) {
+      debugPrint('Registration error: $e');
+      rethrow;
+    }
+  }
+
   Future<void> logout() async {
     await FirebaseAuth.instance.signOut();
     await GoogleSignIn().signOut();
@@ -377,6 +552,7 @@ class AuthController extends _$AuthController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('mockUserId');
     await prefs.remove('clientId');
+    await prefs.remove('needsOnboarding');
   }
 
   Future<void> updateAvatar(Uint8List bytes, {VoidCallback? onSuccess, void Function(String)? onError}) async {
@@ -414,6 +590,9 @@ class AuthController extends _$AuthController {
     String name,
     String phone, {
     int? age,
+    String? goal,
+    String? level,
+    bool isAdultOnly = false,
     List<Map<String, dynamic>>? children,
     String? childName,
     dynamic childAge,
@@ -436,7 +615,7 @@ class AuthController extends _$AuthController {
           }
         }
       }
-      final newLoginId = 'client${maxClientNum + 1}';
+      final newLoginId = (user.loginId != null && user.loginId!.isNotEmpty) ? user.loginId! : 'client${maxClientNum + 1}';
 
       // Update state
       final updatedUser = user.copyWith(
@@ -445,11 +624,19 @@ class AuthController extends _$AuthController {
         loginId: newLoginId,
       );
 
-      // Save user to Firestore including age
+      // Save user to Firestore including age, goal, level
       final userMap = updatedUser.toJson();
       if (age != null) {
         userMap['age'] = age;
       }
+      if (goal != null && goal.isNotEmpty) {
+        userMap['swimmingGoal'] = goal;
+      }
+      if (level != null && level.isNotEmpty) {
+        userMap['swimmingLevel'] = level;
+      }
+      userMap['isAdultOnly'] = isAdultOnly;
+      userMap['onboardingCompleted'] = true;
       await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).set(userMap);
 
       // Save children if provided as list
@@ -457,8 +644,18 @@ class AuthController extends _$AuthController {
         for (var c in children) {
           final cName = (c['name'] as String?)?.trim();
           final cAge = c['age'] is int ? c['age'] as int : int.tryParse(c['age']?.toString() ?? '');
+          final cGoal = (c['goal'] as String?)?.trim();
           if (cName != null && cName.isNotEmpty) {
             final childRef = FirebaseFirestore.instance.collection('children').doc();
+            String childNotes = '';
+            if (cAge != null && cGoal != null && cGoal.isNotEmpty) {
+              childNotes = 'Вік: $cAge • Ціль: $cGoal';
+            } else if (cGoal != null && cGoal.isNotEmpty) {
+              childNotes = 'Ціль: $cGoal';
+            } else if (cAge != null) {
+              childNotes = 'Вік: $cAge';
+            }
+
             final childData = <String, dynamic>{
               'id': childRef.id,
               'parentId': updatedUser.id,
@@ -467,10 +664,13 @@ class AuthController extends _$AuthController {
               'xp': 0,
               'maxXp': 100,
               'colorHex': '0xFF40C4FF',
-              'notes': cAge != null ? 'Вік: $cAge' : '',
+              'notes': childNotes,
             };
             if (cAge != null) {
               childData['age'] = cAge;
+            }
+            if (cGoal != null && cGoal.isNotEmpty) {
+              childData['goal'] = cGoal;
             }
             await childRef.set(childData);
           }
@@ -494,6 +694,9 @@ class AuthController extends _$AuthController {
         }
         await childRef.set(childData);
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('needsOnboarding');
 
       state = updatedUser;
     } catch (e) {

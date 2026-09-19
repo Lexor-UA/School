@@ -15,6 +15,8 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/parent/models/family.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 
 class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -51,13 +53,15 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   String _selectedSubOwner = '';
 
   final List<Map<String, dynamic>> _services = [
-    {'name': 'Абонемент на 4 тренування', 'classes': 4, 'validityDays': 30},
-    {'name': 'Абонемент на 8 тренуваннь', 'classes': 8, 'validityDays': 30},
-    {'name': 'Абонемент на 12 тренуваннь', 'classes': 12, 'validityDays': 30},
-    {'name': 'Разове тренування у групі', 'classes': 1, 'validityDays': 1},
-    {'name': 'Разове відвідування/доросла група', 'classes': 1, 'validityDays': 2},
-    {'name': 'Абонемент на 4 тренування (ДОРОСЛА ГРУПА)', 'classes': 4, 'validityDays': 30},
-    {'name': 'Абонемент на 8 тренувань (ДОРОСЛА ГРУПА)', 'classes': 8, 'validityDays': 30},
+    {'name': 'Абонемент на 4 тренування', 'classes': 4, 'validityDays': 30, 'isAdult': false},
+    {'name': 'Абонемент на 8 тренувань', 'classes': 8, 'validityDays': 30, 'isAdult': false},
+    {'name': 'Абонемент на 12 тренувань', 'classes': 12, 'validityDays': 30, 'isAdult': false},
+    {'name': 'Разове тренування у групі', 'classes': 1, 'validityDays': 1, 'isAdult': false},
+    {'name': 'Разове відвідування (Доросла група)', 'classes': 1, 'validityDays': 2, 'isAdult': true},
+    {'name': 'Абонемент на 4 тренування (Доросла група)', 'classes': 4, 'validityDays': 30, 'isAdult': true},
+    {'name': 'Абонемент на 8 тренувань (Доросла група)', 'classes': 8, 'validityDays': 30, 'isAdult': true},
+    {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
+    {'name': 'Разове спліт-тренування (2 особи)', 'classes': 1, 'validityDays': 2, 'isAdult': null, 'isSplit': true},
   ];
 
   @override
@@ -202,7 +206,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     }
   }
 
-  void _showAddChildDialog() {
+  void _showAddChildDialog({List<String>? parentIds, Family? family}) {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final nameCtrl = TextEditingController();
     final ageCtrl = TextEditingController();
@@ -303,10 +307,15 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               if (name.isEmpty) return;
               Navigator.pop(ctx);
               try {
+                final effectiveParentIds = parentIds != null && parentIds.isNotEmpty
+                    ? parentIds
+                    : [widget.clientId];
                 final childRef = FirebaseFirestore.instance.collection('children').doc();
                 final childData = <String, dynamic>{
                   'id': childRef.id,
                   'parentId': widget.clientId,
+                  'parentIds': effectiveParentIds,
+                  if (family != null) 'familyId': family.id,
                   'name': name,
                   'colorHex': '0xFF40C4FF',
                   'level': 1,
@@ -586,16 +595,30 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
 
   void _showAddSubscriptionDialog(List<String> availableOwners, {String? preselectedOwner}) {
     final isDark = ref.read(appThemeControllerProvider).isDark;
-    String selectedService = _services.first['name'];
     String selectedOwner = (preselectedOwner != null && availableOwners.contains(preselectedOwner))
         ? preselectedOwner
         : (availableOwners.isNotEmpty ? availableOwners.first : widget.initialName);
+    final initialIsOwnerAdult = selectedOwner == widget.initialName;
+    final initialServices = _services.where((s) {
+      if (initialIsOwnerAdult) return s['isAdult'] != false;
+      return s['isAdult'] != true;
+    }).toList();
+    String selectedService = initialServices.isNotEmpty ? initialServices.first['name'] : _services.first['name'];
 
     showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final isOwnerAdult = selectedOwner == widget.initialName;
+            final availableServices = _services.where((s) {
+              if (isOwnerAdult) return s['isAdult'] != false;
+              return s['isAdult'] != true;
+            }).toList();
+            if (!availableServices.any((s) => s['name'] == selectedService)) {
+              selectedService = availableServices.first['name'];
+            }
+
             final allSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
             final activeForOwner = allSubs.where((s) {
               final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? widget.initialName : s.ownerName!;
@@ -645,7 +668,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                         value: selectedService,
                         isExpanded: true,
                         icon: Icon(LucideIcons.chevronDown, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                        items: _services.map((s) {
+                        items: availableServices.map((s) {
                           return DropdownMenuItem<String>(
                             value: s['name'],
                             child: Text(
@@ -709,7 +732,19 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) setStateDialog(() => selectedOwner = val);
+                            if (val != null) {
+                              setStateDialog(() {
+                                selectedOwner = val;
+                                final newIsOwnerAdult = selectedOwner == widget.initialName;
+                                final newAvailable = _services.where((s) {
+                                  if (newIsOwnerAdult) return s['isAdult'] != false;
+                                  return s['isAdult'] != true;
+                                }).toList();
+                                if (!newAvailable.any((s) => s['name'] == selectedService)) {
+                                  selectedService = newAvailable.first['name'];
+                                }
+                              });
+                            }
                           },
                         ),
                       ),
@@ -979,73 +1014,105 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   Widget _buildFormState({required bool isDark}) {
-    final userSubs = ref.watch(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
-    
-    return Column(
-      children: [
-        _buildTextField(
-          controller: _nameController,
-          label: 'admin.add_client_name_hint'.tr(),
-          icon: LucideIcons.user,
-          isDark: isDark,
-        ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
-        const SizedBox(height: 16),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('families')
+          .where('parentIds', arrayContains: widget.clientId)
+          .snapshots(),
+      builder: (context, familySnapshot) {
+        Family? family;
+        List<String> parentIds = [widget.clientId];
+        if (familySnapshot.hasData && familySnapshot.data!.docs.isNotEmpty) {
+          final doc = familySnapshot.data!.docs.first;
+          family = Family.fromJson({'id': doc.id, ...doc.data() as Map<String, dynamic>});
+          if (family.parentIds.isNotEmpty) {
+            parentIds = family.parentIds;
+          }
+        }
+
+        final userSubs = ref.watch(subscriptionControllerProvider).where((s) => parentIds.contains(s.userId)).toList();
         
-        _buildTextField(
-          controller: _phoneController,
-          label: 'admin.add_client_phone_hint'.tr(),
-          icon: LucideIcons.phone,
-          keyboardType: TextInputType.phone,
-          isDark: isDark,
-        ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
-        const SizedBox(height: 16),
+        return Column(
+          children: [
+            _buildTextField(
+              controller: _nameController,
+              label: 'admin.add_client_name_hint'.tr(),
+              icon: LucideIcons.user,
+              isDark: isDark,
+            ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
+            const SizedBox(height: 16),
+            
+            _buildTextField(
+              controller: _phoneController,
+              label: 'admin.add_client_phone_hint'.tr(),
+              icon: LucideIcons.phone,
+              keyboardType: TextInputType.phone,
+              isDark: isDark,
+            ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
+            const SizedBox(height: 16),
 
-        _buildTextField(
-          controller: _ageController,
-          label: 'Вік клієнта (років)',
-          icon: LucideIcons.calendar,
-          keyboardType: TextInputType.number,
-          isDark: isDark,
-        ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1),
-        const SizedBox(height: 16),
+            _buildTextField(
+              controller: _ageController,
+              label: 'Вік клієнта (років)',
+              icon: LucideIcons.calendar,
+              keyboardType: TextInputType.number,
+              isDark: isDark,
+            ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1),
+            const SizedBox(height: 16),
 
-        _buildTextField(
-          controller: _loginIdController,
-          label: '${'admin.clients_login_label'.tr()} (Client1)',
-          icon: LucideIcons.key,
-          isDark: isDark,
-        ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
-        const SizedBox(height: 16),
+            _buildTextField(
+              controller: _loginIdController,
+              label: '${'admin.clients_login_label'.tr()} (Client1)',
+              icon: LucideIcons.key,
+              isDark: isDark,
+            ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+            const SizedBox(height: 16),
 
-        // Password & Access Management Section
-        _buildPasswordSection(isDark: isDark).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
-        const SizedBox(height: 32),
+            // Password & Access Management Section
+            _buildPasswordSection(isDark: isDark).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
+            const SizedBox(height: 32),
 
-        // CHILDREN MANAGEMENT
-        _buildChildrenSection(isDark: isDark).animate().fadeIn(delay: 380.ms),
-        const SizedBox(height: 32),
+            // FAMILY ACCOUNT SECTION
+            _buildFamilySection(isDark: isDark, family: family, parentIds: parentIds).animate().fadeIn(delay: 360.ms),
+            const SizedBox(height: 32),
 
-        // SUBSCRIPTION MANAGEMENT
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'admin.sub_management'.tr(),
-            style: TextStyle(
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ).animate().fadeIn(delay: 350.ms),
-        const SizedBox(height: 12),
-        
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
-          builder: (context, snapshot) {
-            List<Map<String, dynamic>> familyMembers = [
-              {'name': widget.initialName, 'isParent': true, 'age': widget.initialAge},
-            ];
-            List<String> availableOwners = [widget.initialName];
+            // CHILDREN MANAGEMENT
+            _buildChildrenSection(isDark: isDark, parentIds: parentIds, family: family).animate().fadeIn(delay: 380.ms),
+            const SizedBox(height: 32),
+
+            // SUBSCRIPTION MANAGEMENT
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'admin.sub_management'.tr(),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ).animate().fadeIn(delay: 350.ms),
+            const SizedBox(height: 12),
+            
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('children').where('parentId', whereIn: parentIds).snapshots(),
+              builder: (context, snapshot) {
+                List<Map<String, dynamic>> familyMembers = [
+                  {'name': widget.initialName, 'isParent': true, 'age': widget.initialAge},
+                ];
+                List<String> availableOwners = [widget.initialName];
+
+                if (family != null && family.isPaired) {
+                  final partnerName = family.getOtherParentName(widget.clientId);
+                  if (partnerName != null && partnerName.isNotEmpty && !availableOwners.contains(partnerName)) {
+                    familyMembers.add({
+                      'name': partnerName,
+                      'isParent': true,
+                      'age': null,
+                    });
+                    availableOwners.add(partnerName);
+                  }
+                }
             
             if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
               for (var doc in snapshot.data!.docs) {
@@ -1711,6 +1778,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         const SizedBox(height: 40),
       ],
     );
+      },
+    );
   }
 
   Widget _buildSuccessState({required bool isDark}) {
@@ -1945,7 +2014,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     );
   }
 
-  Widget _buildChildrenSection({required bool isDark}) {
+  Widget _buildChildrenSection({
+    required bool isDark,
+    required List<String> parentIds,
+    required Family? family,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1971,7 +2044,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               ],
             ),
             TextButton.icon(
-              onPressed: _showAddChildDialog,
+              onPressed: () => _showAddChildDialog(parentIds: parentIds, family: family),
               icon: Icon(
                 LucideIcons.plus,
                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
@@ -1994,7 +2067,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         ),
         const SizedBox(height: 12),
         StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('children').where('parentId', isEqualTo: widget.clientId).snapshots(),
+          stream: FirebaseFirestore.instance.collection('children').where('parentId', whereIn: parentIds).snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return Container(
@@ -2026,6 +2099,9 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 final cId = doc.id;
                 final cName = data['name'] ?? 'Дитина';
                 final cAge = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
+                final childParentId = data['parentId'] as String?;
+                final isPartnerChild = childParentId != null && childParentId != widget.clientId;
+                final partnerName = family?.getOtherParentName(widget.clientId);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -2061,13 +2137,39 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              cName,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.5,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  cName,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14.5,
+                                  ),
+                                ),
+                                if (isPartnerChild) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFA78BFA).withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFFA78BFA).withValues(alpha: 0.4),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Спільна (${partnerName ?? "партнер"})',
+                                      style: const TextStyle(
+                                        color: Color(0xFFA78BFA),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -2103,6 +2205,575 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildFamilySection({
+    required bool isDark,
+    required Family? family,
+    required List<String> parentIds,
+  }) {
+    final isPaired = family?.isPaired ?? false;
+    final partnerName = family?.getOtherParentName(widget.clientId);
+    final partnerPhone = family?.getOtherParentPhone(widget.clientId);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  LucideIcons.heartHandshake,
+                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Сімейний зв\'язок (CRM)',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            if (!isPaired)
+              TextButton.icon(
+                onPressed: () => _showLinkParentDialog(context, isDark: isDark, existingFamily: family),
+                icon: Icon(
+                  LucideIcons.userPlus,
+                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                  size: 16,
+                ),
+                label: const Text(
+                  'Зв\'язати в пару',
+                  style: TextStyle(
+                    color: Color(0xFF10B981),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (isPaired && family != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.4),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(LucideIcons.users, color: Color(0xFF10B981), size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Партнер: ${partnerName ?? "Невідомо"}',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            if (partnerPhone != null && partnerPhone.isNotEmpty)
+                              Text(
+                                partnerPhone,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        family.inviteCode,
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(LucideIcons.shieldCheck, color: Color(0xFF10B981), size: 14),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Обидва батьки мають спільний доступ до дітей та абонементів.',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF334155),
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _confirmUnlinkFamily(family, isDark: isDark),
+                      icon: const Icon(LucideIcons.userX, size: 14, color: Colors.redAccent),
+                      label: const Text(
+                        'Розірвати',
+                        style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.redAccent, width: 1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  LucideIcons.userMinus,
+                  color: isDark ? Colors.white38 : Colors.black38,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Акаунт не має зв\'язку з другим із батьків',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (family != null)
+                        Text(
+                          'Код сім\'ї: ${family.inviteCode}',
+                          style: TextStyle(
+                            color: isDark ? Colors.white38 : Colors.black45,
+                            fontSize: 11.5,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _confirmUnlinkFamily(Family family, {required bool isDark}) async {
+    final partnerName = family.getOtherParentName(widget.clientId) ?? 'партнера';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 22),
+            SizedBox(width: 8),
+            Text('Розірвати зв\'язок?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Ви впевнені, що хочете розірвати сімейний зв\'язок клієнта "${widget.initialName}" з $partnerName? Спільний доступ до дітей та абонементів буде розділено.',
+          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Скасувати'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Розірвати', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(familyControllerProvider).adminUnlinkFamily(family.id);
+      final admin = ref.read(authControllerProvider);
+      if (admin != null) {
+        await logAdminAction('Розірвано сімейний зв\'язок клієнтів "${widget.initialName}" та "$partnerName"', admin.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Сімейний зв\'язок успішно розірвано.'),
+            backgroundColor: Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLinkParentDialog(BuildContext context, {required bool isDark, required Family? existingFamily}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        String searchQuery = '';
+        String? selectedClientId;
+        String? selectedClientName;
+        bool isLinking = false;
+
+        return StatefulBuilder(
+          builder: (builderCtx, setModalState) {
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.75,
+                  padding: EdgeInsets.only(
+                    top: 16,
+                    left: 20,
+                    right: 20,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.98),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white24 : Colors.black26,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(LucideIcons.heartHandshake, color: Color(0xFF10B981), size: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Зв\'язати у спільну сім\'ю',
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'Клієнт: ${widget.initialName}',
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(LucideIcons.x, size: 20),
+                            onPressed: () => Navigator.pop(modalCtx),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Search Box
+                      TextField(
+                        onChanged: (val) => setModalState(() => searchQuery = val.trim().toLowerCase()),
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                        decoration: InputDecoration(
+                          hintText: 'Пошук за ім\'ям або телефоном...',
+                          hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 13),
+                          prefixIcon: const Icon(LucideIcons.search, size: 18),
+                          filled: true,
+                          fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Client List
+                      Expanded(
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .where('role', isEqualTo: 'parent')
+                              .snapshots(),
+                          builder: (context, userSnap) {
+                            if (!userSnap.hasData) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+
+                            final candidateDocs = userSnap.data!.docs.where((doc) {
+                              if (doc.id == widget.clientId) return false;
+                              final data = doc.data() as Map<String, dynamic>;
+                              final name = (data['name'] as String? ?? '').toLowerCase();
+                              final phone = (data['phone'] as String? ?? '').toLowerCase();
+                              if (searchQuery.isNotEmpty) {
+                                return name.contains(searchQuery) || phone.contains(searchQuery);
+                              }
+                              return true;
+                            }).toList();
+
+                            if (candidateDocs.isEmpty) {
+                              return Center(
+                                child: Text(
+                                  'Клієнтів не знайдено',
+                                  style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                                ),
+                              );
+                            }
+
+                            return ListView.separated(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: candidateDocs.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 6),
+                              itemBuilder: (context, idx) {
+                                final doc = candidateDocs[idx];
+                                final data = doc.data() as Map<String, dynamic>;
+                                final cId = doc.id;
+                                final cName = data['name'] as String? ?? 'Клієнт';
+                                final cPhone = data['phone'] as String? ?? '';
+                                final isSelected = selectedClientId == cId;
+
+                                return InkWell(
+                                  onTap: () {
+                                    setModalState(() {
+                                      selectedClientId = cId;
+                                      selectedClientName = cName;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.12)
+                                          : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFF10B981)
+                                            : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                        width: isSelected ? 1.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: isSelected
+                                              ? const Color(0xFF10B981)
+                                              : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                          child: Text(
+                                            cName.isNotEmpty ? cName[0].toUpperCase() : '?',
+                                            style: TextStyle(
+                                              color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                cName,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isDark ? Colors.white : Colors.black87,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              if (cPhone.isNotEmpty)
+                                                Text(
+                                                  cPhone,
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white54 : Colors.black54,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 20),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Submit Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          onPressed: (selectedClientId == null || isLinking)
+                              ? null
+                              : () async {
+                                  setModalState(() => isLinking = true);
+                                  final error = await ref
+                                      .read(familyControllerProvider)
+                                      .adminLinkParents(widget.clientId, selectedClientId!);
+                                  setModalState(() => isLinking = false);
+
+                                  if (error != null) {
+                                    if (builderCtx.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(error),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    final admin = ref.read(authControllerProvider);
+                                    if (admin != null) {
+                                      await logAdminAction(
+                                        'Об\'єднано у сім\'ю клієнтів "${widget.initialName}" та "$selectedClientName"',
+                                        admin.id,
+                                      );
+                                    }
+                                    if (modalCtx.mounted) {
+                                      Navigator.pop(modalCtx);
+                                    }
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Акаунти "${widget.initialName}" та "$selectedClientName" успішно об\'єднано у спільну сім\'ю!',
+                                          ),
+                                          backgroundColor: const Color(0xFF064E3B),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          icon: isLinking
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(LucideIcons.heartHandshake, size: 18),
+                          label: Text(
+                            isLinking
+                                ? 'Об\'єднання...'
+                                : 'Об\'єднати з ${selectedClientName ?? "обраним клієнтом"}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

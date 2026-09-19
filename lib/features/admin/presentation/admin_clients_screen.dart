@@ -125,16 +125,43 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
     if (confirm == true) {
       try {
+        // Check if client is part of a family
+        final clientDoc = await FirebaseFirestore.instance.collection('users').doc(clientId).get();
+        final clientData = clientDoc.data();
+        final familyId = clientData?['familyId'] as String?;
+
+        String? survivingSpouseId;
+        if (familyId != null && familyId.isNotEmpty) {
+          final familyDoc = await FirebaseFirestore.instance.collection('families').doc(familyId).get();
+          if (familyDoc.exists) {
+            final fData = familyDoc.data()!;
+            final parentIds = List<String>.from(fData['parentIds'] ?? []);
+            parentIds.remove(clientId);
+            if (parentIds.isNotEmpty) {
+              survivingSpouseId = parentIds.first;
+              await familyDoc.reference.update({'parentIds': parentIds});
+            } else {
+              await familyDoc.reference.delete();
+            }
+          }
+        }
+
         await FirebaseFirestore.instance.collection('users').doc(clientId).delete();
 
         final childrenSnap = await FirebaseFirestore.instance
             .collection('children')
             .where('parentId', isEqualTo: clientId)
             .get();
+
         List<String> allRelatedIds = [clientId];
         for (var doc in childrenSnap.docs) {
-          allRelatedIds.add(doc.id);
-          await doc.reference.delete();
+          if (survivingSpouseId != null) {
+            // Re-assign child to the surviving spouse so they are not deleted
+            await doc.reference.update({'parentId': survivingSpouseId});
+          } else {
+            allRelatedIds.add(doc.id);
+            await doc.reference.delete();
+          }
         }
 
         final subsSnap = await FirebaseFirestore.instance
@@ -142,7 +169,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             .where('userId', isEqualTo: clientId)
             .get();
         for (var doc in subsSnap.docs) {
-          await doc.reference.delete();
+          final sData = doc.data();
+          final isChildOrSplit = sData['ownerName'] != null && sData['ownerName'] != name;
+          if (survivingSpouseId != null && isChildOrSplit) {
+            // Transfer children's paid passes to the surviving spouse
+            await doc.reference.update({'userId': survivingSpouseId});
+          } else {
+            await doc.reference.delete();
+          }
         }
 
         final classesSnap = await FirebaseFirestore.instance

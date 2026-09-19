@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -233,7 +234,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
         child: Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + math.max(MediaQuery.of(context).padding.bottom, 24),
             top: 16,
             left: 20,
             right: 20,
@@ -636,7 +637,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
               // Save button
               Container(
                 width: double.infinity,
-                height: 52,
+                height: 54,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF10B981), Color(0xFF059669)],
@@ -658,6 +659,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
+                    padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: _isLoading
@@ -668,7 +670,11 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                         )
                       : Text(
                           _childCount > 1 ? 'Зберегти дітей ($_childCount)' : 'Зберегти профіль дитини',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            height: 1.25,
+                          ),
                         ),
                 ),
               ),
@@ -883,7 +889,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
         child: Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + math.max(MediaQuery.of(context).padding.bottom, 24),
             top: 16,
             left: 20,
             right: 20,
@@ -1254,23 +1260,33 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: const BorderSide(color: Colors.redAccent, width: 1.2),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: SizedBox(
+                      height: 54,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: _isLoading ? null : _confirmDelete,
+                        icon: const Icon(LucideIcons.trash2, size: 18),
+                        label: const Text(
+                          'Видалити',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            height: 1.25,
+                          ),
+                        ),
                       ),
-                      onPressed: _isLoading ? null : _confirmDelete,
-                      icon: const Icon(LucideIcons.trash2, size: 18),
-                      label: const Text('Видалити', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
                     child: Container(
-                      height: 50,
+                      height: 54,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [childColor, childColor.withValues(alpha: 0.85)],
@@ -1292,6 +1308,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         child: _isLoading
@@ -1300,7 +1317,14 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                 height: 22,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text('Зберегти зміни', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            : const Text(
+                                'Зберегти зміни',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.25,
+                                ),
+                              ),
                       ),
                     ),
                   ),

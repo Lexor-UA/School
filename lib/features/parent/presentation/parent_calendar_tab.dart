@@ -16,6 +16,7 @@ import 'package:swimming_school_app/features/parent/presentation/edit_child_shee
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 
 class ParentCalendarTab extends ConsumerStatefulWidget {
   const ParentCalendarTab({super.key});
@@ -37,7 +38,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final children = childrenAsync.value ?? [];
     final allClasses = scheduleAsync.value ?? [];
 
-    final allFamilyIds = [if (user != null) user.id, ...children.map((c) => c.id)];
+    final familyAsync = ref.watch(familyStreamProvider);
+    final family = familyAsync.value;
+    final parentIds = (family != null && family.parentIds.isNotEmpty)
+        ? family.parentIds
+        : (user != null ? [user.id] : <String>[]);
+
+    final allFamilyIds = [...parentIds, ...children.map((c) => c.id)];
     final targetChildId = selectedChildId;
 
     final dayClasses = allClasses.where((c) {
@@ -152,9 +159,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final currentTheme = ref.read(appThemeControllerProvider);
 
+    final family = ref.read(familyStreamProvider).value;
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final partnerName = user != null ? family?.getOtherParentName(user.id) : null;
+
     final allMembers = [
       if (user != null)
         (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
+      if (family != null && family.isPaired && partnerId != null && partnerName != null)
+        (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       ...children.map((ch) => (
             id: ch.id,
             name: ch.name,
@@ -1520,55 +1533,6 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
                     const Spacer(),
 
-                    // Quick "+ Записати дитину" action if spots available
-                    if (canEnrollMore) ...[
-                      GestureDetector(
-                        onTap: () => _showChildPickerForQuickBooking(context, c, user, children),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isDark
-                                  ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                  : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.45),
-                              width: 0.8,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.30),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(LucideIcons.userPlus, color: Colors.white, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                unenrolledMembers.length == 1
-                                    ? 'Записати ${unenrolledMembers.first.name}'
-                                    : 'Записати ще ($freeSlots)',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-
                     // Action menu (Only visible for upcoming classes)
                     if (c.startTime.isAfter(DateTime.now()))
                       PopupMenuButton<String>(
@@ -1591,11 +1555,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                 builder: (ctx) => AlertDialog(
                                   backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
                                   title: Text(
-                                    'Скасувати запис?',
+                                    c.isSplit ? 'Скасувати спліт-заняття?' : 'Скасувати запис?',
                                     style: TextStyle(color: currentTheme.textPrimary),
                                   ),
                                   content: Text(
-                                    'Ви впевнені, що хочете скасувати запис для $targetCancelName на заняття "${c.title}"?',
+                                    c.isSplit
+                                        ? 'Оскільки це спліт-тренування (2 особи), скасування скасує запис для ОБОХ учасників, а заняття буде повернено на ваші абонементи. Продовжити?'
+                                        : 'Ви впевнені, що хочете скасувати запис для $targetCancelName на заняття "${c.title}"?',
                                     style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
                                   ),
                                   actions: [
@@ -1605,7 +1571,10 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                     ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx, true),
-                                      child: const Text('Скасувати', style: TextStyle(color: Colors.redAccent)),
+                                      child: Text(
+                                        c.isSplit ? 'Скасувати для обох' : 'Скасувати',
+                                        style: const TextStyle(color: Colors.redAccent),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1614,8 +1583,36 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                 await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, targetChildId);
                               }
                             } else {
-                              // On 'all' view: if multiple members enrolled, ask who to cancel
-                              if (enrolledMembers.length == 1) {
+                              // On 'all' view: if split class, cancel both participants
+                              if (c.isSplit) {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+                                    title: Text(
+                                      'Скасувати спліт-заняття?',
+                                      style: TextStyle(color: currentTheme.textPrimary),
+                                    ),
+                                    content: Text(
+                                      'Оскільки це спліт-тренування (2 особи), скасування зніме запис для обох учасників (${enrolledMembers.map((e) => e.name.replaceAll(' (Я)', '')).join(' та ')}), а заняття буде повернено на ваші абонементи. Продовжити?',
+                                      style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx, false),
+                                        child: const Text('Назад'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx, true),
+                                        child: const Text('Скасувати для обох', style: TextStyle(color: Colors.redAccent)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true && enrolledMembers.isNotEmpty) {
+                                  await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, enrolledMembers.first.id);
+                                }
+                              } else if (enrolledMembers.length == 1) {
                                 final m = enrolledMembers.first;
                                 final confirm = await showDialog<bool>(
                                   context: context,
@@ -1843,7 +1840,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                 ),
                                 const SizedBox(width: 3),
                                 Text(
-                                  'Додати дитину',
+                                  unenrolledMembers.length == 1 && unenrolledMembers.first.isParent
+                                      ? 'Додати дорослого'
+                                      : (c.isSplit ? 'Додати другого учасника' : 'Додати дитину'),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                     fontSize: 11,
@@ -1857,7 +1856,137 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     ],
                   ),
                 ],
-                const SizedBox(height: 6),
+                if (canEnrollMore) ...[
+                  const SizedBox(height: 10),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showChildPickerForQuickBooking(context, c, user, children),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [
+                                    const Color(0xFF0284C7).withValues(alpha: 0.28),
+                                    const Color(0xFF0369A1).withValues(alpha: 0.20),
+                                  ]
+                                : [
+                                    const Color(0xFFE0F2FE),
+                                    const Color(0xFFBAE6FD).withValues(alpha: 0.55),
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
+                                : const Color(0xFF38BDF8),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
+                                    : const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                c.isSplit ? LucideIcons.users : LucideIcons.userPlus,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    c.isSplit ? 'Вільне 2-ге місце (Спліт)' : 'Вільне місце ($freeSlots)',
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    unenrolledMembers.length == 1
+                                        ? (unenrolledMembers.first.isParent
+                                            ? 'Записати батька: ${unenrolledMembers.first.name.replaceAll(' (Я)', '')}'
+                                            : 'Записати дитину: ${unenrolledMembers.first.name}')
+                                        : (c.isSplit ? 'Записати 2-го учасника' : 'Записати ще одного учасника'),
+                                    style: TextStyle(
+                                      color: currentTheme.textPrimary,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                      : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(9),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.plus, color: Colors.white, size: 12),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Записати',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
 
                 // Meta row: Coach and lane
                 Row(
@@ -2031,6 +2160,57 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                         ),
                       ),
                     ),
+                    if (c.isChildOnly || c.isAdultOnly || c.isSplit) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: c.isChildOnly
+                              ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
+                              : (c.isAdultOnly
+                                  ? const Color(0xFF6366F1).withValues(alpha: isDark ? 0.25 : 0.14)
+                                  : const Color(0xFF0EA5E9).withValues(alpha: isDark ? 0.22 : 0.12)),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: c.isChildOnly
+                                ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                                : (c.isAdultOnly
+                                    ? const Color(0xFF818CF8).withValues(alpha: 0.5)
+                                    : const Color(0xFF38BDF8).withValues(alpha: 0.5)),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              c.isChildOnly
+                                  ? LucideIcons.baby
+                                  : (c.isAdultOnly ? LucideIcons.user : LucideIcons.users),
+                              size: 11,
+                              color: c.isChildOnly
+                                  ? const Color(0xFF34D399)
+                                  : (c.isAdultOnly
+                                      ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
+                                      : const Color(0xFF38BDF8)),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              c.isChildOnly ? 'Для дітей' : (c.isAdultOnly ? 'Для дорослих' : 'Спліт'),
+                              style: TextStyle(
+                                color: c.isChildOnly
+                                    ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                                    : (c.isAdultOnly
+                                        ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
+                                        : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     const Spacer(),
 
@@ -2038,6 +2218,20 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     GestureDetector(
                       onTap: () async {
                         if (targetChildId != 'all') {
+                          final isAdultTarget = targetChildId == user?.id;
+                          if (isAdultTarget && c.isChildOnly) {
+                            _showChildPickerForQuickBooking(context, c, user, children);
+                            return;
+                          }
+                          if (!isAdultTarget && c.isAdultOnly) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Це тренування призначене лише для дорослих.'),
+                                backgroundColor: Colors.orangeAccent,
+                              ),
+                            );
+                            return;
+                          }
                           final res = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, targetChildId);
                           if (!mounted) return;
                           final bookedChild = children.where((ch) => ch.id == targetChildId).firstOrNull;
@@ -2171,23 +2365,33 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final currentTheme = ref.read(appThemeControllerProvider);
 
+    final includeParent = user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly;
+    final includeChildren = !c.isAdultOnly;
+
     final availableMembers = [
-      if (user != null && !c.enrolledChildIds.contains(user.id))
+      if (includeParent)
         (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
-      ...children
-          .where((ch) => !c.enrolledChildIds.contains(ch.id))
-          .map((ch) => (
-                id: ch.id,
-                name: ch.name,
-                isParent: false,
-                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
-              )),
+      if (includeChildren)
+        ...children
+            .where((ch) => !c.enrolledChildIds.contains(ch.id))
+            .map((ch) => (
+                  id: ch.id,
+                  name: ch.name,
+                  isParent: false,
+                  color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+                )),
     ];
 
     if (availableMembers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Всі члени сім\'ї вже записані на це тренування'),
+        SnackBar(
+          content: Text(
+            c.isChildOnly
+                ? 'На це тренування можуть записуватися лише діти.'
+                : (c.isAdultOnly
+                    ? 'На це тренування можуть записуватися лише дорослі.'
+                    : 'Всі члени сім\'ї вже записані на це тренування'),
+          ),
           backgroundColor: Colors.orangeAccent,
         ),
       );

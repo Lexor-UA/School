@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 
 class ParentNotificationsSheet extends ConsumerStatefulWidget {
   const ParentNotificationsSheet({super.key});
@@ -239,6 +241,51 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                   ],
                                 ),
                               ),
+                              if (notifications.isNotEmpty) ...[
+                                Tooltip(
+                                  message: 'Очистити сповіщення',
+                                  child: InkWell(
+                                    onTap: () => _confirmClearAll(context, ref, isDarkMode),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      height: 36,
+                                      padding: const EdgeInsets.symmetric(horizontal: 9),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? const Color(0xFFEF4444).withValues(alpha: 0.14)
+                                            : const Color(0xFFFEE2E2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isDarkMode
+                                              ? const Color(0xFFEF4444).withValues(alpha: 0.40)
+                                              : const Color(0xFFFCA5A5),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            LucideIcons.trash2,
+                                            color: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+                                            size: 15,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Очистити',
+                                            style: TextStyle(
+                                              color: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
                               // Sleek Circular Glass Close Button
                               InkWell(
                                 onTap: () => Navigator.pop(context),
@@ -324,13 +371,33 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                                     itemBuilder: (ctx, index) {
                                       final notif = notifications[index];
-                                      return _buildNotificationCard(
-                                        context: context,
-                                        ref: ref,
-                                        notif: notif,
-                                        isDark: isDarkMode,
-                                        textColor: textColor,
-                                        textSubColor: textSubColor,
+                                      return Dismissible(
+                                        key: ValueKey(notif.id),
+                                        direction: DismissDirection.endToStart,
+                                        background: Container(
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.only(right: 20),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEF4444).withValues(alpha: isDarkMode ? 0.25 : 0.15),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: const Color(0xFFEF4444).withValues(alpha: isDarkMode ? 0.50 : 0.35),
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          child: const Icon(LucideIcons.trash2, color: Color(0xFFEF4444), size: 22),
+                                        ),
+                                        onDismissed: (_) {
+                                          ref.read(parentNotificationsControllerProvider.notifier).deleteNotification(notif.id);
+                                        },
+                                        child: _buildNotificationCard(
+                                          context: context,
+                                          ref: ref,
+                                          notif: notif,
+                                          isDark: isDarkMode,
+                                          textColor: textColor,
+                                          textSubColor: textSubColor,
+                                        ),
                                       );
                                     },
                                   ),
@@ -416,7 +483,10 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
     final lowerTitle = notif.title.toLowerCase();
     final lowerMsg = notif.message.toLowerCase();
 
-    if (notif.actionType == 'calendar' || lowerTitle.contains('тренуван') || lowerTitle.contains('розклад')) {
+    if (notif.actionType == 'family_invite' || lowerTitle.contains('сім')) {
+      badgeColors = const [Color(0xFF10B981), Color(0xFF06B6D4)];
+      badgeGlow = const Color(0xFF10B981);
+    } else if (notif.actionType == 'calendar' || lowerTitle.contains('тренуван') || lowerTitle.contains('розклад')) {
       badgeColors = const [Color(0xFF00E5FF), Color(0xFF0284C7)];
       badgeGlow = const Color(0xFF00E5FF);
     } else if (lowerTitle.contains('досягнен') || lowerTitle.contains('бейдж') || lowerTitle.contains('нагород') || lowerMsg.contains('акула')) {
@@ -432,6 +502,8 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
       badgeColors = const [Color(0xFF38BDF8), Color(0xFF0284C7)];
       badgeGlow = const Color(0xFF38BDF8);
     }
+
+    final isFamilyInvite = notif.actionType == 'family_invite';
 
     return Container(
       padding: const EdgeInsets.all(15),
@@ -550,6 +622,11 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                     fontWeight: FontWeight.w400,
                   ),
                 ),
+
+                // If Family Invite, render interactive accept/decline buttons
+                if (isFamilyInvite)
+                  _buildFamilyInviteActions(context, ref, notif, isDark),
+
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -562,7 +639,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (notif.actionType != null)
+                    if (!isFamilyInvite && notif.actionType != null)
                       InkWell(
                         onTap: () {
                           Navigator.pop(context);
@@ -627,6 +704,167 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
     );
   }
 
+  Widget _buildFamilyInviteActions(BuildContext context, WidgetRef ref, ParentNotification notif, bool isDark) {
+    if (notif.inviteStatus == 'accepted') {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.45 : 0.35),
+            width: 0.9,
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 14),
+            SizedBox(width: 6),
+            Text(
+              'Запрошення прийнято • Сім\'ю об\'єднано',
+              style: TextStyle(color: Color(0xFF10B981), fontSize: 11.5, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (notif.inviteStatus == 'declined') {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? Colors.white12 : const Color(0xFFCBD5E1),
+            width: 0.9,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.xCircle, color: isDark ? Colors.white54 : Colors.black45, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'Запрошення відхилено',
+              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11.5, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Pending: Action Buttons
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          // Accept Button
+          Expanded(
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.30),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  final error = await ref.read(familyControllerProvider).respondToInvite(
+                        notif.id,
+                        notif.inviteCode ?? '',
+                        true,
+                      );
+                  if (context.mounted) {
+                    if (error != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+                      );
+                    } else {
+                      HapticFeedback.heavyImpact();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(LucideIcons.heartHandshake, color: Colors.greenAccent, size: 20),
+                              SizedBox(width: 8),
+                              Text('Вітаємо! Акаунти успішно об\'єднано в сім\'ю!'),
+                            ],
+                          ),
+                          backgroundColor: Color(0xFF064E3B),
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(LucideIcons.check, size: 15),
+                label: const Text(
+                  'Прийняти',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Decline Button
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFE11D48),
+                  side: BorderSide(
+                    color: isDark ? const Color(0xFFFDA4AF).withValues(alpha: 0.5) : const Color(0xFFE11D48).withValues(alpha: 0.4),
+                  ),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  await ref.read(familyControllerProvider).respondToInvite(
+                        notif.id,
+                        notif.inviteCode ?? '',
+                        false,
+                      );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Запрошення відхилено'),
+                        backgroundColor: Color(0xFF1E293B),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(LucideIcons.x, size: 15),
+                label: const Text(
+                  'Відхилити',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatTimeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'Щойно';
@@ -634,5 +872,125 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
     if (diff.inHours < 24) return '${diff.inHours} год тому';
     if (diff.inDays == 1) return 'Вчора';
     return '${diff.inDays} дн тому';
+  }
+
+  Future<void> _confirmClearAll(BuildContext context, WidgetRef ref, bool isDark) async {
+    final themeConfig = ref.read(appThemeControllerProvider);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF0F2643) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.20 : 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.45 : 0.30),
+                  width: 1.2,
+                ),
+              ),
+              child: const Icon(
+                LucideIcons.trash2,
+                color: Color(0xFFEF4444),
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Очистити всі сповіщення?',
+              style: TextStyle(
+                color: themeConfig.textPrimary,
+                fontSize: 17.5,
+                fontWeight: FontWeight.w800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ви впевнені, що хочете видалити всі сповіщення? Список сповіщень стане порожнім.',
+              style: TextStyle(
+                color: themeConfig.textSecondary,
+                fontSize: 13.5,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      'Скасувати',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.trash2, size: 15),
+                        SizedBox(width: 6),
+                        Text(
+                          'Очистити',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(parentNotificationsControllerProvider.notifier).clearAll();
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'group_class.freezed.dart';
 part 'group_class.g.dart';
@@ -19,5 +20,51 @@ abstract class GroupClass with _$GroupClass {
     @Default('') String lane, // 'Доріжка 3' etc.
   }) = _GroupClass;
 
-  factory GroupClass.fromJson(Map<String, dynamic> json) => _$GroupClassFromJson(json);
+  factory GroupClass.fromJson(Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    if (copy['startTime'] is Timestamp) {
+      copy['startTime'] = (copy['startTime'] as Timestamp).toDate().toIso8601String();
+    }
+    if (copy['endTime'] is Timestamp) {
+      copy['endTime'] = (copy['endTime'] as Timestamp).toDate().toIso8601String();
+    }
+    return _$GroupClassFromJson(copy);
+  }
+}
+
+extension GroupClassAudienceX on GroupClass {
+  bool get isSplit {
+    final t = title.toLowerCase();
+    return t.contains('спліт') || t.contains('split');
+  }
+
+  bool get isChildOnly {
+    if (isSplit) return false;
+    final t = title.toLowerCase();
+    final c = category.toLowerCase();
+    return t.contains('діт') ||
+        t.contains('дитяч') ||
+        t.contains('junior') ||
+        t.contains('kids') ||
+        t.contains('child') ||
+        t.contains('підлітк') ||
+        t.contains('юніор') ||
+        c.contains('діт') ||
+        c.contains('дитяч') ||
+        c.contains('junior');
+  }
+
+  bool get isAdultOnly {
+    if (isSplit) return false;
+    final t = title.toLowerCase();
+    final c = category.toLowerCase();
+    return t.contains('доросла') ||
+        t.contains('дорослих') ||
+        t.contains('дорослі') ||
+        t.contains('adult') ||
+        t.contains('аквааеробіка') ||
+        c.contains('аквааеробіка');
+  }
+
+  bool get isUniversal => !isChildOnly && !isAdultOnly;
 }

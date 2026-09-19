@@ -7,7 +7,9 @@ import 'package:swimming_school_app/features/schedule/models/class_activity.dart
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 part 'schedule_controller.g.dart';
 
@@ -118,6 +120,7 @@ class ScheduleController extends _$ScheduleController {
     String childId, {
     String? targetUserId,
     String? targetOwnerName,
+    bool autoEnrollFamilyForSplit = true,
   }) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return BookingResult.error;
@@ -134,9 +137,11 @@ class ScheduleController extends _$ScheduleController {
        }
     }
 
+    final isAdult = childId == effectiveUserId;
+
     // Get the subscription for effective user
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-    final subscription = subscriptionController.getSubscriptionForOwner(effectiveUserId, ownerName);
+    final subscription = subscriptionController.getSubscriptionForOwner(effectiveUserId, ownerName, isAdult: isAdult);
     
     if (subscription == null || subscription.remainingClasses <= 0 || !subscription.isActive) {
       return BookingResult.noSubscription;
@@ -162,6 +167,24 @@ class ScheduleController extends _$ScheduleController {
         data['id'] = classDoc.id;
         final groupClass = GroupClass.fromJson(data);
         bookedClass = groupClass;
+
+        if (isAdult && groupClass.isChildOnly) {
+          result = const BookingResult(
+            isSuccess: false,
+            message: 'Це тренування лише для дітей. Будь ласка, оберіть профіль дитини.',
+            status: BookingStatus.error,
+          );
+          return;
+        }
+
+        if (!isAdult && groupClass.isAdultOnly) {
+          result = const BookingResult(
+            isSuccess: false,
+            message: 'Це тренування призначене лише для дорослих.',
+            status: BookingStatus.error,
+          );
+          return;
+        }
         
         final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
         final remainingClasses = subData['remainingClasses'] as int;
@@ -186,19 +209,62 @@ class ScheduleController extends _$ScheduleController {
           return;
         }
         
-        List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..add(childId);
+        // Determine all members to enroll: for empty split training, auto-enroll pair [child, parent]
+        final List<String> attendeesToAdd = [childId];
+        if (groupClass.isSplit && autoEnrollFamilyForSplit && groupClass.enrolledChildIds.isEmpty) {
+          if (childId != user.id) {
+            // Child booking -> auto-add parent
+            attendeesToAdd.add(user.id);
+          } else {
+            // Parent booking -> auto-add first child if exists
+            final childrenAsync = ref.read(childrenControllerProvider);
+            final children = childrenAsync.value ?? [];
+            if (children.isNotEmpty) {
+              attendeesToAdd.add(children.first.id);
+            }
+          }
+        }
+
+        // Time overlap check across other classes
+        final conflictingClass = (state.value ?? []).firstWhereOrNull((c) {
+          if (c.id == classId) return false;
+          final overlaps = c.startTime.isBefore(groupClass.endTime) && c.endTime.isAfter(groupClass.startTime);
+          if (!overlaps) return false;
+          return c.enrolledChildIds.any((id) => attendeesToAdd.contains(id));
+        });
+
+        if (conflictingClass != null) {
+          result = const BookingResult(
+            isSuccess: false,
+            message: 'Учень вже записаний на інше заняття у цей самий час. Оберіть інший час.',
+            status: BookingStatus.error,
+          );
+          return;
+        }
+
+        List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..addAll(attendeesToAdd);
         int newRemaining = remainingClasses - 1;
         
-        transaction.update(classRef, {
+        final Map<String, dynamic> classUpdates = {
           'enrolledChildIds': newEnrolled,
-          'bookedSubscriptions.$childId': subscription.id,
-        });
+        };
+        for (final attId in attendeesToAdd) {
+          classUpdates['bookedSubscriptions.$attId'] = subscription.id;
+        }
+
+        transaction.update(classRef, classUpdates);
         transaction.update(subRef, {
           'remainingClasses': newRemaining,
           'isActive': newRemaining > 0
         });
         
-        result = BookingResult.success;
+        result = groupClass.isSplit && attendeesToAdd.length == 2
+            ? const BookingResult(
+                isSuccess: true,
+                message: 'Спліт-заняття успішно заброньовано (2 учасники)!',
+                status: BookingStatus.success,
+              )
+            : BookingResult.success;
       });
       
       if (result.isSuccess && bookedClass != null) {
@@ -268,46 +334,54 @@ class ScheduleController extends _$ScheduleController {
         }
 
         if (groupClass.enrolledChildIds.contains(childId)) {
-          List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..remove(childId);
-          
-          DocumentSnapshot? subDoc;
-          DocumentReference? subRef;
+          final isSplitClass = groupClass.isSplit;
+          // For Split training: cancel booking for BOTH participants
+          final List<String> membersToRemove = isSplitClass
+              ? List<String>.from(groupClass.enrolledChildIds)
+              : [childId];
 
-          // Check if a specific subscription was recorded for this child's booking
+          List<String> newEnrolled = List.from(groupClass.enrolledChildIds);
+          for (final mId in membersToRemove) {
+            newEnrolled.remove(mId);
+          }
+
           final bookedSubMap = data['bookedSubscriptions'] as Map?;
-          final bookedSubId = bookedSubMap?[childId] as String?;
+          final Set<String> refundedSubIds = {};
 
-          if (bookedSubId != null) {
-            subRef = FirebaseFirestore.instance.collection('subscriptions').doc(bookedSubId);
-            subDoc = await transaction.get(subRef);
-          } else if (subscription != null) {
-            subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subscription.id);
-            subDoc = await transaction.get(subRef);
+          for (final mId in membersToRemove) {
+            final bookedSubId = bookedSubMap?[mId] as String?;
+            final targetSubId = bookedSubId ?? subscription?.id;
+
+            if (targetSubId != null && !refundedSubIds.contains(targetSubId)) {
+              refundedSubIds.add(targetSubId);
+              final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(targetSubId);
+              final subDoc = await transaction.get(subRef);
+              if (subDoc.exists) {
+                final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
+                final remainingClasses = subData['remainingClasses'] as int? ?? 0;
+                final totalClasses = subData['totalClasses'] as int? ?? remainingClasses;
+                if (remainingClasses < totalClasses) {
+                  int newRemaining = (remainingClasses + 1).clamp(0, totalClasses);
+                  transaction.update(subRef, {
+                    'remainingClasses': newRemaining,
+                    'isActive': true,
+                  });
+                }
+              }
+            }
           }
           
-          if (newEnrolled.isEmpty && (groupClass.category == 'Індивідуальне' || groupClass.maxCapacity <= 2)) {
+          final isCustomBooking = data['isCustomBooking'] == true || data['createdByRole'] == 'parent';
+          if (newEnrolled.isEmpty && isCustomBooking) {
             transaction.delete(classRef);
           } else {
             final Map<String, dynamic> classUpdates = {'enrolledChildIds': newEnrolled};
-            if (bookedSubId != null) {
-              classUpdates['bookedSubscriptions.$childId'] = FieldValue.delete();
+            for (final mId in membersToRemove) {
+              if (bookedSubMap?.containsKey(mId) == true) {
+                classUpdates['bookedSubscriptions.$mId'] = FieldValue.delete();
+              }
             }
             transaction.update(classRef, classUpdates);
-          }
-
-          if (subDoc != null && subDoc.exists && subRef != null) {
-            final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
-            final remainingClasses = subData['remainingClasses'] as int? ?? 0;
-            final totalClasses = subData['totalClasses'] as int? ?? remainingClasses;
-            
-            // Critical safeguard: Never refund beyond totalClasses (prevents 13 of 12)
-            if (remainingClasses < totalClasses) {
-              int newRemaining = (remainingClasses + 1).clamp(0, totalClasses);
-              transaction.update(subRef, {
-                'remainingClasses': newRemaining,
-                'isActive': true,
-              });
-            }
           }
           
           success = true;
@@ -325,7 +399,9 @@ class ScheduleController extends _$ScheduleController {
           attendeeName: ownerName,
           parentName: childId != user.id ? user.name : null,
           parentPhone: user.phone,
-          message: 'Скасування: $ownerName скасував(-ла) запис на «${cancelledClass!.title}»',
+          message: cancelledClass!.isSplit
+              ? 'Скасування спліт-заняття: скасовано запис обох учасників на «${cancelledClass!.title}»'
+              : 'Скасування: $ownerName скасував(-ла) запис на «${cancelledClass!.title}»',
         );
       }
 
@@ -345,26 +421,74 @@ class ScheduleController extends _$ScheduleController {
     required String category,
     required String lane,
     List<String> enrolledChildIds = const [],
+    bool isCustomBooking = false,
   }) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return false;
 
+    // Time collision check
+    final currentClasses = state.value ?? [];
+    final hasConflict = currentClasses.any((c) {
+      final overlaps = c.startTime.isBefore(endTime) && c.endTime.isAfter(startTime);
+      if (!overlaps) return false;
+      return c.enrolledChildIds.any((id) => enrolledChildIds.contains(id));
+    });
+    if (hasConflict) {
+      debugPrint('Conflict: Member already booked at this time');
+      return false;
+    }
+
     Subscription? subscription;
     
     if (enrolledChildIds.isNotEmpty) {
-      final childId = enrolledChildIds.first;
-      String ownerName = user.name;
-      if (childId != user.id) {
-         final childrenAsync = ref.read(childrenControllerProvider);
-         final children = childrenAsync.value ?? [];
-          try {
-            ownerName = children.firstWhere((c) => c.id == childId).name;
-          } catch (_) {
-            // Child not found in list, fallback to user.name
-          }
-      }
+      final titleLower = title.toLowerCase();
+      final isSplit = titleLower.contains('спліт') || titleLower.contains('split');
       final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-      subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName);
+      final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
+
+      if (isSplit) {
+        // Priority 1: dedicated active split subscription
+        subscription = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+          (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
+        );
+
+        // Priority 2: subscription of either enrolled participant
+        if (subscription == null) {
+          final children = ref.read(childrenControllerProvider).value ?? [];
+          for (final id in enrolledChildIds) {
+            final isAdult = id == user.id;
+            final name = isAdult ? user.name : (children.firstWhereOrNull((c) => c.id == id)?.name ?? user.name);
+            final sub = subscriptionController.getSubscriptionForOwner(user.id, name, isAdult: isAdult);
+            if (sub != null && sub.remainingClasses > 0) {
+              subscription = sub;
+              break;
+            }
+          }
+        }
+
+        // Priority 3: any active subscription with remaining classes
+        subscription ??= userSubs.firstWhereOrNull((s) => s.isActive && s.remainingClasses > 0);
+      } else {
+        final childId = enrolledChildIds.first;
+        final isAdult = childId == user.id;
+        String ownerName = user.name;
+        if (!isAdult) {
+           final childrenAsync = ref.read(childrenControllerProvider);
+           final children = childrenAsync.value ?? [];
+            try {
+              ownerName = children.firstWhere((c) => c.id == childId).name;
+            } catch (_) {
+              // Child not found in list, fallback to user.name
+            }
+        }
+
+        final isChildService = titleLower.contains('діт') || titleLower.contains('дитяч') || titleLower.contains('junior');
+        final isAdultService = titleLower.contains('доросла') || titleLower.contains('дорослих') || titleLower.contains('adult') || titleLower.contains('аквааеробіка');
+        if (isAdult && isChildService) return false;
+        if (!isAdult && isAdultService) return false;
+
+        subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAdult);
+      }
       
       if (subscription == null || subscription.remainingClasses <= 0) {
         return false;
@@ -403,10 +527,16 @@ class ScheduleController extends _$ScheduleController {
           int newRemaining = remainingClasses - 1;
           
           final classMap = newClass.toJson();
+          if (isCustomBooking || user.role == UserRole.parent) {
+            classMap['isCustomBooking'] = true;
+            classMap['createdByRole'] = user.role.name;
+          }
           if (enrolledChildIds.isNotEmpty) {
-            classMap['bookedSubscriptions'] = {
-              enrolledChildIds.first: subId,
-            };
+            final bookedMap = <String, String>{};
+            for (final eId in enrolledChildIds) {
+              bookedMap[eId] = subId;
+            }
+            classMap['bookedSubscriptions'] = bookedMap;
           }
 
           transaction.set(newClassRef, classMap);
@@ -416,7 +546,12 @@ class ScheduleController extends _$ScheduleController {
           });
         });
       } else {
-        await newClassRef.set(newClass.toJson());
+        final classMap = newClass.toJson();
+        if (isCustomBooking || user.role == UserRole.parent) {
+          classMap['isCustomBooking'] = true;
+          classMap['createdByRole'] = user.role.name;
+        }
+        await newClassRef.set(classMap);
       }
       
       return true;
@@ -538,6 +673,7 @@ class ScheduleController extends _$ScheduleController {
       String coachId = '';
       String coachName = '';
       List<String> enrolledChildIds = [];
+      Map<String, dynamic>? bookedSubMap;
 
       if (doc.exists) {
         final data = doc.data()!;
@@ -545,12 +681,33 @@ class ScheduleController extends _$ScheduleController {
         coachId = data['coachId'] as String? ?? coachId;
         coachName = data['coachName'] as String? ?? coachName;
         enrolledChildIds = List<String>.from(data['enrolledChildIds'] ?? []);
+        if (data['bookedSubscriptions'] is Map) {
+          bookedSubMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map);
+        }
       }
 
-      // Auto-refund each enrolled attendee
+      // Auto-refund each enrolled attendee accurately
       if (enrolledChildIds.isNotEmpty) {
+        final Set<String> refundedSubIds = {};
         for (final childId in enrolledChildIds) {
           try {
+            final bookedSubId = bookedSubMap?[childId] as String?;
+            if (bookedSubId != null && !refundedSubIds.contains(bookedSubId)) {
+              refundedSubIds.add(bookedSubId);
+              final subDoc = await FirebaseFirestore.instance.collection('subscriptions').doc(bookedSubId).get();
+              if (subDoc.exists) {
+                final subData = subDoc.data()!;
+                final curRemaining = (subData['remainingClasses'] as int? ?? 0);
+                final totalClasses = (subData['totalClasses'] as int? ?? curRemaining + 1);
+                await subDoc.reference.update({
+                  'remainingClasses': (curRemaining + 1).clamp(0, totalClasses),
+                  'isActive': true,
+                });
+                continue; // Successfully refunded directly
+              }
+            }
+
+            // Fallback lookup if not tracked in bookedSubscriptions
             String? parentId;
             String? ownerName;
 
@@ -592,12 +749,16 @@ class ScheduleController extends _$ScheduleController {
                   orElse: () => subsSnap.docs.first,
                 );
 
-                final subData = targetSub.data() as Map<String, dynamic>;
-                final curRemaining = (subData['remainingClasses'] as int? ?? 0);
-                await targetSub.reference.update({
-                  'remainingClasses': curRemaining + 1,
-                  'isActive': true,
-                });
+                if (!refundedSubIds.contains(targetSub.id)) {
+                  refundedSubIds.add(targetSub.id);
+                  final subData = targetSub.data() as Map<String, dynamic>;
+                  final curRemaining = (subData['remainingClasses'] as int? ?? 0);
+                  final totalClasses = (subData['totalClasses'] as int? ?? curRemaining + 1);
+                  await targetSub.reference.update({
+                    'remainingClasses': (curRemaining + 1).clamp(0, totalClasses),
+                    'isActive': true,
+                  });
+                }
               }
             }
           } catch (refundErr) {

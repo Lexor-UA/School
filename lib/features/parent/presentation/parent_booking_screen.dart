@@ -6,6 +6,7 @@ import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -243,14 +244,32 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
 
   Widget _buildChildSelectionList(bool isDark) {
     final user = ref.watch(authControllerProvider);
-    
+    final isChildClass = selectedClass?.isChildOnly ?? false;
+    final isAdultClass = selectedClass?.isAdultOnly ?? false;
+
     return ref.watch(childrenControllerProvider).when(
       data: (children) {
+        final showParent = user != null && !isChildClass;
+        final eligibleChildren = isAdultClass ? <Child>[] : children;
+
+        if (!showParent && eligibleChildren.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              isChildClass
+                  ? 'У вашому профілі ще немає доданих дітей для цього дитячого заняття.'
+                  : 'Немає доступних учасників для запису.',
+              style: const TextStyle(color: Colors.orangeAccent, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
         return Column(
           children: [
-            if (user != null)
+            if (showParent)
               _buildSelectionCard(user.id, user.name, Colors.blue, isDark, true),
-            ...children.map((child) => _buildSelectionCard(child.id, child.name, Color(int.tryParse(child.colorHex) ?? 0xFF000000), isDark, false)),
+            ...eligibleChildren.map((child) => _buildSelectionCard(child.id, child.name, Color(int.tryParse(child.colorHex) ?? 0xFF000000), isDark, false)),
           ],
         );
       },
@@ -337,8 +356,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
        }
     }
     
+    final isAdult = selectedUserId == user.id;
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-    final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName);
+    final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAdult);
     
     if (subscription == null || subscription.remainingClasses <= 0) {
       if (mounted) {
@@ -347,7 +367,12 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           builder: (context) => AlertDialog(
             backgroundColor: const Color(0xFF1E293B),
             title: const Text('Немає абонемента', style: TextStyle(color: Colors.white)),
-            content: Text('Для запису необхідно мати оплачений абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?', style: const TextStyle(color: Colors.white70)),
+            content: Text(
+              isAdult
+                  ? 'Для запису необхідно мати оплачений дорослий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?'
+                  : 'Для запису необхідно мати оплачений дитячий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?',
+              style: const TextStyle(color: Colors.white70),
+            ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
               TextButton(

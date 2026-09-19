@@ -2,6 +2,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 part 'subscription_controller.g.dart';
 
@@ -15,11 +18,19 @@ class SubscriptionController extends _$SubscriptionController {
 
   void _listenToSubscriptions() {
     FirebaseFirestore.instance.collection('subscriptions').snapshots().listen((snapshot) {
-      final subs = snapshot.docs.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data() as Map);
-        data['id'] = doc.id;
-        return Subscription.fromJson(data);
-      }).toList();
+      final List<Subscription> subs = [];
+      for (final doc in snapshot.docs) {
+        try {
+          final data = Map<String, dynamic>.from(doc.data() as Map);
+          data['id'] = doc.id;
+          if (data['expiryDate'] is Timestamp) {
+            data['expiryDate'] = (data['expiryDate'] as Timestamp).toDate().toIso8601String();
+          }
+          subs.add(Subscription.fromJson(data));
+        } catch (e) {
+          debugPrint('Warning: Failed to parse subscription ${doc.id}: $e');
+        }
+      }
       
       _checkExpirations(subs);
       state = subs;
@@ -27,8 +38,22 @@ class SubscriptionController extends _$SubscriptionController {
   }
 
   void _checkExpirations(List<Subscription> subs) {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+
+    final isAdminOrOwner = user.role == UserRole.admin || user.role == UserRole.owner;
+    final family = ref.read(familyStreamProvider).value;
+    final relevantUserIds = <String>{
+      user.id,
+      if (family != null) ...family.parentIds,
+    };
+
     final now = DateTime.now();
     for (final sub in subs) {
+      if (!isAdminOrOwner && !relevantUserIds.contains(sub.userId)) {
+        continue; // Skip checking/updating other clients' subscriptions
+      }
+
       if (sub.isActive && sub.expiryDate != null) {
         if (now.isAfter(sub.expiryDate!)) {
           // Auto deactivate expired subscription
@@ -51,69 +76,122 @@ class SubscriptionController extends _$SubscriptionController {
     }
   }
 
-  bool hasActiveSubscriptionForOwner(String userId, String ownerName) {
-    final now = DateTime.now();
-    return state.any((sub) =>
-        sub.userId == userId &&
-        (sub.ownerName ?? '').trim() == ownerName.trim() &&
-        sub.isActive &&
-        sub.remainingClasses > 0 &&
-        (sub.expiryDate == null || sub.expiryDate!.isAfter(now)));
+  List<String> _resolveFamilyUserIds(String userId, List<String>? familyUserIds) {
+    if (familyUserIds != null && familyUserIds.isNotEmpty) return familyUserIds;
+    try {
+      final family = ref.read(familyStreamProvider).value;
+      if (family != null && family.parentIds.isNotEmpty) {
+        return family.parentIds;
+      }
+    } catch (_) {}
+    return [userId];
   }
 
-  Subscription? getActiveSubscriptionForOwner(String userId, String ownerName) {
+  bool hasActiveSubscriptionForOwner(String userId, String ownerName, {List<String>? familyUserIds}) {
     final now = DateTime.now();
+    final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+
+    return state.any((sub) {
+      final matchesOwner = (sub.ownerName ?? '').trim().toLowerCase() == ownerName.trim().toLowerCase();
+      final isSubActive = sub.isActive && sub.remainingClasses > 0 && (sub.expiryDate == null || sub.expiryDate!.isAfter(now));
+      if (!isSubActive) return false;
+
+      final isCompatibleUser = !sub.isAdultSubscription
+          ? effectiveFamilyIds.contains(sub.userId)
+          : sub.userId == userId;
+
+      return isCompatibleUser && matchesOwner;
+    });
+  }
+
+  Subscription? getActiveSubscriptionForOwner(String userId, String ownerName, {List<String>? familyUserIds}) {
+    final now = DateTime.now();
+    final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+
     try {
-      return state.firstWhere((sub) =>
-          sub.userId == userId &&
-          (sub.ownerName ?? '').trim() == ownerName.trim() &&
-          sub.isActive &&
-          sub.remainingClasses > 0 &&
-          (sub.expiryDate == null || sub.expiryDate!.isAfter(now)));
+      return state.firstWhere((sub) {
+        final matchesOwner = (sub.ownerName ?? '').trim().toLowerCase() == ownerName.trim().toLowerCase();
+        final isSubActive = sub.isActive && sub.remainingClasses > 0 && (sub.expiryDate == null || sub.expiryDate!.isAfter(now));
+        if (!isSubActive) return false;
+
+        final isCompatibleUser = !sub.isAdultSubscription
+            ? effectiveFamilyIds.contains(sub.userId)
+            : sub.userId == userId;
+
+        return isCompatibleUser && matchesOwner;
+      });
     } catch (_) {
       return null;
     }
   }
 
-  Subscription? getSubscriptionForOwner(String userId, String ownerName) {
-    final userSubs = state.where((sub) => sub.userId == userId && sub.isActive && sub.remainingClasses > 0).toList();
+  Subscription? getSubscriptionForOwner(String userId, String ownerName, {bool? isAdult, List<String>? familyUserIds}) {
+    final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+
+    final userSubs = state.where((sub) {
+      if (!sub.isActive || sub.remainingClasses <= 0) return false;
+      if (sub.isAdultSubscription) {
+        return sub.userId == userId;
+      } else {
+        return effectiveFamilyIds.contains(sub.userId);
+      }
+    }).toList();
+
     if (userSubs.isEmpty) return null;
 
     final cleanOwner = ownerName.trim().toLowerCase();
 
     // 1. Direct owner match
     try {
-      return userSubs.firstWhere((sub) => (sub.ownerName ?? '').trim().toLowerCase() == cleanOwner);
+      final directMatch = userSubs.firstWhere((sub) => (sub.ownerName ?? '').trim().toLowerCase() == cleanOwner);
+      if (isAdult != null) {
+        if (isAdult && directMatch.isChildSubscription && !directMatch.isSplitSubscription) {
+          // Incompatible: adult cannot use child subscription
+        } else if (!isAdult && directMatch.isAdultSubscription && !directMatch.isSplitSubscription) {
+          // Incompatible: child cannot use adult subscription
+        } else {
+          return directMatch;
+        }
+      } else {
+        return directMatch;
+      }
     } catch (_) {}
 
-    // 2. Split or family subscription matching
+    // 2. Split or family subscription matching (allowed for everyone)
     try {
       return userSubs.firstWhere((sub) {
         final sName = sub.serviceName?.toLowerCase() ?? '';
-        final isSplit = sName.contains('спліт') || sName.contains('сім') || sName.contains('split');
+        final isSplit = sub.isSplitSubscription || sName.contains('спліт') || sName.contains('сім') || sName.contains('split');
         final isGenericOwner = sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
         return isSplit || isGenericOwner;
       });
     } catch (_) {}
 
-    // 3. If user has only 1 active subscription with remaining classes, use it as primary family sub
-    if (userSubs.length == 1) {
-      return userSubs.first;
+    // 3. If isAdult is specified, try to find compatible unassigned/generic subscription
+    if (isAdult != null) {
+      try {
+        return userSubs.firstWhere((sub) {
+          final isEligible = isAdult ? sub.isAdultSubscription : sub.isChildSubscription;
+          final isGeneric = sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
+          return isEligible && isGeneric;
+        });
+      } catch (_) {}
     }
 
-    // 4. Look for an unassigned / generic owner sub among multiple subscriptions
-    try {
-      return userSubs.firstWhere((sub) {
-        return sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
-      });
-    } catch (_) {}
-
-    // 5. Fallback to any active user subscription (enables children to use parent's account sub)
-    return userSubs.first;
+    return null;
   }
 
-  Subscription? getAnySubscriptionForOwner(String userId, String ownerName) {
-    final userSubs = state.where((sub) => sub.userId == userId).toList();
+  Subscription? getAnySubscriptionForOwner(String userId, String ownerName, {List<String>? familyUserIds}) {
+    final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+
+    final userSubs = state.where((sub) {
+      if (sub.isAdultSubscription) {
+        return sub.userId == userId;
+      } else {
+        return effectiveFamilyIds.contains(sub.userId);
+      }
+    }).toList();
+
     if (userSubs.isEmpty) return null;
 
     final cleanOwner = ownerName.trim().toLowerCase();
@@ -135,8 +213,16 @@ class SubscriptionController extends _$SubscriptionController {
     return userSubs.first;
   }
 
-  List<Subscription> getSubscriptionsForUser(String userId) {
-    return state.where((sub) => sub.userId == userId).toList();
+  List<Subscription> getSubscriptionsForUser(String userId, {List<String>? familyUserIds}) {
+    final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+
+    return state.where((sub) {
+      if (sub.isAdultSubscription) {
+        return sub.userId == userId;
+      } else {
+        return effectiveFamilyIds.contains(sub.userId);
+      }
+    }).toList();
   }
 
   Future<bool> deductClass(String code) async {

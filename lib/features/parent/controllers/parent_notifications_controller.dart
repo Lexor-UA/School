@@ -17,7 +17,11 @@ class ParentNotification {
   final IconData icon;
   final Color? iconColor;
   final bool isRead;
-  final String? actionType; // 'chat', 'calendar', 'subscription'
+  final String? actionType; // 'chat', 'calendar', 'subscription', 'family_invite'
+  final String? inviteCode;
+  final String? senderId;
+  final String? senderName;
+  final String? inviteStatus; // 'pending', 'accepted', 'declined'
 
   const ParentNotification({
     required this.id,
@@ -28,9 +32,16 @@ class ParentNotification {
     this.iconColor,
     this.isRead = false,
     this.actionType,
+    this.inviteCode,
+    this.senderId,
+    this.senderName,
+    this.inviteStatus,
   });
 
-  ParentNotification copyWith({bool? isRead}) {
+  ParentNotification copyWith({
+    bool? isRead,
+    String? inviteStatus,
+  }) {
     return ParentNotification(
       id: id,
       title: title,
@@ -40,6 +51,10 @@ class ParentNotification {
       iconColor: iconColor,
       isRead: isRead ?? this.isRead,
       actionType: actionType,
+      inviteCode: inviteCode,
+      senderId: senderId,
+      senderName: senderName,
+      inviteStatus: inviteStatus ?? this.inviteStatus,
     );
   }
 }
@@ -71,6 +86,9 @@ final parentFirestoreNotificationsStreamProvider =
         final iconName = data['icon']?.toString() ?? 'bell';
         IconData iconData;
         switch (iconName) {
+          case 'heartHandshake':
+            iconData = LucideIcons.heartHandshake;
+            break;
           case 'creditCard':
             iconData = LucideIcons.creditCard;
             break;
@@ -111,6 +129,10 @@ final parentFirestoreNotificationsStreamProvider =
             iconColor: iconColor ?? const Color(0xFFF59E0B),
             isRead: data['isRead'] as bool? ?? false,
             actionType: data['actionType']?.toString() ?? 'subscription',
+            inviteCode: data['inviteCode']?.toString(),
+            senderId: data['senderId']?.toString(),
+            senderName: data['senderName']?.toString(),
+            inviteStatus: data['status']?.toString() ?? 'pending',
           ),
         );
       } catch (e) {
@@ -123,8 +145,10 @@ final parentFirestoreNotificationsStreamProvider =
 
 class ParentNotificationsController extends Notifier<ParentNotificationsState> {
   static const _prefsKeyPrefix = 'read_parent_notifications_v1_';
+  static const _clearedPrefsKeyPrefix = 'cleared_parent_notifications_v1_';
 
   String _getPrefsKey(String userId) => '$_prefsKeyPrefix$userId';
+  String _getClearedPrefsKey(String userId) => '$_clearedPrefsKeyPrefix$userId';
 
   @override
   ParentNotificationsState build() {
@@ -133,6 +157,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
     final userId = user?.id ?? 'guest';
 
     final savedReadIds = prefs.getStringList(_getPrefsKey(userId))?.toSet() ?? <String>{};
+    final savedClearedIds = prefs.getStringList(_getClearedPrefsKey(userId))?.toSet() ?? <String>{};
     final allNotifications = <ParentNotification>[];
 
     // 1. Cloud Notifications from Firestore (Admin reminders & alerts)
@@ -235,39 +260,12 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
       }
     }
 
-    // 5. Default system notifications (if no notifications exist yet)
-    final defaultItems = [
-      ParentNotification(
-        id: 'default_notif_rescheduled',
-        title: 'Тренування перенесено',
-        message: 'Сьогоднішнє заняття о 16:00 перенесено на 16:15.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 40)),
-        icon: LucideIcons.clock,
-        iconColor: const Color(0xFF00E5FF),
-        isRead: savedReadIds.contains('default_notif_rescheduled'),
-        actionType: 'calendar',
-      ),
-      ParentNotification(
-        id: 'default_notif_badge',
-        title: 'Нове досягнення!',
-        message: 'Ваша дитина отримала бейдж "Акула басейну".',
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-        icon: LucideIcons.award,
-        iconColor: const Color(0xFFA855F7),
-        isRead: savedReadIds.contains('default_notif_badge'),
-      ),
-    ];
+    // 5. Deduplicate by ID and filter out cleared notifications
 
-    for (final item in defaultItems) {
-      if (!allNotifications.any((n) => n.id == item.id)) {
-        allNotifications.add(item);
-      }
-    }
-
-    // Deduplicate by ID
+    // Deduplicate by ID and filter out cleared notifications
     final uniqueMap = <String, ParentNotification>{};
     for (final notif in allNotifications) {
-      if (!uniqueMap.containsKey(notif.id)) {
+      if (!savedClearedIds.contains(notif.id) && !uniqueMap.containsKey(notif.id)) {
         uniqueMap[notif.id] = notif;
       }
     }
@@ -346,7 +344,54 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
   }
 
   Future<void> clearAll() async {
-    await markAllAsRead();
+    final user = ref.read(authControllerProvider);
+    final prefs = ref.read(sharedPrefsProvider);
+    final userId = user?.id ?? 'guest';
+
+    final updatedClearedIds = prefs.getStringList(_getClearedPrefsKey(userId))?.toSet() ?? <String>{};
+    for (final notif in state.notifications) {
+      updatedClearedIds.add(notif.id);
+      if (!notif.id.startsWith('default_') &&
+          !notif.id.startsWith('chat_') &&
+          !notif.id.startsWith('activity_') &&
+          !notif.id.startsWith('sub_')) {
+        try {
+          await FirebaseFirestore.instance.collection('notifications').doc(notif.id).delete();
+        } catch (_) {}
+      }
+    }
+
+    await prefs.setStringList(_getClearedPrefsKey(userId), updatedClearedIds.toList());
+
+    state = ParentNotificationsState(
+      notifications: [],
+      readIds: state.readIds,
+    );
+  }
+
+  Future<void> deleteNotification(String id) async {
+    final user = ref.read(authControllerProvider);
+    final prefs = ref.read(sharedPrefsProvider);
+    final userId = user?.id ?? 'guest';
+
+    final updatedClearedIds = prefs.getStringList(_getClearedPrefsKey(userId))?.toSet() ?? <String>{};
+    updatedClearedIds.add(id);
+    await prefs.setStringList(_getClearedPrefsKey(userId), updatedClearedIds.toList());
+
+    if (!id.startsWith('default_') &&
+        !id.startsWith('chat_') &&
+        !id.startsWith('activity_') &&
+        !id.startsWith('sub_')) {
+      try {
+        await FirebaseFirestore.instance.collection('notifications').doc(id).delete();
+      } catch (_) {}
+    }
+
+    final updatedNotifications = state.notifications.where((n) => n.id != id).toList();
+    state = ParentNotificationsState(
+      notifications: updatedNotifications,
+      readIds: state.readIds,
+    );
   }
 }
 

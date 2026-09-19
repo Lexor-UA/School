@@ -21,6 +21,7 @@ import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -53,9 +54,11 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     final childrenAsync = ref.watch(childrenControllerProvider);
     final children = childrenAsync.value ?? [];
     final scheduleAsync = ref.watch(scheduleControllerProvider);
+    final family = ref.watch(familyStreamProvider).value;
     
     final allEnrolledIds = [
       if (user != null) user.id,
+      if (family != null) ...family.parentIds,
       ...children.map((c) => c.id),
     ];
 

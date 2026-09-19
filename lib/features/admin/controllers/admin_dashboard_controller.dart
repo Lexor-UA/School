@@ -52,21 +52,32 @@ class AdminDashboardState {
 @riverpod
 Stream<List<GroupClass>> todayClasses(Ref ref) {
   final now = DateTime.now();
-  final startOfDay = DateTime(now.year, now.month, now.day).toIso8601String();
-  final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
 
   return FirebaseFirestore.instance
       .collection('classes')
-      .where('startTime', isGreaterThanOrEqualTo: startOfDay)
-      .where('startTime', isLessThanOrEqualTo: endOfDay)
-      .orderBy('startTime')
       .snapshots()
       .map((snapshot) {
-    return snapshot.docs.map((doc) {
-      final data = Map<String, dynamic>.from(doc.data() as Map);
-      data['id'] = doc.id;
-      return GroupClass.fromJson(data);
-    }).toList();
+    final List<GroupClass> list = [];
+    for (final doc in snapshot.docs) {
+      try {
+        final data = Map<String, dynamic>.from(doc.data() as Map);
+        data['id'] = doc.id;
+        if (data['startTime'] is Timestamp) {
+          data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+        }
+        if (data['endTime'] is Timestamp) {
+          data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+        }
+        final groupClass = GroupClass.fromJson(data);
+        if (groupClass.startTime.year == now.year &&
+            groupClass.startTime.month == now.month &&
+            groupClass.startTime.day == now.day) {
+          list.add(groupClass);
+        }
+      } catch (_) {}
+    }
+    list.sort((a, b) => a.startTime.compareTo(b.startTime));
+    return list;
   });
 }
 
@@ -156,11 +167,21 @@ final adminAllClassesProvider = StreamProvider.autoDispose<List<GroupClass>>((re
       .collection('classes')
       .snapshots()
       .map((snapshot) {
-    return snapshot.docs.map((doc) {
-      final data = Map<String, dynamic>.from(doc.data() as Map);
-      data['id'] = doc.id;
-      return GroupClass.fromJson(data);
-    }).toList();
+    final List<GroupClass> list = [];
+    for (final doc in snapshot.docs) {
+      try {
+        final data = Map<String, dynamic>.from(doc.data() as Map);
+        data['id'] = doc.id;
+        if (data['startTime'] is Timestamp) {
+          data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+        }
+        if (data['endTime'] is Timestamp) {
+          data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+        }
+        list.add(GroupClass.fromJson(data));
+      } catch (_) {}
+    }
+    return list;
   });
 });
 

@@ -67,4 +67,32 @@ extension GroupClassAudienceX on GroupClass {
   }
 
   bool get isUniversal => !isChildOnly && !isAdultOnly;
+
+  (int, int)? get ageRange => parseAgeRange(title) ?? parseAgeRange(category);
+
+  bool isAgeCompatible(int? age) {
+    if (age == null) return true;
+    final range = ageRange;
+    if (range == null) return true;
+    return age >= range.$1 && age <= range.$2;
+  }
+}
+
+(int, int)? parseAgeRange(String text) {
+  final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)\s*(?:рок|р\b|лет|years?)', caseSensitive: false).firstMatch(text);
+  if (match != null) {
+    final min = int.tryParse(match.group(1)!);
+    final max = int.tryParse(match.group(2)!);
+    if (min != null && max != null) {
+      return (min, max);
+    }
+  }
+  return null;
+}
+
+bool isServiceAgeCompatible(String title, int? age) {
+  if (age == null) return true;
+  final range = parseAgeRange(title);
+  if (range == null) return true;
+  return age >= range.$1 && age <= range.$2;
 }

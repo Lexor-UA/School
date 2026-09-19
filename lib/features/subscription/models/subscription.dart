@@ -42,4 +42,24 @@ extension SubscriptionAudienceX on Subscription {
     if (isSplitSubscription) return false;
     return !isAdultSubscription;
   }
+
+  (int, int)? get ageRange {
+    final s = serviceName ?? '';
+    final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)\s*(?:рок|р\b|лет|years?)', caseSensitive: false).firstMatch(s);
+    if (match != null) {
+      final min = int.tryParse(match.group(1)!);
+      final max = int.tryParse(match.group(2)!);
+      if (min != null && max != null) {
+        return (min, max);
+      }
+    }
+    return null;
+  }
+
+  bool isAgeCompatible(int? age) {
+    if (age == null) return true;
+    final range = ageRange;
+    if (range == null) return true; // generic child subscription without specific age works for any age
+    return age >= range.$1 && age <= range.$2;
+  }
 }

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +11,7 @@ import 'package:swimming_school_app/features/parent/controllers/children_control
 import 'package:swimming_school_app/features/parent/models/family.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
+import 'package:swimming_school_app/features/parent/presentation/family_qr_scanner_dialog.dart';
 
 class FamilyManagementSheet extends ConsumerStatefulWidget {
   const FamilyManagementSheet({super.key});
@@ -21,6 +21,7 @@ class FamilyManagementSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
       builder: (context) => const FamilyManagementSheet(),
     );
   }
@@ -154,6 +155,14 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     }
   }
 
+  Future<void> _openQrScanner() async {
+    final scannedCode = await FamilyQrScannerDialog.show(context);
+    if (scannedCode != null && scannedCode.isNotEmpty) {
+      _codeController.text = scannedCode;
+      _submitJoinCode();
+    }
+  }
+
   Future<void> _confirmUnlink(Family family) async {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final user = ref.read(authControllerProvider);
@@ -221,37 +230,47 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     final family = familyAsync.value;
     final isPaired = family?.isPaired ?? false;
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.90,
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.90,
+      ),
+      padding: EdgeInsets.only(
+        top: 16,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            math.max(MediaQuery.of(context).padding.bottom, 24),
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F1E32) : Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            isDark ? const Color(0xFF0F1E32) : Colors.white,
+            isDark ? const Color(0xFF070E1A) : const Color(0xFFF1F5F9),
+          ],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFCBD5E1),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.70 : 0.25),
+            blurRadius: 36,
+            offset: const Offset(0, -8),
           ),
-          padding: EdgeInsets.only(
-            top: 16,
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom +
-                math.max(MediaQuery.of(context).padding.bottom, 24),
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.97),
-                isDark ? const Color(0xFF070E1A).withValues(alpha: 0.98) : const Color(0xFFF1F5F9).withValues(alpha: 0.98),
-              ],
+          if (isDark)
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+              blurRadius: 24,
+              offset: const Offset(0, -2),
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
+        ],
+      ),
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -497,10 +516,8 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }
 
   Widget _buildPairedCard(BuildContext context, Family family, String currentUserId, bool isDark) {
     final user = ref.watch(authControllerProvider);
@@ -597,7 +614,9 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     required bool isDark,
   }) {
     final cleanName = name.trim().isNotEmpty ? name.trim() : 'Користувач';
-    final initialLetter = cleanName[0].toUpperCase();
+    final initialLetter = cleanName.characters.isNotEmpty
+        ? cleanName.characters.first.toUpperCase()
+        : 'К';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -716,7 +735,9 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       radius: 14,
                       backgroundColor: childColor,
                       child: Text(
-                        child.name.isNotEmpty ? child.name[0].toUpperCase() : '?',
+                        child.name.trim().characters.isNotEmpty
+                            ? child.name.trim().characters.first.toUpperCase()
+                            : '?',
                         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -824,29 +845,39 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  code,
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                    fontFamily: 'monospace',
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      code,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ),
                 ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00E5FF),
-                    foregroundColor: const Color(0xFF0F1E32),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  onPressed: () => _copyToClipboard(code),
-                  icon: const Icon(LucideIcons.copy, size: 15),
-                  label: const Text(
-                    'Копіювати',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                const SizedBox(width: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E5FF),
+                      foregroundColor: const Color(0xFF0F1E32),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: () => _copyToClipboard(code),
+                    icon: const Icon(LucideIcons.copy, size: 15),
+                    label: const Text(
+                      'Копіювати',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                    ),
                   ),
                 ),
               ],
@@ -898,17 +929,47 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '2. Приєднатися до сім\'ї',
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 14.5,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '2. Приєднатися до сім\'ї',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _openQrScanner,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    children: [
+                      Icon(
+                        LucideIcons.scanLine,
+                        size: 14,
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Сканувати QR',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
-            'Якщо ваш чоловік або дружина вже мають код сім\'ї, введіть його сюди:',
+            'Якщо ваш чоловік або дружина вже мають код сім\'ї, введіть його або відскануйте QR:',
             style: TextStyle(
               color: isDark ? Colors.white60 : Colors.black54,
               fontSize: 12,
@@ -937,6 +998,15 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                 LucideIcons.keyRound,
                 size: 18,
                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  LucideIcons.scanLine,
+                  size: 20,
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                ),
+                tooltip: 'Сканувати QR-код',
+                onPressed: _openQrScanner,
               ),
               filled: true,
               fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,

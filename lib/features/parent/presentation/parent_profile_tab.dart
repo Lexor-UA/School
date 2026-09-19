@@ -134,7 +134,7 @@ class ParentProfileTab extends ConsumerWidget {
             textSubColor,
             accentColor,
             medalsCount,
-          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
+          ),
           const SizedBox(height: 10),
 
           // 2. Family & Children Section
@@ -146,7 +146,7 @@ class ParentProfileTab extends ConsumerWidget {
             textColor,
             textSubColor,
             accentColor,
-          ).animate().fadeIn(delay: 50.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
+          ),
           const SizedBox(height: 10),
 
           // 3. 2-Column Bento Sport Cards (Trophies + Progress)
@@ -156,7 +156,7 @@ class ParentProfileTab extends ConsumerWidget {
             isDark,
             textColor,
             textSubColor,
-          ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
+          ),
           const SizedBox(height: 10),
 
           // 4. VisionOS Grouped Settings Card
@@ -166,7 +166,7 @@ class ParentProfileTab extends ConsumerWidget {
             isDark,
             textColor,
             textSubColor,
-          ).animate().fadeIn(delay: 150.ms, duration: 300.ms).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuad),
+          ),
           const SizedBox(height: 10),
 
           // 5. Luminous Ruby Logout Button (Clean, no version text)
@@ -174,7 +174,7 @@ class ParentProfileTab extends ConsumerWidget {
             context,
             ref,
             isDark,
-          ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
+          ),
           const SizedBox(height: 14),
         ],
       ),
@@ -200,8 +200,9 @@ class ParentProfileTab extends ConsumerWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
@@ -294,40 +295,43 @@ class ParentProfileTab extends ConsumerWidget {
                     ),
                   ),
                   // Status Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          (isDark ? accentColor : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.22 : 0.14),
-                          (isDark ? accentColor : const Color(0xFF0369A1)).withValues(alpha: isDark ? 0.08 : 0.05),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            (isDark ? accentColor : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.22 : 0.14),
+                            (isDark ? accentColor : const Color(0xFF0369A1)).withValues(alpha: isDark ? 0.08 : 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: (isDark ? accentColor : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.45 : 0.35),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.shieldCheck,
+                            size: 12,
+                            color: isDark ? accentColor : const Color(0xFF0284C7),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
+                            style: TextStyle(
+                              color: isDark ? accentColor : const Color(0xFF0284C7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: (isDark ? accentColor : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.45 : 0.35),
-                        width: 0.9,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          LucideIcons.shieldCheck,
-                          size: 12,
-                          color: isDark ? accentColor : const Color(0xFF0284C7),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
-                          style: TextStyle(
-                            color: isDark ? accentColor : const Color(0xFF0284C7),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -519,12 +523,13 @@ class ParentProfileTab extends ConsumerWidget {
     final partnerDisplayName = partnerName.trim().isNotEmpty 
         ? partnerName.trim() 
         : (partnerPhone.isNotEmpty ? partnerPhone : 'Другий з батьків');
-    final partnerInitial = partnerDisplayName.isNotEmpty ? partnerDisplayName[0].toUpperCase() : 'П';
+    final partnerInitial = partnerDisplayName.characters.isNotEmpty ? partnerDisplayName.characters.first.toUpperCase() : 'П';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
@@ -577,53 +582,59 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () => FamilyManagementSheet.show(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isPaired
-                            ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
-                            : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFF0284C7).withValues(alpha: 0.10)),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
+                  Flexible(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => FamilyManagementSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
                           color: isPaired
-                              ? const Color(0xFF10B981).withValues(alpha: 0.45)
-                              : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.4) : const Color(0xFF0284C7).withValues(alpha: 0.3)),
-                          width: 0.9,
+                              ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
+                              : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFF0284C7).withValues(alpha: 0.10)),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isPaired
+                                ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                                : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.4) : const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                            width: 0.9,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isPaired ? LucideIcons.heartHandshake : LucideIcons.userPlus,
-                            size: 13,
-                            color: isPaired
-                                ? const Color(0xFF10B981)
-                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            isPaired ? 'Сім\'я: $partnerDisplayName' : 'Сімейний акаунт',
-                            style: TextStyle(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPaired ? LucideIcons.heartHandshake : LucideIcons.userPlus,
+                              size: 13,
                               color: isPaired
-                                  ? (isDark ? const Color(0xFF34D399) : const Color(0xFF047857))
+                                  ? const Color(0xFF10B981)
                                   : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
-                          const SizedBox(width: 3),
-                          Icon(
-                            LucideIcons.chevronRight,
-                            size: 12,
-                            color: isPaired
-                                ? const Color(0xFF10B981)
-                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                isPaired ? 'Сім\'я: $partnerDisplayName' : 'Сімейний акаунт',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isPaired
+                                      ? (isDark ? const Color(0xFF34D399) : const Color(0xFF047857))
+                                      : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(
+                              LucideIcons.chevronRight,
+                              size: 12,
+                              color: isPaired
+                                  ? const Color(0xFF10B981)
+                                  : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -986,8 +997,9 @@ class ParentProfileTab extends ConsumerWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -1104,8 +1116,9 @@ class ParentProfileTab extends ConsumerWidget {
   ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1290,8 +1303,9 @@ class ParentProfileTab extends ConsumerWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
         child: Material(
           color: Colors.transparent,
           child: InkWell(

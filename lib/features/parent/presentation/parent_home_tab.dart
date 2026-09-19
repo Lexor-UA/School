@@ -22,6 +22,7 @@ import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/controllers/parent_notifications_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/parent/models/family.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -266,7 +267,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
           if (hasClassesToday)
             ...todaysUpcomingClasses.map((c) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
-              child: _buildNextClassCard(context, isDark, accentColor, textColor, textSubColor, c, user, children),
+              child: _buildNextClassCard(context, isDark, accentColor, textColor, textSubColor, c, user, children, family),
             ))
           else
             _buildEmptyStateCard(context, ref, isDark, accentColor, textColor),
@@ -306,28 +307,38 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     );
   }
 
-  Widget _buildNextClassCard(BuildContext context, bool isDark, Color accentColor, Color textColor, Color textSubColor, GroupClass nextClass, AppUser? user, List<Child> children) {
-    String enrolledChildId = '';
-    try {
-      enrolledChildId = nextClass.enrolledChildIds.firstWhere((id) => (user != null && id == user.id) || children.any((ch) => ch.id == id));
-    } catch (e) {
-      // Ignore
-    }
-    
-    final isParent = user != null && enrolledChildId == user.id;
-    
-    String personName = 'Unknown';
-    if (isParent) {
-      personName = user.name;
-    } else {
-      try {
-        personName = children.firstWhere((ch) => ch.id == enrolledChildId).name;
-      } catch (e) {
-        // Ignore
-      }
-    }
-    
-    final iconData = isParent ? LucideIcons.user : LucideIcons.baby;
+  Widget _buildNextClassCard(
+    BuildContext context,
+    bool isDark,
+    Color accentColor,
+    Color textColor,
+    Color textSubColor,
+    GroupClass nextClass,
+    AppUser? user,
+    List<Child> children, [
+    Family? family,
+  ]) {
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final partnerName = user != null
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        : null;
+
+    final enrolledMembers = [
+      if (user != null && nextClass.enrolledChildIds.contains(user.id))
+        (id: user.id, name: user.name, isParent: true),
+      if (family != null && family.isPaired && partnerId != null && partnerName != null && nextClass.enrolledChildIds.contains(partnerId))
+        (id: partnerId, name: partnerName, isParent: true),
+      ...children
+          .where((ch) => nextClass.enrolledChildIds.contains(ch.id))
+          .map((ch) => (id: ch.id, name: ch.name, isParent: false)),
+    ];
+
+    final bool isMultiple = enrolledMembers.length > 1;
+    final String personName = enrolledMembers.isNotEmpty
+        ? enrolledMembers.map((m) => m.name).join(' + ')
+        : 'Запис';
+    final bool isParent = enrolledMembers.any((m) => m.isParent);
+    final iconData = isMultiple ? LucideIcons.users : (isParent ? LucideIcons.user : LucideIcons.baby);
 
     return Center(
       child: ConstrainedBox(

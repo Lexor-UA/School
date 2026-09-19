@@ -73,6 +73,19 @@ class SubscriptionController extends _$SubscriptionController {
           debugPrint('Failed to auto-heal subscription ${sub.id}: $e');
         });
       }
+
+      // Auto-extend single-class subscriptions to 1 year if they were created with short 1-2 days validity
+      if (sub.isActive && sub.totalClasses == 1 && sub.expiryDate != null) {
+        final daysUntilExpiry = sub.expiryDate!.difference(now).inDays;
+        if (daysUntilExpiry < 30) {
+          final oneYearFromNow = now.add(const Duration(days: 365));
+          FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
+            'expiryDate': Timestamp.fromDate(oneYearFromNow),
+          }).catchError((e) {
+            debugPrint('Failed to extend single pass subscription ${sub.id}: $e');
+          });
+        }
+      }
     }
   }
 

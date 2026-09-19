@@ -96,8 +96,9 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            clipBehavior: Clip.antiAlias,
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20, tileMode: TileMode.decal),
               child: Stack(
                 children: [
                   // Ambient volumetric radial glow orbs for luminous depth
@@ -188,54 +189,62 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'parent.notifications'.tr() == 'parent.notifications'
-                                          ? 'Сповіщення'
-                                          : 'parent.notifications'.tr(),
-                                      style: TextStyle(
-                                        color: textColor,
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.2,
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        'parent.notifications'.tr() == 'parent.notifications'
+                                            ? 'Сповіщення'
+                                            : 'parent.notifications'.tr(),
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.2,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: isDarkMode
-                                            ? const Color(0xFF10B981).withValues(alpha: 0.18)
-                                            : const Color(0xFF10B981).withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                        decoration: BoxDecoration(
                                           color: isDarkMode
-                                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
-                                              : const Color(0xFF059669).withValues(alpha: 0.25),
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            LucideIcons.checkCheck,
-                                            size: 13,
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.18)
+                                              : const Color(0xFF10B981).withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
                                             color: isDarkMode
-                                                ? const Color(0xFF34D399)
-                                                : const Color(0xFF059669),
+                                                ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                                : const Color(0xFF059669).withValues(alpha: 0.25),
+                                            width: 1.0,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Усі сповіщення прочитані',
-                                            style: TextStyle(
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              LucideIcons.checkCheck,
+                                              size: 13,
                                               color: isDarkMode
                                                   ? const Color(0xFF34D399)
                                                   : const Color(0xFF059669),
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.w700,
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Всі прочитані',
+                                              style: TextStyle(
+                                                color: isDarkMode
+                                                    ? const Color(0xFF34D399)
+                                                    : const Color(0xFF059669),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -249,7 +258,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
                                       height: 36,
-                                      padding: const EdgeInsets.symmetric(horizontal: 9),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
                                       decoration: BoxDecoration(
                                         color: isDarkMode
                                             ? const Color(0xFFEF4444).withValues(alpha: 0.14)
@@ -268,14 +277,14 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                           Icon(
                                             LucideIcons.trash2,
                                             color: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
-                                            size: 15,
+                                            size: 14,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             'Очистити',
                                             style: TextStyle(
                                               color: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
-                                              fontSize: 11.5,
+                                              fontSize: 11,
                                               fontWeight: FontWeight.w700,
                                             ),
                                           ),

@@ -53,15 +53,26 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   String _selectedSubOwner = '';
 
   final List<Map<String, dynamic>> _services = [
-    {'name': 'Абонемент на 4 тренування', 'classes': 4, 'validityDays': 30, 'isAdult': false},
-    {'name': 'Абонемент на 8 тренувань', 'classes': 8, 'validityDays': 30, 'isAdult': false},
-    {'name': 'Абонемент на 12 тренувань', 'classes': 12, 'validityDays': 30, 'isAdult': false},
-    {'name': 'Разове тренування у групі', 'classes': 1, 'validityDays': 1, 'isAdult': false},
-    {'name': 'Разове відвідування (Доросла група)', 'classes': 1, 'validityDays': 2, 'isAdult': true},
+    // Дитячі абонементи: Молодша група (6-8 років)
+    {'name': 'Дитячий абонемент 6-8 років (4 тренування)', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
+    {'name': 'Дитячий абонемент 6-8 років (8 тренувань)', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
+    {'name': 'Дитячий абонемент 6-8 років (12 тренувань)', 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
+    {'name': 'Разове дитяче тренування 6-8 років', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '6-8'},
+
+    // Дитячі абонементи: Старша група (9-15 років)
+    {'name': 'Дитячий абонемент 9-15 років (4 тренування)', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
+    {'name': 'Дитячий абонемент 9-15 років (8 тренувань)', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
+    {'name': 'Дитячий абонемент 9-15 років (12 тренувань)', 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
+    {'name': 'Разове дитяче тренування 9-15 років', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '9-15'},
+
+    // Дорослі абонементи
+    {'name': 'Разове відвідування (Доросла група)', 'classes': 1, 'validityDays': 365, 'isAdult': true},
     {'name': 'Абонемент на 4 тренування (Доросла група)', 'classes': 4, 'validityDays': 30, 'isAdult': true},
     {'name': 'Абонемент на 8 тренувань (Доросла група)', 'classes': 8, 'validityDays': 30, 'isAdult': true},
+
+    // Спліт абонементи (2 особи: дитина + дорослий або 2 дитини)
     {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
-    {'name': 'Разове спліт-тренування (2 особи)', 'classes': 1, 'validityDays': 2, 'isAdult': null, 'isSplit': true},
+    {'name': 'Разове спліт-тренування (2 особи)', 'classes': 1, 'validityDays': 365, 'isAdult': null, 'isSplit': true},
   ];
 
   @override

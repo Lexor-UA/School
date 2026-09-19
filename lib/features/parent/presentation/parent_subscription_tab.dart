@@ -11,6 +11,8 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/shared/widgets/subscription_flip_card.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
@@ -39,18 +41,26 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   String _selectedOwner = '';
 
   final List<Map<String, dynamic>> _services = [
-    // Дитячі абонементи
-    {'name': 'Дитячий абонемент на 4 тренування', 'price': '1200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false},
-    {'name': 'Дитячий абонемент на 8 тренувань', 'price': '1900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false},
-    {'name': 'Дитячий абонемент на 12 тренувань', 'price': '2600 грн', 'classes': 12, 'validityDays': 30, 'isAdult': false},
-    {'name': 'Разове дитяче тренування у групі', 'price': '500 грн', 'classes': 1, 'validityDays': 1, 'isAdult': false},
+    // Дитячі абонементи: Молодша група (6-8 років)
+    {'name': 'Дитячий абонемент 6-8 років (4 тренування)', 'price': '1200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
+    {'name': 'Дитячий абонемент 6-8 років (8 тренувань)', 'price': '1900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
+    {'name': 'Дитячий абонемент 6-8 років (12 тренувань)', 'price': '2600 грн', 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
+    {'name': 'Разове дитяче тренування 6-8 років', 'price': '500 грн', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '6-8'},
+
+    // Дитячі абонементи: Старша група (9-15 років)
+    {'name': 'Дитячий абонемент 9-15 років (4 тренування)', 'price': '1200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
+    {'name': 'Дитячий абонемент 9-15 років (8 тренувань)', 'price': '1900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
+    {'name': 'Дитячий абонемент 9-15 років (12 тренувань)', 'price': '2600 грн', 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
+    {'name': 'Разове дитяче тренування 9-15 років', 'price': '500 грн', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '9-15'},
+
     // Дорослі абонементи
     {'name': 'Абонемент на 4 тренування (Доросла група)', 'price': '1600 грн', 'classes': 4, 'validityDays': 30, 'isAdult': true},
     {'name': 'Абонемент на 8 тренувань (Доросла група)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': true},
-    {'name': 'Разове відвідування (Доросла група)', 'price': '600 грн', 'classes': 1, 'validityDays': 2, 'isAdult': true},
+    {'name': 'Разове відвідування (Доросла група)', 'price': '600 грн', 'classes': 1, 'validityDays': 365, 'isAdult': true},
+
     // Спліт абонементи (2 особи: дитина + дорослий або 2 дитини)
     {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'price': '3400 грн', 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
-    {'name': 'Разове спліт-тренування (2 особи)', 'price': '900 грн', 'classes': 1, 'validityDays': 2, 'isAdult': null, 'isSplit': true},
+    {'name': 'Разове спліт-тренування (2 особи)', 'price': '900 грн', 'classes': 1, 'validityDays': 365, 'isAdult': null, 'isSplit': true},
   ];
 
   void _payForSubscription(String userId, String owner, String selectedService) async {
@@ -88,6 +98,25 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             );
           }
           return;
+        }
+
+        // Validate child's age matches subscription age group
+        if (isServiceAdult == false && !isOwnerAdult) {
+          final children = ref.read(childrenControllerProvider).value ?? [];
+          final child = children.where((c) => c.name.trim() == owner.trim()).firstOrNull;
+          final childAge = child?.currentAge;
+          if (childAge != null && !isServiceAgeCompatible(selectedService, childAge)) {
+            final range = parseAgeRange(selectedService);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Цей абонемент для дітей ${range?.$1}-${range?.$2} р. Вік дитини ($owner): $childAge р.'),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            }
+            return;
+          }
         }
       }
 
@@ -173,8 +202,12 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   void _showPaymentSheet(String userId, String effectiveOwner, bool isDark, AppThemeConfig themeConfig) {
     final currentUser = ref.read(authControllerProvider);
     final bool isOwnerAdult = effectiveOwner == currentUser?.name;
+    final children = ref.read(childrenControllerProvider).value ?? [];
+    final child = children.where((c) => c.name.trim() == effectiveOwner.trim()).firstOrNull;
+    final childAge = child?.currentAge;
+
     String? selectedService;
-    String categoryFilter = isOwnerAdult ? 'adult' : 'child';
+    String categoryFilter = isOwnerAdult ? 'adult' : (childAge != null ? 'recommended' : 'child');
 
     showModalBottomSheet(
       context: context,
@@ -193,6 +226,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             final displayedServices = _services.where((s) {
               final isServiceAdult = s['isAdult'] as bool?;
               final isSplit = s['isSplit'] as bool? ?? false;
+              final ageGroup = s['ageGroup'] as String?;
 
               if (isOwnerAdult) {
                 // Adult owner: strictly exclude child-only subscriptions
@@ -203,6 +237,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               } else {
                 // Child owner: strictly exclude all adult subscriptions!
                 if (isServiceAdult == true) return false;
+                if (categoryFilter == 'recommended' && childAge != null) {
+                  final targetGroup = childAge >= 9 ? '9-15' : '6-8';
+                  return ageGroup == targetGroup;
+                }
                 if (categoryFilter == 'child') return isServiceAdult == false && !isSplit;
                 if (categoryFilter == 'split') return isSplit;
                 return true; // 'all': only child & split
@@ -211,8 +249,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
             return ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              clipBehavior: Clip.antiAlias,
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24, tileMode: TileMode.decal),
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.85,
                   decoration: BoxDecoration(
@@ -275,7 +314,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Для: $effectiveOwner (${isOwnerAdult ? "Дорослий" : "Дитина"})',
+                                  isOwnerAdult
+                                      ? 'Для: $effectiveOwner (Дорослий)'
+                                      : 'Для: $effectiveOwner${childAge != null ? " ($childAge р. • ${childAge >= 9 ? "Старша група" : "Молодша група"})" : " (Дитина)"}',
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 12.5,
@@ -289,17 +330,35 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Audience Tabs (Strictly filtered by owner role)
+                      // Audience Tabs (Strictly filtered by owner role & age recommendation)
                       Row(
                         children: [
                           if (!isOwnerAdult) ...[
-                            _buildModalCategoryTab('child', 'Для дітей', LucideIcons.baby, categoryFilter == 'child', isDark, () {
+                            if (childAge != null) ...[
+                              _buildModalCategoryTab(
+                                'recommended',
+                                childAge >= 9 ? '9-15 років' : '6-8 років',
+                                LucideIcons.sparkles,
+                                categoryFilter == 'recommended',
+                                isDark,
+                                () {
+                                  setModalState(() {
+                                    categoryFilter = 'recommended';
+                                    if (selectedService != null) {
+                                      final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                      final targetGroup = childAge >= 9 ? '9-15' : '6-8';
+                                      if (s['ageGroup'] != targetGroup) {
+                                        selectedService = null;
+                                      }
+                                    }
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            _buildModalCategoryTab('all', 'Всі дитячі', LucideIcons.baby, categoryFilter == 'all', isDark, () {
                               setModalState(() {
-                                categoryFilter = 'child';
-                                if (selectedService != null) {
-                                  final s = _services.firstWhere((e) => e['name'] == selectedService);
-                                  if (s['isAdult'] != false || s['isSplit'] == true) selectedService = null;
-                                }
+                                categoryFilter = 'all';
                               });
                             }),
                             const SizedBox(width: 6),
@@ -325,12 +384,6 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               }
                             });
                           }),
-                          const SizedBox(width: 6),
-                          _buildModalCategoryTab('all', isOwnerAdult ? 'Всі дорослі' : 'Всі дитячі', LucideIcons.layers, categoryFilter == 'all', isDark, () {
-                            setModalState(() {
-                              categoryFilter = 'all';
-                            });
-                          }),
                         ],
                       ),
                       const SizedBox(height: 14),
@@ -345,9 +398,21 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             final isSelected = selectedService == serviceName;
                             final bool isServiceAdult = service['isAdult'] as bool? ?? false;
                             final bool isSplit = service['isSplit'] as bool? ?? false;
+                            final String? ageGroup = service['ageGroup'] as String?;
+                            final bool isAgeMismatch = !isOwnerAdult && childAge != null && !isServiceAgeCompatible(serviceName, childAge);
 
                             return GestureDetector(
                               onTap: () {
+                                if (isAgeMismatch) {
+                                  final range = parseAgeRange(serviceName);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Цей абонемент призначений для дітей ${range?.$1}-${range?.$2} р. Вік $effectiveOwner — $childAge р.'),
+                                      backgroundColor: Colors.orangeAccent,
+                                    ),
+                                  );
+                                  return;
+                                }
                                 setModalState(() {
                                   if (isSelected) {
                                     selectedService = null;
@@ -421,36 +486,68 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: isSplit
-                                                  ? const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.12)
-                                                  : (isServiceAdult
-                                                      ? const Color(0xFF6366F1).withValues(alpha: isDark ? 0.25 : 0.12)
-                                                      : const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)),
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: isSplit
-                                                    ? const Color(0xFFA78BFA).withValues(alpha: 0.5)
-                                                    : (isServiceAdult
-                                                        ? const Color(0xFF818CF8).withValues(alpha: 0.45)
-                                                        : const Color(0xFF10B981).withValues(alpha: 0.45)),
-                                                width: 0.8,
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 4,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: isSplit
+                                                      ? const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.12)
+                                                      : (isServiceAdult
+                                                          ? const Color(0xFF6366F1).withValues(alpha: isDark ? 0.25 : 0.12)
+                                                          : const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color: isSplit
+                                                        ? const Color(0xFFA78BFA).withValues(alpha: 0.5)
+                                                        : (isServiceAdult
+                                                            ? const Color(0xFF818CF8).withValues(alpha: 0.45)
+                                                            : const Color(0xFF10B981).withValues(alpha: 0.45)),
+                                                    width: 0.8,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  isSplit ? 'Спліт (2 особи)' : (isServiceAdult ? 'Дорослий' : 'Дитячий'),
+                                                  style: TextStyle(
+                                                    color: isSplit
+                                                        ? (isDark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED))
+                                                        : (isServiceAdult
+                                                            ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
+                                                            : (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))),
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                            child: Text(
-                                              isSplit ? 'Спліт (2 особи)' : (isServiceAdult ? 'Дорослий' : 'Дитячий'),
-                                              style: TextStyle(
-                                                color: isSplit
-                                                    ? (isDark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED))
-                                                    : (isServiceAdult
-                                                        ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
-                                                        : (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
+                                              if (ageGroup != null)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: isAgeMismatch
+                                                        ? Colors.orangeAccent.withValues(alpha: isDark ? 0.22 : 0.12)
+                                                        : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE)),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: isAgeMismatch
+                                                          ? Colors.orangeAccent.withValues(alpha: 0.5)
+                                                          : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.4) : const Color(0xFFBAE6FD)),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    isAgeMismatch ? 'Вік: $ageGroup р. ⚠️' : '$ageGroup років',
+                                                    style: TextStyle(
+                                                      color: isAgeMismatch
+                                                          ? (isDark ? Colors.orangeAccent : const Color(0xFFD97706))
+                                                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
                                           ),
                                         ],
                                       ),
@@ -857,8 +954,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             if (currentSub != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(24),
+                clipBehavior: Clip.antiAlias,
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4.0),
                     padding: const EdgeInsets.all(20),
@@ -1041,12 +1139,18 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               children: [
                                 Icon(LucideIcons.users, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                                 const SizedBox(width: 5),
-                                Text(
-                                  'Оформив(-ла): ${family.getOtherParentName(user?.id ?? "")}',
-                                  style: TextStyle(
-                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      'від ${family.getOtherParentName(user?.id ?? "") ?? "партнера"}',
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1166,13 +1270,18 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                   icon: _isLoading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
-                  label: Text(
-                    _isLoading
-                        ? 'parent.processing'.tr()
-                        : (effectiveOwner == user?.name
-                            ? 'parent.pay_subscription'.tr()
-                            : 'Оформити абонемент для $effectiveOwner'),
-                    style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _isLoading
+                          ? 'parent.processing'.tr()
+                          : (effectiveOwner == user?.name
+                              ? 'parent.pay_subscription'.tr()
+                              : 'Оформити для $effectiveOwner'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
@@ -1180,7 +1289,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   ),
                 ),
-              ).animate().fadeIn(delay: 450.ms).scale(begin: const Offset(0.95, 0.95)),
+              ),
             
             const SizedBox(height: 120), // spacing for bottom nav bar
           ],
@@ -1205,6 +1314,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(7),
@@ -1236,7 +1346,13 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             ),
           ],
         ),
-        valueWidget,
+        const SizedBox(width: 8),
+        Flexible(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: valueWidget,
+          ),
+        ),
       ],
     );
   }

@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:collection/collection.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 
@@ -26,6 +29,7 @@ class ParentBookingScreen extends ConsumerStatefulWidget {
 class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   GroupClass? selectedClass;
   String? selectedUserId;
+  final List<String> _selectedSplitUserIds = [];
   bool isBooking = false;
   bool showSuccess = false;
   String bookedTargetName = '';
@@ -37,6 +41,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     if (showSuccess) {
       return _buildSuccessScreen(isDark);
     }
+
+    final bool isSplitEmpty = selectedClass != null && selectedClass!.isSplit && selectedClass!.enrolledChildIds.isEmpty;
+    final bool canConfirm = isSplitEmpty
+        ? _selectedSplitUserIds.length == 2
+        : (selectedClass != null && selectedUserId != null);
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkTheme.scaffoldBackgroundColor : AppTheme.backgroundGrey,
@@ -66,7 +75,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                     children: [
                       Text('parent.selected_class'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
                       TextButton(
-                        onPressed: () => setState(() { selectedClass = null; selectedUserId = null; }),
+                        onPressed: () => setState(() {
+                          selectedClass = null;
+                          selectedUserId = null;
+                          _selectedSplitUserIds.clear();
+                        }),
                         child: Text('parent.change'.tr(), style: const TextStyle(color: Colors.cyanAccent)),
                       ),
                     ],
@@ -74,8 +87,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   _buildSelectedClassCard(selectedClass!, isDark),
                   const SizedBox(height: 32),
                   
-                  // Step 2: Select Child (Real data from Firebase)
-                  Text('parent.for_whom'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold)),
+                  // Step 2: Select Child / Participants
+                  Text(
+                    isSplitEmpty ? 'Оберіть 2-х учасників' : 'parent.for_whom'.tr(),
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 16),
                   _buildChildSelectionList(isDark),
                 ]
@@ -84,22 +100,29 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           ),
 
           // Step 3: Confirm Button
-          if (selectedClass != null && selectedUserId != null)
+          if (selectedClass != null && (isSplitEmpty || selectedUserId != null))
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: isBooking ? null : _confirmBooking,
+                  onPressed: (isBooking || !canConfirm) ? null : _confirmBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyanAccent,
-                    foregroundColor: Colors.black87,
+                    backgroundColor: canConfirm ? Colors.cyanAccent : (isDark ? Colors.white12 : Colors.black12),
+                    foregroundColor: canConfirm ? Colors.black87 : (isDark ? Colors.white38 : Colors.black38),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: isBooking
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 3))
-                      : Text('parent.confirm_record'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      : Text(
+                          isSplitEmpty
+                              ? (_selectedSplitUserIds.length == 2
+                                  ? 'Записати на спліт-тренування'
+                                  : (_selectedSplitUserIds.isEmpty ? 'Оберіть 2-х учасників' : 'Оберіть 2-го учасника'))
+                              : 'parent.confirm_record'.tr(),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ).animate().slideY(begin: 0.2, end: 0).fadeIn(),
             )
@@ -147,7 +170,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     final bool isFull = c.enrolledChildIds.length >= c.maxCapacity;
 
     return GestureDetector(
-      onTap: isFull ? null : () => setState(() => selectedClass = c),
+      onTap: isFull ? null : () => setState(() {
+        selectedClass = c;
+        selectedUserId = null;
+        _selectedSplitUserIds.clear();
+      }),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
@@ -244,21 +271,33 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
 
   Widget _buildChildSelectionList(bool isDark) {
     final user = ref.watch(authControllerProvider);
+    final family = ref.watch(familyStreamProvider).value;
     final isChildClass = selectedClass?.isChildOnly ?? false;
     final isAdultClass = selectedClass?.isAdultOnly ?? false;
+    final isSplitEmpty = selectedClass != null && selectedClass!.isSplit && selectedClass!.enrolledChildIds.isEmpty;
 
     return ref.watch(childrenControllerProvider).when(
       data: (children) {
+        final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+        final partnerName = user != null
+            ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+            : null;
+
         final showParent = user != null && !isChildClass;
-        final eligibleChildren = isAdultClass ? <Child>[] : children;
+        final showPartner = family != null && family.isPaired && partnerId != null && partnerName != null && !isChildClass;
+        final eligibleChildren = isAdultClass 
+            ? <Child>[] 
+            : children.where((ch) => selectedClass?.isAgeCompatible(ch.currentAge) ?? true).toList();
 
         if (!showParent && eligibleChildren.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              isChildClass
-                  ? 'У вашому профілі ще немає доданих дітей для цього дитячого заняття.'
-                  : 'Немає доступних учасників для запису.',
+              selectedClass?.ageRange != null
+                  ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${selectedClass!.ageRange!.$1}-${selectedClass!.ageRange!.$2} р.).'
+                  : (isChildClass
+                      ? 'У вашому профілі ще немає доданих дітей для цього дитячого заняття.'
+                      : 'Немає доступних учасників для запису.'),
               style: const TextStyle(color: Colors.orangeAccent, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -266,10 +305,92 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         }
 
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (isSplitEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0284C7).withValues(alpha: 0.16) : const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFF38BDF8),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.2) : const Color(0xFF0284C7).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(LucideIcons.users, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Спліт-тренування (2 учасники)',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _selectedSplitUserIds.length == 2
+                                ? 'Обрано 2 з 2 учасників (готові до запису)'
+                                : 'Оберіть 2-х учасників (батько + дитина або двоє дітей): обрано ${_selectedSplitUserIds.length} з 2',
+                            style: TextStyle(
+                              color: _selectedSplitUserIds.length == 2
+                                  ? const Color(0xFF10B981)
+                                  : (isDark ? Colors.white70 : Colors.black54),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (showParent)
-              _buildSelectionCard(user.id, user.name, Colors.blue, isDark, true),
-            ...eligibleChildren.map((child) => _buildSelectionCard(child.id, child.name, Color(int.tryParse(child.colorHex) ?? 0xFF000000), isDark, false)),
+              _buildSelectionCard(
+                user.id,
+                '${user.name} (Я)',
+                Colors.blue,
+                isDark,
+                true,
+                isSplitEmpty: isSplitEmpty,
+              ),
+            if (showPartner)
+              _buildSelectionCard(
+                partnerId,
+                partnerName,
+                const Color(0xFFA78BFA),
+                isDark,
+                true,
+                isSplitEmpty: isSplitEmpty,
+              ),
+            ...eligibleChildren.map((child) {
+              final ageStr = child.currentAge != null ? ' (${child.currentAge} р.)' : '';
+              return _buildSelectionCard(
+                child.id,
+                '${child.name}$ageStr',
+                Color(int.tryParse(child.colorHex) ?? 0xFF000000),
+                isDark,
+                false,
+                isSplitEmpty: isSplitEmpty,
+              );
+            }),
           ],
         );
       },
@@ -278,11 +399,36 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     );
   }
 
-  Widget _buildSelectionCard(String id, String name, Color color, bool isDark, bool isParent) {
-    final bool isSelected = selectedUserId == id;
+  Widget _buildSelectionCard(
+    String id,
+    String name,
+    Color color,
+    bool isDark,
+    bool isParent, {
+    bool isSplitEmpty = false,
+  }) {
+    final bool isSelected = isSplitEmpty ? _selectedSplitUserIds.contains(id) : (selectedUserId == id);
+    final int splitIndex = isSplitEmpty ? _selectedSplitUserIds.indexOf(id) : -1;
+    final String splitBadge = splitIndex == 0 ? '1-й учасник' : (splitIndex == 1 ? '2-й учасник' : '');
 
     return GestureDetector(
-      onTap: () => setState(() => selectedUserId = id),
+      onTap: () {
+        setState(() {
+          if (isSplitEmpty) {
+            if (isSelected) {
+              _selectedSplitUserIds.remove(id);
+            } else {
+              if (_selectedSplitUserIds.length < 2) {
+                _selectedSplitUserIds.add(id);
+              } else {
+                _selectedSplitUserIds[1] = id;
+              }
+            }
+          } else {
+            selectedUserId = id;
+          }
+        });
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -290,7 +436,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           color: isSelected ? color.withValues(alpha: 0.2) : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05)),
+            color: isSelected ? (isDark ? const Color(0xFF00E5FF) : color) : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05)),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -311,10 +457,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.2),
+                  color: color.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Center(child: Icon(LucideIcons.user, color: Colors.blue, size: 24)),
+                child: Center(child: Icon(LucideIcons.user, color: color, size: 24)),
               ),
             ],
             const SizedBox(width: 16),
@@ -322,7 +468,27 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               child: Text(name, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 8),
-            if (isSelected)
+            if (isSplitEmpty && isSelected)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (splitIndex == 0 ? Colors.cyanAccent : const Color(0xFF10B981)).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: splitIndex == 0 ? Colors.cyanAccent : const Color(0xFF10B981),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  splitBadge,
+                  style: TextStyle(
+                    color: splitIndex == 0 ? (isDark ? Colors.cyanAccent : const Color(0xFF0284C7)) : const Color(0xFF10B981),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            else if (isSelected)
               Icon(LucideIcons.checkCircle2, color: color)
             else
               Container(
@@ -340,26 +506,133 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   }
 
   Future<void> _confirmBooking() async {
-    if (selectedClass == null || selectedUserId == null) return;
-    
+    if (selectedClass == null) return;
+    final isSplitEmpty = selectedClass!.isSplit && selectedClass!.enrolledChildIds.isEmpty;
+    if (isSplitEmpty && _selectedSplitUserIds.length < 2) return;
+    if (!isSplitEmpty && selectedUserId == null) return;
+
     final user = ref.read(authControllerProvider);
     if (user == null) return;
-    
-    String ownerName = user.name;
-    if (selectedUserId != user.id) {
-       final childrenAsync = ref.read(childrenControllerProvider);
-       final children = childrenAsync.value ?? [];
-       try {
-         ownerName = children.firstWhere((c) => c.id == selectedUserId).name;
-       } catch (_) {
-         // Fallback to parent name if child not found
-       }
+
+    final childrenAsync = ref.read(childrenControllerProvider);
+    final children = childrenAsync.value ?? [];
+
+    String getMemberName(String id) {
+      if (id == user.id) return user.name;
+      final ch = children.where((c) => c.id == id).firstOrNull;
+      if (ch != null) return ch.name;
+      return id;
     }
-    
-    final isAdult = selectedUserId == user.id;
+
+    if (selectedClass!.startTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Це тренування вже завершилося.'),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
+
+    if (isSplitEmpty) {
+      final id1 = _selectedSplitUserIds[0];
+      final id2 = _selectedSplitUserIds[1];
+      final name1 = getMemberName(id1);
+      final name2 = getMemberName(id2);
+      final bothNames = '$name1 та $name2';
+
+      // Check split subscription
+      final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
+      final splitSub = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+        (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
+      );
+      final isAdult1 = id1 == user.id;
+      final subscription = splitSub ?? subscriptionController.getSubscriptionForOwner(user.id, name1, isAdult: isAdult1);
+
+      if (subscription == null || subscription.remainingClasses <= 0) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1E293B),
+              title: const Text('Немає спліт-абонемента', style: TextStyle(color: Colors.white)),
+              content: const Text(
+                'Для запису необхідно мати оплачений спліт-абонемент на 2 особи. Бажаєте придбати його у розділі "Абонемент"?',
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                    ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner('Всі (Спліт)');
+                    ref.read(parentTabProvider.notifier).setTab(2);
+                  },
+                  child: const Text('Придбати абонемент', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // Age compatibility check for both attendees
+      for (final uid in [id1, id2]) {
+        if (uid != user.id) {
+          final child = children.where((c) => c.id == uid).firstOrNull;
+          final childAge = child?.currentAge;
+          if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
+            final range = selectedClass!.ageRange;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).'),
+                backgroundColor: const Color(0xFFEF4444),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
+      setState(() => isBooking = true);
+      final result = await ref.read(scheduleControllerProvider.notifier).bookClass(
+        selectedClass!.id,
+        id1,
+        secondParticipantId: id2,
+      );
+
+      if (mounted) {
+        if (result.isSuccess) {
+          setState(() {
+            bookedTargetName = bothNames;
+            isBooking = false;
+            showSuccess = true;
+          });
+        } else {
+          setState(() => isBooking = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // Standard non-split booking
+    String ownerName = getMemberName(selectedUserId!);
+    final isAdult = selectedUserId == user.id;
     final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAdult);
-    
+
     if (subscription == null || subscription.remainingClasses <= 0) {
       if (mounted) {
         showDialog(
@@ -377,10 +650,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Close booking modal
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                   ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(ownerName);
-                  ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab!
+                  ref.read(parentTabProvider.notifier).setTab(2);
                 },
                 child: const Text('Придбати абонемент', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
               ),
@@ -391,20 +664,25 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       return;
     }
 
-    if (selectedClass!.startTime.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Це тренування вже завершилося.'),
-          backgroundColor: Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+    if (selectedUserId != user.id) {
+      final child = children.where((c) => c.id == selectedUserId).firstOrNull;
+      final childAge = child?.currentAge;
+      if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
+        final range = selectedClass!.ageRange;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).'),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => isBooking = true);
     final result = await ref.read(scheduleControllerProvider.notifier).bookClass(selectedClass!.id, selectedUserId!);
-    
+
     if (mounted) {
       if (result.isSuccess) {
         setState(() {

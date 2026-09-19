@@ -7,6 +7,7 @@ import 'package:swimming_school_app/features/schedule/models/class_activity.dart
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
@@ -118,6 +119,7 @@ class ScheduleController extends _$ScheduleController {
   Future<BookingResult> bookClass(
     String classId, 
     String childId, {
+    String? secondParticipantId,
     String? targetUserId,
     String? targetOwnerName,
     bool autoEnrollFamilyForSplit = true,
@@ -126,17 +128,17 @@ class ScheduleController extends _$ScheduleController {
     if (user == null) return BookingResult.error;
 
     final effectiveUserId = targetUserId ?? user.id;
-    String ownerName = targetOwnerName ?? user.name;
-    if (targetOwnerName == null && childId != effectiveUserId) {
-       final childrenAsync = ref.read(childrenControllerProvider);
-       final children = childrenAsync.value ?? [];
-       try {
-         ownerName = children.firstWhere((c) => c.id == childId).name;
-       } catch (e) {
-         // ignore
-       }
+    final childrenAsync = ref.read(childrenControllerProvider);
+    final children = childrenAsync.value ?? [];
+
+    String getMemberName(String id) {
+      if (id == user.id) return user.name;
+      final ch = children.where((c) => c.id == id).firstOrNull;
+      if (ch != null) return ch.name;
+      return id;
     }
 
+    String ownerName = targetOwnerName ?? getMemberName(childId);
     final isAdult = childId == effectiveUserId;
 
     // Get the subscription for effective user
@@ -153,6 +155,7 @@ class ScheduleController extends _$ScheduleController {
       
       BookingResult result = BookingResult.error;
       GroupClass? bookedClass;
+      List<String> confirmedAttendees = [];
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final classDoc = await transaction.get(classRef);
@@ -168,38 +171,112 @@ class ScheduleController extends _$ScheduleController {
         final groupClass = GroupClass.fromJson(data);
         bookedClass = groupClass;
 
-        if (isAdult && groupClass.isChildOnly) {
-          result = const BookingResult(
-            isSuccess: false,
-            message: 'Це тренування лише для дітей. Будь ласка, оберіть профіль дитини.',
-            status: BookingStatus.error,
-          );
-          return;
+        // Determine all members to enroll
+        final List<String> attendeesToAdd = [childId];
+        if (groupClass.isSplit && groupClass.enrolledChildIds.isEmpty) {
+          if (secondParticipantId != null && secondParticipantId != childId) {
+            attendeesToAdd.add(secondParticipantId);
+          } else if (autoEnrollFamilyForSplit) {
+            if (childId != user.id) {
+              attendeesToAdd.add(user.id);
+            } else {
+              // If parent booked and there is only 1 child, auto-pair with that child
+              if (children.length == 1) {
+                attendeesToAdd.add(children.first.id);
+              } else if (children.length > 1) {
+                // If there are multiple children, DO NOT guess! Force selection.
+                result = const BookingResult(
+                  isSuccess: false,
+                  message: 'Для спліт-тренування оберіть, кого саме з дітей записати разом з вами.',
+                  status: BookingStatus.error,
+                );
+                return;
+              }
+            }
+          }
         }
 
-        if (!isAdult && groupClass.isAdultOnly) {
-          result = const BookingResult(
-            isSuccess: false,
-            message: 'Це тренування призначене лише для дорослих.',
-            status: BookingStatus.error,
-          );
-          return;
+        // Validate each attendee
+        for (final attId in attendeesToAdd) {
+          final isAttAdult = attId == effectiveUserId;
+          if (isAttAdult && groupClass.isChildOnly) {
+            result = const BookingResult(
+              isSuccess: false,
+              message: 'Це тренування лише для дітей. Будь ласка, оберіть профіль дитини.',
+              status: BookingStatus.error,
+            );
+            return;
+          }
+
+          if (!isAttAdult && groupClass.isAdultOnly) {
+            result = const BookingResult(
+              isSuccess: false,
+              message: 'Це тренування призначене лише для дорослих.',
+              status: BookingStatus.error,
+            );
+            return;
+          }
+
+          if (!isAttAdult) {
+            final child = children.where((c) => c.id == attId).firstOrNull;
+            final childAge = child?.currentAge;
+            if (childAge != null && !groupClass.isAgeCompatible(childAge)) {
+              final range = groupClass.ageRange;
+              result = BookingResult(
+                isSuccess: false,
+                message: 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).',
+                status: BookingStatus.error,
+              );
+              return;
+            }
+
+            if (childAge != null && !subscription.isAgeCompatible(childAge)) {
+              final subRange = subscription.ageRange;
+              result = BookingResult(
+                isSuccess: false,
+                message: 'Абонемент призначений для вікової групи ${subRange?.$1 ?? 0}-${subRange?.$2 ?? 0} р. (вік дитини: $childAge р.).',
+                status: BookingStatus.error,
+              );
+              return;
+            }
+          }
         }
         
         final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
         final remainingClasses = subData['remainingClasses'] as int;
+
+        DateTime? subExpiry;
+        if (subData['expiryDate'] is Timestamp) {
+          subExpiry = (subData['expiryDate'] as Timestamp).toDate();
+        } else if (subData['expiryDate'] is String) {
+          subExpiry = DateTime.tryParse(subData['expiryDate'] as String);
+        }
+
+        if (subExpiry != null) {
+          final endOfExpiryDay = DateTime(subExpiry.year, subExpiry.month, subExpiry.day, 23, 59, 59);
+          if (groupClass.startTime.isAfter(endOfExpiryDay)) {
+            result = const BookingResult(
+              isSuccess: false,
+              message: 'Термін дії абонемента закінчується до дати цього тренування.',
+              status: BookingStatus.error,
+            );
+            return;
+          }
+        }
 
         if (groupClass.startTime.isBefore(DateTime.now())) {
           result = BookingResult.classPast;
           return;
         }
 
-        if (groupClass.enrolledChildIds.contains(childId)) {
-          result = BookingResult.alreadyBooked;
-          return;
+        for (final attId in attendeesToAdd) {
+          if (groupClass.enrolledChildIds.contains(attId)) {
+            result = BookingResult.alreadyBooked;
+            return;
+          }
         }
 
-        if (groupClass.enrolledChildIds.length >= groupClass.maxCapacity) {
+        if (groupClass.enrolledChildIds.length + attendeesToAdd.length > groupClass.maxCapacity) {
           result = BookingResult.classFull;
           return;
         }
@@ -207,22 +284,6 @@ class ScheduleController extends _$ScheduleController {
         if (remainingClasses <= 0) {
           result = BookingResult.noSubscription;
           return;
-        }
-        
-        // Determine all members to enroll: for empty split training, auto-enroll pair [child, parent]
-        final List<String> attendeesToAdd = [childId];
-        if (groupClass.isSplit && autoEnrollFamilyForSplit && groupClass.enrolledChildIds.isEmpty) {
-          if (childId != user.id) {
-            // Child booking -> auto-add parent
-            attendeesToAdd.add(user.id);
-          } else {
-            // Parent booking -> auto-add first child if exists
-            final childrenAsync = ref.read(childrenControllerProvider);
-            final children = childrenAsync.value ?? [];
-            if (children.isNotEmpty) {
-              attendeesToAdd.add(children.first.id);
-            }
-          }
         }
 
         // Time overlap check across other classes
@@ -258,16 +319,21 @@ class ScheduleController extends _$ScheduleController {
           'isActive': newRemaining > 0
         });
         
+        confirmedAttendees = List.from(attendeesToAdd);
+        final enrolledNames = attendeesToAdd.map(getMemberName).join(' та ');
         result = groupClass.isSplit && attendeesToAdd.length == 2
-            ? const BookingResult(
+            ? BookingResult(
                 isSuccess: true,
-                message: 'Спліт-заняття успішно заброньовано (2 учасники)!',
+                message: 'Спліт-заняття успішно заброньовано ($enrolledNames)!',
                 status: BookingStatus.success,
               )
             : BookingResult.success;
       });
       
       if (result.isSuccess && bookedClass != null) {
+        final enrolledNames = confirmedAttendees.isNotEmpty
+            ? confirmedAttendees.map(getMemberName).join(' та ')
+            : ownerName;
         _logActivity(
           type: ClassActivityType.booking,
           classId: classId,
@@ -275,10 +341,10 @@ class ScheduleController extends _$ScheduleController {
           coachId: bookedClass!.coachId,
           coachName: bookedClass!.coachName,
           attendeeId: childId,
-          attendeeName: ownerName,
-          parentName: childId != user.id ? user.name : null,
+          attendeeName: enrolledNames,
+          parentName: user.name,
           parentPhone: user.phone,
-          message: 'Новий запис: $ownerName записався(-лась) на «${bookedClass!.title}»',
+          message: 'Новий запис: $enrolledNames записався(-лась) на «${bookedClass!.title}»',
         );
       }
 

@@ -17,6 +17,7 @@ import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/parent/models/family.dart';
 
 class ParentCalendarTab extends ConsumerStatefulWidget {
   const ParentCalendarTab({super.key});
@@ -43,6 +44,11 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final parentIds = (family != null && family.parentIds.isNotEmpty)
         ? family.parentIds
         : (user != null ? [user.id] : <String>[]);
+
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final partnerName = user != null
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        : null;
 
     final allFamilyIds = [...parentIds, ...children.map((c) => c.id)];
     final targetChildId = selectedChildId;
@@ -84,7 +90,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             const SizedBox(height: 4),
 
             // 1. Sleek Frosted Glass Child / Parent Selector
-            _buildChildSelector(currentTheme, user?.id ?? '', user?.name ?? 'Я'),
+            _buildChildSelector(
+              currentTheme,
+              user?.id ?? '',
+              user?.name ?? 'Я',
+              partnerId,
+              partnerName,
+            ),
             const SizedBox(height: 12),
 
             // 2. VisionOS Frosted Glass Calendar Card
@@ -104,6 +116,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                 user,
                 children,
                 allFamilyIds,
+                family,
               ),
             ),
             const SizedBox(height: 120), // Clearance for floating bottom nav bar
@@ -129,13 +142,16 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final user = ref.read(authControllerProvider);
     final children = ref.read(childrenControllerProvider).value ?? [];
+    final family = ref.read(familyStreamProvider).value;
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
 
     if (selectedChildId == 'all') {
       _showChildPickerForBooking(context, user, children);
       return;
     }
 
-    _openIndividualClassSheet(selectedChildId, selectedChildId == user?.id);
+    final isAdult = selectedChildId == user?.id || (partnerId != null && selectedChildId == partnerId);
+    _openIndividualClassSheet(selectedChildId, isAdult);
   }
 
   void _openIndividualClassSheet(String targetId, bool isAdult) {
@@ -292,7 +308,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
   // ===========================================================================
   // 1. CHILD SELECTOR BAR
   // ===========================================================================
-  Widget _buildChildSelector(AppThemeConfig currentTheme, String parentId, String parentName) {
+  Widget _buildChildSelector(
+    AppThemeConfig currentTheme,
+    String parentId,
+    String parentName, [
+    String? partnerId,
+    String? partnerName,
+  ]) {
     final childrenAsync = ref.watch(childrenControllerProvider);
 
     return Center(
@@ -322,6 +344,16 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               isParent: true,
               customIcon: LucideIcons.user,
             ),
+            if (partnerId != null && partnerName != null)
+              _buildChildChip(
+                id: partnerId,
+                name: partnerName,
+                color: const Color(0xFFA78BFA),
+                isSelected: selectedChildId == partnerId,
+                currentTheme: currentTheme,
+                isParent: true,
+                customIcon: LucideIcons.user,
+              ),
             ...childrenAsync.when(
               data: (children) => children.map((c) => _buildChildChip(
                 id: c.id,
@@ -904,8 +936,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     AppThemeConfig currentTheme,
     AppUser? user,
     List<Child> children,
-    List<String> allFamilyIds,
-  ) {
+    List<String> allFamilyIds, [
+    Family? family,
+  ]) {
     final isDark = currentTheme.isDark;
     final now = DateTime.now();
     final todayDate = DateTime(now.year, now.month, now.day);
@@ -1085,7 +1118,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...enrolledClasses.map((c) => _buildEnrolledClassCard(c, targetChildId, currentTheme, user, children)),
+                ...enrolledClasses.map((c) => _buildEnrolledClassCard(c, targetChildId, currentTheme, user, children, family)),
                 const SizedBox(height: 12),
               ],
               if (availableClasses.isNotEmpty) ...[
@@ -1141,7 +1174,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...availableClasses.map((c) => _buildAvailableClassCard(c, targetChildId, currentTheme, user, children)),
+                ...availableClasses.map((c) => _buildAvailableClassCard(c, targetChildId, currentTheme, user, children, family)),
                 const SizedBox(height: 12),
               ],
               if (pastUnenrolledClasses.isNotEmpty) ...[
@@ -1317,11 +1350,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     String targetChildId,
     AppThemeConfig currentTheme,
     AppUser? user,
-    List<Child> children,
-  ) {
+    List<Child> children, [
+    Family? family,
+  ]) {
     final isDark = currentTheme.isDark;
     final timeFormatted =
         "${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}";
+
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final partnerName = user != null
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        : null;
 
     final enrolledMembers = [
       if (user != null && c.enrolledChildIds.contains(user.id))
@@ -1330,6 +1369,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           name: '${user.name} (Я)',
           isParent: true,
           color: currentTheme.accentPrimary,
+        ),
+      if (family != null && family.isPaired && partnerId != null && partnerName != null && c.enrolledChildIds.contains(partnerId))
+        (
+          id: partnerId,
+          name: partnerName,
+          isParent: true,
+          color: const Color(0xFFA78BFA),
         ),
       ...children
           .where((ch) => c.enrolledChildIds.contains(ch.id))
@@ -1342,15 +1388,22 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     ];
 
     final unenrolledMembers = [
-      if (user != null && !c.enrolledChildIds.contains(user.id))
+      if (user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly)
         (
           id: user.id,
           name: '${user.name} (Я)',
           isParent: true,
           color: currentTheme.accentPrimary,
         ),
+      if (family != null && family.isPaired && partnerId != null && partnerName != null && !c.enrolledChildIds.contains(partnerId) && !c.isChildOnly)
+        (
+          id: partnerId,
+          name: partnerName,
+          isParent: true,
+          color: const Color(0xFFA78BFA),
+        ),
       ...children
-          .where((ch) => !c.enrolledChildIds.contains(ch.id))
+          .where((ch) => !c.enrolledChildIds.contains(ch.id) && !c.isAdultOnly)
           .map((ch) => (
                 id: ch.id,
                 name: ch.name,
@@ -1548,7 +1601,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                               final matchedChild = children.where((ch) => ch.id == targetChildId).firstOrNull;
                               final targetCancelName = targetChildId == user?.id
                                   ? (user?.name ?? 'себе')
-                                  : (matchedChild?.name ?? 'дитину');
+                                  : (targetChildId == partnerId
+                                      ? (partnerName ?? 'партнера')
+                                      : (matchedChild?.name ?? 'дитину'));
 
                               final confirm = await showDialog<bool>(
                                 context: context,
@@ -1819,7 +1874,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       }),
                       if (canEnrollMore)
                         GestureDetector(
-                          onTap: () => _showChildPickerForQuickBooking(context, c, user, children),
+                          onTap: () => _showChildPickerForQuickBooking(context, c, user, children, family),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
@@ -1861,7 +1916,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => _showChildPickerForQuickBooking(context, c, user, children),
+                      onTap: () => _showChildPickerForQuickBooking(context, c, user, children, family),
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
                         width: double.infinity,
@@ -2043,19 +2098,27 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     String targetChildId,
     AppThemeConfig currentTheme,
     AppUser? user,
-    List<Child> children,
-  ) {
+    List<Child> children, [
+    Family? family,
+  ]) {
     final isDark = currentTheme.isDark;
     final timeFormatted =
         "${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}";
     final freeSlots = c.maxCapacity - c.enrolledChildIds.length;
 
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final isAdultTarget = targetChildId == user?.id || (partnerId != null && targetChildId == partnerId);
+    final targetChild = (!isAdultTarget && targetChildId != 'all') ? children.where((ch) => ch.id == targetChildId).firstOrNull : null;
+    final childAge = targetChild?.currentAge;
+    final bool isAgeMismatch = childAge != null && !c.isAgeCompatible(childAge);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
           child: Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
@@ -2106,121 +2169,170 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Time pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE0F2FE),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 5,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Icon(
-                            LucideIcons.clock,
-                            size: 12,
-                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            timeFormatted,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
+                          // Time pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.clock,
+                                  size: 11.5,
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                ),
+                                const SizedBox(width: 3.5),
+                                Text(
+                                  timeFormatted,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+
+                          // Free slots pill (grammatically correct & compact)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.25 : 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.5),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              '$freeSlots ${freeSlots == 1 ? "місце" : (freeSlots >= 2 && freeSlots <= 4 ? "місця" : "місць")}',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
+                          // Audience pill
+                          if (c.isChildOnly || c.isAdultOnly || c.isSplit)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: c.isChildOnly
+                                    ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
+                                    : (c.isAdultOnly
+                                        ? const Color(0xFF6366F1).withValues(alpha: isDark ? 0.25 : 0.14)
+                                        : const Color(0xFF0EA5E9).withValues(alpha: isDark ? 0.22 : 0.12)),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: c.isChildOnly
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                                      : (c.isAdultOnly
+                                          ? const Color(0xFF818CF8).withValues(alpha: 0.5)
+                                          : const Color(0xFF38BDF8).withValues(alpha: 0.5)),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    c.isChildOnly
+                                        ? LucideIcons.baby
+                                        : (c.isAdultOnly ? LucideIcons.user : LucideIcons.users),
+                                    size: 11,
+                                    color: c.isChildOnly
+                                        ? const Color(0xFF34D399)
+                                        : (c.isAdultOnly
+                                            ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
+                                            : const Color(0xFF38BDF8)),
+                                  ),
+                                  const SizedBox(width: 3.5),
+                                  Text(
+                                    c.isChildOnly ? 'Для дітей' : (c.isAdultOnly ? 'Для дорослих' : 'Спліт'),
+                                    style: TextStyle(
+                                      color: c.isChildOnly
+                                          ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                                          : (c.isAdultOnly
+                                              ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
+                                              : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                          // Age mismatch pill
+                          if (isAgeMismatch && c.ageRange != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: Colors.orangeAccent.withValues(alpha: isDark ? 0.22 : 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.orangeAccent.withValues(alpha: 0.5),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(LucideIcons.triangleAlert, size: 11, color: Colors.orangeAccent),
+                                  const SizedBox(width: 3.5),
+                                  Text(
+                                    'Група ${c.ageRange!.$1}-${c.ageRange!.$2} р. ⚠️',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.orangeAccent : const Color(0xFFD97706),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
 
-                    // Free slots pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.25 : 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFF0284C7).withValues(alpha: 0.5),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        '$freeSlots місць вільно',
-                        style: TextStyle(
-                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (c.isChildOnly || c.isAdultOnly || c.isSplit) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: c.isChildOnly
-                              ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
-                              : (c.isAdultOnly
-                                  ? const Color(0xFF6366F1).withValues(alpha: isDark ? 0.25 : 0.14)
-                                  : const Color(0xFF0EA5E9).withValues(alpha: isDark ? 0.22 : 0.12)),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: c.isChildOnly
-                                ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                                : (c.isAdultOnly
-                                    ? const Color(0xFF818CF8).withValues(alpha: 0.5)
-                                    : const Color(0xFF38BDF8).withValues(alpha: 0.5)),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              c.isChildOnly
-                                  ? LucideIcons.baby
-                                  : (c.isAdultOnly ? LucideIcons.user : LucideIcons.users),
-                              size: 11,
-                              color: c.isChildOnly
-                                  ? const Color(0xFF34D399)
-                                  : (c.isAdultOnly
-                                      ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
-                                      : const Color(0xFF38BDF8)),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              c.isChildOnly ? 'Для дітей' : (c.isAdultOnly ? 'Для дорослих' : 'Спліт'),
-                              style: TextStyle(
-                                color: c.isChildOnly
-                                    ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
-                                    : (c.isAdultOnly
-                                        ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
-                                        : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    const Spacer(),
-
                     // Quick booking action
                     GestureDetector(
                       onTap: () async {
+                        if (c.isSplit && c.enrolledChildIds.isEmpty) {
+                          _showSplitBookingSheet(
+                            context,
+                            c,
+                            user,
+                            children,
+                            family,
+                            initialParticipantId: targetChildId != 'all' ? targetChildId : null,
+                          );
+                          return;
+                        }
                         if (targetChildId != 'all') {
-                          final isAdultTarget = targetChildId == user?.id;
+                          final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+                          final isAdultTarget = targetChildId == user?.id || (partnerId != null && targetChildId == partnerId);
                           if (isAdultTarget && c.isChildOnly) {
-                            _showChildPickerForQuickBooking(context, c, user, children);
+                            _showChildPickerForQuickBooking(context, c, user, children, family);
                             return;
                           }
                           if (!isAdultTarget && c.isAdultOnly) {
@@ -2232,10 +2344,21 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             );
                             return;
                           }
+                          if (isAgeMismatch) {
+                            final range = c.ageRange;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).'),
+                                backgroundColor: Colors.orangeAccent,
+                              ),
+                            );
+                            return;
+                          }
                           final res = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, targetChildId);
                           if (!mounted) return;
                           final bookedChild = children.where((ch) => ch.id == targetChildId).firstOrNull;
-                          final bookedName = targetChildId == user?.id ? user?.name : bookedChild?.name;
+                          final partnerName = user != null ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер') : null;
+                          final bookedName = targetChildId == user?.id ? user?.name : (targetChildId == partnerId ? partnerName : bookedChild?.name);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(res.message),
@@ -2255,7 +2378,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             ),
                           );
                         } else {
-                          _showChildPickerForQuickBooking(context, c, user, children);
+                          _showChildPickerForQuickBooking(context, c, user, children, family);
                         }
                       },
                       child: Container(
@@ -2281,12 +2404,16 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             ),
                           ],
                         ),
-                        child: const Text(
-                          'Записатись',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Записатись',
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
@@ -2360,23 +2487,42 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     BuildContext context,
     GroupClass c,
     AppUser? user,
-    List<Child> children,
-  ) {
+    List<Child> children, [
+    Family? family,
+  ]) {
+    if (c.isSplit && c.enrolledChildIds.isEmpty) {
+      _showSplitBookingSheet(context, c, user, children, family);
+      return;
+    }
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final currentTheme = ref.read(appThemeControllerProvider);
 
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final partnerName = user != null
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        : null;
+
     final includeParent = user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly;
+    final includePartner = family != null &&
+        family.isPaired &&
+        partnerId != null &&
+        partnerName != null &&
+        !c.enrolledChildIds.contains(partnerId) &&
+        !c.isChildOnly;
     final includeChildren = !c.isAdultOnly;
 
     final availableMembers = [
       if (includeParent)
         (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
+      if (includePartner)
+        (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       if (includeChildren)
         ...children
             .where((ch) => !c.enrolledChildIds.contains(ch.id))
+            .where((ch) => c.isAgeCompatible(ch.currentAge))
             .map((ch) => (
                   id: ch.id,
-                  name: ch.name,
+                  name: ch.currentAge != null ? '${ch.name} (${ch.currentAge} р.)' : ch.name,
                   isParent: false,
                   color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
                 )),
@@ -2386,11 +2532,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            c.isChildOnly
-                ? 'На це тренування можуть записуватися лише діти.'
-                : (c.isAdultOnly
-                    ? 'На це тренування можуть записуватися лише дорослі.'
-                    : 'Всі члени сім\'ї вже записані на це тренування'),
+            c.ageRange != null
+                ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${c.ageRange!.$1}-${c.ageRange!.$2} р.).'
+                : (c.isChildOnly
+                    ? 'На це тренування можуть записуватися лише діти.'
+                    : (c.isAdultOnly
+                        ? 'На це тренування можуть записуватися лише дорослі.'
+                        : 'Всі члени сім\'ї вже записані на це тренування')),
           ),
           backgroundColor: Colors.orangeAccent,
         ),
@@ -2550,6 +2698,381 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showSplitBookingSheet(
+    BuildContext context,
+    GroupClass c,
+    AppUser? user,
+    List<Child> children,
+    Family? family, {
+    String? initialParticipantId,
+  }) {
+    final isDark = ref.read(appThemeControllerProvider).isDark;
+    final currentTheme = ref.read(appThemeControllerProvider);
+    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
+    final partnerName = user != null
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        : null;
+
+    final availableMembers = [
+      if (user != null)
+        (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
+      if (family != null && family.isPaired && partnerId != null && partnerName != null)
+        (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
+      ...children
+          .where((ch) => c.isAgeCompatible(ch.currentAge))
+          .map((ch) => (
+                id: ch.id,
+                name: ch.currentAge != null ? '${ch.name} (${ch.currentAge} р.)' : ch.name,
+                isParent: false,
+                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+              )),
+    ];
+
+    if (availableMembers.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Для запису на спліт-тренування потрібно щонайменше 2 доступних учасники у вашій родині.'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
+    final List<String> selectedIds = [];
+    if (initialParticipantId != null && availableMembers.any((m) => m.id == initialParticipantId)) {
+      selectedIds.add(initialParticipantId);
+    } else if (user != null) {
+      selectedIds.add(user.id);
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext sheetCtx, StateSetter setSheetState) {
+            String? getMemberDisplayName(String id) {
+              final m = availableMembers.where((m) => m.id == id).firstOrNull;
+              return m?.name.replaceAll(' (Я)', '');
+            }
+
+            final isReady = selectedIds.length == 2;
+            final buttonText = isReady
+                ? 'Записати (${getMemberDisplayName(selectedIds[0])} та ${getMemberDisplayName(selectedIds[1])})'
+                : (selectedIds.isEmpty ? 'Оберіть 2-х учасників' : 'Оберіть 2-го учасника');
+
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F1E32) : Colors.white,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4.5,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white24 : Colors.black12,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              LucideIcons.users,
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Запис на Спліт-тренування',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black87,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  c.title,
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF0284C7).withValues(alpha: 0.15)
+                              : const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.3)
+                                : const Color(0xFF38BDF8),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.info,
+                              size: 17,
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Спліт розрахований на 2 особи (за одним абонементом). Оберіть обох учасників (батько + дитина або двоє дітей):',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white70 : const Color(0xFF0C4A6E),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Оберіть учасників (${selectedIds.length}/2):',
+                        style: TextStyle(
+                          color: currentTheme.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: availableMembers.map((m) {
+                              final isSelected = selectedIds.contains(m.id);
+                              final index = isSelected ? selectedIds.indexOf(m.id) : -1;
+                              final badgeText = index == 0 ? '1-й учасник' : (index == 1 ? '2-й учасник' : '');
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setSheetState(() {
+                                        if (isSelected) {
+                                          selectedIds.remove(m.id);
+                                        } else {
+                                          if (selectedIds.length < 2) {
+                                            selectedIds.add(m.id);
+                                          } else {
+                                            selectedIds[1] = m.id;
+                                          }
+                                        }
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? m.color.withValues(alpha: isDark ? 0.22 : 0.12)
+                                            : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.02)),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? (isDark ? const Color(0xFF00E5FF) : m.color)
+                                              : (isDark ? Colors.white12 : Colors.black12),
+                                          width: isSelected ? 1.8 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: m.color.withValues(alpha: 0.2),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: m.isParent
+                                                  ? Icon(LucideIcons.user, color: m.color, size: 20)
+                                                  : Text(
+                                                      m.name.isNotEmpty ? m.name[0].toUpperCase() : '?',
+                                                      style: TextStyle(color: m.color, fontWeight: FontWeight.bold, fontSize: 16),
+                                                    ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  m.name,
+                                                  style: TextStyle(
+                                                    color: currentTheme.textPrimary,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (isSelected)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: (index == 0
+                                                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                                        : const Color(0xFF10B981))
+                                                    .withValues(alpha: 0.2),
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color: index == 0
+                                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                                      : const Color(0xFF10B981),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                badgeText,
+                                                style: TextStyle(
+                                                  color: index == 0
+                                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                                      : const Color(0xFF10B981),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Container(
+                                              width: 22,
+                                              height: 22,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: isDark ? Colors.white30 : Colors.black26,
+                                                  width: 1.5,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: !isReady
+                              ? null
+                              : () async {
+                                  Navigator.pop(sheetCtx);
+                                  final p1 = selectedIds[0];
+                                  final p2 = selectedIds[1];
+                                  final res = await ref.read(scheduleControllerProvider.notifier).bookClass(
+                                        c.id,
+                                        p1,
+                                        secondParticipantId: p2,
+                                      );
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(res.message),
+                                      backgroundColor: res.isSuccess ? const Color(0xFF10B981) : Colors.redAccent,
+                                      action: res.status == BookingStatus.noSubscription
+                                          ? SnackBarAction(
+                                              label: 'Придбати',
+                                              textColor: Colors.white,
+                                              onPressed: () {
+                                                ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner('Всі (Спліт)');
+                                                ref.read(parentTabProvider.notifier).setTab(2);
+                                              },
+                                            )
+                                          : null,
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isReady
+                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                : (isDark ? Colors.white10 : Colors.black12),
+                            foregroundColor: isReady
+                                ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                                : (isDark ? Colors.white38 : Colors.black38),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: isReady ? 4 : 0,
+                          ),
+                          child: Text(
+                            buttonText,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

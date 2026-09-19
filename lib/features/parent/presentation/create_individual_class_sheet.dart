@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
@@ -51,10 +53,16 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         'Аквааеробіка',
       ];
     } else {
+      final children = ref.read(childrenControllerProvider).value ?? [];
+      final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
+      final age = currentChild?.currentAge;
+
       _availableServices = [
         'Індивідуальні тренування для дітей',
-        'Групові заняття для дітей (старша група 9-15 років)',
-        'Групові заняття для дітей (молодша група 6-8 років)',
+        if (age == null || age >= 9)
+          'Групові заняття для дітей (старша група 9-15 років)',
+        if (age == null || age < 9)
+          'Групові заняття для дітей (молодша група 6-8 років)',
         'Спліт тренування ( 2 особи ) діти/ дорослі',
       ];
     }
@@ -115,6 +123,22 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         ),
       );
       return;
+    }
+
+    if (!widget.isAdult) {
+      final children = ref.read(childrenControllerProvider).value ?? [];
+      final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
+      final age = currentChild?.currentAge;
+      if (age != null && !isServiceAgeCompatible(_selectedService!, age)) {
+        final range = parseAgeRange(_selectedService!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Вік дитини ($age р.) не відповідає віковій групі (${range!.$1}-${range.$2} р.)'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
     }
     
     final user = ref.read(authControllerProvider);
@@ -250,6 +274,22 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           );
         }
         return;
+      }
+
+      if (!widget.isAdult) {
+        final children = ref.read(childrenControllerProvider).value ?? [];
+        final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
+        final age = currentChild?.currentAge;
+        if (age != null && !subscription.isAgeCompatible(age)) {
+          final subRange = subscription.ageRange;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Абонемент для $ownerName призначений для віку ${subRange?.$1}-${subRange?.$2} р. (вік дитини: $age р.).'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+          return;
+        }
       }
     }
 
@@ -711,7 +751,44 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 20),
+                if (!widget.isAdult)
+                  Builder(
+                    builder: (context) {
+                      final children = ref.watch(childrenControllerProvider).value ?? [];
+                      final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
+                      if (currentChild == null) return const SizedBox.shrink();
+                      final age = currentChild.currentAge;
+                      final ageGroup = (age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)';
+                      return Container(
+                        margin: const EdgeInsets.only(top: 8, bottom: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                            width: 0.9,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.baby, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${currentChild.name}${age != null ? " ($age р.)" : ""} • $ageGroup',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                const SizedBox(height: 18),
                 
                 Text(
                   'Оберіть послугу',

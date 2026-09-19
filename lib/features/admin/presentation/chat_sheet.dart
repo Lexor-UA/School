@@ -395,18 +395,20 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               fontWeight: FontWeight.w600,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Пошук клієнта, тренера чи повідомлення...',
+                              hintText: 'admin.chat_search_hint'.tr(),
                               hintStyle: TextStyle(
                                 color: isDark
                                     ? const Color(0xFFB0D4EC).withValues(alpha: 0.70)
                                     : const Color(0xFF94A3B8),
                                 fontSize: 13,
                               ),
+                              isDense: true,
                               prefixIcon: Icon(
                                 LucideIcons.search,
                                 color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                 size: 18,
                               ),
+                              prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
                                       icon: Icon(
@@ -421,7 +423,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                     )
                                   : null,
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                             ),
                           ),
                         ),

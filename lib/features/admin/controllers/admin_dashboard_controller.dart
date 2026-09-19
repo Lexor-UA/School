@@ -164,6 +164,20 @@ final adminAllClassesProvider = StreamProvider.autoDispose<List<GroupClass>>((re
   });
 });
 
+final adminParentsProvider = StreamProvider.autoDispose<List<AppUser>>((ref) {
+  return FirebaseFirestore.instance
+      .collection('users')
+      .where('role', isEqualTo: 'parent')
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = Map<String, dynamic>.from(doc.data() as Map);
+      data['id'] = doc.id;
+      return AppUser.fromJson(data);
+    }).toList();
+  });
+});
+
 @riverpod
 AdminDashboardState adminDashboard(Ref ref) {
   final todayClassesList = ref.watch(todayClassesProvider).value ?? [];
@@ -172,6 +186,7 @@ AdminDashboardState adminDashboard(Ref ref) {
   final coachesList = ref.watch(coachesProvider).value ?? [];
   final allSubs = ref.watch(allSubscriptionsProvider).value ?? [];
   final allClassesList = ref.watch(adminAllClassesProvider).value ?? [];
+  final parentsList = ref.watch(adminParentsProvider).value ?? [];
 
   final now = DateTime.now();
 
@@ -238,6 +253,24 @@ AdminDashboardState adminDashboard(Ref ref) {
     }
   }
 
+  // Calculate unpaid items synchronized with PaymentSheet (inactive/expired subs + parents without subs)
+  final Set<String> uniqueUnpaidKeys = {};
+  for (final sub in allSubs) {
+    final bool isInactive = !sub.isActive ||
+        sub.remainingClasses <= 0 ||
+        (sub.expiryDate != null && now.isAfter(sub.expiryDate!));
+    if (isInactive) {
+      uniqueUnpaidKeys.add('${sub.userId}_${sub.ownerName ?? ''}');
+    }
+  }
+  for (final parent in parentsList) {
+    final bool hasSub = allSubs.any((s) => s.userId == parent.id);
+    if (!hasSub) {
+      uniqueUnpaidKeys.add('${parent.id}_${parent.name}');
+    }
+  }
+  final int unpaidCount = uniqueUnpaidKeys.length;
+
   return AdminDashboardState(
     todayClasses: todayClassesList,
     activeUpcomingClassesCount: activeUpcomingClasses.length,
@@ -245,7 +278,7 @@ AdminDashboardState adminDashboard(Ref ref) {
     totalCoachesCount: totalCoaches,
     todayClientsCount: uniqueClientsToday.length,
     todayCoachesCount: uniqueCoachesToday.length,
-    unpaidSubscriptions: inactiveSubs.length,
+    unpaidSubscriptions: unpaidCount,
     newRequests: 0,
     missedCalls: 0,
     nearestClass: nearest,

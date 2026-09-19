@@ -1150,64 +1150,70 @@ class ParentProfileTab extends ConsumerWidget {
     );
   }
 
-  // 5. Luminous Ruby Logout Button (High-contrast frosted glass in light & dark themes)
+  // 5. Luminous Ruby Logout Button (High-contrast, vibrant ruby glass in light & dark themes)
   Widget _buildLogoutFooter(BuildContext context, WidgetRef ref, bool isDark) {
-    final rubyColor = isDark ? const Color(0xFFF87171) : const Color(0xFFE11D48);
+    final rubyAccent = isDark ? const Color(0xFFFF4D6D) : const Color(0xFFE11D48);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             onTap: () => _confirmLogout(context, ref, isDark),
             child: Container(
               width: double.infinity,
-              height: 44,
+              height: 48,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
                       ? [
-                          const Color(0xFFEF4444).withValues(alpha: 0.18),
-                          const Color(0xFFB91C1C).withValues(alpha: 0.08),
+                          const Color(0xFFDC2626).withValues(alpha: 0.32),
+                          const Color(0xFF7F1D1D).withValues(alpha: 0.45),
                         ]
                       : [
-                          Colors.white.withValues(alpha: 0.90),
-                          const Color(0xFFFFF1F2).withValues(alpha: 0.95),
+                          const Color(0xFFFFF1F2),
+                          const Color(0xFFFFE4E6),
                         ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: isDark
-                      ? const Color(0xFFEF4444).withValues(alpha: 0.40)
-                      : const Color(0xFFFECDD3),
-                  width: 1.0,
+                      ? const Color(0xFFFB7185).withValues(alpha: 0.70)
+                      : const Color(0xFFFDA4AF),
+                  width: 1.3,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (isDark ? const Color(0xFFEF4444) : const Color(0xFFE11D48))
-                        .withValues(alpha: isDark ? 0.14 : 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: (isDark ? const Color(0xFFE11D48) : const Color(0xFFBE123C))
+                        .withValues(alpha: isDark ? 0.32 : 0.14),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4),
                   ),
+                  if (isDark)
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.40),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
                 ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(LucideIcons.logOut, color: rubyColor, size: 16),
-                  const SizedBox(width: 8),
+                  Icon(LucideIcons.logOut, color: rubyAccent, size: 18),
+                  const SizedBox(width: 9),
                   Text(
                     'parent.logout_short'.tr(),
                     style: TextStyle(
-                      color: rubyColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.1,
+                      color: rubyAccent,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],

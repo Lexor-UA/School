@@ -1278,43 +1278,62 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                             ),
                           // Free slots indicator
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 9.5, vertical: 5),
                             decoration: BoxDecoration(
-                              color: freeSlots == 0
-                                  ? const Color(0xFFEF4444).withValues(alpha: 0.16)
+                              gradient: freeSlots == 0
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFF43F5E), Color(0xFFBE123C)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
                                   : (freeSlots <= 2
-                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.16)
-                                      : const Color(0xFF10B981).withValues(alpha: 0.16)),
+                                      ? const LinearGradient(
+                                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : const LinearGradient(
+                                          colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: freeSlots == 0
-                                    ? const Color(0xFFEF4444).withValues(alpha: 0.45)
+                                    ? const Color(0xFFFDA4AF).withValues(alpha: 0.65)
                                     : (freeSlots <= 2
-                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
-                                        : const Color(0xFF10B981).withValues(alpha: 0.45)),
+                                        ? const Color(0xFFFDE68A).withValues(alpha: 0.65)
+                                        : const Color(0xFFA7F3D0).withValues(alpha: 0.65)),
+                                width: 1.0,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: freeSlots == 0
+                                      ? const Color(0xFFE11D48).withValues(alpha: 0.40)
+                                      : (freeSlots <= 2
+                                          ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
+                                          : const Color(0xFF10B981).withValues(alpha: 0.30)),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   freeSlots == 0 ? LucideIcons.alertCircle : LucideIcons.checkCircle2,
-                                  size: 11,
-                                  color: freeSlots == 0
-                                      ? const Color(0xFFEF4444)
-                                      : (freeSlots <= 2 ? const Color(0xFFF59E0B) : const Color(0xFF10B981)),
+                                  size: 11.5,
+                                  color: Colors.white,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 4.5),
                                 Text(
                                   freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
-                                  style: TextStyle(
-                                    color: freeSlots == 0
-                                        ? const Color(0xFFEF4444)
-                                        : (freeSlots <= 2
-                                            ? const Color(0xFFF59E0B)
-                                            : (themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF059669))),
+                                  style: const TextStyle(
+                                    color: Colors.white,
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
                               ],
@@ -2799,17 +2818,19 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                       onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                       decoration: InputDecoration(
                         hintText: _selectedSegment == 0
-                            ? 'Пошук групи за назвою, басейном чи тренером...'
-                            : 'Пошук плавця за ім\'ям...',
+                            ? 'Пошук групи чи тренера'
+                            : 'Пошук плавця за ім\'ям',
                         hintStyle: TextStyle(
                           color: _isLight ? const Color(0xFF94A3B8) : Colors.white38,
                           fontSize: 13.5,
                         ),
+                        isDense: true,
                         prefixIcon: Icon(
                           LucideIcons.search,
                           color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                           size: 18,
                         ),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
                                 icon: Icon(
@@ -2824,7 +2845,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
                     ),
                   ),

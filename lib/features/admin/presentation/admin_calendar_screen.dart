@@ -145,29 +145,34 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
           // 3. Screen content
           SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 6),
-                // Month Header & Calendar Card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildCalendarCard(allClasses, currentTheme),
-                ),
-                const SizedBox(height: 10),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 6),
+                  // Month Header & Calendar Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildCalendarCard(allClasses, currentTheme),
+                  ),
+                  const SizedBox(height: 10),
 
-                // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
-                _buildCoachFilterBar(currentTheme),
+                  // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
+                  _buildCoachFilterBar(currentTheme),
 
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                // Selected Day Schedule Section (Directly on screen!)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  // Selected Day Schedule Section (Directly on screen!)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildDayScheduleSection(dayClasses, currentTheme),
                   ),
-                ),
-              ],
+
+                  // Comfortable bottom breathing room
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
+                ],
+              ),
             ),
           ),
         ],
@@ -709,6 +714,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Section Header Row
                 Row(
@@ -883,18 +889,18 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 const SizedBox(height: 14),
 
                 // Classes List or Empty State
-                Expanded(
-                  child: dayClasses.isEmpty
-                      ? _buildEmptyDayState(dateStr, currentTheme)
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: dayClasses.length,
-                          itemBuilder: (context, index) {
-                            return _buildAdminClassCard(dayClasses[index], currentTheme);
-                          },
-                        ),
-                ),
+                if (dayClasses.isEmpty)
+                  _buildEmptyDayState(dateStr, currentTheme)
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 6),
+                    itemCount: dayClasses.length,
+                    itemBuilder: (context, index) {
+                      return _buildAdminClassCard(dayClasses[index], currentTheme);
+                    },
+                  ),
               ],
             ),
           ),
@@ -905,12 +911,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
   Widget _buildEmptyDayState(String dateStr, AppThemeConfig currentTheme) {
     return Center(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Pulsing luminous icon
               Container(
@@ -1065,9 +1069,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   Widget _buildQuickTimeChip({
     required IconData icon,

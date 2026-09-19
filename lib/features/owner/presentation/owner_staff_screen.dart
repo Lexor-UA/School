@@ -406,7 +406,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
           style: const TextStyle(color: Colors.white, fontSize: 14),
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
-            hintText: 'Пошук за імʼям, телефоном або ID...',
+            hintText: 'Пошук за імʼям, телефоном або ID',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
             prefixIcon: const Icon(LucideIcons.search, color: Colors.cyanAccent, size: 18),
             suffixIcon: _searchQuery.isNotEmpty

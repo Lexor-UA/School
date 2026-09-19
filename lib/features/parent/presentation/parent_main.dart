@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'dart:ui';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_home_tab.dart';
@@ -74,97 +73,103 @@ class _ParentMainState extends ConsumerState<ParentMain> {
         ],
       ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          boxShadow: themeConfig.isDark
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
-                    blurRadius: 20,
-                    offset: const Offset(0, -3),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.45),
-                    blurRadius: 24,
-                    offset: const Offset(0, -6),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                    blurRadius: 20,
-                    offset: const Offset(0, -4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: themeConfig.isDark
+                ? [
+                    // Ambient ocean cyan aura
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                      blurRadius: 28,
+                      spreadRadius: -1,
+                      offset: const Offset(0, 6),
+                    ),
+                    // Deep solid ocean lift
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.16),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
-                color: themeConfig.isDark
-                    ? const Color(0xFF071E36).withValues(alpha: 0.85)
-                    : Colors.white.withValues(alpha: 0.93),
-                border: Border(
-                  top: BorderSide(
-                    color: themeConfig.isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                        : const Color(0xFFBAE6FD),
-                    width: 1.2,
-                  ),
+                borderRadius: BorderRadius.circular(32),
+                // 100% solid & opaque background - zero transparency
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: themeConfig.isDark
+                      ? const [
+                          Color(0xFF0E2C4D),
+                          Color(0xFF07192C),
+                        ]
+                      : const [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFF8FAFC),
+                        ],
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+                border: Border.all(
+                  color: themeConfig.isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                      : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
               ),
-              child: SafeArea(
-                top: false,
-                bottom: true,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
-                  child: GNav(
-                    rippleColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
-                    hoverColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
-                    gap: 8,
-                    activeColor: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
-                    iconSize: 21,
-                    textStyle: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12.5,
-                      color: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
-                      letterSpacing: 0.2,
-                    ),
-                    tabBorderRadius: 18,
-                    tabActiveBorder: Border.all(
-                      color: themeConfig.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
-                          : const Color(0xFFBAE6FD),
-                      width: 1.0,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    duration: const Duration(milliseconds: 300),
-                    tabBackgroundColor: themeConfig.isDark
-                        ? themeConfig.accentPrimary.withValues(alpha: 0.35)
-                        : const Color(0xFF0284C7).withValues(alpha: 0.12),
-                    color: themeConfig.isDark ? Colors.white70 : const Color(0xFF64748B),
-                    tabs: [
-                      GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
-                      GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_calendar'.tr()),
-                      GButton(icon: LucideIcons.creditCard, text: 'parent.tab_pass'.tr()),
-                      GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
-                    ],
-                    selectedIndex: selectedIndex,
-                    onTabChange: (i) {
-                      ref.read(parentTabProvider.notifier).setTab(i);
-                    },
-                  ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              child: GNav(
+                rippleColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
+                hoverColor: themeConfig.accentPrimary.withValues(alpha: 0.1),
+                gap: 6,
+                activeColor: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
+                iconSize: 20,
+                textStyle: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.0,
+                  color: themeConfig.isDark ? Colors.white : const Color(0xFF0284C7),
+                  letterSpacing: 0.2,
                 ),
+                tabBorderRadius: 20,
+                tabActiveBorder: Border.all(
+                  color: themeConfig.isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
+                      : const Color(0xFF38BDF8).withValues(alpha: 0.50),
+                  width: 1.0,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                duration: const Duration(milliseconds: 300),
+                tabBackgroundColor: themeConfig.isDark
+                    ? themeConfig.accentPrimary.withValues(alpha: 0.30)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.12),
+                color: themeConfig.isDark ? Colors.white60 : const Color(0xFF64748B),
+                tabs: [
+                  GButton(icon: LucideIcons.home, text: 'parent.tab_home'.tr()),
+                  GButton(icon: LucideIcons.calendarDays, text: 'parent.tab_calendar'.tr()),
+                  GButton(icon: LucideIcons.creditCard, text: 'parent.tab_pass'.tr()),
+                  GButton(icon: LucideIcons.user, text: 'parent.tab_profile'.tr()),
+                ],
+                selectedIndex: selectedIndex,
+                onTabChange: (i) {
+                  ref.read(parentTabProvider.notifier).setTab(i);
+                },
               ),
             ),
           ),

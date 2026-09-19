@@ -1090,7 +1090,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         ),
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         decoration: InputDecoration(
-          hintText: 'Пошук за ім\'ям учня, клієнта чи телефоном...',
+          hintText: 'Пошук за ім\'ям або телефоном',
           hintStyle: TextStyle(
             color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF94A3B8),
             fontSize: 12.5,

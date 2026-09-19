@@ -635,7 +635,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'admin.search_hint'.tr().replaceFirst('групи чи ', '').replaceFirst('группы или ', '').replaceFirst('group or ', '').replaceFirst('Gruppe oder ', ''),
+                      'admin.search_hint'.tr(),
                       style: TextStyle(
                         color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                         fontSize: 13.5,
@@ -1511,27 +1511,27 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 gradient: isDark
-                    ? LinearGradient(
+                    ? const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withValues(alpha: 0.22),
-                          const Color(0xFFF43F5E).withValues(alpha: 0.22),
-                          const Color(0xFF0F1E32).withValues(alpha: 0.45),
+                          Color(0xFF2A0F1D),
+                          Color(0xFF1E0E24),
+                          Color(0xFF0F1E32),
                         ],
                       )
-                    : LinearGradient(
+                    : const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withValues(alpha: 0.90),
-                          const Color(0xFFFFF1F2).withValues(alpha: 0.75),
+                          Colors.white,
+                          Color(0xFFFFF1F2),
                         ],
                       ),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.35)
+                      ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
                       : const Color(0xFFFECDD3),
                   width: 1.2,
                 ),
@@ -1579,25 +1579,30 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              margin: const EdgeInsets.only(right: 8),
                               decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFFF43F5E).withValues(alpha: 0.25)
-                                    : const Color(0xFFFEE2E2),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.5 : 0.2),
-                                  width: 0.8,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x66F43F5E),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 1.5),
+                                  ),
+                                ],
                               ),
                               child: Text(
                                 'admin.attention'.tr(),
                                 style: const TextStyle(
-                                  color: Color(0xFFE11D48),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.6,
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
                             ),
@@ -1622,7 +1627,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         Text(
                           'admin.awaiting_payment_desc'.tr(),
                           style: TextStyle(
-                            color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
                             fontSize: 12,
                           ),
                         ),

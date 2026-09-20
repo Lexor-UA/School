@@ -74,6 +74,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _submit() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (!_formKey.currentState!.validate()) return;
 
     final clientAge = int.tryParse(_ageController.text.trim());
@@ -147,6 +148,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               children: [
                 Center(
                   child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
                     child: ClipRRect(
                   borderRadius: BorderRadius.circular(30),
@@ -288,6 +290,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               controller: _nameController,
                               icon: LucideIcons.user,
                               hint: 'onboarding.name_hint'.tr(),
+                              textInputAction: TextInputAction.next,
                               validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.name_error'.tr() : null,
                             ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
                             
@@ -298,6 +301,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               icon: LucideIcons.phone,
                               hint: 'onboarding.phone_hint'.tr(),
                               keyboardType: TextInputType.phone,
+                              textInputAction: TextInputAction.next,
                               validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.phone_error'.tr() : null,
                             ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
                             
@@ -308,6 +312,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               icon: LucideIcons.calendar,
                               hint: 'onboarding.age_hint'.tr(),
                               keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                              suffixIcon: IconButton(
+                                tooltip: 'Готово',
+                                icon: const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18),
+                                onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
+                              ),
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) return 'onboarding.age_error'.tr();
                                 final age = int.tryParse(v.trim());
@@ -424,6 +435,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         controller: child.nameController,
                                         icon: LucideIcons.baby,
                                         hint: 'onboarding.child_name_hint'.tr(),
+                                        textInputAction: TextInputAction.next,
                                         validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.child_name_error'.tr() : null,
                                       ),
                                       const SizedBox(height: 10),
@@ -432,6 +444,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         icon: LucideIcons.calendarDays,
                                         hint: '${'onboarding.child_age_hint'.tr()} (1-17)',
                                         keyboardType: TextInputType.number,
+                                        textInputAction: TextInputAction.done,
+                                        onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                                        suffixIcon: IconButton(
+                                          tooltip: 'Готово',
+                                          icon: const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18),
+                                          onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
+                                        ),
                                         inputFormatters: [
                                           FilteringTextInputFormatter.digitsOnly,
                                           LengthLimitingTextInputFormatter(2),
@@ -563,12 +582,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     required IconData icon,
     required String hint,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    void Function(String)? onFieldSubmitted,
+    Widget? suffixIcon,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       inputFormatters: inputFormatters,
       validator: validator,
       style: const TextStyle(color: Colors.white),
@@ -576,6 +601,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
         prefixIcon: Icon(icon, color: Colors.white70),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(

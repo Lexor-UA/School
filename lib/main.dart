@@ -84,11 +84,17 @@ class SwimmingSchoolApp extends ConsumerWidget {
         // Clamp scale to prevent text from being microscopic on extremely small devices or huge on tablets
         scale = scale.clamp(0.8, 1.05);
 
-        return MediaQuery(
-          data: mediaQueryData.copyWith(
-            textScaler: TextScaler.linear(scale),
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+          child: MediaQuery(
+            data: mediaQueryData.copyWith(
+              textScaler: TextScaler.linear(scale),
+            ),
+            child: child!,
           ),
-          child: child!,
         );
       },
       routerConfig: router,

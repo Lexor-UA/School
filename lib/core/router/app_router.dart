@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
@@ -13,6 +14,27 @@ import '../../features/owner/presentation/owner_payouts_screen.dart';
 
 import '../../features/admin/presentation/admin_chat_screen.dart';
 
+class KeyboardDismissNavigatorObserver extends NavigatorObserver {
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissKeyboard();
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissKeyboard();
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _dismissKeyboard();
+  }
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // We no longer set initialLocation based on prefs here.
   // We always start at '/' so the user sees the Splash Screen animation.
@@ -20,6 +42,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   
   return GoRouter(
     initialLocation: '/',
+    observers: [KeyboardDismissNavigatorObserver()],
     routes: [
       GoRoute(
         path: '/',

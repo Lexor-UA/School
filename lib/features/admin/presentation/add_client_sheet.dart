@@ -72,9 +72,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
 
     for (var child in validChildren) {
       final a = int.tryParse(child.ageController.text.trim());
-      if (a == null || a < 1 || a > 17) {
+      if (a == null || a < 1 || a > 15) {
         setState(() {
-          _errorMessage = 'Вік дитини "${child.nameController.text.trim()}" має бути від 1 до 17 років';
+          _errorMessage = a != null && a > 15
+              ? 'Вік дитини "${child.nameController.text.trim()}" не може перевищувати 15 років (від 16 років клієнт реєструється як дорослий)'
+              : 'Вік дитини "${child.nameController.text.trim()}" має бути від 1 до 15 років';
         });
         return;
       }

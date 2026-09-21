@@ -14,6 +14,7 @@ import 'package:swimming_school_app/features/subscription/models/subscription.da
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:intl/intl.dart';
 
 class CreateIndividualClassSheet extends ConsumerStatefulWidget {
   final DateTime selectedDate;
@@ -41,6 +42,11 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
   final List<int> _allHours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]; // 09:00 - 20:00
 
   bool get _isSplit => _selectedService?.contains('Спліт') == true;
+  bool get _isGroup =>
+      _selectedService?.toLowerCase().contains('групов') == true ||
+      _selectedService?.toLowerCase().contains('аквааеробіка') == true;
+  bool get _isAdultGroup => _isGroup && widget.isAdult;
+  bool get _isChildGroup => _isGroup && !widget.isAdult;
 
   @override
   void initState() {
@@ -49,7 +55,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       _availableServices = [
         'Індивідуальні тренування для дорослих',
         'Групові заняття для дорослих',
-        'Спліт тренування ( 2 особи ) діти/ дорослі',
+        'Спліт тренування ( 2 особи ) діти / дорослі',
         'Аквааеробіка',
       ];
     } else {
@@ -57,35 +63,47 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
       final age = currentChild?.currentAge;
 
-      _availableServices = [
-        'Індивідуальні тренування для дітей',
-        if (age == null || age >= 9)
-          'Групові заняття для дітей (старша група 9-15 років)',
-        if (age == null || age < 9)
-          'Групові заняття для дітей (молодша група 6-8 років)',
-        'Спліт тренування ( 2 особи ) діти/ дорослі',
-      ];
+      if (age != null && age <= 5) {
+        // До 5 років включно — ТІЛЬКИ індивідуальні заняття для дітей
+        _availableServices = [
+          'Індивідуальні тренування для дітей',
+        ];
+      } else {
+        // Від 6 років — індивідуально, в групах та спліт
+        _availableServices = [
+          'Індивідуальні тренування для дітей',
+          if (age == null || age >= 9)
+            'Групові заняття для дітей (старша група 9-15 років)',
+          if (age == null || (age >= 6 && age < 9))
+            'Групові заняття для дітей (молодша група 6-8 років)',
+          'Спліт тренування ( 2 особи ) діти / дорослі',
+        ];
+      }
     }
     _selectedService = _availableServices.first;
-    _initSplitParticipants();
+    _initParticipantsForService(_selectedService!);
   }
 
-  void _initSplitParticipants() {
+  void _initParticipantsForService(String service) {
     _selectedParticipantIds.clear();
     _selectedParticipantIds.add(widget.selectedUserId);
 
-    final user = ref.read(authControllerProvider);
-    final children = ref.read(childrenControllerProvider).value ?? [];
+    final isSplit = service.contains('Спліт');
+    if (isSplit) {
+      final user = ref.read(authControllerProvider);
+      final children = ref.read(childrenControllerProvider).value ?? [];
 
-    if (widget.selectedUserId == user?.id) {
-      // Current profile is parent -> auto-add first child if available
-      if (children.isNotEmpty) {
-        _selectedParticipantIds.add(children.first.id);
-      }
-    } else {
-      // Current profile is child -> auto-add parent
-      if (user != null) {
-        _selectedParticipantIds.add(user.id);
+      if (widget.selectedUserId == user?.id) {
+        // Current profile is parent -> auto-add first eligible child (age >= 6) if available
+        final eligibleChildren = children.where((c) => (c.currentAge ?? 0) >= 6).toList();
+        if (eligibleChildren.isNotEmpty) {
+          _selectedParticipantIds.add(eligibleChildren.first.id);
+        }
+      } else {
+        // Current profile is child -> auto-add parent
+        if (user != null) {
+          _selectedParticipantIds.add(user.id);
+        }
       }
     }
   }
@@ -93,19 +111,29 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
   void _toggleParticipant(String id) {
     setState(() {
       if (_selectedParticipantIds.contains(id)) {
+        if (_isGroup && _selectedParticipantIds.length == 1) {
+          // Keep at least 1 participant selected in a group class
+          return;
+        }
         _selectedParticipantIds.remove(id);
       } else {
-        if (_selectedParticipantIds.length < 2) {
+        if (_isGroup) {
           _selectedParticipantIds.add(id);
+        } else if (_isSplit) {
+          if (_selectedParticipantIds.length < 2) {
+            _selectedParticipantIds.add(id);
+          } else {
+            // Smooth swap for split: replace member who isn't widget.selectedUserId,
+            // or replace the first member if both differ.
+            final toReplace = _selectedParticipantIds.firstWhere(
+              (item) => item != widget.selectedUserId,
+              orElse: () => _selectedParticipantIds.first,
+            );
+            _selectedParticipantIds.remove(toReplace);
+            _selectedParticipantIds.add(id);
+          }
         } else {
-          // Already have 2 participants selected.
-          // Smooth swap: replace the member who isn't widget.selectedUserId,
-          // or replace the first member if both differ.
-          final toReplace = _selectedParticipantIds.firstWhere(
-            (item) => item != widget.selectedUserId,
-            orElse: () => _selectedParticipantIds.first,
-          );
-          _selectedParticipantIds.remove(toReplace);
+          _selectedParticipantIds.clear();
           _selectedParticipantIds.add(id);
         }
       }
@@ -125,55 +153,45 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       return;
     }
 
-    if (!widget.isAdult) {
-      final children = ref.read(childrenControllerProvider).value ?? [];
-      final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
-      final age = currentChild?.currentAge;
-      if (age != null && !isServiceAgeCompatible(_selectedService!, age)) {
-        final range = parseAgeRange(_selectedService!);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Вік дитини ($age р.) не відповідає віковій групі (${range!.$1}-${range.$2} р.)'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
+    if (_selectedParticipantIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Будь ласка, оберіть хоча б одного учасника'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
     }
-    
+
     final user = ref.read(authControllerProvider);
     if (user == null) return;
 
     final currentTheme = ref.read(appThemeControllerProvider);
     final isDark = currentTheme.isDark;
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-    final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
-
-    Subscription? activeSub;
+    final family = ref.read(familyStreamProvider).value;
+    final children = ref.read(childrenControllerProvider).value ?? [];
+    final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [user.id];
 
     if (_isSplit) {
-      // 1. Check for dedicated split subscription
-      activeSub = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+      final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
+      Subscription? activeSub = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
         (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
       );
 
-      // 2. If no split subscription, check if any participant has an active subscription
-      if (activeSub == null) {
-        final children = ref.read(childrenControllerProvider).value ?? [];
-        for (final pId in _selectedParticipantIds) {
-          final isPAdult = pId == user.id;
-          final pName = isPAdult ? user.name : (children.firstWhereOrNull((c) => c.id == pId)?.name ?? user.name);
-          final sub = subscriptionController.getSubscriptionForOwner(user.id, pName, isAdult: isPAdult);
-          if (sub != null && sub.remainingClasses > 0) {
-            activeSub = sub;
-            break;
+      // Check if partner holds a split subscription
+      if (activeSub == null && family != null) {
+        for (final pId in family.parentIds) {
+          if (pId != user.id) {
+            final partnerSubs = subscriptionController.getSubscriptionsForUser(pId);
+            activeSub = partnerSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+              (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
+            );
+            if (activeSub != null) break;
           }
         }
       }
 
-      // 3. Fallback to any active subscription with remaining classes
-      activeSub ??= userSubs.firstWhereOrNull((s) => s.isActive && s.remainingClasses > 0);
-
       if (activeSub == null) {
         if (mounted) {
           showDialog(
@@ -186,9 +204,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
                 ),
               ),
-              title: Text('Немає абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+              title: Text('Немає спліт-абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
               content: Text(
-                'Для запису на спліт-тренування необхідно мати активний абонемент (Спліт або стандартний). Бажаєте придбати його у розділі "Абонемент"?',
+                'Для запису на спліт-тренування необхідно мати активний спліт-абонемент (на 2 особи). Бажаєте придбати його у розділі "Абонемент"?',
                 style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
               ),
               actions: [
@@ -200,65 +218,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   onPressed: () {
                     Navigator.pop(context); // Close dialog
                     Navigator.pop(context); // Close bottom sheet
-                    ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
-                  },
-                  child: Text(
-                    'Придбати абонемент',
-                    style: TextStyle(
-                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return;
-      }
-    } else {
-      String ownerName = user.name;
-      if (widget.selectedUserId != user.id) {
-         final childrenAsync = ref.read(childrenControllerProvider);
-         final children = childrenAsync.value ?? [];
-         try {
-           ownerName = children.firstWhere((c) => c.id == widget.selectedUserId).name;
-         } catch (_) {
-           // Fallback to parent name if child not found
-         }
-      }
-      
-      final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: widget.isAdult);
-      
-      if (subscription == null || subscription.remainingClasses <= 0) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
-                ),
-              ),
-              title: Text('Немає абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
-              content: Text(
-                widget.isAdult
-                    ? 'Для запису необхідно мати оплачений дорослий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?'
-                    : 'Для запису необхідно мати оплачений дитячий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?',
-                style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Скасувати', style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pop(context); // Close bottom sheet
-                    ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(ownerName);
+                    ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner('Всі (Спліт)');
                     ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
                   },
                   child: Text(
@@ -276,20 +236,208 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         return;
       }
 
-      if (!widget.isAdult) {
-        final children = ref.read(childrenControllerProvider).value ?? [];
-        final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
-        final age = currentChild?.currentAge;
-        if (age != null && !subscription.isAgeCompatible(age)) {
-          final subRange = subscription.ageRange;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Абонемент для $ownerName призначений для віку ${subRange?.$1}-${subRange?.$2} р. (вік дитини: $age р.).'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+      final startTime = DateTime(
+        widget.selectedDate.year,
+        widget.selectedDate.month,
+        widget.selectedDate.day,
+        _selectedHour!,
+      );
+
+      if (activeSub.expiryDate != null) {
+        final endOfExpiryDay = DateTime(
+          activeSub.expiryDate!.year,
+          activeSub.expiryDate!.month,
+          activeSub.expiryDate!.day,
+          23, 59, 59,
+        );
+        if (startTime.isAfter(endOfExpiryDay)) {
+          final expiryStr = DateFormat('dd.MM.yyyy').format(activeSub.expiryDate!);
+          final dateStr = DateFormat('dd.MM.yyyy').format(startTime);
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
+                  ),
+                ),
+                title: Text('Термін дії абонемента закінчився', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                content: Text(
+                  'Термін дії вашого спліт-абонемента закінчується $expiryStr, що передує даті тренування ($dateStr). Будь ласка, оберіть дату в межах дії абонемента або оформіть новий абонемент.',
+                  style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Зрозуміло', style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
+                  ),
+                ],
+              ),
+            );
+          }
           return;
         }
+      }
+    } else {
+      // Validate subscription for EACH selected participant
+      final Map<String, int> usedSubClasses = {};
+
+      for (final pId in _selectedParticipantIds) {
+        final pIsAdult = pId == user.id || familyParentIds.contains(pId);
+        String ownerName = user.name;
+        if (!pIsAdult) {
+          final ch = children.firstWhereOrNull((c) => c.id == pId);
+          if (ch != null) ownerName = ch.name;
+        } else if (pId != user.id && family != null && family.parentNames.containsKey(pId)) {
+          ownerName = family.parentNames[pId]!;
+        }
+
+        // Check age compatibility for child service
+        if (!pIsAdult) {
+          final ch = children.firstWhereOrNull((c) => c.id == pId);
+          final age = ch?.currentAge;
+          if (age != null && !isServiceAgeCompatible(_selectedService!, age)) {
+            final range = parseAgeRange(_selectedService!);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Вік дитини $ownerName ($age р.) не відповідає віковій групі (${range!.$1}-${range.$2} р.)'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            return;
+          }
+        }
+
+        Subscription? subscription = subscriptionController.getSubscriptionForOwner(
+          pId,
+          ownerName,
+          isAdult: pIsAdult,
+          isSplit: false,
+          familyUserIds: familyParentIds,
+        );
+        subscription ??= subscriptionController.getSubscriptionForOwner(
+          user.id,
+          ownerName,
+          isAdult: pIsAdult,
+          isSplit: false,
+          familyUserIds: familyParentIds,
+        );
+
+        final alreadyUsed = subscription != null ? (usedSubClasses[subscription.id] ?? 0) : 0;
+
+        if (subscription == null ||
+            (subscription.remainingClasses - alreadyUsed) <= 0 ||
+            subscription.isSplitSubscription) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
+                  ),
+                ),
+                title: Text('Немає абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                content: Text(
+                  pIsAdult
+                      ? 'Для запису необхідно мати оплачений дорослий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?'
+                      : 'Для запису необхідно мати оплачений дитячий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?',
+                  style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Скасувати', style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      Navigator.pop(context); // Close bottom sheet
+                      ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(ownerName);
+                      ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
+                    },
+                    child: Text(
+                      'Придбати абонемент',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          return;
+        }
+
+        if (!pIsAdult) {
+          final ch = children.firstWhereOrNull((c) => c.id == pId);
+          final age = ch?.currentAge;
+          if (age != null && !subscription.isAgeCompatible(age)) {
+            final subRange = subscription.ageRange;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Абонемент для $ownerName призначений для віку ${subRange?.$1}-${subRange?.$2} р. (вік дитини: $age р.).'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            return;
+          }
+        }
+
+        final startTime = DateTime(
+          widget.selectedDate.year,
+          widget.selectedDate.month,
+          widget.selectedDate.day,
+          _selectedHour!,
+        );
+
+        if (subscription.expiryDate != null) {
+          final endOfExpiryDay = DateTime(
+            subscription.expiryDate!.year,
+            subscription.expiryDate!.month,
+            subscription.expiryDate!.day,
+            23, 59, 59,
+          );
+          if (startTime.isAfter(endOfExpiryDay)) {
+            final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
+            final dateStr = DateFormat('dd.MM.yyyy').format(startTime);
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
+                    ),
+                  ),
+                  title: Text('Термін дії абонемента закінчився', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                  content: Text(
+                    'Термін дії абонемента для $ownerName закінчується $expiryStr, що передує даті тренування ($dateStr). Будь ласка, оберіть дату в межах дії абонемента або оформіть новий абонемент.',
+                    style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Зрозуміло', style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        usedSubClasses[subscription.id] = alreadyUsed + 1;
       }
     }
 
@@ -315,7 +463,12 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
     final endTime = startTime.add(const Duration(hours: 1));
 
-    final enrolledIds = _isSplit
+    final int capacity = _isGroup ? 10 : (_isSplit ? 2 : 1);
+    final String category = _isGroup
+        ? (_selectedService!.toLowerCase().contains('аквааеробіка') ? 'Аквааеробіка' : 'Групове')
+        : (_isSplit ? 'Спліт' : 'Індивідуальне');
+
+    final enrolledIds = _isSplit || _isGroup
         ? _selectedParticipantIds.toList()
         : [widget.selectedUserId];
 
@@ -326,8 +479,8 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         endTime: endTime,
         coachId: 'unassigned',
         coachName: 'Тренер не призначений',
-        maxCapacity: _isSplit ? 2 : 1,
-        category: 'Індивідуальне',
+        maxCapacity: capacity,
+        category: category,
         lane: 'Будь-яка',
         enrolledChildIds: enrolledIds,
         isCustomBooking: true,
@@ -340,14 +493,17 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
             SnackBar(
               content: Text(_isSplit
                   ? 'Спліт-заняття для 2 осіб успішно заплановано!'
-                  : 'Заняття успішно заплановано!'),
+                  : (_isGroup
+                      ? 'Групове тренування успішно заплановано (учасників: ${enrolledIds.length})!'
+                      : 'Заняття успішно заплановано!')),
               backgroundColor: const Color(0xFF10B981),
             ),
           );
         } else {
+          final conflict = ref.read(scheduleControllerProvider.notifier).lastConflict;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Не вдалося запланувати: учасник вже має заняття на цей час або відсутній активний абонемент.'),
+            SnackBar(
+              content: Text(conflict?.message ?? 'Не вдалося запланувати: обраний час недоступний або відсутній активний абонемент.'),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -374,17 +530,59 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     final children = ref.watch(childrenControllerProvider).value ?? [];
     final family = ref.watch(familyStreamProvider).value;
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
-    final partnerName = user != null ? family?.getOtherParentName(user.id) : null;
+    final partnerName = user != null
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        : null;
 
-    final List<({String id, String name, bool isAdult})> allMembers = [
-      if (user != null) (id: user.id, name: '${user.name} (Я)', isAdult: true),
-      if (family != null && family.isPaired && partnerId != null && partnerName != null)
-        (id: partnerId, name: partnerName, isAdult: true),
-      ...children.map((c) => (id: c.id, name: c.name, isAdult: false)),
-    ];
+    final List<({String id, String name, bool isAdult})> eligibleMembers = [];
+
+    if (_isSplit) {
+      if (user != null) eligibleMembers.add((id: user.id, name: '${user.name} (Я)', isAdult: true));
+      if (partnerId != null && partnerName != null) {
+        eligibleMembers.add((id: partnerId, name: partnerName, isAdult: true));
+      }
+      eligibleMembers.addAll(
+        children.where((c) => (c.currentAge ?? 0) >= 6).map((c) => (id: c.id, name: c.name, isAdult: false)),
+      );
+    } else if (_isAdultGroup) {
+      if (user != null) eligibleMembers.add((id: user.id, name: '${user.name} (Я)', isAdult: true));
+      if (partnerId != null && partnerName != null) {
+        eligibleMembers.add((id: partnerId, name: partnerName, isAdult: true));
+      }
+    } else if (_isChildGroup) {
+      final range = _selectedService != null ? parseAgeRange(_selectedService!) : null;
+      final matchedChildren = children.where((c) {
+        final age = c.currentAge;
+        if (age == null) return false;
+        if (range != null) {
+          return age >= range.$1 && age <= range.$2;
+        }
+        return age >= 6;
+      }).toList();
+
+      eligibleMembers.addAll(
+        matchedChildren.map((c) => (id: c.id, name: '${c.name}${c.currentAge != null ? " (${c.currentAge} р.)" : ""}', isAdult: false)),
+      );
+    }
+
+    if (eligibleMembers.isEmpty) return const SizedBox.shrink();
 
     final count = _selectedParticipantIds.length;
-    final isReady = count == 2;
+    final isReady = _isSplit ? (count == 2) : (count >= 1);
+
+    final title = _isSplit
+        ? 'Учасники спліт-тренування'
+        : (_isAdultGroup ? 'Учасники групового заняття' : 'Діти на групове заняття');
+
+    final badgeText = _isSplit
+        ? (isReady ? '2 з 2 обрано' : 'Обрано $count з 2')
+        : 'Обрано: $count';
+
+    final subtitle = _isSplit
+        ? 'Оберіть двох членів сім\'ї для спільного заняття:'
+        : (_isAdultGroup
+            ? 'Оберіть дорослих членів сім\'ї, які братимуть участь:'
+            : 'Оберіть дітей, які братимуть участь у групі:');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -440,7 +638,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Учасники спліт-тренування',
+                  title,
                   style: TextStyle(
                     color: currentTheme.textPrimary,
                     fontSize: 14.5,
@@ -474,7 +672,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      isReady ? '2 з 2 обрано' : 'Обрано $count з 2',
+                      badgeText,
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.bold,
@@ -490,7 +688,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           ),
           const SizedBox(height: 12),
           Text(
-            'Оберіть двох членів сім\'ї для спільного заняття:',
+            subtitle,
             style: TextStyle(
               fontSize: 12.5,
               color: isDark ? Colors.white60 : currentTheme.textSecondary,
@@ -501,7 +699,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: allMembers.map((member) {
+            children: eligibleMembers.map((member) {
               final isSelected = _selectedParticipantIds.contains(member.id);
 
               return InkWell(
@@ -620,7 +818,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
               );
             }).toList(),
           ),
-          if (allMembers.length < 2)
+          if (_isSplit && eligibleMembers.length < 2)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
@@ -649,33 +847,94 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
              c.startTime.day == widget.selectedDate.day;
     }).toList() ?? [];
 
-    final occupiedHours = classesOnDate
-        .where((c) => c.enrolledChildIds.isNotEmpty || c.maxCapacity > 2)
-        .where((c) {
-           if (_isSplit) {
-             for (final pId in _selectedParticipantIds) {
-               if (c.enrolledChildIds.contains(pId)) return true;
-             }
-           } else {
-             if (c.enrolledChildIds.contains(widget.selectedUserId)) return true;
-           }
-           
-           final title = c.title.toLowerCase();
-           final isAdultClass = title.contains('дорослих') || title.contains('аквааеробіка'); 
-           final isChildClass = title.contains('діт');
-           final isSplit = title.contains('спліт');
-           
-           if (isSplit) return true;
-           if (widget.isAdult) return isAdultClass;
-           return isChildClass;
-        })
-        .map((c) => c.startTime.hour)
-        .toSet();
+    final occupiedHours = <int>{};
+    for (final hour in _allHours) {
+      final classesAtHour = classesOnDate.where((c) => c.startTime.hour == hour).toList();
+      if (classesAtHour.isEmpty) continue;
+
+      // 1. Participant conflict: Are any of the currently selected participants already busy at this hour?
+      final isParticipantBusy = classesAtHour.any((c) =>
+          c.enrolledChildIds.any((id) => _selectedParticipantIds.contains(id)));
+      if (isParticipantBusy) {
+        occupiedHours.add(hour);
+        continue;
+      }
+
+      // 2. Whole pool booked: If any class occupies the entire pool ('Весь басейн')
+      final isWholePoolBooked = classesAtHour.any((c) {
+        final l = c.lane.trim().toLowerCase();
+        return l.contains('весь') || l.contains('всі');
+      });
+      if (isWholePoolBooked) {
+        occupiedHours.add(hour);
+        continue;
+      }
+
+      // 3. Pool capacity: Maximum 4 simultaneous classes in the 4-lane pool
+      if (classesAtHour.length >= 4) {
+        occupiedHours.add(hour);
+        continue;
+      }
+    }
+
+    final subscriptionController = ref.watch(subscriptionControllerProvider.notifier);
+    final user = ref.watch(authControllerProvider);
+    final family = ref.watch(familyStreamProvider).value;
+    final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [if (user != null) user.id];
+
+    DateTime? earliestExpiryForSelected;
+    if (user != null) {
+      if (_isSplit) {
+        final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
+        var activeSub = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+          (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
+        );
+        if (activeSub == null && family != null) {
+          for (final pId in family.parentIds) {
+            if (pId != user.id) {
+              final partnerSubs = subscriptionController.getSubscriptionsForUser(pId);
+              activeSub = partnerSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+                (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
+              );
+              if (activeSub != null) break;
+            }
+          }
+        }
+        earliestExpiryForSelected = activeSub?.expiryDate;
+      } else {
+        for (final pId in _selectedParticipantIds) {
+          final pIsAdult = pId == user.id || familyParentIds.contains(pId);
+          String ownerName = user.name;
+          if (!pIsAdult) {
+            final children = ref.watch(childrenControllerProvider).value ?? [];
+            final ch = children.firstWhereOrNull((c) => c.id == pId);
+            if (ch != null) ownerName = ch.name;
+          } else if (pId != user.id && family != null && family.parentNames.containsKey(pId)) {
+            ownerName = family.parentNames[pId]!;
+          }
+
+          var sub = subscriptionController.getSubscriptionForOwner(pId, ownerName, isAdult: pIsAdult, isSplit: false, familyUserIds: familyParentIds);
+          sub ??= subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: pIsAdult, isSplit: false, familyUserIds: familyParentIds);
+          if (sub?.expiryDate != null) {
+            final expiry = sub!.expiryDate!;
+            if (earliestExpiryForSelected == null || expiry.isBefore(earliestExpiryForSelected)) {
+              earliestExpiryForSelected = expiry;
+            }
+          }
+        }
+      }
+    }
+
+    final endOfSelectedDate = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day, 23, 59, 59);
+    final bool isDateAfterSubscriptionExpiry = earliestExpiryForSelected != null &&
+        endOfSelectedDate.isAfter(DateTime(earliestExpiryForSelected.year, earliestExpiryForSelected.month, earliestExpiryForSelected.day, 23, 59, 59));
 
     final bool canSubmit = !_isLoading &&
+        !isDateAfterSubscriptionExpiry &&
         _selectedService != null &&
         _selectedHour != null &&
-        (!_isSplit || _selectedParticipantIds.length == 2);
+        !occupiedHours.contains(_selectedHour) &&
+        (_isSplit ? _selectedParticipantIds.length == 2 : _selectedParticipantIds.isNotEmpty);
 
     return Container(
       constraints: BoxConstraints(
@@ -751,6 +1010,35 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     letterSpacing: 0.2,
                   ),
                 ),
+                if (isDateAfterSubscriptionExpiry) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: isDark ? 0.20 : 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: isDark ? 0.45 : 0.50),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.triangleAlert, size: 18, color: Colors.redAccent),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Термін дії абонемента закінчується ${DateFormat('dd.MM.yyyy').format(earliestExpiryForSelected)}. Запис на обрану дату (${DateFormat('dd.MM.yyyy').format(widget.selectedDate)}) неможливий.',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFFFECACA) : const Color(0xFFB91C1C),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (!widget.isAdult)
                   Builder(
                     builder: (context) {
@@ -758,7 +1046,10 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
                       if (currentChild == null) return const SizedBox.shrink();
                       final age = currentChild.currentAge;
-                      final ageGroup = (age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)';
+                      final isUnder6 = age != null && age <= 5;
+                      final ageGroup = isUnder6
+                          ? 'Тільки індивідуальні заняття (до 5 р.)'
+                          : ((age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)');
                       return Container(
                         margin: const EdgeInsets.only(top: 8, bottom: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -773,7 +1064,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.baby, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                            Icon(isUnder6 ? LucideIcons.sparkles : LucideIcons.baby, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                             const SizedBox(width: 6),
                             Text(
                               '${currentChild.name}${age != null ? " ($age р.)" : ""} • $ageGroup',
@@ -830,9 +1121,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                         if (selected) {
                           setState(() {
                             _selectedService = service;
-                            if (_isSplit && _selectedParticipantIds.length < 2) {
-                              _initSplitParticipants();
-                            }
+                            _initParticipantsForService(service);
                           });
                         }
                       },
@@ -842,8 +1131,8 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                 
                 const SizedBox(height: 20),
 
-                // Dynamic Split training participants selector
-                if (_isSplit) _buildParticipantSelector(isDark, currentTheme),
+                // Dynamic Split or Group training participants selector
+                if (_isSplit || _isGroup) _buildParticipantSelector(isDark, currentTheme),
 
                 Text(
                   'Оберіть час',
@@ -963,7 +1252,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                         : Text(
                             _isSplit && _selectedParticipantIds.length != 2
                                 ? 'Оберіть 2 учасників (${_selectedParticipantIds.length}/2)'
-                                : 'Підтвердити',
+                                : (_isGroup && _selectedParticipantIds.length > 1
+                                    ? 'Записати (${_selectedParticipantIds.length} ос.)'
+                                    : 'Підтвердити'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, height: 1.25),
                           ),
                   ),

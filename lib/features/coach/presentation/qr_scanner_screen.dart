@@ -6,9 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/coach/models/qr_check_in_result.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
-  const QrScannerScreen({super.key});
+  final GroupClass? targetClass;
+  const QrScannerScreen({super.key, this.targetClass});
 
   @override
   ConsumerState<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -17,9 +21,17 @@ class QrScannerScreen extends ConsumerStatefulWidget {
 class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   final MobileScannerController cameraController = MobileScannerController();
   final TextEditingController _manualCodeController = TextEditingController();
+  GroupClass? _selectedClass;
   bool _isScanned = false;
   bool _isTorchOn = false;
   bool _isProcessing = false;
+  bool _didAttendAny = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedClass = widget.targetClass;
+  }
 
   @override
   void dispose() {
@@ -30,123 +42,582 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
   Future<void> _processCode(String code) async {
     if (_isScanned || _isProcessing) return;
+
+    if (_selectedClass == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Спочатку оберіть заняття для списання перепустки'),
+          backgroundColor: Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isScanned = true;
       _isProcessing = true;
     });
 
-    final success = await ref.read(subscriptionControllerProvider.notifier).deductClass(code.trim());
+    final result = await ref.read(subscriptionControllerProvider.notifier).processQrCheckIn(
+      code: code.trim(),
+      targetClass: _selectedClass!,
+    );
 
     if (!mounted) return;
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(LucideIcons.checkCircle2, color: Colors.white),
-              const SizedBox(width: 10),
-              Expanded(child: Text('coach.qr_accepted'.tr(args: [code]))),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(LucideIcons.alertCircle, color: Colors.white),
-              const SizedBox(width: 10),
-              Expanded(child: Text('coach.qr_error'.tr())),
-            ],
-          ),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      setState(() {
-        _isScanned = false;
-        _isProcessing = false;
-      });
+    if (result.status == QrCheckInStatus.success) {
+      _didAttendAny = true;
     }
+
+    await _showResultModal(result);
+  }
+
+  void _showSelectClassSheet(List<GroupClass> classes) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0C1D33),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Text(
+                'Оберіть заняття на сьогодні',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: classes.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  itemBuilder: (_, index) {
+                    final c = classes[index];
+                    final isSel = _selectedClass?.id == c.id;
+                    return ListTile(
+                      dense: true,
+                      tileColor: isSel
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.05),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(
+                          color: isSel ? const Color(0xFF00E5FF) : Colors.transparent,
+                        ),
+                      ),
+                      title: Text(
+                        c.title,
+                        style: TextStyle(
+                          color: isSel ? const Color(0xFF00E5FF) : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${DateFormat('HH:mm').format(c.startTime)} - ${DateFormat('HH:mm').format(c.endTime)}${c.lane.isNotEmpty ? ' • ${c.lane}' : ''}',
+                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      ),
+                      trailing: isSel ? const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18) : null,
+                      onTap: () {
+                        setState(() {
+                          _selectedClass = c;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showResultModal(QrCheckInResult result) async {
+    final isSuccess = result.status == QrCheckInStatus.success;
+
+    Color themeColor;
+    IconData statusIcon;
+    String statusTitle;
+
+    switch (result.status) {
+      case QrCheckInStatus.success:
+        themeColor = const Color(0xFF10B981); // Emerald
+        statusIcon = LucideIcons.checkCircle2;
+        statusTitle = 'Заняття успішно зараховано!';
+        break;
+      case QrCheckInStatus.alreadyAttended:
+        themeColor = const Color(0xFFF59E0B); // Amber
+        statusIcon = LucideIcons.shieldAlert;
+        statusTitle = 'Учень вже на занятті';
+        break;
+      case QrCheckInStatus.wrongDate:
+        themeColor = const Color(0xFFF97316); // Orange
+        statusIcon = LucideIcons.calendarClock;
+        statusTitle = 'Невідповідна дата';
+        break;
+      case QrCheckInStatus.wrongService:
+        themeColor = const Color(0xFFEF4444); // Red
+        statusIcon = LucideIcons.badgeAlert;
+        statusTitle = 'Невідповідний абонемент';
+        break;
+      case QrCheckInStatus.expiredOrEmpty:
+        themeColor = const Color(0xFFEF4444);
+        statusIcon = LucideIcons.clockAlert;
+        statusTitle = 'Абонемент вичерпано';
+        break;
+      case QrCheckInStatus.notFound:
+        themeColor = const Color(0xFFEF4444);
+        statusIcon = LucideIcons.alertTriangle;
+        statusTitle = 'Перепустку не знайдено';
+        break;
+    }
+
+    await showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0C1D33),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(color: themeColor.withValues(alpha: 0.35), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: themeColor.withValues(alpha: 0.25),
+                blurRadius: 30,
+                spreadRadius: 2,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Glowing Icon Badge
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: themeColor.withValues(alpha: 0.15),
+                  border: Border.all(color: themeColor.withValues(alpha: 0.6), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: themeColor.withValues(alpha: 0.4),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+                child: Icon(statusIcon, color: themeColor, size: 32),
+              ),
+              const SizedBox(height: 14),
+
+              // Title
+              Text(
+                statusTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 14),
+
+              // Details card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Column(
+                  children: [
+                    if (result.studentName != null && result.studentName!.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.user, color: Color(0xFF00E5FF), size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Клієнт:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          const Spacer(),
+                          Text(
+                            result.studentName!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (result.classTitle != null) ...[
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.calendar, color: Color(0xFF00E5FF), size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Заняття:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          const Spacer(),
+                          Flexible(
+                            child: Text(
+                              result.classTitle!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (result.subServiceName != null) ...[
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.ticket, color: Color(0xFF00E5FF), size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Абонемент:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          const Spacer(),
+                          Flexible(
+                            child: Text(
+                              result.subServiceName!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (result.remainingClasses != null) ...[
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.layers, color: Color(0xFF00E5FF), size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Залишок занять:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                            ),
+                            child: Text(
+                              '${result.remainingClasses}',
+                              style: const TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Status message/explanation
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 6),
+                child: Text(
+                  result.message,
+                  style: TextStyle(
+                    color: isSuccess ? Colors.white70 : themeColor.withValues(alpha: 0.9),
+                    fontSize: 12.5,
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              if (isSuccess) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          Navigator.pop(context, true);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Завершити', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          setState(() {
+                            _isScanned = false;
+                            _isProcessing = false;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Наступний', style: TextStyle(fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      setState(() {
+                        _isScanned = false;
+                        _isProcessing = false;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E5FF),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Сканувати інший QR', style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF09182B),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top App Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                      ),
-                      child: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'coach.qr_access_control'.tr(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        Text(
-                          'coach.qr_scan_sub'.tr(),
-                          style: const TextStyle(color: Colors.white54, fontSize: 11.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!kIsWeb)
+    final allClasses = ref.watch(scheduleControllerProvider).asData?.value ?? [];
+    final now = DateTime.now();
+    final todayClasses = allClasses.where((c) {
+      return c.startTime.year == now.year &&
+          c.startTime.month == now.month &&
+          c.startTime.day == now.day;
+    }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    if (_selectedClass == null && todayClasses.isNotEmpty) {
+      _selectedClass = todayClasses.first;
+    }
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {},
+      child: Scaffold(
+        backgroundColor: const Color(0xFF09182B),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top App Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
                     GestureDetector(
-                      onTap: () {
-                        cameraController.toggleTorch();
-                        setState(() => _isTorchOn = !_isTorchOn);
-                      },
+                      onTap: () => Navigator.pop(context, _didAttendAny),
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: _isTorchOn
-                              ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                              : Colors.white.withValues(alpha: 0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _isTorchOn ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.15),
-                          ),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                         ),
-                        child: Icon(
-                          _isTorchOn ? LucideIcons.zap : LucideIcons.zapOff,
-                          color: _isTorchOn ? const Color(0xFF00E5FF) : Colors.white70,
-                          size: 20,
-                        ),
+                        child: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
                       ),
                     ),
-                ],
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'coach.qr_access_control'.tr(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          Text(
+                            'coach.qr_scan_sub'.tr(),
+                            style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!kIsWeb)
+                      GestureDetector(
+                        onTap: () {
+                          cameraController.toggleTorch();
+                          setState(() => _isTorchOn = !_isTorchOn);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _isTorchOn
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                                : Colors.white.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _isTorchOn ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Icon(
+                            _isTorchOn ? LucideIcons.zap : LucideIcons.zapOff,
+                            color: _isTorchOn ? const Color(0xFF00E5FF) : Colors.white70,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
+
+              // Selected Class Indicator Banner
+              if (_selectedClass != null)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F2644),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(LucideIcons.calendarCheck, color: Color(0xFF00E5FF), size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedClass!.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${DateFormat('HH:mm').format(_selectedClass!.startTime)} - ${DateFormat('HH:mm').format(_selectedClass!.endTime)}${_selectedClass!.lane.isNotEmpty ? ' • ${_selectedClass!.lane}' : ''}',
+                              style: const TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (todayClasses.length > 1)
+                        TextButton(
+                          onPressed: () => _showSelectClassSheet(todayClasses),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF00E5FF),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Змінити',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A1B0E),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.alertTriangle, color: Color(0xFFF59E0B), size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          todayClasses.isEmpty
+                              ? 'Немає запланованих занять на сьогодні'
+                              : 'Оберіть заняття для списання перепусток',
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      if (todayClasses.isNotEmpty)
+                        TextButton(
+                          onPressed: () => _showSelectClassSheet(todayClasses),
+                          child: const Text('Обрати', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                ),
 
             // Scanner Viewport
             Expanded(
@@ -402,8 +873,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 /// Darkens camera feed outside the target scanning square

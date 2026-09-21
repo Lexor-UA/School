@@ -19,10 +19,13 @@ class Family {
     required this.createdAt,
   });
 
-  bool get isPaired => parentIds.length > 1;
+  bool get isPaired => parentIds.length > 1 || parentNames.length > 1;
 
   String? getOtherParentId(String currentUserId) {
     for (final id in parentIds) {
+      if (id != currentUserId) return id;
+    }
+    for (final id in parentNames.keys) {
       if (id != currentUserId) return id;
     }
     return null;

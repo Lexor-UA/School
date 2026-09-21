@@ -66,12 +66,31 @@ extension GroupClassAudienceX on GroupClass {
         c.contains('аквааеробіка');
   }
 
+  bool get isIndividual {
+    if (isSplit) return false;
+    final t = title.toLowerCase();
+    final c = category.toLowerCase();
+    return t.contains('індивідуал') ||
+        t.contains('individual') ||
+        t.contains('персон') ||
+        c.contains('індивідуал') ||
+        maxCapacity <= 1;
+  }
+
+  bool get isGroup => !isSplit && !isIndividual;
+
   bool get isUniversal => !isChildOnly && !isAdultOnly;
 
   (int, int)? get ageRange => parseAgeRange(title) ?? parseAgeRange(category);
 
   bool isAgeCompatible(int? age) {
     if (age == null) return true;
+    // До 5 років включно — тільки персональні індивідуальні заняття для дітей.
+    // Групові, спліт та дорослі заняття заборонені.
+    if (age <= 5) {
+      return isIndividual && isChildOnly;
+    }
+    // Від 6 років дозволено індивідуально, в групах та спліт (за діапазоном віку)
     final range = ageRange;
     if (range == null) return true;
     return age >= range.$1 && age <= range.$2;
@@ -92,6 +111,17 @@ extension GroupClassAudienceX on GroupClass {
 
 bool isServiceAgeCompatible(String title, int? age) {
   if (age == null) return true;
+  final lower = title.toLowerCase();
+  final isIndividual = lower.contains('індивідуал') || lower.contains('персон') || lower.contains('individual');
+  final isSplit = lower.contains('спліт') || lower.contains('split');
+  final isAdult = lower.contains('доросла') || lower.contains('дорослих') || lower.contains('adult');
+
+  // До 5 років включно — дозволені лише персональні індивідуальні заняття/абонементи для дітей
+  if (age <= 5) {
+    return isIndividual && !isSplit && !isAdult;
+  }
+
+  // Від 6 років
   final range = parseAgeRange(title);
   if (range == null) return true;
   return age >= range.$1 && age <= range.$2;

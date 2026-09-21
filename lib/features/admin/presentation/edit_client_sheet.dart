@@ -17,6 +17,8 @@ import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_c
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
 
 class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -69,6 +71,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     {'name': 'Разове відвідування (Доросла група)', 'classes': 1, 'validityDays': 365, 'isAdult': true},
     {'name': 'Абонемент на 4 тренування (Доросла група)', 'classes': 4, 'validityDays': 30, 'isAdult': true},
     {'name': 'Абонемент на 8 тренувань (Доросла група)', 'classes': 8, 'validityDays': 30, 'isAdult': true},
+
+    // Дитячі індивідуальні абонементи (доступні для будь-якого віку, єдині дозволені для дітей до 5 років)
+    {'name': 'Дитячий індивідуальний абонемент (4 тренування)', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'isIndividual': true},
+    {'name': 'Дитячий індивідуальний абонемент (8 тренувань)', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'isIndividual': true},
+    {'name': 'Разове індивідуальне тренування (діти)', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'isIndividual': true},
 
     // Спліт абонементи (2 особи: дитина + дорослий або 2 дитини)
     {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
@@ -316,6 +323,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               final name = nameCtrl.text.trim();
               final age = int.tryParse(ageCtrl.text.trim());
               if (name.isEmpty) return;
+              if (age != null && (age < 1 || age > 15)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(age > 15
+                        ? 'Вік дитини не може перевищувати 15 років (від 16 років клієнт реєструється як дорослий)'
+                        : 'Вік дитини має бути від 1 до 15 років'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(ctx);
               try {
                 final effectiveParentIds = parentIds != null && parentIds.isNotEmpty
@@ -452,6 +470,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               final name = nameCtrl.text.trim();
               final age = int.tryParse(ageCtrl.text.trim());
               if (name.isEmpty) return;
+              if (age != null && (age < 1 || age > 15)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(age > 15
+                        ? 'Вік дитини не може перевищувати 15 років (від 16 років клієнт реєструється як дорослий)'
+                        : 'Вік дитини має бути від 1 до 15 років'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(ctx);
               try {
                 await FirebaseFirestore.instance.collection('children').doc(childId).update({
@@ -604,16 +633,43 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     }
   }
 
-  void _showAddSubscriptionDialog(List<String> availableOwners, {String? preselectedOwner}) {
+  void _showAddSubscriptionDialog(List<String> availableOwners, {String? preselectedOwner, List<Map<String, dynamic>>? familyMembers}) {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     String selectedOwner = (preselectedOwner != null && availableOwners.contains(preselectedOwner))
         ? preselectedOwner
         : (availableOwners.isNotEmpty ? availableOwners.first : widget.initialName);
-    final initialIsOwnerAdult = selectedOwner == widget.initialName;
-    final initialServices = _services.where((s) {
-      if (initialIsOwnerAdult) return s['isAdult'] != false;
-      return s['isAdult'] != true;
-    }).toList();
+
+    int? getOwnerAge(String name) {
+      final m = familyMembers?.where((m) => m['name'] == name).firstOrNull;
+      return m?['age'] as int?;
+    }
+
+    List<Map<String, dynamic>> getFilteredServices(String owner) {
+      final isAdult = owner == widget.initialName;
+      final childAge = getOwnerAge(owner);
+
+      return _services.where((s) {
+        final isServiceAdult = s['isAdult'] as bool?;
+        final isSplit = s['isSplit'] as bool? ?? false;
+        final isIndividual = s['isIndividual'] as bool? ?? false;
+
+        if (isAdult) {
+          return s['isAdult'] != false;
+        }
+
+        // Child
+        if (isServiceAdult == true) return false;
+
+        // Children <= 5 years: strictly individual subscriptions only
+        if (childAge != null && childAge <= 5) {
+          return isIndividual && !isSplit;
+        }
+
+        return true;
+      }).toList();
+    }
+
+    final initialServices = getFilteredServices(selectedOwner);
     String selectedService = initialServices.isNotEmpty ? initialServices.first['name'] : _services.first['name'];
 
     showDialog(
@@ -621,14 +677,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            final isOwnerAdult = selectedOwner == widget.initialName;
-            final availableServices = _services.where((s) {
-              if (isOwnerAdult) return s['isAdult'] != false;
-              return s['isAdult'] != true;
-            }).toList();
+            final availableServices = getFilteredServices(selectedOwner);
             if (!availableServices.any((s) => s['name'] == selectedService)) {
               selectedService = availableServices.first['name'];
             }
+            final ownerAge = getOwnerAge(selectedOwner);
 
             final allSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == widget.clientId).toList();
             final activeForOwner = allSubs.where((s) {
@@ -746,17 +799,26 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             if (val != null) {
                               setStateDialog(() {
                                 selectedOwner = val;
-                                final newIsOwnerAdult = selectedOwner == widget.initialName;
-                                final newAvailable = _services.where((s) {
-                                  if (newIsOwnerAdult) return s['isAdult'] != false;
-                                  return s['isAdult'] != true;
-                                }).toList();
+                                final newAvailable = getFilteredServices(val);
                                 if (!newAvailable.any((s) => s['name'] == selectedService)) {
                                   selectedService = newAvailable.first['name'];
                                 }
                               });
                             }
                           },
+                        ),
+                      ),
+                    ),
+
+                  if (ownerAge != null && ownerAge <= 5)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'ℹ️ Для дітей до 5 років ($ownerAge р.) доступні лише персональні індивідуальні абонементи.',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -1488,7 +1550,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       side: BorderSide(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF10B981)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: () => _showAddSubscriptionDialog(availableOwners, preselectedOwner: effectiveOwner),
+                    onPressed: () => _showAddSubscriptionDialog(availableOwners, preselectedOwner: effectiveOwner, familyMembers: familyMembers),
                   ),
                 ),
               ],
@@ -2180,6 +2242,28 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                     ),
                                   ),
                                 ],
+                                if (cAge != null && cAge >= 16) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      '16+ Дорослий',
+                                      style: TextStyle(
+                                        color: Color(0xFF10B981),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 2),
@@ -2194,6 +2278,42 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                           ],
                         ),
                       ),
+                      if (cAge != null && cAge >= 16) ...[
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            final childObj = Child.fromJson({'id': cId, ...data});
+                            GraduateChildSheet.show(context, childObj);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                                width: 0.9,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🎓', style: TextStyle(fontSize: 12)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Випустити',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
                       IconButton(
                         icon: Icon(
                           LucideIcons.pencil,

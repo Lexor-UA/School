@@ -9,6 +9,7 @@ import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/features/schedule/models/class_conflict.dart';
 import 'widgets/apple_time_wheel_picker.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
@@ -199,6 +200,130 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     }
   }
 
+  ClassConflict? _checkConflictFor({
+    required String lane,
+    required DateTime date,
+    required TimeOfDay time,
+    String? coachId,
+  }) {
+    final startTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final endTime = startTime.add(const Duration(hours: 1));
+    return ref.read(scheduleControllerProvider.notifier).checkClassConflict(
+      startTime: startTime,
+      endTime: endTime,
+      lane: lane,
+      coachId: coachId ?? (_selectedCoach?.id ?? ''),
+      excludeClassId: widget.classToEdit?.id,
+    );
+  }
+
+  void _showConflictDialog(BuildContext context, ClassConflict conflict, bool isDark, {String? extraInfo}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: Colors.amberAccent.withValues(alpha: isDark ? 0.4 : 0.6),
+            width: 1.2,
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amberAccent.withValues(alpha: isDark ? 0.2 : 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                conflict.type == ClassConflictType.laneConflict
+                    ? 'Конфлікт доріжки'
+                    : (conflict.type == ClassConflictType.coachConflict
+                        ? 'Конфлікт тренера'
+                        : 'Конфлікт у розкладі'),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              conflict.message,
+              style: TextStyle(
+                color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF334155),
+                fontSize: 13.5,
+                height: 1.4,
+              ),
+            ),
+            if (extraInfo != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                extraInfo,
+                style: const TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.info, size: 16, color: Color(0xFF38BDF8)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Будь ласка, оберіть іншу вільну доріжку, змініть час або призначте іншого тренера.',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'admin.close'.tr(),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (_titleController.text.trim().isEmpty || _selectedCoach == null) return;
 
@@ -213,9 +338,40 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     );
     
     final endTime = startTime.add(const Duration(hours: 1));
+    final themeConfig = ref.read(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
+
+    // Upfront check for conflict on the chosen date/time/lane/coach
+    final upfrontConflict = ref.read(scheduleControllerProvider.notifier).checkClassConflict(
+      startTime: startTime,
+      endTime: endTime,
+      lane: _selectedLane,
+      coachId: _selectedCoach!.id,
+      excludeClassId: widget.classToEdit?.id,
+    );
+    if (upfrontConflict != null) {
+      if (!_isRecurring || _selectedWeekdays.contains(_selectedDate.weekday)) {
+        setState(() => _isSaving = false);
+        _showConflictDialog(context, upfrontConflict, isDark);
+        return;
+      }
+    }
 
     bool success = false;
     if (_isEditing) {
+      final conflict = ref.read(scheduleControllerProvider.notifier).checkClassConflict(
+        startTime: startTime,
+        endTime: endTime,
+        lane: _selectedLane,
+        coachId: _selectedCoach!.id,
+        excludeClassId: widget.classToEdit!.id,
+      );
+      if (conflict != null) {
+        setState(() => _isSaving = false);
+        _showConflictDialog(context, conflict, isDark);
+        return;
+      }
+
       success = await ref.read(scheduleControllerProvider.notifier).updateClass(
         classId: widget.classToEdit!.id,
         title: _titleController.text.trim(),
@@ -243,7 +399,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         );
         return;
       }
-      final createdCount = await ref.read(scheduleControllerProvider.notifier).createRecurringClasses(
+      final result = await ref.read(scheduleControllerProvider.notifier).createRecurringClasses(
         title: _titleController.text.trim(),
         startDate: _selectedDate,
         hour: _selectedTime.hour,
@@ -258,35 +414,75 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         lane: _selectedLane,
       );
 
-      success = createdCount > 0;
+      if (result.createdCount == 0 && result.hasSkipped) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
+        _showConflictDialog(
+          context,
+          result.conflicts.first,
+          isDark,
+          extraInfo: 'Усі обрані дати серії (${result.skippedDates.length}) мають конфлікт із зайнятою доріжкою або тренером. Жодного заняття не створено.',
+        );
+        return;
+      }
+
+      success = result.createdCount > 0;
       if (success) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Створено регулярну групу "${_titleController.text.trim()}" на $_durationWeeks тиж. (${_formatClassesCount(createdCount)})', admin.id);
+          await logAdminAction('Створено регулярну групу "${_titleController.text.trim()}" на $_durationWeeks тиж. (${_formatClassesCount(result.createdCount)})', admin.id);
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text('admin.group_created_success'.tr(namedArgs: {
-                      'name': _titleController.text.trim(),
-                      'count': '$createdCount',
-                    })),
-                  ),
-                ],
+          if (result.hasSkipped) {
+            final skippedDatesStr = result.skippedDates.take(3).map((d) => DateFormat('d MMMM', 'uk').format(d)).join(', ');
+            final moreCount = result.skippedDates.length > 3 ? ' та ще ${result.skippedDates.length - 3}' : '';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Створено ${result.createdCount} занять. Пропущено ${result.skippedDates.length} дат через зайнятість ($skippedDatesStr$moreCount).',
+                ),
+                backgroundColor: Colors.orangeAccent,
+                duration: const Duration(seconds: 5),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              backgroundColor: const Color(0xFF00B4D8),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          );
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('admin.group_created_success'.tr(namedArgs: {
+                        'name': _titleController.text.trim(),
+                        'count': '${result.createdCount}',
+                      })),
+                    ),
+                  ],
+                ),
+                backgroundColor: const Color(0xFF00B4D8),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            );
+          }
         }
       }
     } else {
+      final conflict = ref.read(scheduleControllerProvider.notifier).checkClassConflict(
+        startTime: startTime,
+        endTime: endTime,
+        lane: _selectedLane,
+        coachId: _selectedCoach!.id,
+      );
+      if (conflict != null) {
+        setState(() => _isSaving = false);
+        _showConflictDialog(context, conflict, isDark);
+        return;
+      }
+
       success = await ref.read(scheduleControllerProvider.notifier).createClass(
         title: _titleController.text.trim(),
         startTime: startTime,
@@ -303,6 +499,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         if (admin != null) {
           await logAdminAction('Створено заняття "${_titleController.text.trim()}"', admin.id);
         }
+      } else {
+        setState(() => _isSaving = false);
+        final lastConf = ref.read(scheduleControllerProvider.notifier).lastConflict;
+        if (lastConf != null && mounted) {
+          _showConflictDialog(context, lastConf, isDark);
+        }
+        return;
       }
     }
 
@@ -314,6 +517,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   @override
   Widget build(BuildContext context) {
     final coachesAsync = ref.watch(coachesProvider);
+    ref.watch(scheduleControllerProvider);
     final mediaQuery = MediaQuery.of(context);
     final themeConfig = ref.watch(appThemeControllerProvider);
     final isDark = themeConfig.isDark;
@@ -697,70 +901,99 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Submit Button (VisionOS Gradient)
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.40),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                  // Submit Button with reactive Conflict Warning Awareness
+                  Builder(
+                    builder: (context) {
+                      final activeConflict = _checkConflictFor(
+                        lane: _selectedLane,
+                        date: _selectedDate,
+                        time: _selectedTime,
+                        coachId: _selectedCoach?.id,
+                      );
+                      final hasConflict = activeConflict != null &&
+                          (!_isRecurring || _selectedWeekdays.contains(_selectedDate.weekday));
+
+                      return Container(
+                        width: double.infinity,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: hasConflict
+                                ? const [Color(0xFFEF4444), Color(0xFFB91C1C)]
+                                : const [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: hasConflict ? 0.60 : 0.40),
+                            width: hasConflict ? 1.4 : 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (hasConflict ? const Color(0xFFEF4444) : const Color(0xFF00B4D8)).withValues(alpha: 0.45),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _isSaving ? null : _save,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Center(
-                          child: _isSaving
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2)),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _isRecurring ? 'Створення групи (${_formatClassesCount(_calculatedRecurringCount)})...' : 'Збереження...',
-                                      style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _isSaving
+                                ? null
+                                : (hasConflict
+                                    ? () => _showConflictDialog(context, activeConflict, isDark)
+                                    : _save),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Center(
+                              child: _isSaving
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2)),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          _isRecurring ? 'Створення групи (${_formatClassesCount(_calculatedRecurringCount)})...' : 'Збереження...',
+                                          style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          hasConflict
+                                              ? LucideIcons.triangleAlert
+                                              : (_isEditing ? LucideIcons.check : (_isRecurring ? LucideIcons.users : LucideIcons.sparkles)),
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          hasConflict
+                                              ? (activeConflict.type == ClassConflictType.laneConflict
+                                                  ? 'Доріжка зайнята (Конфлікт)'
+                                                  : 'Тренер зайнятий (Конфлікт)')
+                                              : (_isEditing
+                                                  ? 'Зберегти зміни'
+                                                  : (_isRecurring
+                                                      ? 'Створити групу (${_formatClassesCount(_calculatedRecurringCount)})'
+                                                      : 'admin.class_create_btn'.tr())),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                )
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(_isEditing ? LucideIcons.check : (_isRecurring ? LucideIcons.users : LucideIcons.sparkles), color: Colors.white, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isEditing
-                                          ? 'Зберегти зміни'
-                                          : (_isRecurring
-                                              ? 'Створити групу (${_formatClassesCount(_calculatedRecurringCount)})'
-                                              : 'admin.class_create_btn'.tr()),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 15.5,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -1524,6 +1757,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
             child: Row(
               children: _sportLanes.map((lane) {
                 final isSelected = _selectedLane == lane;
+                final conflictForThisLane = _checkConflictFor(
+                  lane: lane,
+                  date: _selectedDate,
+                  time: _selectedTime,
+                  coachId: '',
+                );
+                final isLaneBusy = conflictForThisLane?.type == ClassConflictType.laneConflict;
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Material(
@@ -1533,27 +1774,35 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       borderRadius: BorderRadius.circular(20),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
                         decoration: BoxDecoration(
                           gradient: isSelected
-                              ? const LinearGradient(
-                                  colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
-                                )
+                              ? (isLaneBusy
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                                    )
+                                  : const LinearGradient(
+                                      colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                                    ))
                               : null,
                           color: isSelected
                               ? null
-                              : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
+                              : (isLaneBusy
+                                  ? Colors.orangeAccent.withValues(alpha: isDark ? 0.16 : 0.12)
+                                  : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9))),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFF00E5FF)
-                                : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
-                            width: 1,
+                                ? (isLaneBusy ? const Color(0xFFF87171) : const Color(0xFF00E5FF))
+                                : (isLaneBusy
+                                    ? Colors.orangeAccent.withValues(alpha: 0.6)
+                                    : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1))),
+                            width: isLaneBusy ? 1.3 : 1,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                                    color: (isLaneBusy ? const Color(0xFFEF4444) : const Color(0xFF00B4D8)).withValues(alpha: 0.45),
                                     blurRadius: 10,
                                     offset: const Offset(0, 2),
                                   ),
@@ -1568,13 +1817,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                               const SizedBox(width: 5),
                             ],
                             Text(
-                              lane,
+                              isLaneBusy ? '$lane ⚠️' : lane,
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
-                                    : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
+                                    : (isLaneBusy
+                                        ? (isDark ? Colors.orangeAccent : const Color(0xFFD97706))
+                                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155))),
                                 fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                fontWeight: (isSelected || isLaneBusy) ? FontWeight.w700 : FontWeight.w600,
                               ),
                             ),
                           ],
@@ -1615,6 +1866,74 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
             ),
           ),
         ],
+
+        // Active conflict warning banner
+        Builder(
+          builder: (context) {
+            final activeConflict = _checkConflictFor(
+              lane: _selectedLane,
+              date: _selectedDate,
+              time: _selectedTime,
+              coachId: _selectedCoach?.id,
+            );
+            if (activeConflict == null) return const SizedBox.shrink();
+
+            return Container(
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFEF4444).withValues(alpha: isDark ? 0.22 : 0.12),
+                    const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.16 : 0.08),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.amberAccent.withValues(alpha: 0.6),
+                  width: 1.1,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeConflict.type == ClassConflictType.laneConflict
+                              ? 'Доріжка вже зайнята в цей час!'
+                              : (activeConflict.type == ClassConflictType.coachConflict
+                                  ? 'Тренер вже веде інше заняття в цей час!'
+                                  : 'Конфлікт у розкладі!'),
+                          style: const TextStyle(
+                            color: Colors.amberAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          activeConflict.message,
+                          style: TextStyle(
+                            color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF78350F),
+                            fontSize: 11.5,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ],
     );
   }

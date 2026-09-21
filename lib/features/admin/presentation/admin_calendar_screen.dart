@@ -898,7 +898,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     padding: const EdgeInsets.only(bottom: 6),
                     itemCount: dayClasses.length,
                     itemBuilder: (context, index) {
-                      return _buildAdminClassCard(dayClasses[index], currentTheme);
+                      return _buildAdminClassCard(dayClasses[index], currentTheme, dayClasses);
                     },
                   ),
               ],
@@ -1141,7 +1141,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     );
   }
 
-  Widget _buildAdminClassCard(GroupClass c, AppThemeConfig currentTheme) {
+  Widget _buildAdminClassCard(GroupClass c, AppThemeConfig currentTheme, [List<GroupClass>? siblingClasses]) {
     final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = c.enrolledChildIds.length;
@@ -1150,25 +1150,58 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         c.coachName == 'Тренер не призначений' ||
         c.coachName.toLowerCase().contains('не призначен');
 
+    // Conflict detection against sibling classes on the same day
+    GroupClass? conflictingLaneClass;
+    GroupClass? conflictingCoachClass;
+
+    if (siblingClasses != null) {
+      for (final other in siblingClasses) {
+        if (other.id == c.id) continue;
+        final overlaps = other.startTime.isBefore(c.endTime) && other.endTime.isAfter(c.startTime);
+        if (!overlaps) continue;
+
+        // Lane conflict check
+        if (c.lane.isNotEmpty && other.lane.isNotEmpty && c.lane != 'Будь-яка') {
+          final isSameLane = c.lane == other.lane;
+          final wholePoolConflict = (c.lane == 'Весь басейн' && other.lane.startsWith('Доріжка')) ||
+              (other.lane == 'Весь басейн' && c.lane.startsWith('Доріжка'));
+          if (isSameLane || wholePoolConflict) {
+            conflictingLaneClass ??= other;
+          }
+        }
+
+        // Coach conflict check
+        if (!isUnassigned && c.coachId.isNotEmpty && other.coachId.isNotEmpty && c.coachId == other.coachId) {
+          conflictingCoachClass ??= other;
+        }
+      }
+    }
+
+    final hasConflict = conflictingLaneClass != null || conflictingCoachClass != null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: currentTheme.isDark
-            ? Colors.white.withValues(alpha: 0.14)
-            : Colors.white,
+            ? (hasConflict ? const Color(0xFF1E1424) : Colors.white.withValues(alpha: 0.14))
+            : (hasConflict ? const Color(0xFFFFFBEB) : Colors.white),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: currentTheme.isDark
-              ? Colors.white.withValues(alpha: 0.28)
-              : const Color(0xFFBAE6FD),
-          width: 1.15,
+          color: hasConflict
+              ? const Color(0xFFF59E0B)
+              : (currentTheme.isDark
+                  ? Colors.white.withValues(alpha: 0.28)
+                  : const Color(0xFFBAE6FD)),
+          width: hasConflict ? 1.6 : 1.15,
         ),
         boxShadow: [
           BoxShadow(
-            color: currentTheme.isDark
-                ? Colors.black.withValues(alpha: 0.25)
-                : const Color(0xFF0284C7).withValues(alpha: 0.07),
-            blurRadius: 10,
+            color: hasConflict
+                ? const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.25 : 0.15)
+                : (currentTheme.isDark
+                    ? Colors.black.withValues(alpha: 0.25)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.07)),
+            blurRadius: hasConflict ? 12 : 10,
             offset: const Offset(0, 3),
           ),
         ],
@@ -1217,32 +1250,70 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          color: currentTheme.isDark
-                              ? const Color(0xFF162D4A)
-                              : const Color(0xFFF1F5F9),
+                          color: conflictingLaneClass != null
+                              ? const Color(0xFFEF4444).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12)
+                              : (currentTheme.isDark
+                                  ? const Color(0xFF162D4A)
+                                  : const Color(0xFFF1F5F9)),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: currentTheme.isDark
-                                ? const Color(0xFF38BDF8).withValues(alpha: 0.25)
-                                : const Color(0xFFE2E8F0),
+                            color: conflictingLaneClass != null
+                                ? const Color(0xFFEF4444).withValues(alpha: currentTheme.isDark ? 0.60 : 0.45)
+                                : (currentTheme.isDark
+                                    ? const Color(0xFF38BDF8).withValues(alpha: 0.25)
+                                    : const Color(0xFFE2E8F0)),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.waves, color: currentTheme.accentPrimary, size: 11),
+                            Icon(
+                              conflictingLaneClass != null ? LucideIcons.triangleAlert : LucideIcons.waves,
+                              color: conflictingLaneClass != null ? const Color(0xFFEF4444) : currentTheme.accentPrimary,
+                              size: 11,
+                            ),
                             const SizedBox(width: 4),
                             Text(
-                              c.lane,
+                              conflictingLaneClass != null ? '${c.lane} (ДУБЛЬ)' : c.lane,
                               style: TextStyle(
-                                color: currentTheme.isDark ? Colors.white70 : currentTheme.textSecondary,
+                                color: conflictingLaneClass != null
+                                    ? const Color(0xFFEF4444)
+                                    : (currentTheme.isDark ? Colors.white70 : currentTheme.textSecondary),
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
                       ),
+                    if (conflictingCoachClass != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.60 : 0.45),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.triangleAlert, color: Color(0xFFF59E0B), size: 11),
+                            SizedBox(width: 4),
+                            Text(
+                              'ДУБЛЬ ТРЕНЕРА',
+                              style: TextStyle(
+                                color: Color(0xFFF59E0B),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     PopupMenuButton<String>(
                       icon: Container(
@@ -1361,6 +1432,136 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     letterSpacing: 0.2,
                   ),
                 ),
+                if (hasConflict) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444).withValues(alpha: currentTheme.isDark ? 0.16 : 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFEF4444).withValues(alpha: currentTheme.isDark ? 0.45 : 0.30),
+                        width: 1.1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 1.5),
+                              child: Icon(LucideIcons.triangleAlert, color: Color(0xFFEF4444), size: 15),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                conflictingLaneClass != null
+                                    ? 'Накладка: доріжка «${c.lane}» вже зайнята заняттям «${conflictingLaneClass.title}» (${conflictingLaneClass.coachName.isNotEmpty ? conflictingLaneClass.coachName : "без тренера"})'
+                                    : 'Накладка: тренер ${c.coachName} вже веде заняття «${conflictingCoachClass?.title}» в цей самий час',
+                                style: TextStyle(
+                                  color: currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    backgroundColor: currentTheme.isDark ? const Color(0xFF0F1E32) : Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    title: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(LucideIcons.trash2, color: Color(0xFFEF4444), size: 20),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Expanded(
+                                          child: Text('Видалити дублікат?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
+                                    ),
+                                    content: Text(
+                                      'Видалити це дублююче заняття «${c.title}» (${c.coachName.isNotEmpty ? c.coachName : "без тренера"}, ${c.lane})?',
+                                      style: TextStyle(fontSize: 14, color: currentTheme.textSecondary),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx, false),
+                                        child: Text('admin.cancel'.tr(), style: TextStyle(color: currentTheme.textSecondary)),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFEF4444),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        onPressed: () => Navigator.pop(ctx, true),
+                                        child: const Text('Видалити', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  final success = await ref.read(scheduleControllerProvider.notifier).deleteClass(c.id);
+                                  if (success) {
+                                    final admin = ref.read(authControllerProvider);
+                                    if (admin != null) {
+                                      await logAdminAction('Видалено дублікат заняття "${c.title}" (${c.lane})', admin.id);
+                                    }
+                                  }
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444).withValues(alpha: currentTheme.isDark ? 0.30 : 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFFEF4444).withValues(alpha: 0.55),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(LucideIcons.trash2, color: Color(0xFFEF4444), size: 13),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Видалити цей дублікат',
+                                      style: TextStyle(
+                                        color: Color(0xFFEF4444),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
 
                 // Coach & Capacity

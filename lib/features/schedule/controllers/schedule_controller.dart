@@ -8,9 +8,12 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
+import 'package:swimming_school_app/features/schedule/models/class_conflict.dart';
+import 'package:intl/intl.dart';
 
 part 'schedule_controller.g.dart';
 
@@ -86,8 +89,178 @@ class BookingResult {
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ScheduleController extends _$ScheduleController {
+  ClassConflict? lastConflict;
+
+  ClassConflict? _evaluateConflictAgainst({
+    required List<GroupClass> classes,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String lane,
+    required String coachId,
+    String? excludeClassId,
+    List<String> enrolledChildIds = const [],
+  }) {
+    final overlappingClasses = classes.where((c) {
+      if (excludeClassId != null && c.id == excludeClassId) return false;
+      return c.startTime.isBefore(endTime) && c.endTime.isAfter(startTime);
+    }).toList();
+
+    // 1. Pool Capacity: Maximum 4 simultaneous classes in the 4-lane pool
+    if (overlappingClasses.length >= 4) {
+      final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+      final endTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+      return ClassConflict(
+        type: ClassConflictType.laneConflict,
+        conflictingClass: overlappingClasses.first,
+        message: 'Усі 4 доріжки басейну вже зайняті з $timeStr до $endTimeStr (максимум 4 заняття одночасно).',
+      );
+    }
+
+    final l1 = lane.trim().toLowerCase();
+    final isWholePool1 = l1.contains('весь') || l1.contains('всі');
+    final hasLane = lane.trim().isNotEmpty && lane.trim() != 'Будь-яка';
+
+    for (final c in overlappingClasses) {
+      final l2 = c.lane.trim().toLowerCase();
+      final isWholePool2 = l2.contains('весь') || l2.contains('всі');
+      final cHasLane = c.lane.trim().isNotEmpty && c.lane.trim() != 'Будь-яка';
+
+      // 2. Whole Pool or Direct Lane conflict check
+      if (isWholePool1 || isWholePool2) {
+        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
+        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : 'не вказано';
+        return ClassConflict(
+          type: ClassConflictType.laneConflict,
+          conflictingClass: c,
+          message: isWholePool2
+              ? 'Весь басейн вже зайнятий з $timeStr до $endTimeStr заняттям «${c.title}» (тренер: $coachNameDisplay).'
+              : 'Для оренди всього басейну на цей час не повинно бути інших занять ($timeStr-$endTimeStr).',
+        );
+      } else if (hasLane && cHasLane && l1 == l2) {
+        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
+        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : 'не вказано';
+        return ClassConflict(
+          type: ClassConflictType.laneConflict,
+          conflictingClass: c,
+          message: 'Доріжка «$lane» вже зайнята з $timeStr до $endTimeStr заняттям «${c.title}» (тренер: $coachNameDisplay).',
+        );
+      }
+
+      // 3. Coach conflict check
+      final hasCoach = coachId.trim().isNotEmpty && coachId.trim() != 'unassigned';
+      final cHasCoach = c.coachId.trim().isNotEmpty && c.coachId.trim() != 'unassigned';
+      if (hasCoach && cHasCoach && c.coachId == coachId) {
+        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
+        final laneDisplay = c.lane.isNotEmpty ? c.lane : 'басейн';
+        return ClassConflict(
+          type: ClassConflictType.coachConflict,
+          conflictingClass: c,
+          message: 'Тренер ${c.coachName} вже проводить заняття «${c.title}» з $timeStr до $endTimeStr ($laneDisplay).',
+        );
+      }
+
+      // 4. Member conflict check
+      if (enrolledChildIds.isNotEmpty && c.enrolledChildIds.any((id) => enrolledChildIds.contains(id))) {
+        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
+        return ClassConflict(
+          type: ClassConflictType.participantConflict,
+          conflictingClass: c,
+          message: 'Один з обраних учасників вже записаний на інше тренування з $timeStr до $endTimeStr («${c.title}»).',
+        );
+      }
+    }
+    return null;
+  }
+
+  ClassConflict? checkClassConflict({
+    required DateTime startTime,
+    required DateTime endTime,
+    required String lane,
+    required String coachId,
+    String? excludeClassId,
+    List<String> enrolledChildIds = const [],
+    List<GroupClass>? additionalClasses,
+  }) {
+    final combined = [...(state.value ?? []), ...(additionalClasses ?? [])];
+    return _evaluateConflictAgainst(
+      classes: combined,
+      startTime: startTime,
+      endTime: endTime,
+      lane: lane,
+      coachId: coachId,
+      excludeClassId: excludeClassId,
+      enrolledChildIds: enrolledChildIds,
+    );
+  }
+
+  Future<ClassConflict?> checkAuthoritativeConflict({
+    required DateTime startTime,
+    required DateTime endTime,
+    required String lane,
+    required String coachId,
+    String? excludeClassId,
+    List<String> enrolledChildIds = const [],
+    List<GroupClass>? additionalClasses,
+  }) async {
+    // 1. Fast in-memory check
+    final localConflict = checkClassConflict(
+      startTime: startTime,
+      endTime: endTime,
+      lane: lane,
+      coachId: coachId,
+      excludeClassId: excludeClassId,
+      enrolledChildIds: enrolledChildIds,
+      additionalClasses: additionalClasses,
+    );
+    if (localConflict != null) return localConflict;
+
+    // 2. Authoritative Firestore query for the date to avoid race conditions or uninitialized cache
+    try {
+      final dayStart = DateTime(startTime.year, startTime.month, startTime.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final snapshot = await FirebaseFirestore.instance
+          .collection('classes')
+          .where('startTime', isGreaterThanOrEqualTo: dayStart.toIso8601String())
+          .where('startTime', isLessThan: dayEnd.toIso8601String())
+          .get();
+
+      final List<GroupClass> remoteClasses = [];
+      for (final doc in snapshot.docs) {
+        try {
+          final data = Map<String, dynamic>.from(doc.data() as Map);
+          data['id'] = doc.id;
+          if (data['startTime'] is Timestamp) {
+            data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+          }
+          if (data['endTime'] is Timestamp) {
+            data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+          }
+          remoteClasses.add(GroupClass.fromJson(data));
+        } catch (_) {}
+      }
+
+      final combined = [...remoteClasses, ...(additionalClasses ?? [])];
+      return _evaluateConflictAgainst(
+        classes: combined,
+        startTime: startTime,
+        endTime: endTime,
+        lane: lane,
+        coachId: coachId,
+        excludeClassId: excludeClassId,
+        enrolledChildIds: enrolledChildIds,
+      );
+    } catch (e) {
+      debugPrint('Error in checkAuthoritativeConflict: $e');
+      return null;
+    }
+  }
+
   @override
   Stream<List<GroupClass>> build() {
     return FirebaseFirestore.instance
@@ -107,6 +280,23 @@ class ScheduleController extends _$ScheduleController {
           if (data['endTime'] is Timestamp) {
             data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
           }
+
+          // Self-heal group classes created with maxCapacity <= 2 or wrong category
+          final titleLower = (data['title'] as String? ?? '').toLowerCase();
+          final isGroupTitle = titleLower.contains('групов') || titleLower.contains('аквааеробіка');
+          final currentCap = (data['maxCapacity'] as num?)?.toInt() ?? 0;
+          if (isGroupTitle && currentCap <= 2) {
+            data['maxCapacity'] = 10;
+            final correctCategory = titleLower.contains('аквааеробіка') ? 'Аквааеробіка' : 'Групове';
+            data['category'] = correctCategory;
+            doc.reference.update({
+              'maxCapacity': 10,
+              'category': correctCategory,
+            }).catchError((e) {
+              debugPrint('Failed to auto-heal group class ${doc.id}: $e');
+            });
+          }
+
           classes.add(GroupClass.fromJson(data));
         } catch (e) {
           debugPrint('Warning: Failed to parse class document ${doc.id}: $e');
@@ -130,28 +320,91 @@ class ScheduleController extends _$ScheduleController {
     final effectiveUserId = targetUserId ?? user.id;
     final childrenAsync = ref.read(childrenControllerProvider);
     final children = childrenAsync.value ?? [];
+    final family = ref.read(familyStreamProvider).value;
+    final familyParentIds = (family != null && family.parentIds.isNotEmpty)
+        ? family.parentIds
+        : [user.id];
 
     String getMemberName(String id) {
       if (id == user.id) return user.name;
+      if (family != null && family.parentNames.containsKey(id) && family.parentNames[id]!.trim().isNotEmpty) {
+        return family.parentNames[id]!;
+      }
       final ch = children.where((c) => c.id == id).firstOrNull;
       if (ch != null) return ch.name;
       return id;
     }
 
     String ownerName = targetOwnerName ?? getMemberName(childId);
-    final isAdult = childId == effectiveUserId;
+    final isAdult = childId == effectiveUserId || familyParentIds.contains(childId);
 
-    // Get the subscription for effective user
+    // Get the subscription for effective user / family
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-    final subscription = subscriptionController.getSubscriptionForOwner(effectiveUserId, ownerName, isAdult: isAdult);
+    Subscription? subscription;
+
+    // Check if target class is a split class
+    final classDocPre = await FirebaseFirestore.instance.collection('classes').doc(classId).get();
+    final groupClassPreTitle = (classDocPre.data()?['title'] as String? ?? '').toLowerCase();
+    final bool isSplitPre = groupClassPreTitle.contains('спліт') || groupClassPreTitle.contains('split');
+
+    DateTime? classStartTime;
+    final classData = classDocPre.data();
+    if (classData != null && classData['startTime'] != null) {
+      if (classData['startTime'] is Timestamp) {
+        classStartTime = (classData['startTime'] as Timestamp).toDate();
+      } else if (classData['startTime'] is String) {
+        classStartTime = DateTime.tryParse(classData['startTime'] as String);
+      }
+    }
+
+    if (secondParticipantId != null || isSplitPre) {
+      // Prioritize split subscription for the user / family
+      final userSubs = subscriptionController.getSubscriptionsForUser(effectiveUserId);
+      subscription = userSubs.firstWhereOrNull((s) => s.isActive && s.remainingClasses > 0 && s.isSplitSubscription);
+
+      if (subscription == null && family != null) {
+        for (final pId in family.parentIds) {
+          if (pId != effectiveUserId) {
+            final partnerSubs = subscriptionController.getSubscriptionsForUser(pId);
+            subscription = partnerSubs.firstWhereOrNull((s) => s.isActive && s.remainingClasses > 0 && s.isSplitSubscription);
+            if (subscription != null) break;
+          }
+        }
+      }
+    } else {
+      subscription = subscriptionController.getSubscriptionForOwner(effectiveUserId, ownerName, isAdult: isAdult, isSplit: false);
+      if (subscription?.isSplitSubscription == true) {
+        subscription = null;
+      }
+    }
     
     if (subscription == null || subscription.remainingClasses <= 0 || !subscription.isActive) {
       return BookingResult.noSubscription;
     }
 
+    final effectiveSubscription = subscription;
+
+    if (classStartTime != null && effectiveSubscription.expiryDate != null) {
+      final endOfExpiryDay = DateTime(
+        effectiveSubscription.expiryDate!.year,
+        effectiveSubscription.expiryDate!.month,
+        effectiveSubscription.expiryDate!.day,
+        23, 59, 59,
+      );
+      if (classStartTime.isAfter(endOfExpiryDay)) {
+        final expiryStr = DateFormat('dd.MM.yyyy').format(effectiveSubscription.expiryDate!);
+        final dateStr = DateFormat('dd.MM.yyyy').format(classStartTime);
+        return BookingResult(
+          isSuccess: false,
+          message: 'Термін дії абонемента закінчується $expiryStr (до дати тренування $dateStr).',
+          status: BookingStatus.error,
+        );
+      }
+    }
+
     try {
       final classRef = FirebaseFirestore.instance.collection('classes').doc(classId);
-      final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subscription.id);
+      final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(effectiveSubscription.id);
       
       BookingResult result = BookingResult.error;
       GroupClass? bookedClass;
@@ -171,6 +424,25 @@ class ScheduleController extends _$ScheduleController {
         final groupClass = GroupClass.fromJson(data);
         bookedClass = groupClass;
 
+        // Strict category validation between class and subscription
+        if (groupClass.isSplit && !effectiveSubscription.isSplitSubscription) {
+          result = const BookingResult(
+            isSuccess: false,
+            message: 'Для запису на спліт-тренування потрібен спліт-абонемент (на 2 особи).',
+            status: BookingStatus.error,
+          );
+          return;
+        }
+
+        if (!groupClass.isSplit && effectiveSubscription.isSplitSubscription) {
+          result = const BookingResult(
+            isSuccess: false,
+            message: 'Спліт-абонемент призначений лише для спліт-тренувань (на 2 особи). Для цього заняття потрібен звичайний абонемент.',
+            status: BookingStatus.error,
+          );
+          return;
+        }
+
         // Determine all members to enroll
         final List<String> attendeesToAdd = [childId];
         if (groupClass.isSplit && groupClass.enrolledChildIds.isEmpty) {
@@ -180,14 +452,17 @@ class ScheduleController extends _$ScheduleController {
             if (childId != user.id) {
               attendeesToAdd.add(user.id);
             } else {
-              // If parent booked and there is only 1 child, auto-pair with that child
-              if (children.length == 1) {
+              // If parent booked: check available family members (partner, children)
+              final partnerId = family?.getOtherParentId(user.id);
+              if (children.isEmpty && partnerId != null) {
+                attendeesToAdd.add(partnerId);
+              } else if (children.length == 1 && partnerId == null) {
                 attendeesToAdd.add(children.first.id);
-              } else if (children.length > 1) {
-                // If there are multiple children, DO NOT guess! Force selection.
+              } else {
+                // If there are multiple family options, DO NOT guess! Force selection.
                 result = const BookingResult(
                   isSuccess: false,
-                  message: 'Для спліт-тренування оберіть, кого саме з дітей записати разом з вами.',
+                  message: 'Для спліт-тренування оберіть обох учасників (двоє дорослих, дорослий + дитина або двоє дітей).',
                   status: BookingStatus.error,
                 );
                 return;
@@ -198,23 +473,44 @@ class ScheduleController extends _$ScheduleController {
 
         // Validate each attendee
         for (final attId in attendeesToAdd) {
-          final isAttAdult = attId == effectiveUserId;
-          if (isAttAdult && groupClass.isChildOnly) {
-            result = const BookingResult(
-              isSuccess: false,
-              message: 'Це тренування лише для дітей. Будь ласка, оберіть профіль дитини.',
-              status: BookingStatus.error,
-            );
-            return;
-          }
+          final isAttAdult = attId == effectiveUserId || familyParentIds.contains(attId);
+          
+          if (!groupClass.isSplit) {
+            if (isAttAdult && groupClass.isChildOnly) {
+              result = const BookingResult(
+                isSuccess: false,
+                message: 'Це тренування лише для дітей. Будь ласка, оберіть профіль дитини.',
+                status: BookingStatus.error,
+              );
+              return;
+            }
 
-          if (!isAttAdult && groupClass.isAdultOnly) {
-            result = const BookingResult(
-              isSuccess: false,
-              message: 'Це тренування призначене лише для дорослих.',
-              status: BookingStatus.error,
-            );
-            return;
+            if (!isAttAdult && groupClass.isAdultOnly) {
+              result = const BookingResult(
+                isSuccess: false,
+                message: 'Це тренування призначене лише для дорослих.',
+                status: BookingStatus.error,
+              );
+              return;
+            }
+
+            if (!isAttAdult && effectiveSubscription.isAdultSubscription) {
+              result = const BookingResult(
+                isSuccess: false,
+                message: 'Дорослий абонемент не може використовуватися для дитячих занять.',
+                status: BookingStatus.error,
+              );
+              return;
+            }
+
+            if (isAttAdult && effectiveSubscription.isChildSubscription) {
+              result = const BookingResult(
+                isSuccess: false,
+                message: 'Дитячий абонемент не може використовуватися для дорослих занять.',
+                status: BookingStatus.error,
+              );
+              return;
+            }
           }
 
           if (!isAttAdult) {
@@ -222,19 +518,25 @@ class ScheduleController extends _$ScheduleController {
             final childAge = child?.currentAge;
             if (childAge != null && !groupClass.isAgeCompatible(childAge)) {
               final range = groupClass.ageRange;
+              final msg = childAge <= 5
+                  ? 'Для дітей до 5 років включно (${child?.name ?? ''}, вік: $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+                  : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
               result = BookingResult(
                 isSuccess: false,
-                message: 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).',
+                message: msg,
                 status: BookingStatus.error,
               );
               return;
             }
 
-            if (childAge != null && !subscription.isAgeCompatible(childAge)) {
-              final subRange = subscription.ageRange;
+            if (childAge != null && !effectiveSubscription.isAgeCompatible(childAge)) {
+              final subRange = effectiveSubscription.ageRange;
+              final subMsg = childAge <= 5
+                  ? 'Для дитини віком $childAge р. потрібен індивідуальний дитячий абонемент (групові та спліт-абонементи доступні від 6 років).'
+                  : 'Абонемент призначений для вікової групи ${subRange?.$1 ?? 0}-${subRange?.$2 ?? 0} р. (вік дитини: $childAge р.).';
               result = BookingResult(
                 isSuccess: false,
-                message: 'Абонемент призначений для вікової групи ${subRange?.$1 ?? 0}-${subRange?.$2 ?? 0} р. (вік дитини: $childAge р.).',
+                message: subMsg,
                 status: BookingStatus.error,
               );
               return;
@@ -245,7 +547,7 @@ class ScheduleController extends _$ScheduleController {
         final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
         final remainingClasses = subData['remainingClasses'] as int;
 
-        DateTime? subExpiry;
+        DateTime? subExpiry = effectiveSubscription.expiryDate;
         if (subData['expiryDate'] is Timestamp) {
           subExpiry = (subData['expiryDate'] as Timestamp).toDate();
         } else if (subData['expiryDate'] is String) {
@@ -255,9 +557,11 @@ class ScheduleController extends _$ScheduleController {
         if (subExpiry != null) {
           final endOfExpiryDay = DateTime(subExpiry.year, subExpiry.month, subExpiry.day, 23, 59, 59);
           if (groupClass.startTime.isAfter(endOfExpiryDay)) {
-            result = const BookingResult(
+            final expiryStr = DateFormat('dd.MM.yyyy').format(subExpiry);
+            final dateStr = DateFormat('dd.MM.yyyy').format(groupClass.startTime);
+            result = BookingResult(
               isSuccess: false,
-              message: 'Термін дії абонемента закінчується до дати цього тренування.',
+              message: 'Термін дії абонемента закінчується $expiryStr (до дати тренування $dateStr).',
               status: BookingStatus.error,
             );
             return;
@@ -310,7 +614,7 @@ class ScheduleController extends _$ScheduleController {
           'enrolledChildIds': newEnrolled,
         };
         for (final attId in attendeesToAdd) {
-          classUpdates['bookedSubscriptions.$attId'] = subscription.id;
+          classUpdates['bookedSubscriptions.$attId'] = effectiveSubscription.id;
         }
 
         transaction.update(classRef, classUpdates);
@@ -364,15 +668,20 @@ class ScheduleController extends _$ScheduleController {
     final user = ref.read(authControllerProvider);
     if (user == null) return false;
 
+    final family = ref.read(familyStreamProvider).value;
     final effectiveUserId = targetUserId ?? user.id;
     String ownerName = targetOwnerName ?? user.name;
     if (targetOwnerName == null && childId != effectiveUserId) {
-       final childrenAsync = ref.read(childrenControllerProvider);
-       final children = childrenAsync.value ?? [];
-       try {
-         ownerName = children.firstWhere((c) => c.id == childId).name;
-       } catch (e) {
-         // ignore
+       if (family != null && family.parentNames.containsKey(childId) && family.parentNames[childId]!.trim().isNotEmpty) {
+         ownerName = family.parentNames[childId]!;
+       } else {
+         final childrenAsync = ref.read(childrenControllerProvider);
+         final children = childrenAsync.value ?? [];
+         try {
+           ownerName = children.firstWhere((c) => c.id == childId).name;
+         } catch (e) {
+           // ignore
+         }
        }
     }
 
@@ -492,72 +801,139 @@ class ScheduleController extends _$ScheduleController {
     final user = ref.read(authControllerProvider);
     if (user == null) return false;
 
-    // Time collision check
-    final currentClasses = state.value ?? [];
-    final hasConflict = currentClasses.any((c) {
-      final overlaps = c.startTime.isBefore(endTime) && c.endTime.isAfter(startTime);
-      if (!overlaps) return false;
-      return c.enrolledChildIds.any((id) => enrolledChildIds.contains(id));
-    });
-    if (hasConflict) {
-      debugPrint('Conflict: Member already booked at this time');
+    // Collision check (Lane, Coach, and Enrolled Members) - authoritative
+    final conflict = await checkAuthoritativeConflict(
+      startTime: startTime,
+      endTime: endTime,
+      lane: lane,
+      coachId: coachId,
+      enrolledChildIds: enrolledChildIds,
+    );
+    if (conflict != null) {
+      lastConflict = conflict;
+      debugPrint('Conflict in createClass: ${conflict.message}');
       return false;
     }
+    lastConflict = null;
 
     Subscription? subscription;
+    final Map<String, Subscription> memberSubscriptions = {};
+    final Map<String, int> deductionCounts = {};
     
     if (enrolledChildIds.isNotEmpty) {
       final titleLower = title.toLowerCase();
       final isSplit = titleLower.contains('спліт') || titleLower.contains('split');
       final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
       final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
+      final family = ref.read(familyStreamProvider).value;
+      final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [user.id];
 
       if (isSplit) {
-        // Priority 1: dedicated active split subscription
+        // Priority 1: dedicated active split subscription of user
         subscription = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
           (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
         );
 
-        // Priority 2: subscription of either enrolled participant
-        if (subscription == null) {
-          final children = ref.read(childrenControllerProvider).value ?? [];
-          for (final id in enrolledChildIds) {
-            final isAdult = id == user.id;
-            final name = isAdult ? user.name : (children.firstWhereOrNull((c) => c.id == id)?.name ?? user.name);
-            final sub = subscriptionController.getSubscriptionForOwner(user.id, name, isAdult: isAdult);
-            if (sub != null && sub.remainingClasses > 0) {
-              subscription = sub;
-              break;
+        // Priority 2: dedicated active split subscription of partner
+        if (subscription == null && family != null) {
+          for (final pId in family.parentIds) {
+            if (pId != user.id) {
+              final partnerSubs = subscriptionController.getSubscriptionsForUser(pId);
+              subscription = partnerSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
+                (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
+              );
+              if (subscription != null) break;
             }
           }
         }
 
-        // Priority 3: any active subscription with remaining classes
-        subscription ??= userSubs.firstWhereOrNull((s) => s.isActive && s.remainingClasses > 0);
-      } else {
-        final childId = enrolledChildIds.first;
-        final isAdult = childId == user.id;
-        String ownerName = user.name;
-        if (!isAdult) {
-           final childrenAsync = ref.read(childrenControllerProvider);
-           final children = childrenAsync.value ?? [];
-            try {
-              ownerName = children.firstWhere((c) => c.id == childId).name;
-            } catch (_) {
-              // Child not found in list, fallback to user.name
-            }
+        if (subscription == null || subscription.remainingClasses <= 0) {
+          lastConflict = const ClassConflict(
+            type: ClassConflictType.participantConflict,
+            message: 'Відсутній активний спліт-абонемент або закінчилися заняття.',
+          );
+          return false;
         }
 
+        if (subscription.expiryDate != null) {
+          final endOfExpiryDay = DateTime(
+            subscription.expiryDate!.year,
+            subscription.expiryDate!.month,
+            subscription.expiryDate!.day,
+            23, 59, 59,
+          );
+          if (startTime.isAfter(endOfExpiryDay)) {
+            final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
+            final dateStr = DateFormat('dd.MM.yyyy').format(startTime);
+            lastConflict = ClassConflict(
+              type: ClassConflictType.subscriptionExpired,
+              message: 'Термін дії спліт-абонемента закінчується $expiryStr (до обраної дати тренування $dateStr).',
+            );
+            return false;
+          }
+        }
+      } else {
+        // Non-split: each participant in enrolledChildIds must have a subscription
         final isChildService = titleLower.contains('діт') || titleLower.contains('дитяч') || titleLower.contains('junior');
         final isAdultService = titleLower.contains('доросла') || titleLower.contains('дорослих') || titleLower.contains('adult') || titleLower.contains('аквааеробіка');
-        if (isAdult && isChildService) return false;
-        if (!isAdult && isAdultService) return false;
 
-        subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAdult);
-      }
-      
-      if (subscription == null || subscription.remainingClasses <= 0) {
-        return false;
+        for (final attId in enrolledChildIds) {
+          final isAttAdult = attId == user.id || familyParentIds.contains(attId);
+          String ownerName = user.name;
+          if (!isAttAdult) {
+            final childrenAsync = ref.read(childrenControllerProvider);
+            final children = childrenAsync.value ?? [];
+            try {
+              ownerName = children.firstWhere((c) => c.id == attId).name;
+            } catch (_) {}
+          } else if (attId != user.id && family != null && family.parentNames.containsKey(attId)) {
+            ownerName = family.parentNames[attId]!;
+          }
+
+          if (isAttAdult && isChildService) return false;
+          if (!isAttAdult && isAdultService) return false;
+
+          Subscription? sub = subscriptionController.getSubscriptionForOwner(attId, ownerName, isAdult: isAttAdult, isSplit: false, familyUserIds: familyParentIds);
+          sub ??= subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAttAdult, isSplit: false, familyUserIds: familyParentIds);
+
+          if (sub == null || sub.isSplitSubscription) {
+            lastConflict = ClassConflict(
+              type: ClassConflictType.participantConflict,
+              message: 'Відсутній абонемент для $ownerName.',
+            );
+            return false;
+          }
+
+          final alreadyUsed = deductionCounts[sub.id] ?? 0;
+          if (sub.remainingClasses - alreadyUsed <= 0) {
+            lastConflict = ClassConflict(
+              type: ClassConflictType.participantConflict,
+              message: 'Недостатньо занять в абонементі для $ownerName.',
+            );
+            return false;
+          }
+
+          if (sub.expiryDate != null) {
+            final endOfExpiryDay = DateTime(
+              sub.expiryDate!.year,
+              sub.expiryDate!.month,
+              sub.expiryDate!.day,
+              23, 59, 59,
+            );
+            if (startTime.isAfter(endOfExpiryDay)) {
+              final expiryStr = DateFormat('dd.MM.yyyy').format(sub.expiryDate!);
+              final dateStr = DateFormat('dd.MM.yyyy').format(startTime);
+              lastConflict = ClassConflict(
+                type: ClassConflictType.subscriptionExpired,
+                message: 'Термін дії абонемента для $ownerName закінчується $expiryStr (до обраної дати тренування $dateStr).',
+              );
+              return false;
+            }
+          }
+
+          memberSubscriptions[attId] = sub;
+          deductionCounts[sub.id] = alreadyUsed + 1;
+        }
       }
     }
 
@@ -589,6 +965,19 @@ class ScheduleController extends _$ScheduleController {
           final remainingClasses = subData['remainingClasses'] as int;
           
           if (remainingClasses <= 0) throw Exception("No classes left");
+
+          DateTime? subExpiry = activeSub.expiryDate;
+          if (subData['expiryDate'] is Timestamp) {
+            subExpiry = (subData['expiryDate'] as Timestamp).toDate();
+          } else if (subData['expiryDate'] is String) {
+            subExpiry = DateTime.tryParse(subData['expiryDate'] as String);
+          }
+          if (subExpiry != null) {
+            final endOfExpiryDay = DateTime(subExpiry.year, subExpiry.month, subExpiry.day, 23, 59, 59);
+            if (startTime.isAfter(endOfExpiryDay)) {
+              throw Exception("Subscription expired before class date");
+            }
+          }
           
           int newRemaining = remainingClasses - 1;
           
@@ -611,6 +1000,53 @@ class ScheduleController extends _$ScheduleController {
             'isActive': newRemaining > 0
           });
         });
+      } else if (memberSubscriptions.isNotEmpty) {
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final Map<String, int> currentRemainings = {};
+          for (final subId in deductionCounts.keys) {
+            final sRef = FirebaseFirestore.instance.collection('subscriptions').doc(subId);
+            final sDoc = await transaction.get(sRef);
+            if (!sDoc.exists) throw Exception("Subscription missing: $subId");
+            final rem = (sDoc.data()!['remainingClasses'] as num).toInt();
+            final needed = deductionCounts[subId]!;
+            if (rem < needed) throw Exception("Not enough classes in subscription $subId");
+
+            DateTime? subExpiry = memberSubscriptions.values.firstWhereOrNull((s) => s.id == subId)?.expiryDate;
+            if (sDoc.data()!['expiryDate'] is Timestamp) {
+              subExpiry = (sDoc.data()!['expiryDate'] as Timestamp).toDate();
+            } else if (sDoc.data()!['expiryDate'] is String) {
+              subExpiry = DateTime.tryParse(sDoc.data()!['expiryDate'] as String);
+            }
+            if (subExpiry != null) {
+              final endOfExpiryDay = DateTime(subExpiry.year, subExpiry.month, subExpiry.day, 23, 59, 59);
+              if (startTime.isAfter(endOfExpiryDay)) {
+                throw Exception("Subscription expired before class date");
+              }
+            }
+
+            currentRemainings[subId] = rem - needed;
+          }
+
+          final classMap = newClass.toJson();
+          if (isCustomBooking || user.role == UserRole.parent) {
+            classMap['isCustomBooking'] = true;
+            classMap['createdByRole'] = user.role.name;
+          }
+          final bookedMap = <String, String>{};
+          for (final entry in memberSubscriptions.entries) {
+            bookedMap[entry.key] = entry.value.id;
+          }
+          classMap['bookedSubscriptions'] = bookedMap;
+
+          transaction.set(newClassRef, classMap);
+          for (final entry in currentRemainings.entries) {
+            final sRef = FirebaseFirestore.instance.collection('subscriptions').doc(entry.key);
+            transaction.update(sRef, {
+              'remainingClasses': entry.value,
+              'isActive': entry.value > 0,
+            });
+          }
+        });
       } else {
         final classMap = newClass.toJson();
         if (isCustomBooking || user.role == UserRole.parent) {
@@ -620,13 +1056,17 @@ class ScheduleController extends _$ScheduleController {
         await newClassRef.set(classMap);
       }
       
+      // Optimistically update state so consecutive creations see the new class instantly
+      final current = state.value ?? [];
+      state = AsyncData([...current, newClass]);
+
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  Future<int> createRecurringClasses({
+  Future<CreateRecurringClassesResult> createRecurringClasses({
     required String title,
     required DateTime startDate,
     required int hour,
@@ -641,30 +1081,97 @@ class ScheduleController extends _$ScheduleController {
     required String lane,
   }) async {
     final user = ref.read(authControllerProvider);
-    if (user == null) return 0;
+    if (user == null) {
+      return const CreateRecurringClassesResult(createdCount: 0);
+    }
 
     try {
-      final List<DateTime> startTimes = [];
+      final List<DateTime> validStartTimes = [];
+      final List<DateTime> skippedDates = [];
+      final List<ClassConflict> conflicts = [];
       final totalDays = durationWeeks * 7;
       final baseDate = DateTime(startDate.year, startDate.month, startDate.day);
+      final rangeEnd = baseDate.add(Duration(days: totalDays + 1));
+
+      // Fetch all existing classes in the full recurring range from Firestore to be authoritative
+      final snap = await FirebaseFirestore.instance
+          .collection('classes')
+          .where('startTime', isGreaterThanOrEqualTo: baseDate.toIso8601String())
+          .where('startTime', isLessThan: rangeEnd.toIso8601String())
+          .get();
+
+      final Map<String, GroupClass> allKnownClasses = {};
+      for (final c in (state.value ?? [])) {
+        allKnownClasses[c.id] = c;
+      }
+      for (final doc in snap.docs) {
+        try {
+          final data = Map<String, dynamic>.from(doc.data() as Map);
+          data['id'] = doc.id;
+          if (data['startTime'] is Timestamp) {
+            data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+          }
+          if (data['endTime'] is Timestamp) {
+            data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+          }
+          allKnownClasses[doc.id] = GroupClass.fromJson(data);
+        } catch (_) {}
+      }
+
+      final List<GroupClass> existingList = allKnownClasses.values.toList();
+      final List<GroupClass> newlyGenerated = [];
 
       for (int i = 0; i < totalDays; i++) {
         final date = baseDate.add(Duration(days: i));
         if (weekdays.contains(date.weekday)) {
           final classStart = DateTime(date.year, date.month, date.day, hour, minute);
-          startTimes.add(classStart);
+          final classEnd = classStart.add(Duration(minutes: durationMinutes));
+
+          final combined = [...existingList, ...newlyGenerated];
+          final conflict = _evaluateConflictAgainst(
+            classes: combined,
+            startTime: classStart,
+            endTime: classEnd,
+            lane: lane,
+            coachId: coachId,
+          );
+
+          if (conflict != null) {
+            skippedDates.add(classStart);
+            conflicts.add(conflict);
+          } else {
+            validStartTimes.add(classStart);
+            newlyGenerated.add(GroupClass(
+              id: 'temp_${classStart.millisecondsSinceEpoch}',
+              title: title,
+              startTime: classStart,
+              endTime: classEnd,
+              coachId: coachId,
+              coachName: coachName,
+              maxCapacity: maxCapacity,
+              category: category,
+              lane: lane,
+            ));
+          }
         }
       }
 
-      if (startTimes.isEmpty) return 0;
+      if (validStartTimes.isEmpty) {
+        return CreateRecurringClassesResult(
+          createdCount: 0,
+          skippedDates: skippedDates,
+          conflicts: conflicts,
+        );
+      }
 
       final firestore = FirebaseFirestore.instance;
       const chunkSize = 400;
+      final List<GroupClass> createdClasses = [];
 
-      for (int i = 0; i < startTimes.length; i += chunkSize) {
-        final chunk = startTimes.sublist(
+      for (int i = 0; i < validStartTimes.length; i += chunkSize) {
+        final chunk = validStartTimes.sublist(
           i,
-          (i + chunkSize > startTimes.length) ? startTimes.length : i + chunkSize,
+          (i + chunkSize > validStartTimes.length) ? validStartTimes.length : i + chunkSize,
         );
         final batch = firestore.batch();
         for (final st in chunk) {
@@ -684,14 +1191,23 @@ class ScheduleController extends _$ScheduleController {
             lane: lane,
           );
           batch.set(docRef, groupClass.toJson());
+          createdClasses.add(groupClass);
         }
         await batch.commit();
       }
 
-      return startTimes.length;
+      // Optimistically update state so newly created recurring classes are immediately visible
+      final current = state.value ?? [];
+      state = AsyncData([...current, ...createdClasses]);
+
+      return CreateRecurringClassesResult(
+        createdCount: validStartTimes.length,
+        skippedDates: skippedDates,
+        conflicts: conflicts,
+      );
     } catch (e) {
       debugPrint('Error creating recurring classes: $e');
-      return 0;
+      return const CreateRecurringClassesResult(createdCount: 0);
     }
   }
 
@@ -706,6 +1222,20 @@ class ScheduleController extends _$ScheduleController {
     required String category,
     required String lane,
   }) async {
+    final conflict = await checkAuthoritativeConflict(
+      startTime: startTime,
+      endTime: endTime,
+      lane: lane,
+      coachId: coachId,
+      excludeClassId: classId,
+    );
+    if (conflict != null) {
+      lastConflict = conflict;
+      debugPrint('Conflict in updateClass: ${conflict.message}');
+      return false;
+    }
+    lastConflict = null;
+
     try {
       await FirebaseFirestore.instance.collection('classes').doc(classId).update({
         'title': title,

@@ -323,15 +323,29 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
         ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
         : null;
 
-    final enrolledMembers = [
-      if (user != null && nextClass.enrolledChildIds.contains(user.id))
-        (id: user.id, name: user.name, isParent: true),
-      if (family != null && family.isPaired && partnerId != null && partnerName != null && nextClass.enrolledChildIds.contains(partnerId))
-        (id: partnerId, name: partnerName, isParent: true),
-      ...children
-          .where((ch) => nextClass.enrolledChildIds.contains(ch.id))
-          .map((ch) => (id: ch.id, name: ch.name, isParent: false)),
-    ];
+    final enrolledMembers = nextClass.enrolledChildIds.map((id) {
+      if (user != null && id == user.id) {
+        return (id: user.id, name: user.name, isParent: true);
+      }
+      final child = children.where((ch) => ch.id == id).firstOrNull;
+      if (child != null) {
+        return (id: child.id, name: child.name, isParent: false);
+      }
+      if (family != null && family.parentNames.containsKey(id) && family.parentNames[id]!.trim().isNotEmpty) {
+        return (id: id, name: family.parentNames[id]!.trim(), isParent: true);
+      }
+      if (partnerId != null && id == partnerId && partnerName != null && partnerName.isNotEmpty) {
+        return (id: id, name: partnerName, isParent: true);
+      }
+      if (family != null && family.parentIds.contains(id)) {
+        final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? 'Партнер';
+        return (id: id, name: name, isParent: true);
+      }
+      if (partnerName != null && partnerName.isNotEmpty && partnerName != 'Партнер') {
+        return (id: id, name: partnerName, isParent: true);
+      }
+      return (id: id, name: 'Партнер', isParent: true);
+    }).toList();
 
     final bool isMultiple = enrolledMembers.length > 1;
     final String personName = enrolledMembers.isNotEmpty

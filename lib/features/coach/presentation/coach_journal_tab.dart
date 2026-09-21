@@ -795,93 +795,154 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         const SizedBox(height: 18),
 
                         // 4. Cyber-Luxe Smart QR Scanner Card
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: themeConfig.isDark
-                                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                      .withValues(alpha: themeConfig.isDark ? 0.35 : 0.25),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 46,
-                                  height: 46,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.22),
-                                    borderRadius: BorderRadius.circular(15),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.12),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                        Builder(
+                          builder: (context) {
+                            final selectedClass = activeClass!;
+                            final isClassToday = _isSameDay(selectedClass.startTime, DateTime.now());
+                            return GestureDetector(
+                              onTap: () async {
+                                if (!isClassToday) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(LucideIcons.calendarClock, color: Colors.white),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              'Сканування перепустки доступне лише в день проведення заняття (${_formatDateShort(selectedClass.startTime)})',
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                      backgroundColor: const Color(0xFFF59E0B),
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final updated = await Navigator.push<bool>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => QrScannerScreen(targetClass: selectedClass),
                                   ),
-                                  child: const Center(
-                                    child: Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 26),
+                                );
+
+                                if (updated == true && mounted) {
+                                  final doc = await FirebaseFirestore.instance
+                                      .collection('classes')
+                                      .doc(selectedClass.id)
+                                      .get();
+                                  if (doc.exists && mounted) {
+                                    final updatedClass = GroupClass.fromJson({'id': doc.id, ...doc.data()!});
+                                    _fetchChildren(updatedClass.enrolledChildIds);
+                                  }
+                                }
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: !isClassToday
+                                        ? [
+                                            (themeConfig.isDark ? const Color(0xFF1E293B) : const Color(0xFF64748B)).withValues(alpha: 0.9),
+                                            (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFF475569)).withValues(alpha: 0.9),
+                                          ]
+                                        : (themeConfig.isDark
+                                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (!isClassToday
+                                              ? Colors.black
+                                              : (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
+                                          .withValues(alpha: themeConfig.isDark ? 0.35 : 0.25),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'СКАНУВАТИ ПЕРЕПУСТКУ',
-                                        style: TextStyle(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 46,
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.22),
+                                        borderRadius: BorderRadius.circular(15),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.4),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.12),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          !isClassToday ? LucideIcons.calendarClock : Icons.qr_code_scanner_rounded,
                                           color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 14.5,
-                                          letterSpacing: 1.1,
+                                          size: 26,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Миттєва відмітка входу учня біля басейну',
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.85),
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w500,
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            !isClassToday ? 'СКАНУВАННЯ ЗАКРИТО' : 'СКАНУВАТИ ПЕРЕПУСТКУ',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 14.5,
+                                              letterSpacing: 1.1,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            !isClassToday
+                                                ? 'Доступно в день проведення (${_formatDateShort(selectedClass.startTime)})'
+                                                : 'Миттєва відмітка входу учня біля басейну',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.85),
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.18),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          !isClassToday ? LucideIcons.lock : LucideIcons.chevronRight,
+                                          color: Colors.white,
+                                          size: 18,
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.18),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Center(
-                                    child: Icon(LucideIcons.chevronRight, color: Colors.white, size: 18),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 18),
 

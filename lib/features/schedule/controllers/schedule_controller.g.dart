@@ -20,7 +20,7 @@ final class ScheduleControllerProvider
         argument: null,
         retry: null,
         name: r'scheduleControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );

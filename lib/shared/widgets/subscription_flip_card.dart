@@ -137,7 +137,8 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
   }
 
   Widget _buildBack() {
-    final qrData = widget.currentSub?.userId ?? 'Unknown_User_ID';
+    final sub = widget.currentSub;
+    final qrData = sub != null ? 'SWIM_SUB:${sub.id}:${sub.userId}' : 'Unknown_User_ID';
 
     return Center(
       child: ConstrainedBox(
@@ -215,6 +216,21 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                             ),
                           ],
                         ),
+                        if (sub != null && sub.serviceName != null && sub.serviceName!.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            '${sub.serviceName} • ${sub.ownerName ?? "Для клієнта"}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                              shadows: [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
 
                         const Spacer(),
 

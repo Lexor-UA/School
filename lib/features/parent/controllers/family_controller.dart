@@ -466,4 +466,47 @@ class FamilyController {
       debugPrint('Error unlinking family: $e');
     }
   }
+
+  /// Automatically purges families whose parents no longer exist in the `users` collection.
+  Future<int> cleanupOrphanedFamilies() async {
+    try {
+      final familiesSnap = await FirebaseFirestore.instance.collection('families').get();
+      int cleanedCount = 0;
+      for (final doc in familiesSnap.docs) {
+        final data = doc.data();
+        final parentIds = List<String>.from(data['parentIds'] ?? []);
+
+        bool hasActiveParent = false;
+        for (final pId in parentIds) {
+          final uDoc = await FirebaseFirestore.instance.collection('users').doc(pId).get();
+          if (uDoc.exists) {
+            hasActiveParent = true;
+            break;
+          }
+        }
+
+        if (!hasActiveParent) {
+          // No living parents exist in `users` collection!
+          await doc.reference.delete();
+          cleanedCount++;
+
+          // Clean up any remaining children for this orphaned family
+          final childrenSnap = await FirebaseFirestore.instance
+              .collection('children')
+              .where('familyId', isEqualTo: doc.id)
+              .get();
+          for (final cDoc in childrenSnap.docs) {
+            await cDoc.reference.delete();
+          }
+        }
+      }
+      if (cleanedCount > 0) {
+        debugPrint('[FamilyController] Cleaned up $cleanedCount orphaned families');
+      }
+      return cleanedCount;
+    } catch (e) {
+      debugPrint('Error cleaning up orphaned families: $e');
+      return 0;
+    }
+  }
 }

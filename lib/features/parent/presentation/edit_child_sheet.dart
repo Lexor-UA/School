@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
+import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
 
 const List<String> _ukMonths = [
   'січня',
@@ -106,7 +107,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
   Future<void> _pickDate(int index) async {
     final now = DateTime.now();
     final initial = _birthDates[index] ?? DateTime(now.year - 7, now.month, now.day);
-    final first = DateTime(now.year - 17, 1, 1);
+    final first = DateTime(now.year - 15, now.month, now.day);
     final last = now;
 
     final picked = await showDatePicker(
@@ -171,9 +172,11 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
         hasError = true;
       } else {
         final age = calculateAgeFromDate(bDate);
-        if (age < 1 || age > 17) {
+        if (age < 1 || age > 15) {
           setState(() {
-            _errors[i] = 'Вік дитини має бути від 1 до 17 років';
+            _errors[i] = age > 15
+                ? 'Діти від 16 років реєструються окремо як дорослі (до 15 років включно)'
+                : 'Вік дитини має бути від 1 до 15 років';
           });
           hasError = true;
         } else {
@@ -292,13 +295,26 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                         child: const Icon(LucideIcons.baby, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'Додати дитину',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Додати дитину',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'До 15 років включно (від 16 років — окремий акаунт)',
+                            style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black54,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -726,8 +742,8 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final initial = _birthDate ?? DateTime(now.year - 7, now.month, now.day);
-    final first = DateTime(now.year - 17, 1, 1);
+    final initial = _birthDate ?? DateTime(now.year - (widget.child.currentAge ?? 7), now.month, now.day);
+    final first = DateTime(now.year - 15, now.month, now.day);
     final last = now;
 
     final picked = await showDatePicker(
@@ -787,8 +803,10 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
     }
 
     final age = calculateAgeFromDate(_birthDate!);
-    if (age < 1 || age > 17) {
-      setState(() => _error = 'Вік дитини має бути від 1 до 17 років');
+    if (age < 1 || age > 15) {
+      setState(() => _error = age > 15
+          ? 'Діти від 16 років реєструються окремо як дорослі (до 15 років включно)'
+          : 'Вік дитини має бути від 1 до 15 років');
       return;
     }
 
@@ -878,7 +896,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
     final now = DateTime.now();
-    final yearList = List.generate(17, (i) => now.year - 1 - i);
+    final yearList = List.generate(15, (i) => now.year - 1 - i);
     final age = _birthDate != null ? calculateAgeFromDate(_birthDate!) : widget.child.currentAge;
     final childColor = Color(int.tryParse(_selectedColorHex) ?? 0xFF00E5FF);
 
@@ -975,6 +993,96 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Prominent Graduation Callout if child reached 16+
+                      if (widget.child.isAdultAge || (age != null && age >= 16)) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(LucideIcons.graduationCap, color: Colors.white, size: 20),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Text(
+                                      'Час для дорослого акаунту! 🎓',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${widget.child.name} вже виповнилося 16 років. Переведіть плавця у дорослий акаунт: залишок занять, спортивний рівень та нагороди будуть збережені.',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    final res = await GraduateChildSheet.show(context, widget.child);
+                                    if (res == true && context.mounted) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: const Color(0xFF047857),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(vertical: 11),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(LucideIcons.sparkles, size: 16),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Випустити у дорослий акаунт 🎓',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       // Form Card
                       Container(
                         padding: const EdgeInsets.all(16),

@@ -22,6 +22,7 @@ import 'package:swimming_school_app/features/parent/controllers/family_controlle
 import 'package:swimming_school_app/features/parent/presentation/family_management_sheet.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
+import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -763,6 +764,117 @@ class ParentProfileTab extends ConsumerWidget {
                 ),
               ],
 
+              // Graduation callout banner for teens reaching 16+
+              if (children.any((c) => c.isAdultAge)) ...[
+                ...children.where((c) => c.isAdultAge).map((adultChild) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF10B981).withValues(alpha: 0.22),
+                              const Color(0xFF06B6D4).withValues(alpha: 0.12),
+                            ]
+                          : [
+                              const Color(0xFFECFDF5),
+                              const Color(0xFFF0FDF4),
+                            ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.45 : 0.35),
+                      width: 1.1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.18 : 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(LucideIcons.graduationCap, color: Colors.white, size: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${adultChild.name} вже 16 років! 🎓',
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              'Час перевести у дорослий акаунт зі збереженням занять та нагород',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFB0D4EC) : subColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => GraduateChildSheet.show(context, adultChild),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'Випустити',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+
               // Bottom Row: Children List & Add Button
               Row(
                 children: [
@@ -818,6 +930,10 @@ class ParentProfileTab extends ConsumerWidget {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    if (child.isAdultAge) ...[
+                                      const SizedBox(width: 3),
+                                      const Text('🎓', style: TextStyle(fontSize: 11)),
+                                    ],
                                     const SizedBox(width: 4),
                                     Icon(
                                       LucideIcons.pencil,

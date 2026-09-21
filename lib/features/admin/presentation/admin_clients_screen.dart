@@ -17,6 +17,7 @@ import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'add_client_sheet.dart';
 import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
+import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 
 class AdminClientsScreen extends ConsumerStatefulWidget {
   const AdminClientsScreen({super.key});
@@ -50,6 +51,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
       return uppercaseLetters.substring(0, 2);
     }
     return clean.length >= 2 ? clean.substring(0, 2).toUpperCase() : clean[0].toUpperCase();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(familyControllerProvider).cleanupOrphanedFamilies();
+    });
   }
 
   @override
@@ -125,45 +134,132 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
     if (confirm == true) {
       try {
-        // Check if client is part of a family
+        // 1. Check if client is part of any family
         final clientDoc = await FirebaseFirestore.instance.collection('users').doc(clientId).get();
         final clientData = clientDoc.data();
-        final familyId = clientData?['familyId'] as String?;
+        final directFamilyId = clientData?['familyId'] as String?;
 
-        String? survivingSpouseId;
-        if (familyId != null && familyId.isNotEmpty) {
-          final familyDoc = await FirebaseFirestore.instance.collection('families').doc(familyId).get();
-          if (familyDoc.exists) {
-            final fData = familyDoc.data()!;
-            final parentIds = List<String>.from(fData['parentIds'] ?? []);
-            parentIds.remove(clientId);
-            if (parentIds.isNotEmpty) {
-              survivingSpouseId = parentIds.first;
-              await familyDoc.reference.update({'parentIds': parentIds});
-            } else {
-              await familyDoc.reference.delete();
-            }
+        final List<DocumentSnapshot<Map<String, dynamic>>> familyDocs = [];
+
+        if (directFamilyId != null && directFamilyId.isNotEmpty) {
+          final fDoc = await FirebaseFirestore.instance.collection('families').doc(directFamilyId).get();
+          if (fDoc.exists) familyDocs.add(fDoc);
+        }
+
+        final snapByParentIds = await FirebaseFirestore.instance
+            .collection('families')
+            .where('parentIds', arrayContains: clientId)
+            .get();
+        for (final doc in snapByParentIds.docs) {
+          if (!familyDocs.any((f) => f.id == doc.id)) {
+            familyDocs.add(doc);
           }
         }
 
+        final snapByPrimary = await FirebaseFirestore.instance
+            .collection('families')
+            .where('primaryParentId', isEqualTo: clientId)
+            .get();
+        for (final doc in snapByPrimary.docs) {
+          if (!familyDocs.any((f) => f.id == doc.id)) {
+            familyDocs.add(doc);
+          }
+        }
+
+        String? survivingSpouseId;
+        final List<String> affectedFamilyIds = [];
+
+        for (final familyDoc in familyDocs) {
+          affectedFamilyIds.add(familyDoc.id);
+          final fData = familyDoc.data() ?? {};
+          final parentIds = List<String>.from(fData['parentIds'] ?? []);
+          parentIds.remove(clientId);
+
+          final parentNames = Map<String, dynamic>.from(fData['parentNames'] ?? {});
+          parentNames.remove(clientId);
+
+          final parentPhones = Map<String, dynamic>.from(fData['parentPhones'] ?? {});
+          parentPhones.remove(clientId);
+
+          // Verify which surviving parent IDs actually still exist in `users`
+          final List<String> activeSurvivingParentIds = [];
+          for (final pId in parentIds) {
+            final pUserDoc = await FirebaseFirestore.instance.collection('users').doc(pId).get();
+            if (pUserDoc.exists) {
+              activeSurvivingParentIds.add(pId);
+            }
+          }
+
+          if (activeSurvivingParentIds.isNotEmpty) {
+            survivingSpouseId = activeSurvivingParentIds.first;
+            final currentPrimary = fData['primaryParentId'] as String?;
+            final newPrimary = (currentPrimary == clientId || !activeSurvivingParentIds.contains(currentPrimary))
+                ? survivingSpouseId
+                : currentPrimary;
+
+            await familyDoc.reference.update({
+              'parentIds': activeSurvivingParentIds,
+              'parentNames': parentNames,
+              'parentPhones': parentPhones,
+              'primaryParentId': newPrimary,
+            });
+          } else {
+            // No living parents exist in this family! Delete the family document completely!
+            await familyDoc.reference.delete();
+          }
+        }
+
+        // 2. Delete the user document
         await FirebaseFirestore.instance.collection('users').doc(clientId).delete();
 
-        final childrenSnap = await FirebaseFirestore.instance
+        // 3. Query all children linked by parentId, parentIds, or affected family IDs
+        final Map<String, DocumentSnapshot<Map<String, dynamic>>> childDocsMap = {};
+
+        final cSnap1 = await FirebaseFirestore.instance
             .collection('children')
             .where('parentId', isEqualTo: clientId)
             .get();
+        for (final doc in cSnap1.docs) {
+          childDocsMap[doc.id] = doc;
+        }
 
-        List<String> allRelatedIds = [clientId];
-        for (var doc in childrenSnap.docs) {
-          if (survivingSpouseId != null) {
-            // Re-assign child to the surviving spouse so they are not deleted
-            await doc.reference.update({'parentId': survivingSpouseId});
-          } else {
-            allRelatedIds.add(doc.id);
-            await doc.reference.delete();
+        final cSnap2 = await FirebaseFirestore.instance
+            .collection('children')
+            .where('parentIds', arrayContains: clientId)
+            .get();
+        for (final doc in cSnap2.docs) {
+          childDocsMap[doc.id] = doc;
+        }
+
+        for (final fId in affectedFamilyIds) {
+          final cSnapFam = await FirebaseFirestore.instance
+              .collection('children')
+              .where('familyId', isEqualTo: fId)
+              .get();
+          for (final doc in cSnapFam.docs) {
+            childDocsMap[doc.id] = doc;
           }
         }
 
+        List<String> allRelatedIds = [clientId];
+        for (final childDoc in childDocsMap.values) {
+          final cData = childDoc.data() ?? {};
+          final cParentIds = List<String>.from(cData['parentIds'] ?? []);
+          cParentIds.remove(clientId);
+
+          if (survivingSpouseId != null) {
+            // Re-assign child to the surviving spouse so they are not lost
+            await childDoc.reference.update({
+              'parentId': survivingSpouseId,
+              'parentIds': cParentIds.isNotEmpty ? cParentIds : [survivingSpouseId],
+            });
+          } else {
+            allRelatedIds.add(childDoc.id);
+            await childDoc.reference.delete();
+          }
+        }
+
+        // 4. Clean up or transfer subscriptions
         final subsSnap = await FirebaseFirestore.instance
             .collection('subscriptions')
             .where('userId', isEqualTo: clientId)
@@ -179,6 +275,19 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           }
         }
 
+        // Delete any subscriptions belonging to deleted children
+        for (final relId in allRelatedIds) {
+          if (relId == clientId) continue;
+          final childSubs = await FirebaseFirestore.instance
+              .collection('subscriptions')
+              .where('childId', isEqualTo: relId)
+              .get();
+          for (final sDoc in childSubs.docs) {
+            await sDoc.reference.delete();
+          }
+        }
+
+        // 5. Remove enrollments from scheduled classes
         final classesSnap = await FirebaseFirestore.instance
             .collection('classes')
             .where('enrolledChildIds', arrayContainsAny: allRelatedIds)
@@ -188,6 +297,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           enrolled.removeWhere((id) => allRelatedIds.contains(id));
           await doc.reference.update({'enrolledChildIds': enrolled});
         }
+
+        // 6. Purge any remaining orphaned families without active parents
+        await ref.read(familyControllerProvider).cleanupOrphanedFamilies();
 
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
@@ -524,6 +636,41 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: currentTheme.isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : currentTheme.cardBorder,
+              ),
+            ),
+            child: IconButton(
+              tooltip: 'Синхронізація та очищення осиротілих сімей',
+              icon: Icon(LucideIcons.sparkles, color: currentTheme.accentPrimary, size: 18),
+              onPressed: () async {
+                final cleaned = await ref.read(familyControllerProvider).cleanupOrphanedFamilies();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        cleaned > 0
+                            ? 'Видалено $cleaned осиротілих сімей без активних клієнтів'
+                            : 'Усі сімейні зв\'язки в порядку, осиротілих сімей немає',
+                      ),
+                      backgroundColor: const Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              },
             ),
           ),
           const ThemeHeaderButton(size: 38),

@@ -18,6 +18,8 @@ import 'package:swimming_school_app/features/parent/presentation/parent_main.dar
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
+import 'package:collection/collection.dart';
+import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 
 class ParentCalendarTab extends ConsumerStatefulWidget {
   const ParentCalendarTab({super.key});
@@ -41,8 +43,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final familyAsync = ref.watch(familyStreamProvider);
     final family = familyAsync.value;
-    final parentIds = (family != null && family.parentIds.isNotEmpty)
-        ? family.parentIds
+    final parentIds = (family != null && (family.parentIds.isNotEmpty || family.parentNames.isNotEmpty))
+        ? {...family.parentIds, ...family.parentNames.keys}.toList()
         : (user != null ? [user.id] : <String>[]);
 
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
@@ -151,6 +153,34 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     }
 
     final isAdult = selectedChildId == user?.id || (partnerId != null && selectedChildId == partnerId);
+    String memberName = user?.name ?? 'Я';
+    if (!isAdult) {
+      final ch = children.firstWhereOrNull((c) => c.id == selectedChildId);
+      if (ch != null) memberName = ch.name;
+    } else if (selectedChildId == partnerId) {
+      memberName = family?.getOtherParentName(user?.id ?? '') ?? 'Партнер';
+    }
+
+    final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
+    final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [if (user != null) user.id];
+    var sub = subscriptionController.getSubscriptionForOwner(selectedChildId, memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
+    sub ??= subscriptionController.getSubscriptionForOwner(user?.id ?? '', memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
+
+    if (sub?.expiryDate != null) {
+      final endOfExpiryDay = DateTime(sub!.expiryDate!.year, sub.expiryDate!.month, sub.expiryDate!.day, 23, 59, 59);
+      if (selectedDateOnly.isAfter(endOfExpiryDay)) {
+        final expiryStr = DateFormat('dd.MM.yyyy').format(sub.expiryDate!);
+        final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Термін дії абонемента для $memberName закінчується $expiryStr (до обраної дати $selDateStr). Оберіть дату в межах дії абонемента.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+    }
+
     _openIndividualClassSheet(selectedChildId, isAdult);
   }
 
@@ -182,7 +212,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final allMembers = [
       if (user != null)
         (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
-      if (family != null && family.isPaired && partnerId != null && partnerName != null)
+      if (partnerId != null && partnerName != null)
         (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       ...children.map((ch) => (
             id: ch.id,
@@ -247,6 +277,28 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
+                        final isAdult = m.isParent;
+                        final memberId = m.id;
+                        final memberName = m.name;
+                        final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+                        final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
+                        final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [if (user != null) user.id];
+                        var sub = subscriptionController.getSubscriptionForOwner(memberId, memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
+                        sub ??= subscriptionController.getSubscriptionForOwner(user?.id ?? '', memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
+                        if (sub?.expiryDate != null) {
+                          final endOfExpiryDay = DateTime(sub!.expiryDate!.year, sub.expiryDate!.month, sub.expiryDate!.day, 23, 59, 59);
+                          if (selectedDateOnly.isAfter(endOfExpiryDay)) {
+                            final expiryStr = DateFormat('dd.MM.yyyy').format(sub.expiryDate!);
+                            final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Термін дії абонемента для $memberName закінчується $expiryStr (до обраної дати $selDateStr).'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+                        }
                         Navigator.pop(ctx);
                         _openIndividualClassSheet(m.id, m.isParent);
                       },
@@ -559,6 +611,37 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final isDark = currentTheme.isDark;
 
+    final subscriptions = ref.watch(subscriptionControllerProvider);
+    final user = ref.watch(authControllerProvider);
+    final family = ref.watch(familyStreamProvider).value;
+    final relevantUserIds = {
+      if (user != null) user.id,
+      if (family != null) ...family.parentIds,
+    };
+    final activeFamilySubs = subscriptions.where((s) => s.isActive && s.remainingClasses > 0 && relevantUserIds.contains(s.userId)).toList();
+
+    DateTime? maxExpiry;
+    for (final s in activeFamilySubs) {
+      if (s.expiryDate != null) {
+        if (maxExpiry == null || s.expiryDate!.isAfter(maxExpiry)) {
+          maxExpiry = s.expiryDate;
+        }
+      }
+    }
+
+    final now = DateTime.now();
+    final DateTime maxAllowedDate;
+    if (maxExpiry != null) {
+      maxAllowedDate = DateTime(maxExpiry.year, maxExpiry.month + 1, 1).subtract(const Duration(seconds: 1));
+    } else {
+      maxAllowedDate = DateTime(now.year, now.month + 3, 1).subtract(const Duration(seconds: 1));
+    }
+
+    final nextMonthFirstDay = DateTime(selectedDate.year, selectedDate.month + 1, 1);
+    final bool canGoNextMonth = nextMonthFirstDay.isBefore(maxAllowedDate) ||
+        (nextMonthFirstDay.year == maxAllowedDate.year && nextMonthFirstDay.month == maxAllowedDate.month);
+    final bool canGoPrevMonth = selectedDate.year > now.year || (selectedDate.year == now.year && selectedDate.month >= now.month);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -655,14 +738,16 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       children: [
                         _buildMonthNavButton(
                           icon: LucideIcons.chevronLeft,
-                          onTap: () => setState(() => selectedDate = DateTime(selectedDate.year, selectedDate.month - 1, 1)),
+                          onTap: canGoPrevMonth ? () => setState(() => selectedDate = DateTime(selectedDate.year, selectedDate.month - 1, 1)) : null,
                           currentTheme: currentTheme,
+                          isEnabled: canGoPrevMonth,
                         ),
                         const SizedBox(width: 8),
                         _buildMonthNavButton(
                           icon: LucideIcons.chevronRight,
-                          onTap: () => setState(() => selectedDate = DateTime(selectedDate.year, selectedDate.month + 1, 1)),
+                          onTap: canGoNextMonth ? () => setState(() => selectedDate = DateTime(selectedDate.year, selectedDate.month + 1, 1)) : null,
                           currentTheme: currentTheme,
+                          isEnabled: canGoNextMonth,
                         ),
                       ],
                     ),
@@ -890,36 +975,43 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
   Widget _buildMonthNavButton({
     required IconData icon,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     required AppThemeConfig currentTheme,
+    bool isEnabled = true,
   }) {
     final isDark = currentTheme.isDark;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: isEnabled ? onTap : null,
         borderRadius: BorderRadius.circular(10),
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: isEnabled ? 1.0 : 0.35,
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
               color: isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                  : const Color(0xFFBAE6FD),
-              width: 0.8,
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.white.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: isEnabled ? 0.25 : 0.10)
+                    : const Color(0xFFBAE6FD).withValues(alpha: isEnabled ? 1.0 : 0.4),
+                width: 0.8,
+              ),
             ),
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 16,
-              color: isDark ? const Color(0xFF00E5FF) : currentTheme.textPrimary,
+            child: Center(
+              child: Icon(
+                icon,
+                size: 16,
+                color: isEnabled
+                    ? (isDark ? const Color(0xFF00E5FF) : currentTheme.textPrimary)
+                    : (isDark ? Colors.white38 : Colors.grey),
+              ),
             ),
           ),
         ),
@@ -1362,30 +1454,70 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
         : null;
 
-    final enrolledMembers = [
-      if (user != null && c.enrolledChildIds.contains(user.id))
-        (
+    final enrolledMembers = c.enrolledChildIds.map((id) {
+      if (user != null && id == user.id) {
+        return (
           id: user.id,
           name: '${user.name} (Я)',
           isParent: true,
           color: currentTheme.accentPrimary,
-        ),
-      if (family != null && family.isPaired && partnerId != null && partnerName != null && c.enrolledChildIds.contains(partnerId))
-        (
-          id: partnerId,
+        );
+      }
+
+      final child = children.where((ch) => ch.id == id).firstOrNull;
+      if (child != null) {
+        return (
+          id: child.id,
+          name: child.name,
+          isParent: false,
+          color: Color(int.tryParse(child.colorHex) ?? 0xFF10B981),
+        );
+      }
+
+      if (family != null && family.parentNames.containsKey(id) && family.parentNames[id]!.trim().isNotEmpty) {
+        return (
+          id: id,
+          name: family.parentNames[id]!.trim(),
+          isParent: true,
+          color: const Color(0xFFA78BFA),
+        );
+      }
+
+      if (partnerId != null && id == partnerId && partnerName != null && partnerName.isNotEmpty) {
+        return (
+          id: id,
           name: partnerName,
           isParent: true,
           color: const Color(0xFFA78BFA),
-        ),
-      ...children
-          .where((ch) => c.enrolledChildIds.contains(ch.id))
-          .map((ch) => (
-                id: ch.id,
-                name: ch.name,
-                isParent: false,
-                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
-              )),
-    ];
+        );
+      }
+
+      if (family != null && family.parentIds.contains(id)) {
+        final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? 'Партнер';
+        return (
+          id: id,
+          name: name,
+          isParent: true,
+          color: const Color(0xFFA78BFA),
+        );
+      }
+
+      if (partnerName != null && partnerName.isNotEmpty && partnerName != 'Партнер') {
+        return (
+          id: id,
+          name: partnerName,
+          isParent: true,
+          color: const Color(0xFFA78BFA),
+        );
+      }
+
+      return (
+        id: id,
+        name: 'Партнер',
+        isParent: true,
+        color: const Color(0xFFA78BFA),
+      );
+    }).toList();
 
     final unenrolledMembers = [
       if (user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly)
@@ -1395,7 +1527,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           isParent: true,
           color: currentTheme.accentPrimary,
         ),
-      if (family != null && family.isPaired && partnerId != null && partnerName != null && !c.enrolledChildIds.contains(partnerId) && !c.isChildOnly)
+      if (partnerId != null && partnerName != null && !c.enrolledChildIds.contains(partnerId) && !c.isChildOnly)
         (
           id: partnerId,
           name: partnerName,
@@ -1984,10 +2116,12 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                   const SizedBox(height: 1),
                                   Text(
                                     unenrolledMembers.length == 1
-                                        ? (unenrolledMembers.first.isParent
-                                            ? 'Записати батька: ${unenrolledMembers.first.name.replaceAll(' (Я)', '')}'
-                                            : 'Записати дитину: ${unenrolledMembers.first.name}')
-                                        : (c.isSplit ? 'Записати 2-го учасника' : 'Записати ще одного учасника'),
+                                        ? (unenrolledMembers.first.id == user?.id
+                                            ? 'Записатися на це тренування'
+                                            : (unenrolledMembers.first.isParent
+                                                ? 'Записати партнера: ${unenrolledMembers.first.name.replaceAll(' (Я)', '')}'
+                                                : 'Записати дитину: ${unenrolledMembers.first.name}'))
+                                        : (c.isSplit ? 'Записати 2-го учасника' : 'Записати ще члена сім\'ї'),
                                     style: TextStyle(
                                       color: currentTheme.textPrimary,
                                       fontSize: 12.5,
@@ -2282,7 +2416,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             ),
 
                           // Age mismatch pill
-                          if (isAgeMismatch && c.ageRange != null)
+                          if (isAgeMismatch && (c.ageRange != null || childAge <= 5))
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                               decoration: BoxDecoration(
@@ -2299,7 +2433,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                   const Icon(LucideIcons.triangleAlert, size: 11, color: Colors.orangeAccent),
                                   const SizedBox(width: 3.5),
                                   Text(
-                                    'Група ${c.ageRange!.$1}-${c.ageRange!.$2} р. ⚠️',
+                                    childAge <= 5
+                                        ? 'Тільки індивідуально (до 5 р.) ⚠️'
+                                        : 'Група ${c.ageRange!.$1}-${c.ageRange!.$2} р. ⚠️',
                                     style: TextStyle(
                                       color: isDark ? Colors.orangeAccent : const Color(0xFFD97706),
                                       fontSize: 10.5,
@@ -2345,6 +2481,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             return;
                           }
                           if (isAgeMismatch) {
+                            if (childAge <= 5) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Для дітей до 5 років включно доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'),
+                                  backgroundColor: Colors.orangeAccent,
+                                ),
+                              );
+                              return;
+                            }
                             final range = c.ageRange;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -2503,9 +2648,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         : null;
 
     final includeParent = user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly;
-    final includePartner = family != null &&
-        family.isPaired &&
-        partnerId != null &&
+    final includePartner = partnerId != null &&
         partnerName != null &&
         !c.enrolledChildIds.contains(partnerId) &&
         !c.isChildOnly;
@@ -2529,16 +2672,19 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     ];
 
     if (availableMembers.isEmpty) {
+      final hasUnder6Only = children.isNotEmpty && children.every((ch) => (ch.currentAge ?? 0) <= 5);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            c.ageRange != null
-                ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${c.ageRange!.$1}-${c.ageRange!.$2} р.).'
-                : (c.isChildOnly
-                    ? 'На це тренування можуть записуватися лише діти.'
-                    : (c.isAdultOnly
-                        ? 'На це тренування можуть записуватися лише дорослі.'
-                        : 'Всі члени сім\'ї вже записані на це тренування')),
+            hasUnder6Only && (c.isGroup || c.isSplit)
+                ? 'Для дітей до 5 років доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+                : (c.ageRange != null
+                    ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${c.ageRange!.$1}-${c.ageRange!.$2} р.).'
+                    : (c.isChildOnly
+                        ? 'На це тренування можуть записуватися лише діти.'
+                        : (c.isAdultOnly
+                            ? 'На це тренування можуть записуватися лише дорослі.'
+                            : 'Всі члени сім\'ї вже записані на це тренування'))),
           ),
           backgroundColor: Colors.orangeAccent,
         ),
@@ -2719,7 +2865,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final availableMembers = [
       if (user != null)
         (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
-      if (family != null && family.isPaired && partnerId != null && partnerName != null)
+      if (partnerId != null && partnerName != null)
         (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       ...children
           .where((ch) => c.isAgeCompatible(ch.currentAge))
@@ -2734,7 +2880,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     if (availableMembers.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Для запису на спліт-тренування потрібно щонайменше 2 доступних учасники у вашій родині.'),
+          content: Text('Для запису на спліт-тренування потрібно щонайменше 2 доступних учасники у вашій родині (додайте дитину від 6 років або запросіть партнера/дружину).'),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -2867,7 +3013,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Спліт розрахований на 2 особи (за одним абонементом). Оберіть обох учасників (батько + дитина або двоє дітей):',
+                                'Спліт розрахований на 2 особи (за одним абонементом). Оберіть двох учасників із родини (двоє дорослих, дорослий + дитина або двоє дітей):',
                                 style: TextStyle(
                                   color: isDark ? Colors.white70 : const Color(0xFF0C4A6E),
                                   fontSize: 12,
@@ -2960,6 +3106,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                                     color: currentTheme.textPrimary,
                                                     fontSize: 15,
                                                     fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  m.isParent ? 'Дорослий' : 'Дитина',
+                                                  style: TextStyle(
+                                                    color: m.isParent
+                                                        ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF6366F1))
+                                                        : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF10B981)),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
                                               ],

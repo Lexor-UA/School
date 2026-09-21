@@ -322,7 +322,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) return 'onboarding.age_error'.tr();
                                 final age = int.tryParse(v.trim());
-                                if (age == null || age < 14 || age > 110) return 'onboarding.age_error'.tr();
+                                if (age == null || age < 16 || age > 110) {
+                                  return age != null && age < 16
+                                      ? 'Реєстрація особистого акаунта доступна від 16 років'
+                                      : 'onboarding.age_error'.tr();
+                                }
                                 return null;
                               },
                             ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
@@ -442,7 +446,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       _buildTextField(
                                         controller: child.ageController,
                                         icon: LucideIcons.calendarDays,
-                                        hint: '${'onboarding.child_age_hint'.tr()} (1-17)',
+                                        hint: '${'onboarding.child_age_hint'.tr()} (1-15)',
                                         keyboardType: TextInputType.number,
                                         textInputAction: TextInputAction.done,
                                         onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
@@ -458,7 +462,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         validator: (v) {
                                           if (v == null || v.trim().isEmpty) return 'onboarding.child_age_error'.tr();
                                           final a = int.tryParse(v.trim());
-                                          if (a == null || a < 1 || a > 17) return 'Вік дитини має бути від 1 до 17 років';
+                                          if (a == null || a < 1 || a > 15) {
+                                            return a != null && a > 15
+                                                ? 'Від 16 років особа реєструється окремо як дорослий (до 15 років включно)'
+                                                : 'Вік дитини має бути від 1 до 15 років';
+                                          }
                                           return null;
                                         },
                                       ),

@@ -284,20 +284,25 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             : null;
 
         final showParent = user != null && !isChildClass;
-        final showPartner = family != null && family.isPaired && partnerId != null && partnerName != null && !isChildClass;
+        final showPartner = partnerId != null && partnerName != null && !isChildClass;
         final eligibleChildren = isAdultClass 
             ? <Child>[] 
             : children.where((ch) => selectedClass?.isAgeCompatible(ch.currentAge) ?? true).toList();
 
         if (!showParent && eligibleChildren.isEmpty) {
+          final hasUnder6 = children.any((c) => (c.currentAge ?? 0) <= 5);
+          final under6Msg = (hasUnder6 && (selectedClass?.isGroup == true || selectedClass?.isSplit == true))
+              ? 'Для дітей до 5 років включно доступні тільки персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+              : null;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              selectedClass?.ageRange != null
-                  ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${selectedClass!.ageRange!.$1}-${selectedClass!.ageRange!.$2} р.).'
-                  : (isChildClass
-                      ? 'У вашому профілі ще немає доданих дітей для цього дитячого заняття.'
-                      : 'Немає доступних учасників для запису.'),
+              under6Msg ??
+                  (selectedClass?.ageRange != null
+                      ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${selectedClass!.ageRange!.$1}-${selectedClass!.ageRange!.$2} р.).'
+                      : (isChildClass
+                          ? 'У вашому профілі ще немає доданих дітей для цього дитячого заняття.'
+                          : 'Немає доступних учасників для запису.')),
               style: const TextStyle(color: Colors.orangeAccent, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -346,7 +351,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                           Text(
                             _selectedSplitUserIds.length == 2
                                 ? 'Обрано 2 з 2 учасників (готові до запису)'
-                                : 'Оберіть 2-х учасників (батько + дитина або двоє дітей): обрано ${_selectedSplitUserIds.length} з 2',
+                                : 'Оберіть 2-х учасників (двоє дорослих, дорослий + дитина або двоє дітей): обрано ${_selectedSplitUserIds.length} з 2',
                             style: TextStyle(
                               color: _selectedSplitUserIds.length == 2
                                   ? const Color(0xFF10B981)
@@ -549,8 +554,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       final splitSub = userSubs.where((s) => s.isActive && s.remainingClasses > 0).firstWhereOrNull(
         (s) => s.isSplitSubscription || (s.serviceName?.toLowerCase().contains('спліт') ?? false),
       );
-      final isAdult1 = id1 == user.id;
-      final subscription = splitSub ?? subscriptionController.getSubscriptionForOwner(user.id, name1, isAdult: isAdult1);
+      final subscription = splitSub;
 
       if (subscription == null || subscription.remainingClasses <= 0) {
         if (mounted) {
@@ -581,16 +585,43 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         return;
       }
 
-      // Age compatibility check for both attendees
+      if (subscription.expiryDate != null) {
+        final endOfExpiryDay = DateTime(
+          subscription.expiryDate!.year,
+          subscription.expiryDate!.month,
+          subscription.expiryDate!.day,
+          23, 59, 59,
+        );
+        if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
+          final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
+          final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Термін дії спліт-абонемента закінчується $expiryStr (до дати тренування $dateStr).'),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Age compatibility check for child attendees
+      final family = ref.read(familyStreamProvider).value;
+      final familyParentIds = family?.parentIds ?? [user.id];
       for (final uid in [id1, id2]) {
-        if (uid != user.id) {
+        final isUidAdult = uid == user.id || familyParentIds.contains(uid);
+        if (!isUidAdult) {
           final child = children.where((c) => c.id == uid).firstOrNull;
           final childAge = child?.currentAge;
           if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
             final range = selectedClass!.ageRange;
+            final msg = childAge <= 5
+                ? 'Для дітей до 5 років включно (${child?.name ?? ''}, $childAge р.) доступні лише персональні індивідуальні заняття. Спліт та групові доступні від 6 років.'
+                : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).'),
+                content: Text(msg),
                 backgroundColor: const Color(0xFFEF4444),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -631,9 +662,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     // Standard non-split booking
     String ownerName = getMemberName(selectedUserId!);
     final isAdult = selectedUserId == user.id;
-    final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAdult);
+    final subscription = subscriptionController.getSubscriptionForOwner(user.id, ownerName, isAdult: isAdult, isSplit: false);
 
-    if (subscription == null || subscription.remainingClasses <= 0) {
+    if (subscription == null || subscription.remainingClasses <= 0 || subscription.isSplitSubscription) {
       if (mounted) {
         showDialog(
           context: context,
@@ -664,14 +695,38 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       return;
     }
 
+    if (subscription.expiryDate != null) {
+      final endOfExpiryDay = DateTime(
+        subscription.expiryDate!.year,
+        subscription.expiryDate!.month,
+        subscription.expiryDate!.day,
+        23, 59, 59,
+      );
+      if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
+        final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
+        final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Термін дії абонемента для $ownerName закінчується $expiryStr (до дати тренування $dateStr).'),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+
     if (selectedUserId != user.id) {
       final child = children.where((c) => c.id == selectedUserId).firstOrNull;
       final childAge = child?.currentAge;
       if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
         final range = selectedClass!.ageRange;
+        final msg = childAge <= 5
+            ? 'Для дітей до 5 років включно ($childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+            : 'Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).'),
+            content: Text(msg),
             backgroundColor: const Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
           ),

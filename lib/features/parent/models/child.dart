@@ -35,4 +35,6 @@ extension ChildAgeX on Child {
     }
     return age;
   }
+
+  bool get isAdultAge => (currentAge ?? 0) >= 16;
 }

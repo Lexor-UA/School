@@ -43,6 +43,13 @@ extension SubscriptionAudienceX on Subscription {
     return !isAdultSubscription;
   }
 
+  bool get isIndividualSubscription {
+    final s = (serviceName ?? '').toLowerCase();
+    return s.contains('індивідуал') || s.contains('персон') || s.contains('individual');
+  }
+
+  bool get isGroupSubscription => !isIndividualSubscription && !isSplitSubscription && !isAdultSubscription;
+
   (int, int)? get ageRange {
     final s = serviceName ?? '';
     final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)\s*(?:рок|р\b|лет|years?)', caseSensitive: false).firstMatch(s);
@@ -58,8 +65,13 @@ extension SubscriptionAudienceX on Subscription {
 
   bool isAgeCompatible(int? age) {
     if (age == null) return true;
+    // До 5 років включно — тільки персональні індивідуальні абонементи для дітей
+    if (age <= 5) {
+      return isIndividualSubscription && isChildSubscription;
+    }
+    // Від 6 років — індивідуальні, групові або спліт відповідно до вікових груп
     final range = ageRange;
-    if (range == null) return true; // generic child subscription without specific age works for any age
+    if (range == null) return true;
     return age >= range.$1 && age <= range.$2;
   }
 }

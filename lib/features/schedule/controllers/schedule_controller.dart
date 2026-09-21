@@ -187,7 +187,10 @@ class ScheduleController extends _$ScheduleController {
     List<String> enrolledChildIds = const [],
     List<GroupClass>? additionalClasses,
   }) {
-    final combined = [...(state.value ?? []), ...(additionalClasses ?? [])];
+    final combined = <GroupClass>[
+      ...(state.value ?? const <GroupClass>[]),
+      ...(additionalClasses ?? const <GroupClass>[]),
+    ];
     return _evaluateConflictAgainst(
       classes: combined,
       startTime: startTime,
@@ -245,7 +248,10 @@ class ScheduleController extends _$ScheduleController {
         } catch (_) {}
       }
 
-      final combined = [...remoteClasses, ...(additionalClasses ?? [])];
+      final combined = <GroupClass>[
+        ...remoteClasses,
+        ...(additionalClasses ?? const <GroupClass>[]),
+      ];
       return _evaluateConflictAgainst(
         classes: combined,
         startTime: startTime,
@@ -591,7 +597,7 @@ class ScheduleController extends _$ScheduleController {
         }
 
         // Time overlap check across other classes
-        final conflictingClass = (state.value ?? []).firstWhereOrNull((c) {
+        final conflictingClass = (state.value ?? const <GroupClass>[]).firstWhereOrNull((c) {
           if (c.id == classId) return false;
           final overlaps = c.startTime.isBefore(groupClass.endTime) && c.endTime.isAfter(groupClass.startTime);
           if (!overlaps) return false;
@@ -1057,8 +1063,8 @@ class ScheduleController extends _$ScheduleController {
       }
       
       // Optimistically update state so consecutive creations see the new class instantly
-      final current = state.value ?? [];
-      state = AsyncData([...current, newClass]);
+      final current = state.value ?? const <GroupClass>[];
+      state = AsyncData<List<GroupClass>>([...current, newClass]);
 
       return true;
     } catch (e) {
@@ -1101,7 +1107,7 @@ class ScheduleController extends _$ScheduleController {
           .get();
 
       final Map<String, GroupClass> allKnownClasses = {};
-      for (final c in (state.value ?? [])) {
+      for (final c in (state.value ?? const <GroupClass>[])) {
         allKnownClasses[c.id] = c;
       }
       for (final doc in snap.docs) {
@@ -1127,7 +1133,7 @@ class ScheduleController extends _$ScheduleController {
           final classStart = DateTime(date.year, date.month, date.day, hour, minute);
           final classEnd = classStart.add(Duration(minutes: durationMinutes));
 
-          final combined = [...existingList, ...newlyGenerated];
+          final combined = <GroupClass>[...existingList, ...newlyGenerated];
           final conflict = _evaluateConflictAgainst(
             classes: combined,
             startTime: classStart,

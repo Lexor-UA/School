@@ -56,6 +56,13 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     super.initState();
     _selectedCoachId = widget.initialCoachId;
     _selectedCoachName = widget.initialCoachName;
+
+    // Automatically check and clean up any duplicate ghost classes from the database
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(scheduleControllerProvider.notifier).cleanupDuplicateClasses();
+      }
+    });
   }
 
   @override
@@ -64,22 +71,24 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final allClasses = scheduleAsync.value ?? [];
 
-    final dayClasses = allClasses.where((c) {
+    final Map<String, GroupClass> uniqueDayClasses = {};
+    for (final c in allClasses) {
       final matchesDate = c.startTime.year == _selectedDate.year && 
         c.startTime.month == _selectedDate.month && 
         c.startTime.day == _selectedDate.day;
-      if (!matchesDate) return false;
+      if (!matchesDate) continue;
 
       if (_selectedCoachId != null && _selectedCoachId!.isNotEmpty) {
         final matchesId = c.coachId == _selectedCoachId;
         final matchesName = _selectedCoachName != null && c.coachName.isNotEmpty &&
             (c.coachName.toLowerCase().contains(_selectedCoachName!.toLowerCase()) ||
              _selectedCoachName!.toLowerCase().contains(c.coachName.toLowerCase()));
-        return matchesId || matchesName;
+        if (!matchesId && !matchesName) continue;
       }
-      return true;
-    }).toList();
-    dayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
+      uniqueDayClasses[c.id] = c;
+    }
+    final dayClasses = uniqueDayClasses.values.toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Scaffold(
       backgroundColor: currentTheme.scaffoldBg,

@@ -161,7 +161,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   final q = _query.toLowerCase().trim();
 
                   final matchingClients = clients.where((c) {
-                    if (q.isEmpty) return false;
+                    if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 1) return false;
+                    if (q.isEmpty) return true;
                     final d = c.data() as Map<String, dynamic>;
                     final name = (d['name'] ?? '').toString().toLowerCase();
                     final phone = (d['phone'] ?? '').toString().toLowerCase();
@@ -170,14 +171,16 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   }).toList();
 
                   final matchingChildren = allChildren.where((ch) {
-                    if (q.isEmpty) return false;
+                    if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 4) return false;
+                    if (q.isEmpty) return true;
                     final d = ch.data() as Map<String, dynamic>;
                     final name = (d['name'] ?? '').toString().toLowerCase();
                     return name.contains(q);
                   }).toList();
 
                   final matchingCoaches = coaches.where((co) {
-                    if (q.isEmpty) return false;
+                    if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 5) return false;
+                    if (q.isEmpty) return true;
                     final d = co.data() as Map<String, dynamic>;
                     final name = (d['name'] ?? '').toString().toLowerCase();
                     final phone = (d['phone'] ?? '').toString().toLowerCase();
@@ -186,7 +189,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   }).toList();
 
                   final matchingClasses = allClasses.where((cl) {
-                    if (q.isEmpty) return false;
+                    if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 3) return false;
+                    if (q.isEmpty) return true;
                     final title = cl.title.toLowerCase();
                     final coach = cl.coachName.toLowerCase();
                     final lane = cl.lane.toLowerCase();
@@ -195,18 +199,19 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   }).toList();
 
                   final matchingSubs = allSubscriptions.where((s) {
-                    if (q.isEmpty) return false;
+                    if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 2) return false;
+                    if (q.isEmpty) return true;
                     final sName = (s.serviceName ?? '').toLowerCase();
                     final oName = (s.ownerName ?? '').toLowerCase();
                     final uId = s.userId.toLowerCase();
                     return sName.contains(q) || oName.contains(q) || uId.contains(q);
                   }).toList();
 
-                  final totalResults = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1 ? matchingClients.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2 ? matchingSubs.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3 ? matchingClasses.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4 ? matchingChildren.length : 0) +
-                      (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5 ? matchingCoaches.length : 0);
+                  final totalResults = matchingClients.length +
+                      matchingSubs.length +
+                      matchingClasses.length +
+                      matchingChildren.length +
+                      matchingCoaches.length;
 
                   return Column(
                     children: [
@@ -229,7 +234,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
                       // 4. Content (Empty State suggestions or Results List)
                       Expanded(
-                        child: q.isEmpty
+                        child: (q.isEmpty && _selectedCategoryIndex == 0)
                             ? _buildEmptyOrSuggestionsView(
                                 recentClients: clients.take(4).toList(),
                                 upcomingClasses: allClasses.take(3).toList(),
@@ -356,6 +361,23 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     );
   }
 
+  String _getSearchHint() {
+    switch (_selectedCategoryIndex) {
+      case 1:
+        return 'Пошук клієнтів (ім\'я, телефон, логін)...';
+      case 2:
+        return 'Пошук абонементів (клієнт, тип, ID)...';
+      case 3:
+        return 'Пошук груп (назва, тренер, доріжка)...';
+      case 4:
+        return 'Пошук за іменем дитини...';
+      case 5:
+        return 'Пошук тренерів (ім\'я, телефон)...';
+      default:
+        return 'admin.smart_search_hint'.tr();
+    }
+  }
+
   // ==========================================
   // 2. SEARCH INPUT FIELD
   // ==========================================
@@ -409,7 +431,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           fontWeight: FontWeight.w600,
         ),
         decoration: InputDecoration(
-          hintText: 'admin.smart_search_hint'.tr(),
+          hintText: _getSearchHint(),
           hintStyle: TextStyle(
             color: _isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF475569),
             fontSize: 13.5,
@@ -824,14 +846,33 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         // Counter badge
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            'ЗНАЙДЕНО: $totalResults',
-            style: TextStyle(
-              color: _theme.accentPrimary,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _query.trim().isEmpty
+                    ? 'ВСЬОГО: $totalResults'
+                    : 'ЗНАЙДЕНО: $totalResults',
+                style: TextStyle(
+                  color: _theme.accentPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              if (_selectedCategoryIndex != 0)
+                GestureDetector(
+                  onTap: () => setState(() => _selectedCategoryIndex = 0),
+                  child: Text(
+                    'Показати всі категорії',
+                    style: TextStyle(
+                      color: _isDark ? const Color(0xFF38BDF8) : _theme.accentPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
 

@@ -14,11 +14,29 @@ import 'package:go_router/go_router.dart';
 import 'package:swimming_school_app/features/chat/models/chat_message.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
+import 'package:swimming_school_app/features/chat/utils/chat_image_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AdminChatScreen extends ConsumerStatefulWidget {
   final String clientName;
   final String clientId;
-  const AdminChatScreen({super.key, required this.clientName, required this.clientId});
+  final String? dialogId;
+  final String? coachId;
+  final String? coachName;
+  final String? childName;
+  final bool isMonitoring;
+
+  const AdminChatScreen({
+    super.key,
+    required this.clientName,
+    required this.clientId,
+    this.dialogId,
+    this.coachId,
+    this.coachName,
+    this.childName,
+    this.isMonitoring = false,
+  });
 
   @override
   ConsumerState<AdminChatScreen> createState() => _AdminChatScreenState();
@@ -62,9 +80,9 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
       final ImagePicker picker = ImagePicker();
       final XFile? file = await picker.pickImage(
         source: source,
-        maxWidth: 1280,
-        maxHeight: 1280,
-        imageQuality: 75,
+        maxWidth: 960,
+        maxHeight: 960,
+        imageQuality: 65,
       );
       if (file == null) return;
       final bytes = await file.readAsBytes();
@@ -318,15 +336,19 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     try {
       String? imageUrl;
       try {
+        if (FirebaseAuth.instance.currentUser == null) {
+          try {
+            await FirebaseAuth.instance.signInAnonymously();
+          } catch (_) {}
+        }
         final fileName = 'admin_chat_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final storageRef = FirebaseStorage.instance.ref().child('chats/${widget.clientId}/$fileName');
         final metadata = SettableMetadata(contentType: 'image/jpeg');
         final uploadTask = await storageRef.putData(bytes, metadata);
         imageUrl = await uploadTask.ref.getDownloadURL();
       } catch (storageErr) {
-        debugPrint('Firebase Storage upload failed: $storageErr. Fallback to Data URI.');
-        final base64String = base64Encode(bytes);
-        imageUrl = 'data:image/jpeg;base64,$base64String';
+        debugPrint('Firebase Storage upload failed: $storageErr. Fallback to Safe Data URI.');
+        imageUrl = await ChatImageHelper.toSafeDataUri(bytes);
       }
 
       final repo = ref.read(chatRepositoryProvider);
@@ -422,13 +444,16 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     );
   }
 
+  String get _effectiveDialogId =>
+      (widget.dialogId != null && widget.dialogId!.isNotEmpty) ? widget.dialogId! : widget.clientId;
+
   @override
   void initState() {
     super.initState();
-    // Mark messages as read by admin
-    if (widget.clientId.isNotEmpty) {
+    // Mark messages as read by admin only if NOT in stealth monitoring mode
+    if (!widget.isMonitoring && _effectiveDialogId.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(chatRepositoryProvider).markMessagesAsRead(widget.clientId, true);
+        ref.read(chatRepositoryProvider).markMessagesAsRead(_effectiveDialogId, isAdmin: true);
       });
     }
   }
@@ -437,11 +462,12 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
   Widget build(BuildContext context) {
     final currentTheme = ref.watch(appThemeControllerProvider);
     final isDark = currentTheme.isDark;
-    final messagesAsync = ref.watch(chatMessagesStreamProvider(widget.clientId));
+    final messagesAsync = ref.watch(chatMessagesStreamProvider(_effectiveDialogId));
 
     final idLower = widget.clientId.toLowerCase();
     final nameLower = widget.clientName.toLowerCase();
-    final isRecovery = idLower.startsWith('recovery_') || nameLower.contains('відновлення') || nameLower.contains('🔑');
+    final isRecovery = !widget.isMonitoring &&
+        (idLower.startsWith('recovery_') || nameLower.contains('відновлення') || nameLower.contains('🔑'));
 
     String cleanDisplayName = widget.clientName;
     if (isRecovery) {
@@ -483,9 +509,21 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
-                          final isMe = msg.senderId == 'admin';
+                          final isMe = !widget.isMonitoring && msg.senderId == 'admin';
                           final timeString = "${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}";
-                          return _buildMessageBubble(msg, isMe, timeString, index, isDark, currentTheme);
+                          final showDateDivider = index == 0 || !ChatDateDivider.isSameDay(messages[index - 1].timestamp, msg.timestamp);
+                          final bubble = _buildMessageBubble(msg, isMe, timeString, index, isDark, currentTheme);
+
+                          if (showDateDivider) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ChatDateDivider(date: msg.timestamp, isDark: isDark),
+                                bubble,
+                              ],
+                            );
+                          }
+                          return bubble;
                         },
                       );
                     },
@@ -502,9 +540,13 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                     ),
                   ),
                 ),
-                if (_isUploadingAttachment) _buildUploadingBanner(isDark, currentTheme),
-                _buildQuickRepliesBar(isDark, isRecovery),
-                _buildInputArea(isDark, currentTheme),
+                if (widget.isMonitoring)
+                  _buildStealthMonitoringBar(isDark, currentTheme)
+                else ...[
+                  if (_isUploadingAttachment) _buildUploadingBanner(isDark, currentTheme),
+                  _buildQuickRepliesBar(isDark, isRecovery),
+                  _buildInputArea(isDark, currentTheme),
+                ],
               ],
             ),
           ),
@@ -780,6 +822,63 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
   }
 
   Widget _buildEmptyState(bool isDark, AppThemeConfig currentTheme, {required String displayName}) {
+    if (widget.isMonitoring) {
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? const Color(0xFF8B5CF6).withValues(alpha: 0.15) : const Color(0xFFEDE9FE),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFFA78BFA).withValues(alpha: 0.40) : const Color(0xFFC4B5FD),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.12),
+                      blurRadius: 20,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  LucideIcons.eye,
+                  size: 40,
+                  color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Скритний нагляд активний',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Повідомлень між тренером (${widget.coachName ?? 'Тренер'}) та клієнтом (${widget.clientName}) поки немає.\nУсі нові повідомлення з\'являтимуться тут автоматично.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.8) : const Color(0xFF64748B),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final quickTemplates = [
       '👋 Вітаємо у школі плавання CitySwim! Чим можемо допомогти?',
       '📅 Нагадуємо про розклад вашого наступного тренування.',
@@ -897,6 +996,179 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
   }
 
   Widget _buildHeader(BuildContext context, bool isDark, AppThemeConfig currentTheme) {
+    if (widget.isMonitoring) {
+      return ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF140C26).withValues(alpha: 0.90)
+                  : Colors.white.withValues(alpha: 0.94),
+              border: Border(
+                bottom: BorderSide(
+                  color: const Color(0xFFA855F7).withValues(alpha: 0.5),
+                  width: 1.2,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.10),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFE9D5FF),
+                      width: 1.15,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      LucideIcons.arrowLeft,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      size: 20,
+                    ),
+                    onPressed: () => context.pop(),
+                    constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: const Color(0xFFDDD6FE), width: 1.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.40),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(LucideIcons.eye, color: Colors.white, size: 20),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '${widget.coachName ?? 'Тренер'} ↔ ${widget.clientName}',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFA78BFA), width: 0.9),
+                            ),
+                            child: const Text(
+                              'НАГЛЯД',
+                              style: TextStyle(
+                                color: Color(0xFFA78BFA),
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2.5),
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF10B981),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              widget.childName != null && widget.childName!.isNotEmpty
+                                  ? 'Скритне спостереження • Дитина: ${widget.childName}'
+                                  : 'Скритний нагляд активний • Тільки читання',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFDDD6FE) : const Color(0xFF6B21A8),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFE9D5FF),
+                      width: 1.15,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      LucideIcons.info,
+                      color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                      size: 19,
+                    ),
+                    onPressed: () => _showMonitoringInfo(context, isDark, currentTheme),
+                    constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final userRoles = ref.watch(usersRoleMapProvider).value ?? {};
 
     String role = 'parent';
@@ -1304,9 +1576,58 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     AppThemeConfig currentTheme,
   ) {
     final hasImage = msg.imageUrl != null && msg.imageUrl!.isNotEmpty;
+    final isMonitoring = widget.isMonitoring;
+    final isCoachSender = isMonitoring &&
+        (msg.senderRole == 'coach' || (widget.coachId != null && msg.senderId == widget.coachId));
+
+    final Alignment bubbleAlignment = isMonitoring
+        ? (isCoachSender ? Alignment.centerLeft : Alignment.centerRight)
+        : (isMe ? Alignment.centerRight : Alignment.centerLeft);
+
+    final BorderRadius bubbleBorderRadius = isMonitoring
+        ? BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isCoachSender ? 6 : 20),
+            bottomRight: Radius.circular(isCoachSender ? 20 : 6),
+          )
+        : BorderRadius.only(
+            topLeft: const Radius.circular(22),
+            topRight: const Radius.circular(22),
+            bottomLeft: Radius.circular(isMe ? 22 : 6),
+            bottomRight: Radius.circular(isMe ? 6 : 22),
+          );
+
+    final List<Color> bubbleGradientColors = isMonitoring
+        ? (isCoachSender
+            ? (isDark
+                ? [Colors.white.withValues(alpha: 0.22), const Color(0xFF064E3B).withValues(alpha: 0.45)]
+                : [Colors.white, const Color(0xFFECFDF5)])
+            : (isDark
+                ? [Colors.white.withValues(alpha: 0.22), const Color(0xFF0C4A6E).withValues(alpha: 0.45)]
+                : [Colors.white, const Color(0xFFF0F9FF)]))
+        : (isMe
+            ? (isDark
+                ? [const Color(0xFF00E5FF), const Color(0xFF0077B6)]
+                : [const Color(0xFF0284C7), const Color(0xFF0369A1)])
+            : (isDark
+                ? [Colors.white.withValues(alpha: 0.22), Colors.white.withValues(alpha: 0.12)]
+                : [Colors.white, const Color(0xFFF8FAFC)]));
+
+    final Color bubbleBorderColor = isMonitoring
+        ? (isCoachSender
+            ? const Color(0xFF10B981).withValues(alpha: 0.65)
+            : const Color(0xFF0284C7).withValues(alpha: 0.65))
+        : (isMe
+            ? (isDark
+                ? Colors.white.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.35))
+            : (isDark
+                ? Colors.white.withValues(alpha: 0.30)
+                : const Color(0xFFBAE6FD)));
 
     return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: bubbleAlignment,
       child: GestureDetector(
         onLongPress: () {
           if (msg.text.isNotEmpty) {
@@ -1340,56 +1661,32 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.76),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: isMe
-                  ? (isDark
-                      ? [const Color(0xFF00E5FF), const Color(0xFF0077B6)]
-                      : [const Color(0xFF0284C7), const Color(0xFF0369A1)])
-                  : (isDark
-                      ? [Colors.white.withValues(alpha: 0.22), Colors.white.withValues(alpha: 0.12)]
-                      : [Colors.white, const Color(0xFFF8FAFC)]),
+              colors: bubbleGradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(22),
-              topRight: const Radius.circular(22),
-              bottomLeft: Radius.circular(isMe ? 22 : 6),
-              bottomRight: Radius.circular(isMe ? 6 : 22),
-            ),
-            boxShadow: isMe
-                ? [
-                    BoxShadow(
-                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                          .withValues(alpha: isDark ? 0.40 : 0.30),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.20 : 0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+            borderRadius: bubbleBorderRadius,
+            boxShadow: [
+              BoxShadow(
+                color: isMonitoring
+                    ? (isCoachSender
+                        ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.12)
+                        : const Color(0xFF0284C7).withValues(alpha: isDark ? 0.25 : 0.12))
+                    : (isMe
+                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            .withValues(alpha: isDark ? 0.40 : 0.30)
+                        : const Color(0xFF0284C7).withValues(alpha: isDark ? 0.20 : 0.08)),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
             border: Border.all(
-              color: isMe
-                  ? (isDark
-                      ? Colors.white.withValues(alpha: 0.6)
-                      : Colors.white.withValues(alpha: 0.35))
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.30)
-                      : const Color(0xFFBAE6FD)),
+              color: bubbleBorderColor,
               width: 1.2,
             ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(22),
-              topRight: const Radius.circular(22),
-              bottomLeft: Radius.circular(isMe ? 22 : 6),
-              bottomRight: Radius.circular(isMe ? 6 : 22),
-            ),
+            borderRadius: bubbleBorderRadius,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Padding(
@@ -1400,6 +1697,34 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isMonitoring) ...[
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isCoachSender ? LucideIcons.award : LucideIcons.user,
+                            size: 11,
+                            color: isCoachSender
+                                ? const Color(0xFF10B981)
+                                : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isCoachSender
+                                ? 'Тренер: ${widget.coachName ?? msg.senderName ?? 'Тренер'}'
+                                : 'Клієнт: ${widget.clientName}',
+                            style: TextStyle(
+                              color: isCoachSender
+                                  ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                                  : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                    ],
                     if (hasImage) ...[
                       GestureDetector(
                         onTap: () => _openFullScreenImage(msg.imageUrl!),
@@ -1472,9 +1797,11 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                         child: Text(
                           msg.text,
                           style: TextStyle(
-                            color: isMe
-                                ? Colors.white
-                                : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                            color: isMonitoring
+                                ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                                : (isMe
+                                    ? Colors.white
+                                    : (isDark ? Colors.white : const Color(0xFF0F172A))),
                             fontSize: 15,
                             fontWeight: isMe ? FontWeight.w600 : FontWeight.w500,
                             height: 1.35,
@@ -1488,9 +1815,11 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                       child: Text(
                         time,
                         style: TextStyle(
-                          color: isMe
-                              ? Colors.white.withValues(alpha: 0.82)
-                              : (isDark ? Colors.white60 : const Color(0xFF64748B)),
+                          color: isMonitoring
+                              ? (isDark ? Colors.white60 : const Color(0xFF64748B))
+                              : (isMe
+                                  ? Colors.white.withValues(alpha: 0.82)
+                                  : (isDark ? Colors.white60 : const Color(0xFF64748B))),
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1728,6 +2057,373 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildStealthMonitoringBar(bool isDark, AppThemeConfig currentTheme) {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? [
+                      const Color(0xFF1E1035).withValues(alpha: 0.95),
+                      const Color(0xFF0F0A1E).withValues(alpha: 0.98),
+                    ]
+                  : [
+                      const Color(0xFFFAF5FF),
+                      const Color(0xFFF3E8FF),
+                    ],
+            ),
+            border: Border(
+              top: BorderSide(
+                color: const Color(0xFFA855F7).withValues(alpha: isDark ? 0.45 : 0.35),
+                width: 1.2,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.12),
+                blurRadius: 18,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.40),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(LucideIcons.eye, color: Colors.white, size: 20),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'РЕЖИМ СКРИТНОГО НАГЛЯДУ',
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF581C87),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFF10B981), width: 0.8),
+                          ),
+                          child: const Text(
+                            '100% STEALTH',
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Моніторинг листування в режимі "Тільки читання". Учасники не знають про присутність адміністратора.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFFC084FC).withValues(alpha: 0.85) : const Color(0xFF7E22CE),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : const Color(0xFFE9D5FF),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      LucideIcons.lock,
+                      size: 13,
+                      color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF6B21A8),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Locked',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF6B21A8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMonitoringInfo(BuildContext context, bool isDark, AppThemeConfig theme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [const Color(0xFF1E1035), const Color(0xFF0F0A1E)]
+                    : [Colors.white, const Color(0xFFFAF5FF)],
+              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border.all(
+                color: const Color(0xFFA78BFA).withValues(alpha: isDark ? 0.40 : 0.30),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(LucideIcons.eye, color: Colors.white, size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Скритний нагляд адміністратора',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '100% анонімний контроль якості',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Details card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFA78BFA).withValues(alpha: 0.30),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.award, size: 16, color: Color(0xFF10B981)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Тренер: ',
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              widget.coachName ?? 'Тренер',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.user, size: 16, color: Color(0xFF0284C7)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Клієнт: ',
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              widget.clientName,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (widget.childName != null && widget.childName!.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(LucideIcons.baby, size: 16, color: Color(0xFFEC4899)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Дитина: ',
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                widget.childName!,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Security note
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.12 : 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.shieldCheck, color: Color(0xFF10B981), size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Учасники діалогу не мають жодних сповіщень чи позначок про присутність адміністратора.',
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFFD1FAE5) : const Color(0xFF065F46),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B5CF6),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Зрозуміло', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

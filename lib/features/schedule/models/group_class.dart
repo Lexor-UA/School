@@ -43,14 +43,14 @@ extension GroupClassAudienceX on GroupClass {
     final t = title.toLowerCase();
     final c = category.toLowerCase();
     return t.contains('діт') ||
-        t.contains('дитяч') ||
+        t.contains('дит') ||
         t.contains('junior') ||
         t.contains('kids') ||
         t.contains('child') ||
         t.contains('підлітк') ||
         t.contains('юніор') ||
         c.contains('діт') ||
-        c.contains('дитяч') ||
+        c.contains('дит') ||
         c.contains('junior');
   }
 
@@ -58,12 +58,12 @@ extension GroupClassAudienceX on GroupClass {
     if (isSplit) return false;
     final t = title.toLowerCase();
     final c = category.toLowerCase();
-    return t.contains('доросла') ||
-        t.contains('дорослих') ||
-        t.contains('дорослі') ||
+    return t.contains('доросл') ||
         t.contains('adult') ||
-        t.contains('аквааеробіка') ||
-        c.contains('аквааеробіка');
+        t.contains('аква') ||
+        c.contains('доросл') ||
+        c.contains('adult') ||
+        c.contains('аква');
   }
 
   bool get isIndividual {
@@ -98,7 +98,7 @@ extension GroupClassAudienceX on GroupClass {
 }
 
 (int, int)? parseAgeRange(String text) {
-  final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)\s*(?:рок|р\b|лет|years?)', caseSensitive: false).firstMatch(text);
+  final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)', caseSensitive: false).firstMatch(text);
   if (match != null) {
     final min = int.tryParse(match.group(1)!);
     final max = int.tryParse(match.group(2)!);

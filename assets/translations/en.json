@@ -55,7 +55,9 @@
     "optional_email": "Email (optional)",
     "create_account_action": "CREATE ACCOUNT",
     "reg_success_title": "Account created successfully!",
-    "copied_to_clipboard": "Copied to clipboard"
+    "copied_to_clipboard": "Copied to clipboard",
+    "back_to_login": "Back to Sign In",
+    "type_message_hint": "Write a message..."
   },
   "onboarding": {
     "welcome": "Welcome!",
@@ -72,7 +74,7 @@
     "children_title": "Children for swimming classes",
     "child_name_hint": "Child's name",
     "child_name_error": "Enter child's name",
-    "child_age_hint": "Child's age (years)",
+    "child_age_hint": "Age (1-15 years)",
     "child_age_error": "Enter child's age",
     "complete_registration": "Complete Registration",
     "registration_error": "Registration error: {}"

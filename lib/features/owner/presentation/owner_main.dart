@@ -193,9 +193,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: Icon(LucideIcons.logOut, color: themeConfig.textSecondary),
-                  onPressed: () {
-                    ref.read(authControllerProvider.notifier).logout();
-                    context.go('/');
+                  onPressed: () async {
+                    await ref.read(authControllerProvider.notifier).logout();
+                    if (context.mounted) {
+                      context.go('/?skipSplash=true');
+                    }
                   },
                 ),
               ],

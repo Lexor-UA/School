@@ -15,7 +15,8 @@ import 'package:swimming_school_app/features/auth/presentation/password_recovery
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
-  const RoleSelectionScreen({super.key});
+  final bool skipSplash;
+  const RoleSelectionScreen({super.key, this.skipSplash = false});
 
   @override
   ConsumerState<RoleSelectionScreen> createState() =>
@@ -24,13 +25,17 @@ class RoleSelectionScreen extends ConsumerStatefulWidget {
 
 class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   bool _isLoading = false;
-  bool _splashFinished = false;
+  late bool _splashFinished = widget.skipSplash;
   bool _isAuthenticatingBiometrics = false;
   final LocalAuthentication _auth = LocalAuthentication();
 
   @override
   void initState() {
     super.initState();
+
+    if (widget.skipSplash) {
+      return;
+    }
 
     Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
@@ -54,6 +59,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         await _authenticateWithBiometrics(targetRole: targetRole, user: authState);
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant RoleSelectionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.skipSplash && !_splashFinished) {
+      setState(() => _splashFinished = true);
+    }
   }
 
   Future<void> _authenticateWithBiometrics({
@@ -211,7 +224,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                     alignment: Alignment.topRight,
                     child: _buildLanguageButton(context),
                   ),
-                ).animate().fadeIn(delay: 3800.ms, duration: 800.ms),
+                ).animate().fadeIn(
+                  delay: widget.skipSplash ? 0.ms : 3800.ms,
+                  duration: widget.skipSplash ? 300.ms : 800.ms,
+                ),
 
                 Expanded(
                   child: LayoutBuilder(
@@ -258,21 +274,21 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                     )
                                     .animate()
                                     .fadeIn(
-                                      duration: 1200.ms,
+                                      duration: widget.skipSplash ? 0.ms : 1200.ms,
                                       curve: Curves.easeOut,
                                     )
                                     .moveY(
-                                      begin: splashOffset,
+                                      begin: widget.skipSplash ? 0 : splashOffset,
                                       end: 0,
-                                      duration: 4500.ms,
-                                      delay: 2400.ms, // Starts a bit earlier for smoother transition
+                                      duration: widget.skipSplash ? 0.ms : 4500.ms,
+                                      delay: widget.skipSplash ? 0.ms : 2400.ms, // Starts a bit earlier for smoother transition
                                       curve: Curves.easeOutQuint, // Extremely smooth and slow deceleration
                                     )
                                     .scaleXY(
-                                      begin: 1.6,
+                                      begin: widget.skipSplash ? 1.0 : 1.6,
                                       end: 1.0,
-                                      duration: 4500.ms,
-                                      delay: 2400.ms,
+                                      duration: widget.skipSplash ? 0.ms : 4500.ms,
+                                      delay: widget.skipSplash ? 0.ms : 2400.ms,
                                       curve: Curves.easeOutQuint,
                                     ),
 
@@ -332,7 +348,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                         ),
                       ),
                     ),
-                  ).animate().fadeIn(delay: 3600.ms, duration: 1000.ms),
+                  ).animate().fadeIn(
+                    delay: widget.skipSplash ? 0.ms : 3600.ms,
+                    duration: widget.skipSplash ? 300.ms : 1000.ms,
+                  ),
               ],
             ),
           ),

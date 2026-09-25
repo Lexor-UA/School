@@ -41,6 +41,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   String _selectedLane = 'Доріжка 1';
   final List<String> _sportLanes = ['Доріжка 1', 'Доріжка 2', 'Доріжка 3', 'Доріжка 4', 'Весь басейн'];
 
+  static const unassignedCoach = AppUser(
+    id: 'unassigned',
+    name: 'Тренер не призначений',
+    role: UserRole.coach,
+  );
+
   AppUser? _selectedCoach;
 
   String _selectedCategory = 'Плавання';
@@ -130,6 +136,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     super.initState();
     if (_isEditing) {
       final c = widget.classToEdit!;
+      final isUnassigned = c.coachId == 'unassigned' ||
+          c.coachId.trim().isEmpty ||
+          c.coachName.trim().isEmpty ||
+          c.coachName == 'Тренер не призначений' ||
+          c.coachName.toLowerCase().contains('не призначен');
+      if (isUnassigned) {
+        _selectedCoach = unassignedCoach;
+      }
       _titleController = TextEditingController(text: c.title);
       _selectedDate = c.startTime;
       _selectedTime = TimeOfDay(hour: c.startTime.hour, minute: c.startTime.minute);
@@ -325,9 +339,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     if (_titleController.text.trim().isEmpty || _selectedCoach == null) return;
 
-    setState(() => _isSaving = true);
+    _isSaving = true;
+    setState(() {});
 
     final startTime = DateTime(
       _selectedDate.year,
@@ -341,12 +357,18 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     final themeConfig = ref.read(appThemeControllerProvider);
     final isDark = themeConfig.isDark;
 
+    final isUnassigned = _selectedCoach == null ||
+        _selectedCoach!.id == 'unassigned' ||
+        _selectedCoach!.name.toLowerCase().contains('не призначен');
+    final effectiveCoachId = isUnassigned ? 'unassigned' : _selectedCoach!.id;
+    final effectiveCoachName = isUnassigned ? 'Тренер не призначений' : _selectedCoach!.name;
+
     // Upfront check for conflict on the chosen date/time/lane/coach
     final upfrontConflict = ref.read(scheduleControllerProvider.notifier).checkClassConflict(
       startTime: startTime,
       endTime: endTime,
       lane: _selectedLane,
-      coachId: _selectedCoach!.id,
+      coachId: effectiveCoachId,
       excludeClassId: widget.classToEdit?.id,
     );
     if (upfrontConflict != null) {
@@ -363,7 +385,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         startTime: startTime,
         endTime: endTime,
         lane: _selectedLane,
-        coachId: _selectedCoach!.id,
+        coachId: effectiveCoachId,
         excludeClassId: widget.classToEdit!.id,
       );
       if (conflict != null) {
@@ -377,8 +399,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         title: _titleController.text.trim(),
         startTime: startTime,
         endTime: endTime,
-        coachId: _selectedCoach!.id,
-        coachName: _selectedCoach!.name,
+        coachId: effectiveCoachId,
+        coachName: effectiveCoachName,
         maxCapacity: _maxCapacity,
         category: _selectedCategory,
         lane: _selectedLane,
@@ -407,8 +429,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         durationMinutes: 60,
         weekdays: _selectedWeekdays,
         durationWeeks: _durationWeeks,
-        coachId: _selectedCoach!.id,
-        coachName: _selectedCoach!.name,
+        coachId: effectiveCoachId,
+        coachName: effectiveCoachName,
         maxCapacity: _maxCapacity,
         category: _selectedCategory,
         lane: _selectedLane,
@@ -475,7 +497,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         startTime: startTime,
         endTime: endTime,
         lane: _selectedLane,
-        coachId: _selectedCoach!.id,
+        coachId: effectiveCoachId,
       );
       if (conflict != null) {
         setState(() => _isSaving = false);
@@ -487,8 +509,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         title: _titleController.text.trim(),
         startTime: startTime,
         endTime: endTime,
-        coachId: _selectedCoach!.id,
-        coachName: _selectedCoach!.name,
+        coachId: effectiveCoachId,
+        coachName: effectiveCoachName,
         maxCapacity: _maxCapacity,
         category: _selectedCategory,
         lane: _selectedLane,
@@ -713,40 +735,43 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             _buildLabel('admin.class_coach'.tr(), isDark: isDark),
                             coachesAsync.when(
                               data: (coachesList) {
-                                if (coachesList.isEmpty) {
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1B385D) : const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0)),
-                                    ),
-                                    child: Text('admin.class_no_coaches'.tr(), style: const TextStyle(color: Color(0xFFF43F5E), fontSize: 13)),
-                                  );
-                                }
+                                final availableCoaches = [unassignedCoach, ...coachesList];
+
                                 if (_selectedCoach == null) {
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     if (mounted) {
                                       if (_isEditing) {
-                                        final target = coachesList.firstWhere(
-                                          (c) => c.id == widget.classToEdit!.coachId || c.name.toLowerCase() == widget.classToEdit!.coachName.toLowerCase(),
-                                          orElse: () => coachesList.first,
-                                        );
-                                        setState(() => _selectedCoach = target);
+                                        final isClassUnassigned = widget.classToEdit!.coachId == 'unassigned' ||
+                                            widget.classToEdit!.coachId.trim().isEmpty ||
+                                            widget.classToEdit!.coachName.trim().isEmpty ||
+                                            widget.classToEdit!.coachName == 'Тренер не призначений' ||
+                                            widget.classToEdit!.coachName.toLowerCase().contains('не призначен');
+
+                                        if (isClassUnassigned) {
+                                          setState(() => _selectedCoach = unassignedCoach);
+                                        } else {
+                                          final target = availableCoaches.firstWhere(
+                                            (c) => c.id == widget.classToEdit!.coachId ||
+                                                   (widget.classToEdit!.coachName.isNotEmpty &&
+                                                    c.name.toLowerCase() == widget.classToEdit!.coachName.toLowerCase()),
+                                            orElse: () => unassignedCoach,
+                                          );
+                                          setState(() => _selectedCoach = target);
+                                        }
                                       } else if (widget.initialCoachId != null || widget.initialCoachName != null) {
-                                        final target = coachesList.firstWhere(
+                                        final target = availableCoaches.firstWhere(
                                           (c) => (widget.initialCoachId != null && c.id == widget.initialCoachId) ||
                                                  (widget.initialCoachName != null && c.name.toLowerCase() == widget.initialCoachName!.toLowerCase()),
-                                          orElse: () => coachesList.first,
+                                          orElse: () => coachesList.isNotEmpty ? coachesList.first : unassignedCoach,
                                         );
                                         setState(() => _selectedCoach = target);
                                       } else {
-                                        setState(() => _selectedCoach = coachesList.first);
+                                        setState(() => _selectedCoach = coachesList.isNotEmpty ? coachesList.first : unassignedCoach);
                                       }
                                     }
                                   });
                                 }
-                                return _buildCoachDropdown(_selectedCoach, coachesList, (v) => setState(() => _selectedCoach = v!), isDark: isDark);
+                                return _buildCoachDropdown(_selectedCoach, availableCoaches, (v) => setState(() => _selectedCoach = v!), isDark: isDark);
                               },
                               loading: () => Container(
                                 height: 50,
@@ -1096,6 +1121,16 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   Widget _buildCoachDropdown(AppUser? value, List<AppUser> items, ValueChanged<AppUser?> onChanged, {required bool isDark}) {
+    AppUser? effectiveValue;
+    if (value != null) {
+      effectiveValue = items.firstWhere(
+        (i) => i.id == value.id || (i.name.isNotEmpty && i.name.toLowerCase() == value.name.toLowerCase()),
+        orElse: () => items.first,
+      );
+    } else if (items.isNotEmpty) {
+      effectiveValue = items.first;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
@@ -1117,7 +1152,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<AppUser>(
-          value: value,
+          value: effectiveValue,
           isExpanded: true,
           dropdownColor: isDark ? const Color(0xFF0E2544) : Colors.white,
           style: TextStyle(
@@ -1130,15 +1165,69 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
             color: isDark ? Colors.white70 : const Color(0xFF64748B),
             size: 18,
           ),
-          items: items.map((i) => DropdownMenuItem(
-            value: i,
-            child: Text(
-              i.name,
-              style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+          selectedItemBuilder: (context) {
+            return items.map((i) {
+              final isUnassigned = i.id == 'unassigned';
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isUnassigned) ...[
+                      const Icon(LucideIcons.alertCircle, size: 16, color: Color(0xFFD97706)),
+                      const SizedBox(width: 8),
+                    ] else ...[
+                      Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                      const SizedBox(width: 8),
+                    ],
+                    Flexible(
+                      child: Text(
+                        i.name,
+                        style: TextStyle(
+                          color: isUnassigned
+                              ? const Color(0xFFD97706)
+                              : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                          fontWeight: isUnassigned ? FontWeight.w700 : FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList();
+          },
+          items: items.map((i) {
+            final isUnassigned = i.id == 'unassigned';
+            return DropdownMenuItem<AppUser>(
+              value: i,
+              child: Row(
+                children: [
+                  if (isUnassigned) ...[
+                    const Icon(LucideIcons.alertCircle, size: 16, color: Color(0xFFD97706)),
+                    const SizedBox(width: 8),
+                  ] else ...[
+                    Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      i.name,
+                      style: TextStyle(
+                        color: isUnassigned
+                            ? const Color(0xFFD97706)
+                            : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                        fontWeight: isUnassigned ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          )).toList(),
+            );
+          }).toList(),
           onChanged: onChanged,
         ),
       ),

@@ -542,9 +542,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                               final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
 
                                               final userSubs = allSubscriptions.where((s) => s.userId == clientId).toList();
+                                              final bool hasDiscounts = (data['subscriptionDiscounts'] as List<dynamic>? ?? []).isNotEmpty;
 
                                               return _buildClientCard(
                                                 clientId: clientId,
+                                                hasDiscounts: hasDiscounts,
                                                 name: name,
                                                 phone: phone,
                                                 age: age,
@@ -844,6 +846,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     required String loginId,
     required String password,
     required List<dynamic> subscriptions,
+    bool hasDiscounts = false,
     required int index,
     required AppThemeConfig currentTheme,
   }) {
@@ -1002,6 +1005,41 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             ],
                           ),
                         ),
+                        if (hasDiscounts) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.28 : 0.16),
+                                  const Color(0xFFD97706).withValues(alpha: currentTheme.isDark ? 0.20 : 0.10),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.60 : 0.50),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.tag, size: 10, color: Color(0xFFF59E0B)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'ЗНИЖКА',
+                                  style: TextStyle(
+                                    color: Color(0xFFF59E0B),
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 5),

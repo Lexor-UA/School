@@ -87,11 +87,11 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
         final rateIndividual = int.tryParse(_rateIndividualController.text.trim()) ?? 450;
         final rateSplit = int.tryParse(_rateSplitController.text.trim()) ?? 600;
 
-        await userRef.update({
+        await userRef.set({
           'rateGroup': rateGroup,
           'rateIndividual': rateIndividual,
           'rateSplit': rateSplit,
-        }).timeout(const Duration(seconds: 5));
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
 
         final owner = ref.read(authControllerProvider);
         if (owner != null) {
@@ -103,10 +103,10 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
       } else {
         final adminSalary = int.tryParse(_adminSalaryController.text.trim()) ?? 20000;
 
-        await userRef.update({
+        await userRef.set({
           'adminSalary': adminSalary,
           'salaryType': 'monthly',
-        }).timeout(const Duration(seconds: 5));
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
 
         final owner = ref.read(authControllerProvider);
         if (owner != null) {

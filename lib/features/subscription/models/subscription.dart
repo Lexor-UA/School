@@ -32,10 +32,26 @@ extension SubscriptionAudienceX on Subscription {
     return s.contains('спліт') || s.contains('split') || s.contains('сім');
   }
 
-  bool get isAdultSubscription {
+  bool get isAdultOnlySubscription {
     if (isSplitSubscription) return false;
     final s = (serviceName ?? '').toLowerCase();
-    return s.contains('доросла') || s.contains('дорослих') || s.contains('adult');
+    return s.contains('доросл') ||
+        s.contains('adult') ||
+        s.contains('аква');
+  }
+
+  bool get isAdultSubscription => isAdultOnlySubscription;
+
+  bool get isChildOnlySubscription {
+    if (isSplitSubscription) return false;
+    final s = (serviceName ?? '').toLowerCase();
+    return s.contains('діт') ||
+        s.contains('дит') ||
+        s.contains('junior') ||
+        s.contains('kids') ||
+        s.contains('child') ||
+        s.contains('підлітк') ||
+        s.contains('юніор');
   }
 
   bool get isChildSubscription {
@@ -52,7 +68,7 @@ extension SubscriptionAudienceX on Subscription {
 
   (int, int)? get ageRange {
     final s = serviceName ?? '';
-    final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)\s*(?:рок|р\b|лет|years?)', caseSensitive: false).firstMatch(s);
+    final match = RegExp(r'(\d+)\s*[-–]\s*(\d+)', caseSensitive: false).firstMatch(s);
     if (match != null) {
       final min = int.tryParse(match.group(1)!);
       final max = int.tryParse(match.group(2)!);

@@ -93,7 +93,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       final usersSnap = await FirebaseFirestore.instance.collection('users')
           .where('role', isEqualTo: 'parent')
           .get()
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
           
       int maxClientNum = 0;
       for (var doc in usersSnap.docs) {
@@ -123,7 +123,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         userData['age'] = clientAge;
       }
 
-      await userRef.set(userData).timeout(const Duration(seconds: 5));
+      await userRef.set(userData).timeout(const Duration(seconds: 15));
 
       for (var entry in validChildren) {
         final childRef = FirebaseFirestore.instance.collection('children').doc();
@@ -141,7 +141,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         if (childAge != null) {
           childData['age'] = childAge;
         }
-        await childRef.set(childData).timeout(const Duration(seconds: 5));
+        await childRef.set(childData).timeout(const Duration(seconds: 15));
       }
 
       if (mounted) {

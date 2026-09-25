@@ -55,7 +55,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
       final usersSnap = await FirebaseFirestore.instance.collection('users')
           .where('role', isEqualTo: 'coach')
           .get()
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
           
       int maxCoachNum = 0;
       for (var doc in usersSnap.docs) {
@@ -85,7 +85,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
         'rateGroup': rateGroup,
         'rateIndividual': rateIndividual,
         'rateSplit': rateSplit,
-      }).timeout(const Duration(seconds: 5));
+      }).timeout(const Duration(seconds: 15));
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);

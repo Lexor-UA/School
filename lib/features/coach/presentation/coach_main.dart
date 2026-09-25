@@ -8,7 +8,6 @@ import 'package:swimming_school_app/shared/widgets/animated_water_background.dar
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'coach_dashboard.dart';
-import 'coach_calendar_tab.dart';
 
 class CoachMain extends ConsumerStatefulWidget {
   const CoachMain({super.key});
@@ -152,7 +151,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     _buildDockItem(
                       index: 2,
                       icon: LucideIcons.users,
-                      label: 'Групи',
+                      label: 'Мої учні',
                       isSelected: selectedTab == 2,
                       themeConfig: themeConfig,
                     ),

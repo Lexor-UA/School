@@ -15,11 +15,45 @@ import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/chat/models/chat_message.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
+import 'package:swimming_school_app/features/chat/utils/chat_image_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ParentChatScreen extends ConsumerStatefulWidget {
   final String? title;
   final String? subtitle;
-  const ParentChatScreen({super.key, this.title, this.subtitle});
+  final String? dialogId;
+  final String? recipientId;
+  final String? recipientName;
+  final String? recipientAvatar;
+  final String? coachId;
+  final String? coachName;
+  final String? coachAvatar;
+  final String? clientId;
+  final String? clientName;
+  final String? clientAvatar;
+  final String? childName;
+  final String type; // 'support', 'coach_client'
+  final bool isMonitoring;
+
+  const ParentChatScreen({
+    super.key,
+    this.title,
+    this.subtitle,
+    this.dialogId,
+    this.recipientId,
+    this.recipientName,
+    this.recipientAvatar,
+    this.coachId,
+    this.coachName,
+    this.coachAvatar,
+    this.clientId,
+    this.clientName,
+    this.clientAvatar,
+    this.childName,
+    this.type = 'support',
+    this.isMonitoring = false,
+  });
 
   @override
   ConsumerState<ParentChatScreen> createState() => _ParentChatScreenState();
@@ -37,13 +71,28 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     final user = ref.read(authControllerProvider);
     if (user == null) return;
 
+    final effectiveDialogId = widget.dialogId ?? user.id;
+    final isCoachClient = widget.type == 'coach_client';
+
+    final effectiveCoachId = widget.coachId ?? (user.role == UserRole.coach ? user.id : null);
+    final effectiveCoachName = widget.coachName ?? (user.role == UserRole.coach ? user.name : null);
+    final effectiveClientId = widget.clientId ?? (user.role != UserRole.coach ? user.id : (widget.recipientId ?? ''));
+    final effectiveClientName = widget.clientName ?? (user.role != UserRole.coach ? user.name : (widget.recipientName ?? 'Клієнт'));
+
     final repo = ref.read(chatRepositoryProvider);
     repo.sendMessage(
-      dialogId: user.id, // Client ID is used as Dialog ID
-      clientId: user.id,
-      clientName: user.name,
-      clientAvatar: user.avatarUrl,
+      dialogId: effectiveDialogId,
       senderId: user.id,
+      senderName: user.name,
+      senderRole: user.role == UserRole.coach ? 'coach' : 'parent',
+      clientId: effectiveClientId,
+      clientName: effectiveClientName,
+      clientAvatar: widget.clientAvatar ?? (user.role != UserRole.coach ? user.avatarUrl : ''),
+      coachId: effectiveCoachId,
+      coachName: effectiveCoachName,
+      coachAvatar: widget.coachAvatar ?? (user.role == UserRole.coach ? user.avatarUrl : ''),
+      childName: widget.childName,
+      type: isCoachClient ? 'coach_client' : 'support',
       clientRole: user.role == UserRole.coach ? 'coach' : 'parent',
       text: text,
     );
@@ -66,9 +115,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       final ImagePicker picker = ImagePicker();
       final XFile? file = await picker.pickImage(
         source: source,
-        maxWidth: 1280,
-        maxHeight: 1280,
-        imageQuality: 75,
+        maxWidth: 960,
+        maxHeight: 960,
+        imageQuality: 65,
       );
       if (file == null) return;
       final bytes = await file.readAsBytes();
@@ -330,25 +379,44 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       
       // 1. Спроба завантаження у Firebase Storage
       try {
+        if (FirebaseAuth.instance.currentUser == null) {
+          try {
+            await FirebaseAuth.instance.signInAnonymously();
+          } catch (_) {}
+        }
         final fileName = 'chat_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final storageRef = FirebaseStorage.instance.ref().child('chats/${user.id}/$fileName');
         final metadata = SettableMetadata(contentType: 'image/jpeg');
         final uploadTask = await storageRef.putData(bytes, metadata);
         imageUrl = await uploadTask.ref.getDownloadURL();
       } catch (storageErr) {
-        debugPrint('Firebase Storage upload failed: $storageErr. Fallback to Data URI.');
-        // 2. Надійний Data URL fallback
-        final base64String = base64Encode(bytes);
-        imageUrl = 'data:image/jpeg;base64,$base64String';
+        debugPrint('Firebase Storage upload failed: $storageErr. Fallback to Safe Data URI.');
+        // 2. Надійний безпечний Data URL fallback
+        imageUrl = await ChatImageHelper.toSafeDataUri(bytes);
       }
+
+      final effectiveDialogId = widget.dialogId ?? user.id;
+      final isCoachClient = widget.type == 'coach_client';
+
+      final effectiveCoachId = widget.coachId ?? (user.role == UserRole.coach ? user.id : null);
+      final effectiveCoachName = widget.coachName ?? (user.role == UserRole.coach ? user.name : null);
+      final effectiveClientId = widget.clientId ?? (user.role != UserRole.coach ? user.id : (widget.recipientId ?? ''));
+      final effectiveClientName = widget.clientName ?? (user.role != UserRole.coach ? user.name : (widget.recipientName ?? 'Клієнт'));
 
       final repo = ref.read(chatRepositoryProvider);
       await repo.sendMessage(
-        dialogId: user.id,
-        clientId: user.id,
-        clientName: user.name,
-        clientAvatar: user.avatarUrl,
+        dialogId: effectiveDialogId,
+        clientId: effectiveClientId,
+        clientName: effectiveClientName,
+        clientAvatar: widget.clientAvatar ?? (user.role != UserRole.coach ? user.avatarUrl : ''),
         senderId: user.id,
+        senderName: user.name,
+        senderRole: user.role == UserRole.coach ? 'coach' : 'parent',
+        coachId: effectiveCoachId,
+        coachName: effectiveCoachName,
+        coachAvatar: widget.coachAvatar ?? (user.role == UserRole.coach ? user.avatarUrl : ''),
+        childName: widget.childName,
+        type: isCoachClient ? 'coach_client' : 'support',
         clientRole: user.role == UserRole.coach ? 'coach' : 'parent',
         text: caption,
         imageUrl: imageUrl,
@@ -441,8 +509,15 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = ref.read(authControllerProvider);
-      if (user != null) {
-        ref.read(chatRepositoryProvider).markMessagesAsRead(user.id, false);
+      if (user != null && !widget.isMonitoring) {
+        final effectiveDialogId = widget.dialogId ?? user.id;
+        final isCoach = user.role == UserRole.coach;
+        final isClient = user.role != UserRole.coach;
+        ref.read(chatRepositoryProvider).markMessagesAsRead(
+          effectiveDialogId,
+          isCoach: isCoach,
+          isClient: isClient,
+        );
       }
     });
   }
@@ -451,8 +526,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
     final theme = ref.watch(appThemeControllerProvider);
-    final dialogId = user?.id ?? '';
-    final messagesAsync = ref.watch(chatMessagesStreamProvider(dialogId));
+    final effectiveDialogId = widget.dialogId ?? user?.id ?? '';
+    final messagesAsync = ref.watch(chatMessagesStreamProvider(effectiveDialogId));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -470,7 +545,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                       if (messages.isEmpty) {
                         return Center(
                           child: Text(
-                            'Немає повідомлень.\nНапишіть нам, і ми обов\'язково допоможемо!',
+                            widget.type == 'coach_client'
+                                ? 'Немає повідомлень.\nПочніть спілкування прямо зараз!'
+                                : 'Немає повідомлень.\nНапишіть нам, і ми обов\'язково допоможемо!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: theme.isDark ? Colors.white54 : theme.textSecondary,
@@ -493,9 +570,21 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
-                          final isMe = msg.senderId == user?.id;
+                          final isMe = !widget.isMonitoring && msg.senderId == user?.id;
                           final timeString = "${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}";
-                          return _buildMessageBubble(msg, isMe, timeString, index, theme);
+                          final showDateDivider = index == 0 || !ChatDateDivider.isSameDay(messages[index - 1].timestamp, msg.timestamp);
+                          final bubble = _buildMessageBubble(msg, isMe, timeString, index, theme);
+
+                          if (showDateDivider) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ChatDateDivider(date: msg.timestamp, isDark: theme.isDark),
+                                bubble,
+                              ],
+                            );
+                          }
+                          return bubble;
                         },
                       );
                     },
@@ -504,7 +593,82 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   ),
                 ),
                 if (_isUploadingAttachment) _buildUploadingBanner(theme),
-                _buildInputArea(theme),
+                if (widget.isMonitoring)
+                  _buildMonitoringBanner(theme)
+                else
+                  _buildInputArea(theme),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonitoringBanner(AppThemeConfig theme) {
+    final isDark = theme.isDark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  const Color(0xFF0F2E52).withValues(alpha: 0.95),
+                  const Color(0xFF07192F).withValues(alpha: 0.98),
+                ]
+              : [
+                  const Color(0xFFF0F9FF),
+                  const Color(0xFFE0F2FE),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.45 : 0.60),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.eye, color: Color(0xFF00E5FF), size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Скритний нагляд адміністратора',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Ви спостерігаєте за діалогом між тренером та клієнтом. Учасники не знають про вашу присутність.',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
+                    fontSize: 11.5,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
@@ -610,8 +774,12 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                  gradient: LinearGradient(
+                    colors: widget.isMonitoring
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : (widget.type == 'coach_client'
+                            ? const [Color(0xFF38BDF8), Color(0xFF0284C7)]
+                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)]),
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -624,7 +792,13 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(LucideIcons.headset, color: Colors.white, size: 20),
+                child: Icon(
+                  widget.isMonitoring
+                      ? LucideIcons.eye
+                      : (widget.type == 'coach_client' ? LucideIcons.user : LucideIcons.headset),
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -632,17 +806,21 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.title ?? 'Підтримка CitySwim',
+                      widget.title ?? (widget.type == 'coach_client' ? (widget.recipientName ?? 'Чат') : 'Підтримка CitySwim'),
                       style: TextStyle(
                         color: theme.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      widget.subtitle ?? 'Служба турботи про клієнтів',
+                      widget.subtitle ?? (widget.isMonitoring
+                          ? '👁️ Скритний нагляд • Онлайн'
+                          : (widget.type == 'coach_client' ? 'Діалог • Онлайн' : 'Служба турботи про клієнтів')),
                       style: TextStyle(
                         color: isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.85)
@@ -650,6 +828,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -737,6 +917,37 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Author badge for monitoring mode or other party
+                  if (widget.isMonitoring || (!isMe && widget.type == 'coach_client')) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: (msg.senderRole == 'coach'
+                                ? const Color(0xFF00E5FF)
+                                : const Color(0xFF38BDF8))
+                            .withValues(alpha: 0.20),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: (msg.senderRole == 'coach'
+                                  ? const Color(0xFF00E5FF)
+                                  : const Color(0xFF38BDF8))
+                              .withValues(alpha: 0.50),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        msg.senderRole == 'coach'
+                            ? '🏊‍♂️ Тренер: ${msg.senderName ?? widget.coachName ?? 'Тренер'}'
+                            : '👤 Клієнт: ${msg.senderName ?? widget.clientName ?? 'Клієнт'}',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
                   // Image presentation if attached
                   if (hasImage) ...[
                     GestureDetector(

@@ -18,6 +18,16 @@ final clientChatDialogStreamProvider = StreamProvider.family<ChatDialog?, String
   return repo.streamClientDialog(clientId);
 });
 
+final clientAllDialogsStreamProvider = StreamProvider.family<List<ChatDialog>, String>((ref, clientId) {
+  final repo = ref.watch(chatRepositoryProvider);
+  return repo.streamClientDialogs(clientId);
+});
+
+final coachAllDialogsStreamProvider = StreamProvider.family<List<ChatDialog>, String>((ref, coachId) {
+  final repo = ref.watch(chatRepositoryProvider);
+  return repo.streamCoachDialogs(coachId);
+});
+
 final chatMessagesStreamProvider = StreamProvider.family<List<ChatMessage>, String>((ref, dialogId) {
   final repo = ref.watch(chatRepositoryProvider);
   return repo.streamMessages(dialogId);
@@ -40,7 +50,7 @@ final usersRoleMapProvider = StreamProvider<Map<String, String>>((ref) {
   });
 });
 
-// A provider that counts total unread dialogs for Admin
+// Total unread dialogs count for Admin Support Center (only support/recovery, excluding coach_client)
 final unreadAdminChatBadgeProvider = Provider<int>((ref) {
   final dialogsAsync = ref.watch(adminChatDialogsStreamProvider);
   return dialogsAsync.maybeWhen(
@@ -57,3 +67,38 @@ final unreadAdminChatBadgeProvider = Provider<int>((ref) {
   );
 });
 
+// Total unread count for a Coach across their dialogs
+final coachUnreadBadgeProvider = Provider.family<int, String>((ref, coachId) {
+  final dialogsAsync = ref.watch(coachAllDialogsStreamProvider(coachId));
+  return dialogsAsync.maybeWhen(
+    data: (dialogs) {
+      int count = 0;
+      for (final d in dialogs) {
+        if (d.type == 'support' && d.unreadClientCount > 0) {
+          count += d.unreadClientCount;
+        } else if (d.type == 'coach_client' && d.unreadCoachCount > 0) {
+          count += d.unreadCoachCount;
+        }
+      }
+      return count;
+    },
+    orElse: () => 0,
+  );
+});
+
+// Total unread count for a Client across their dialogs
+final clientUnreadBadgeProvider = Provider.family<int, String>((ref, clientId) {
+  final dialogsAsync = ref.watch(clientAllDialogsStreamProvider(clientId));
+  return dialogsAsync.maybeWhen(
+    data: (dialogs) {
+      int count = 0;
+      for (final d in dialogs) {
+        if (d.unreadClientCount > 0) {
+          count += d.unreadClientCount;
+        }
+      }
+      return count;
+    },
+    orElse: () => 0,
+  );
+});

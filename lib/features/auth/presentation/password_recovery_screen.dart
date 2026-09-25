@@ -9,6 +9,7 @@ import 'package:swimming_school_app/shared/widgets/animated_water_background.dar
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/features/chat/models/chat_message.dart';
+import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
 
 class PasswordRecoveryScreen extends ConsumerStatefulWidget {
   final String initialLogin;
@@ -57,7 +58,7 @@ class _PasswordRecoveryScreenState
       });
 
       // Mark messages as read by client
-      ref.read(chatRepositoryProvider).markMessagesAsRead(_dialogId, false);
+      ref.read(chatRepositoryProvider).markMessagesAsRead(_dialogId, isAdmin: false);
 
       // If user had a prefilled login, prepare a helpful opening draft message if input is empty
       if (widget.initialLogin.trim().isNotEmpty && _messageController.text.isEmpty) {
@@ -534,7 +535,19 @@ class _PasswordRecoveryScreenState
             final bool isMe = msg.senderId != 'admin';
             final timeString =
                 '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}';
-            return _buildMessageBubble(msg, isMe, timeString, index);
+            final showDateDivider = index == 0 || !ChatDateDivider.isSameDay(messages[index - 1].timestamp, msg.timestamp);
+            final bubble = _buildMessageBubble(msg, isMe, timeString, index);
+
+            if (showDateDivider) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ChatDateDivider(date: msg.timestamp, isDark: true),
+                  bubble,
+                ],
+              );
+            }
+            return bubble;
           },
         );
       },

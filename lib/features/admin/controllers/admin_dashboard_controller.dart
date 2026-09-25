@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -199,8 +200,15 @@ final adminParentsProvider = StreamProvider.autoDispose<List<AppUser>>((ref) {
   });
 });
 
+final liveClockProvider = StreamProvider.autoDispose<DateTime>((ref) {
+  return Stream.periodic(const Duration(seconds: 15), (_) => DateTime.now());
+});
+
 @riverpod
 AdminDashboardState adminDashboard(Ref ref) {
+  // Re-evaluate current timestamp every 15s so ongoing classes automatically trigger
+  ref.watch(liveClockProvider);
+
   final todayClassesList = ref.watch(todayClassesProvider).value ?? [];
   final recentActionsList = ref.watch(recentActionsProvider).value ?? [];
   final tasksList = ref.watch(adminTasksProvider).value ?? [];
@@ -269,7 +277,9 @@ AdminDashboardState adminDashboard(Ref ref) {
   // 3. Тренери, які працюють прямо зараз (проводять поточні заняття)
   final Set<String> ongoingCoachIds = {};
   for (final c in ongoingClasses) {
-    if (c.coachId.isNotEmpty) {
+    if (c.coachId.isNotEmpty &&
+        c.coachId != 'unassigned' &&
+        !c.coachName.toLowerCase().contains('не призначен')) {
       ongoingCoachIds.add(c.coachId);
     }
   }

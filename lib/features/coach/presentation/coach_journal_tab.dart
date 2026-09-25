@@ -127,7 +127,6 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
     }
   }
 
-  void _awardMedal(Child child) => showAwardMedalSheet(context, child);
   void _showNoteDialog(Child child) => showCoachNoteDialog(context, child);
 
   Widget _buildDatePill(String label, DateTime targetDate, bool isSelected, AppThemeConfig themeConfig) {
@@ -1205,18 +1204,13 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${child.xp} XP',
-                            style: TextStyle(color: themeConfig.textSecondary, fontSize: 11),
-                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
 
-                // Quick Action buttons: Note, Medal & Attendance toggle
+                // Quick Action buttons: Note & Attendance toggle
                 Row(
                   children: [
                     // Note button
@@ -1224,13 +1218,6 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                       icon: Icon(LucideIcons.fileText, color: themeConfig.textSecondary, size: 20),
                       onPressed: () => _showNoteDialog(child),
                       tooltip: 'coach.btn_add_note'.tr(),
-                    ),
-
-                    // Medal Award button
-                    IconButton(
-                      icon: const Icon(LucideIcons.medal, color: Color(0xFFF59E0B), size: 22),
-                      onPressed: () => _awardMedal(child),
-                      tooltip: 'coach.btn_award_medal'.tr(),
                     ),
 
                     // One-tap attendance check

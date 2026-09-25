@@ -7,12 +7,10 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'dart:ui';
-import 'package:swimming_school_app/features/parent/presentation/pool_map_screen.dart';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/shared/widgets/subscription_front_card.dart';
-import 'package:swimming_school_app/features/parent/presentation/parent_progress_tab.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
@@ -23,6 +21,8 @@ import 'package:swimming_school_app/features/parent/controllers/parent_notificat
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
+import 'package:collection/collection.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -282,25 +282,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
             },
           ),
           
-          const SizedBox(height: 20),
-
-          // 4. AQUAPRO PROGRESS CARD
-          _buildProgressCard(
-            context: context,
-            isDark: isDark,
-            accentColor: accentColor,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ParentProgressTab()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // 5. 3D POOL MAP CARD
-          _build3DPoolCard(context, isDark, accentColor),
-
           const SizedBox(height: 120), // Space for bottom nav
         ],
       ),
@@ -541,45 +522,108 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       ],
                     ),
                   ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Деталі заняття будуть доступні незабаром")),
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
-                          border: Border(
-                            top: BorderSide(
-                              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
-                              width: 0.9,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'parent.open_class'.tr(),
-                              style: TextStyle(
-                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                            Icon(
-                              LucideIcons.arrowRight,
-                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                              size: 16,
-                            ),
-                          ],
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
+                      border: Border(
+                        top: BorderSide(
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
+                          width: 0.9,
                         ),
                       ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (nextClass.coachName.isNotEmpty &&
+                            nextClass.coachName != 'Тренер не призначений' &&
+                            !nextClass.coachName.toLowerCase().contains('не призначен') &&
+                            nextClass.coachId.isNotEmpty &&
+                            user != null)
+                          GestureDetector(
+                            onTap: () {
+                              final childEnrolled = enrolledMembers.firstWhereOrNull((m) => !m.isParent);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ParentChatScreen(
+                                    dialogId: 'coach_${nextClass.coachId}_client_${user.id}',
+                                    recipientId: nextClass.coachId,
+                                    recipientName: nextClass.coachName,
+                                    coachId: nextClass.coachId,
+                                    coachName: nextClass.coachName,
+                                    clientId: user.id,
+                                    clientName: user.name,
+                                    childName: childEnrolled?.name,
+                                    type: 'coach_client',
+                                    title: nextClass.coachName,
+                                    subtitle: 'Тренер • ${nextClass.title}',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.messageCircle, color: Colors.white, size: 13),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'Написати тренеру',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox.shrink(),
+                        GestureDetector(
+                          onTap: () {
+                            ref.read(parentTabProvider.notifier).setTab(1); // Schedule
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'В розклад',
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                LucideIcons.arrowRight,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                size: 15,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -688,280 +732,5 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
         ),
       ),
     ).animate().fadeIn();
-  }
-
-  Widget _buildProgressCard({
-    required BuildContext context,
-    required bool isDark,
-    required Color accentColor,
-    required VoidCallback onTap,
-  }) {
-    final cardBgColors = isDark
-        ? [
-            const Color(0xFF0E3D64).withValues(alpha: 0.60),
-            const Color(0xFF092842).withValues(alpha: 0.72),
-          ]
-        : [
-            Colors.white.withValues(alpha: 0.95),
-            const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-          ];
-
-    final borderColor = isDark
-        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
-        : const Color(0xFFBAE6FD);
-
-    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subColor = isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569);
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: cardBgColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: borderColor, width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark
-                            ? const Color(0xFF003B73).withValues(alpha: 0.35)
-                            : const Color(0xFF0284C7).withValues(alpha: 0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
-                      ),
-                      if (isDark)
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 2),
-                        ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Glowing Activity Badge
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            LucideIcons.activity,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Title & Subtitle
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'parent.progress'.tr() == 'parent.progress'
-                                  ? 'Мій прогрес'
-                                  : 'parent.progress'.tr(),
-                              style: TextStyle(
-                                color: titleColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'parent.progress_subtitle'.tr() == 'parent.progress_subtitle'
-                                  ? 'Особисті досягнення та активність'
-                                  : 'parent.progress_subtitle'.tr(),
-                              style: TextStyle(
-                                color: subColor,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Chevron Right
-                      Icon(
-                        LucideIcons.chevronRight,
-                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.75) : const Color(0xFF0284C7),
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08, end: 0, curve: Curves.easeOutQuart);
-  }
-
-  Widget _build3DPoolCard(BuildContext context, bool isDark, Color accentColor) {
-    final cardBgColors = isDark
-        ? [
-            const Color(0xFF0E3D64).withValues(alpha: 0.60),
-            const Color(0xFF092842).withValues(alpha: 0.72),
-          ]
-        : [
-            Colors.white.withValues(alpha: 0.95),
-            const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-          ];
-
-    final borderColor = isDark
-        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
-        : const Color(0xFFBAE6FD);
-
-    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subColor = isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569);
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PoolMapScreen())),
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: cardBgColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: borderColor, width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark
-                            ? const Color(0xFF003B73).withValues(alpha: 0.35)
-                            : const Color(0xFF0284C7).withValues(alpha: 0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
-                      ),
-                      if (isDark)
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 2),
-                        ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Glowing 3D Pool Badge
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0284C7).withValues(alpha: 0.40),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            LucideIcons.box,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Title & Subtitle
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'parent.pool_map'.tr() == 'parent.pool_map'
-                                  ? '3D Карта Басейну'
-                                  : 'parent.pool_map'.tr(),
-                              style: TextStyle(
-                                color: titleColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Інтерактивний план комплексу та доріжок',
-                              style: TextStyle(
-                                color: subColor,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Chevron Right
-                      Icon(
-                        LucideIcons.chevronRight,
-                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.75) : const Color(0xFF0284C7),
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08, end: 0, curve: Curves.easeOutQuart);
   }
 }

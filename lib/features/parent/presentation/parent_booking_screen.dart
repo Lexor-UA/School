@@ -16,6 +16,7 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
+import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 
 class ParentBookingScreen extends ConsumerStatefulWidget {
   final DateTime date;
@@ -292,7 +293,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         if (!showParent && eligibleChildren.isEmpty) {
           final hasUnder6 = children.any((c) => (c.currentAge ?? 0) <= 5);
           final under6Msg = (hasUnder6 && (selectedClass?.isGroup == true || selectedClass?.isSplit == true))
-              ? 'Для дітей до 5 років включно доступні тільки персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+              ? 'Для дітей до 6 років (1–5 років включно) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
               : null;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
@@ -530,13 +531,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     }
 
     if (selectedClass!.startTime.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Це тренування вже завершилося.'),
-          backgroundColor: Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackBar.showError(context, 'Це тренування вже завершилося.');
       return;
     }
 
@@ -595,13 +590,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
           final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
           final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Термін дії спліт-абонемента закінчується $expiryStr (до дати тренування $dateStr).'),
-              backgroundColor: const Color(0xFFEF4444),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          AppSnackBar.showError(context, 'Термін дії спліт-абонемента закінчується $expiryStr (до дати тренування $dateStr).');
           return;
         }
       }
@@ -617,15 +606,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
             final range = selectedClass!.ageRange;
             final msg = childAge <= 5
-                ? 'Для дітей до 5 років включно (${child?.name ?? ''}, $childAge р.) доступні лише персональні індивідуальні заняття. Спліт та групові доступні від 6 років.'
+                ? 'Для дітей до 6 років (1–5 років включно) (${child?.name ?? ''}, $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
                 : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(msg),
-                backgroundColor: const Color(0xFFEF4444),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppSnackBar.showWarning(context, msg);
             return;
           }
         }
@@ -647,13 +630,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           });
         } else {
           setState(() => isBooking = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.message),
-              backgroundColor: const Color(0xFFEF4444),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          AppSnackBar.showError(context, result.message);
         }
       }
       return;
@@ -705,13 +682,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
         final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
         final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Термін дії абонемента для $ownerName закінчується $expiryStr (до дати тренування $dateStr).'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackBar.showError(context, 'Термін дії абонемента для $ownerName закінчується $expiryStr (до дати тренування $dateStr).');
         return;
       }
     }
@@ -722,15 +693,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
         final range = selectedClass!.ageRange;
         final msg = childAge <= 5
-            ? 'Для дітей до 5 років включно ($childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+            ? 'Для дітей до 6 років (1–5 років включно) ($childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
             : 'Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackBar.showWarning(context, msg);
         return;
       }
     }
@@ -747,13 +712,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         });
       } else {
         setState(() => isBooking = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackBar.showError(context, result.message);
       }
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -58,6 +59,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       _isScanned = true;
       _isProcessing = true;
     });
+
+    HapticFeedback.mediumImpact();
 
     final result = await ref.read(subscriptionControllerProvider.notifier).processQrCheckIn(
       code: code.trim(),

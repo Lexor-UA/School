@@ -12,6 +12,7 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 void showCoachClassAttendeesSheet(BuildContext context, GroupClass gClass) {
   showModalBottomSheet(
@@ -119,6 +120,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
           resolved.add(CoachAttendeeInfo(
             id: id,
             name: childName,
+            parentId: parentId.isNotEmpty ? parentId : null,
             parentName: parentName,
             age: childAge,
             phone: parentPhone,
@@ -257,11 +259,29 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
   }
 
   void _openChat(CoachAttendeeInfo attendee) {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
+    final nav = Navigator.of(context);
+    final coach = ref.read(authControllerProvider);
+    final targetClientId = attendee.isChild ? (attendee.parentId ?? attendee.id) : attendee.id;
+    final targetClientName = attendee.isChild ? (attendee.parentName ?? 'Батьки (${attendee.name})') : attendee.name;
+    final dialogId = 'coach_${coach?.id}_client_$targetClientId';
+
+    nav.pop();
+    nav.push(
       MaterialPageRoute(
-        builder: (_) => const ParentChatScreen(),
+        builder: (_) => ParentChatScreen(
+          dialogId: dialogId,
+          recipientId: targetClientId,
+          recipientName: targetClientName,
+          coachId: coach?.id,
+          coachName: coach?.name,
+          coachAvatar: coach?.avatarUrl,
+          clientId: targetClientId,
+          clientName: targetClientName,
+          childName: attendee.isChild ? attendee.name : null,
+          type: 'coach_client',
+          title: attendee.isChild ? attendee.name : targetClientName,
+          subtitle: attendee.isChild ? 'Батьки: $targetClientName' : 'Клієнт • Онлайн',
+        ),
       ),
     );
   }

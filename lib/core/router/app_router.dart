@@ -46,7 +46,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const RoleSelectionScreen(),
+        builder: (context, state) {
+          final skipSplash = state.uri.queryParameters['skipSplash'] == 'true';
+          return RoleSelectionScreen(skipSplash: skipSplash);
+        },
       ),
       GoRoute(
         path: '/password-recovery',
@@ -76,7 +79,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final clientName = state.uri.queryParameters['clientName'] ?? 'Клієнт';
               final clientId = state.uri.queryParameters['clientId'] ?? '';
-              return AdminChatScreen(clientName: clientName, clientId: clientId);
+              final dialogId = state.uri.queryParameters['dialogId'];
+              final coachId = state.uri.queryParameters['coachId'];
+              final coachName = state.uri.queryParameters['coachName'];
+              final childName = state.uri.queryParameters['childName'];
+              final isMonitoring = state.uri.queryParameters['isMonitoring'] == 'true';
+              return AdminChatScreen(
+                clientName: clientName,
+                clientId: clientId,
+                dialogId: dialogId,
+                coachId: coachId,
+                coachName: coachName,
+                childName: childName,
+                isMonitoring: isMonitoring,
+              );
             },
           ),
         ]

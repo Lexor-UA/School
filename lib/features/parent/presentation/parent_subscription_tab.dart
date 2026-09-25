@@ -16,6 +16,7 @@ import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_discount.dart';
 
 class SelectedSubscriptionOwnerNotifier extends Notifier<String?> {
   @override
@@ -28,6 +29,42 @@ class SelectedSubscriptionOwnerNotifier extends Notifier<String?> {
 
 final selectedSubscriptionOwnerProvider =
     NotifierProvider<SelectedSubscriptionOwnerNotifier, String?>(SelectedSubscriptionOwnerNotifier.new);
+
+final userDiscountsStreamProvider = StreamProvider.autoDispose<List<SubscriptionDiscount>>((ref) {
+  final user = ref.watch(authControllerProvider);
+  if (user == null) return Stream.value([]);
+
+  final family = ref.watch(familyStreamProvider).value;
+  final familyUserIds = (family != null && family.parentIds.isNotEmpty)
+      ? family.parentIds
+      : [user.id];
+
+  if (familyUserIds.length <= 1) {
+    return FirebaseFirestore.instance.collection('users').doc(user.id).snapshots().map((doc) {
+      if (!doc.exists) return <SubscriptionDiscount>[];
+      final raw = doc.data()?['subscriptionDiscounts'];
+      if (raw is List) {
+        return raw.map<SubscriptionDiscount>((d) => SubscriptionDiscount.fromJson(Map<String, dynamic>.from(d as Map))).toList();
+      }
+      return <SubscriptionDiscount>[];
+    });
+  } else {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: familyUserIds)
+        .snapshots()
+        .map((snapshot) {
+      final List<SubscriptionDiscount> all = [];
+      for (final doc in snapshot.docs) {
+        final raw = doc.data()['subscriptionDiscounts'];
+        if (raw is List) {
+          all.addAll(raw.map<SubscriptionDiscount>((d) => SubscriptionDiscount.fromJson(Map<String, dynamic>.from(d as Map))));
+        }
+      }
+      return all;
+    });
+  }
+});
 
 class ParentSubscriptionTab extends ConsumerStatefulWidget {
   const ParentSubscriptionTab({super.key});
@@ -79,7 +116,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       final otherParentName = family?.getOtherParentName(currentUser?.id ?? '');
       final otherParentId = family?.getOtherParentId(currentUser?.id ?? '');
       final isPartner = otherParentName != null && owner.trim().toLowerCase() == otherParentName.trim().toLowerCase();
-      final isOwnerAdult = owner == currentUser?.name || isPartner;
+      final isOwnerAdult = owner.trim().toLowerCase() == (currentUser?.name ?? '').trim().toLowerCase() || isPartner;
 
       final serviceDetails = _services.firstWhere((s) => s['name'] == selectedService);
       final isServiceAdult = serviceDetails['isAdult'] as bool?;
@@ -87,13 +124,13 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
       if (isSplit && !isOwnerAdult) {
         final children = ref.read(childrenControllerProvider).value ?? [];
-        final child = children.where((c) => c.name.trim() == owner.trim()).firstOrNull;
+        final child = children.where((c) => c.name.trim().toLowerCase() == owner.trim().toLowerCase()).firstOrNull;
         final childAge = child?.currentAge;
         if (childAge != null && childAge <= 5) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Діти до 5 років ($owner: $childAge р.) не можуть записуватися на спліт-тренування. Доступні лише персональні індивідуальні заняття.'),
+                content: Text('Діти до 6 років ($owner: $childAge р.) не можуть записуватися на спліт-тренування. Доступні лише персональні індивідуальні заняття.'),
                 backgroundColor: Colors.redAccent,
               ),
             );
@@ -130,14 +167,14 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         // Validate child's age matches subscription age group
         if (isServiceAdult == false && !isOwnerAdult) {
           final children = ref.read(childrenControllerProvider).value ?? [];
-          final child = children.where((c) => c.name.trim() == owner.trim()).firstOrNull;
+          final child = children.where((c) => c.name.trim().toLowerCase() == owner.trim().toLowerCase()).firstOrNull;
           final childAge = child?.currentAge;
           if (childAge != null && !isServiceAgeCompatible(selectedService, childAge)) {
             if (childAge <= 5) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Для дітей до 5 років ($owner: $childAge р.) доступні лише персональні індивідуальні заняття.'),
+                    content: Text('Для дітей до 6 років ($owner: $childAge р.) доступні лише персональні індивідуальні заняття (групові доступні від 6 років).'),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
@@ -416,20 +453,22 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     );
   }
 
-  void _showPaymentSheet(String userId, String effectiveOwner, bool isDark, AppThemeConfig themeConfig) {
+  void _showPaymentSheet(String userId, String effectiveOwner, bool isDark, AppThemeConfig themeConfig, {List<SubscriptionDiscount> discounts = const []}) {
     final currentUser = ref.read(authControllerProvider);
     final family = ref.read(familyStreamProvider).value;
     final otherParentName = family?.getOtherParentName(currentUser?.id ?? '');
     final otherParentId = family?.getOtherParentId(currentUser?.id ?? '');
     final bool isPartner = otherParentName != null && effectiveOwner.trim().toLowerCase() == otherParentName.trim().toLowerCase();
-    final bool isOwnerAdult = effectiveOwner == currentUser?.name || isPartner;
+    final bool isOwnerAdult = effectiveOwner.trim().toLowerCase() == (currentUser?.name ?? '').trim().toLowerCase() || isPartner;
     final targetUserId = (isPartner && otherParentId != null) ? otherParentId : userId;
     final children = ref.read(childrenControllerProvider).value ?? [];
-    final child = children.where((c) => c.name.trim() == effectiveOwner.trim()).firstOrNull;
+    final child = children.where((c) => c.name.trim().toLowerCase() == effectiveOwner.trim().toLowerCase()).firstOrNull;
     final childAge = child?.currentAge;
 
     String? selectedService;
-    String categoryFilter = isOwnerAdult ? 'adult' : (childAge != null ? (childAge <= 5 ? 'individual' : 'recommended') : 'child');
+    String categoryFilter = isOwnerAdult
+        ? 'adult'
+        : (childAge != null && childAge <= 5 ? 'individual' : 'group');
 
     showModalBottomSheet(
       context: context,
@@ -439,10 +478,19 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             int totalPrice = 0;
+            int originalSelectedPrice = 0;
+            SubscriptionDiscount? activeDiscount;
             if (selectedService != null) {
               final service = _services.firstWhere((s) => s['name'] == selectedService);
               final priceStr = service['price'] as String;
-              totalPrice = int.tryParse(priceStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+              originalSelectedPrice = int.tryParse(priceStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+              activeDiscount = SubscriptionDiscount.findBestDiscount(
+                discounts,
+                service: selectedService!,
+                owner: effectiveOwner,
+                basePrice: originalSelectedPrice,
+              );
+              totalPrice = activeDiscount != null ? activeDiscount.calculatePrice(originalSelectedPrice) : originalSelectedPrice;
             }
 
             final displayedServices = _services.where((s) {
@@ -456,22 +504,37 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 if (isServiceAdult == false && !isSplit) return false;
                 if (categoryFilter == 'adult') return isServiceAdult == true && !isSplit;
                 if (categoryFilter == 'split') return isSplit;
-                return true; // 'all': only adult & split
+                return true; // only adult & split
               } else {
                 // Child owner: strictly exclude all adult subscriptions!
                 if (isServiceAdult == true) return false;
-                if (childAge != null && childAge <= 5) {
-                  // Children up to 5 inclusive: ONLY individual child subscriptions!
+
+                // 1. STRICT AGE RESTRICTION:
+                if (childAge != null) {
+                  if (childAge <= 5) {
+                    // Children up to 5 years old: ONLY individual child subscriptions!
+                    if (!isIndividual || isSplit) return false;
+                  } else {
+                    final targetGroup = childAge >= 9 ? '9-15' : '6-8';
+                    // Never show group subscriptions from another age group
+                    if (ageGroup != null && ageGroup != targetGroup) {
+                      return false;
+                    }
+                  }
+                }
+
+                // 2. Tab filter:
+                if (categoryFilter == 'group' || categoryFilter == 'recommended') {
+                  return ageGroup != null;
+                }
+                if (categoryFilter == 'individual') {
                   return isIndividual && !isSplit;
                 }
-                if (categoryFilter == 'recommended' && childAge != null) {
-                  final targetGroup = childAge >= 9 ? '9-15' : '6-8';
-                  return ageGroup == targetGroup;
+                if (categoryFilter == 'split') {
+                  if (childAge != null && childAge <= 5) return false;
+                  return isSplit;
                 }
-                if (categoryFilter == 'individual') return isIndividual && !isSplit;
-                if (categoryFilter == 'child') return isServiceAdult == false && !isSplit;
-                if (categoryFilter == 'split') return isSplit;
-                return true; // 'all': only child & split
+                return true;
               }
             }).toList();
 
@@ -550,7 +613,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                 Text(
                                   isOwnerAdult
                                       ? (isPartner ? 'Для: $effectiveOwner (Дружина / Чоловік)' : 'Для: $effectiveOwner (Дорослий)')
-                                      : 'Для: $effectiveOwner${childAge != null ? " ($childAge р. • ${childAge <= 5 ? 'Тільки індивідуальні' : (childAge >= 9 ? 'Старша група' : 'Молодша група')})" : " (Дитина)"}',
+                                      : 'Для: $effectiveOwner${childAge != null ? " ($childAge р. • ${childAge <= 5 ? 'Тільки індивідуальні (до 6 р.)' : (childAge >= 9 ? 'Старша група 9-15 років' : 'Молодша група 6-8 років')})" : " (Дитина)"}',
                                   style: TextStyle(
                                     color: isPartner
                                         ? const Color(0xFFA78BFA)
@@ -599,19 +662,19 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       Row(
                         children: [
                           if (!isOwnerAdult) ...[
-                            if (childAge != null && childAge >= 6) ...[
+                            if (childAge == null || childAge >= 6) ...[
                               _buildModalCategoryTab(
-                                'recommended',
-                                childAge >= 9 ? '9-15 років' : '6-8 років',
-                                LucideIcons.sparkles,
-                                categoryFilter == 'recommended',
+                                'group',
+                                (childAge != null && childAge >= 9) ? 'Групові (9-15 р.)' : 'Групові (6-8 р.)',
+                                LucideIcons.users,
+                                categoryFilter == 'group' || categoryFilter == 'recommended',
                                 isDark,
                                 () {
                                   setModalState(() {
-                                    categoryFilter = 'recommended';
+                                    categoryFilter = 'group';
                                     if (selectedService != null) {
                                       final s = _services.firstWhere((e) => e['name'] == selectedService);
-                                      final targetGroup = childAge >= 9 ? '9-15' : '6-8';
+                                      final targetGroup = (childAge != null && childAge >= 9) ? '9-15' : '6-8';
                                       if (s['ageGroup'] != targetGroup) {
                                         selectedService = null;
                                       }
@@ -621,27 +684,45 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               ),
                               const SizedBox(width: 6),
                             ],
-                            if (childAge != null && childAge <= 5) ...[
+                            _buildModalCategoryTab(
+                              'individual',
+                              'Індивідуальні',
+                              LucideIcons.userCheck,
+                              categoryFilter == 'individual',
+                              isDark,
+                              () {
+                                setModalState(() {
+                                  categoryFilter = 'individual';
+                                  if (selectedService != null) {
+                                    final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                    if (s['isIndividual'] != true) {
+                                      selectedService = null;
+                                    }
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            if (childAge == null || childAge >= 6) ...[
                               _buildModalCategoryTab(
-                                'individual',
-                                'Індивідуальні',
-                                LucideIcons.userCheck,
-                                categoryFilter == 'individual',
+                                'split',
+                                'Спліт (2 ос.)',
+                                LucideIcons.heartHandshake,
+                                categoryFilter == 'split',
                                 isDark,
                                 () {
                                   setModalState(() {
-                                    categoryFilter = 'individual';
+                                    categoryFilter = 'split';
+                                    if (selectedService != null) {
+                                      final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                      if (s['isSplit'] != true) {
+                                        selectedService = null;
+                                      }
+                                    }
                                   });
                                 },
                               ),
-                              const SizedBox(width: 6),
                             ],
-                            _buildModalCategoryTab('all', 'Всі дитячі', LucideIcons.baby, categoryFilter == 'all', isDark, () {
-                              setModalState(() {
-                                categoryFilter = 'all';
-                              });
-                            }),
-                            const SizedBox(width: 6),
                           ],
                           if (isOwnerAdult) ...[
                             _buildModalCategoryTab('adult', 'Дорослі', LucideIcons.user, categoryFilter == 'adult', isDark, () {
@@ -654,16 +735,16 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               });
                             }),
                             const SizedBox(width: 6),
+                            _buildModalCategoryTab('split', 'Спліт (2 ос.)', LucideIcons.heartHandshake, categoryFilter == 'split', isDark, () {
+                              setModalState(() {
+                                categoryFilter = 'split';
+                                if (selectedService != null) {
+                                  final s = _services.firstWhere((e) => e['name'] == selectedService);
+                                  if (s['isSplit'] != true) selectedService = null;
+                                }
+                              });
+                            }),
                           ],
-                          _buildModalCategoryTab('split', 'Спліт (2 ос.)', LucideIcons.users, categoryFilter == 'split', isDark, () {
-                            setModalState(() {
-                              categoryFilter = 'split';
-                              if (selectedService != null) {
-                                final s = _services.firstWhere((e) => e['name'] == selectedService);
-                                if (s['isSplit'] != true) selectedService = null;
-                              }
-                            });
-                          }),
                         ],
                       ),
                       const SizedBox(height: 14),
@@ -687,7 +768,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                   if (childAge <= 5) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Для дітей до 5 років ($effectiveOwner: $childAge р.) доступні лише персональні індивідуальні заняття.'),
+                                        content: Text('Для дітей до 6 років ($effectiveOwner: $childAge р.) доступні лише персональні індивідуальні заняття (групові доступні від 6 років).'),
                                         backgroundColor: Colors.orangeAccent,
                                       ),
                                     );
@@ -822,28 +903,45 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                               ),
                                               if (ageGroup != null)
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                                   decoration: BoxDecoration(
-                                                    color: isAgeMismatch
-                                                        ? Colors.orangeAccent.withValues(alpha: isDark ? 0.22 : 0.12)
-                                                        : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE)),
-                                                    borderRadius: BorderRadius.circular(6),
+                                                    gradient: isDark
+                                                        ? LinearGradient(
+                                                            colors: [
+                                                              const Color(0xFF06B6D4).withValues(alpha: 0.25),
+                                                              const Color(0xFF0284C7).withValues(alpha: 0.20),
+                                                            ],
+                                                          )
+                                                        : const LinearGradient(
+                                                            colors: [
+                                                              Color(0xFFE0F2FE),
+                                                              Color(0xFFBAE6FD),
+                                                            ],
+                                                          ),
+                                                    borderRadius: BorderRadius.circular(8),
                                                     border: Border.all(
-                                                      color: isAgeMismatch
-                                                          ? Colors.orangeAccent.withValues(alpha: 0.5)
-                                                          : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.4) : const Color(0xFFBAE6FD)),
-                                                      width: 0.8,
+                                                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.5) : const Color(0xFF38BDF8),
+                                                      width: 1,
                                                     ),
                                                   ),
-                                                  child: Text(
-                                                    isAgeMismatch ? 'Вік: $ageGroup р. ⚠️' : '$ageGroup років',
-                                                    style: TextStyle(
-                                                      color: isAgeMismatch
-                                                          ? (isDark ? Colors.orangeAccent : const Color(0xFFD97706))
-                                                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        LucideIcons.users,
+                                                        size: 11,
+                                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '$ageGroup років',
+                                                        style: TextStyle(
+                                                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
+                                                          fontSize: 10.5,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                             ],
@@ -852,24 +950,121 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                       ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.15 : 0.12),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.40),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        service['price'],
-                                        style: TextStyle(
-                                          color: isDark ? Colors.greenAccent : const Color(0xFF047857),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                    Builder(
+                                      builder: (context) {
+                                        final rawPriceStr = service['price'] as String;
+                                        final itemBasePrice = int.tryParse(rawPriceStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                                        final itemDiscount = SubscriptionDiscount.findBestDiscount(
+                                          discounts,
+                                          service: serviceName,
+                                          owner: effectiveOwner,
+                                          basePrice: itemBasePrice,
+                                        );
+
+                                        if (itemDiscount != null) {
+                                          final discountedPrice = itemDiscount.calculatePrice(itemBasePrice);
+                                          final savedAmount = itemBasePrice - discountedPrice;
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    '$itemBasePrice грн',
+                                                    style: TextStyle(
+                                                      color: isDark ? Colors.white38 : themeConfig.textMuted,
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w600,
+                                                      decoration: TextDecoration.lineThrough,
+                                                      decorationColor: isDark ? Colors.redAccent.shade100 : Colors.red,
+                                                      decorationThickness: 2,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 5),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                    decoration: BoxDecoration(
+                                                      gradient: const LinearGradient(
+                                                        colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                                                      ),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: const Color(0xFFFF8F00).withValues(alpha: 0.35),
+                                                          blurRadius: 4,
+                                                          offset: const Offset(0, 1),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: Text(
+                                                      itemDiscount.discountType == 'percent'
+                                                          ? '-${itemDiscount.discountPercent}%'
+                                                          : '-$savedAmount грн',
+                                                      style: const TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 9.5,
+                                                        fontWeight: FontWeight.w900,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: isDark
+                                                        ? [
+                                                            const Color(0xFF00E5FF).withValues(alpha: 0.22),
+                                                            const Color(0xFF10B981).withValues(alpha: 0.22),
+                                                          ]
+                                                        : [
+                                                            const Color(0xFFE0F2FE),
+                                                            const Color(0xFFD1FAE5),
+                                                          ],
+                                                  ),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFF0284C7),
+                                                    width: 1.2,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  '$discountedPrice грн',
+                                                  style: TextStyle(
+                                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
+                                                    fontSize: 13.5,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
+
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.15 : 0.12),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.40),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            service['price'],
+                                            style: TextStyle(
+                                              color: isDark ? Colors.greenAccent : const Color(0xFF047857),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -932,17 +1127,33 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
                             disabledForegroundColor: Colors.white38,
                           ),
-                          child: Text(
-                            totalPrice > 0
-                                ? '${'parent.pay'.tr()} $totalPrice грн'
-                                : 'parent.choose_subscription'.tr(),
-                            style: TextStyle(
-                              color: totalPrice > 0 ? Colors.white : (isDark ? Colors.white38 : themeConfig.textMuted),
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 1.25,
-                              letterSpacing: 0.3,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                totalPrice > 0
+                                    ? '${'parent.pay'.tr()} $totalPrice грн'
+                                    : 'parent.choose_subscription'.tr(),
+                                style: TextStyle(
+                                  color: totalPrice > 0 ? Colors.white : (isDark ? Colors.white38 : themeConfig.textMuted),
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.2,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              if (activeDiscount != null && totalPrice > 0) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Знижка врахована (Економія ${originalSelectedPrice - totalPrice} грн)',
+                                  style: TextStyle(
+                                    color: Colors.amber.shade200,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -956,6 +1167,180 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         );
       },
     );
+  }
+
+  Widget _buildPersonalDiscountPromoBanner({
+    required List<SubscriptionDiscount> discounts,
+    required String ownerName,
+    required bool isDark,
+    required AppThemeConfig themeConfig,
+    required VoidCallback onTap,
+  }) {
+    if (discounts.isEmpty) return const SizedBox.shrink();
+
+    final primaryDiscount = discounts.first;
+    final String discountDescription;
+    if (primaryDiscount.discountType == 'percent') {
+      discountDescription = primaryDiscount.serviceName == 'all'
+          ? '-${primaryDiscount.discountPercent}% на будь-який абонемент'
+          : '-${primaryDiscount.discountPercent}% на ${primaryDiscount.serviceName}';
+    } else {
+      final saved = primaryDiscount.originalPrice! - (primaryDiscount.discountedPrice ?? 0);
+      discountDescription = primaryDiscount.serviceName == 'all'
+          ? 'Спеціальна фіксована ціна ${primaryDiscount.discountedPrice} грн'
+          : '${primaryDiscount.discountedPrice} грн на ${primaryDiscount.serviceName}${saved != null && saved > 0 ? " (Економія $saved грн)" : ""}';
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      const Color(0xFFD97706).withValues(alpha: 0.28),
+                      const Color(0xFFB45309).withValues(alpha: 0.15),
+                      const Color(0xFF0E3D64).withValues(alpha: 0.50),
+                    ]
+                  : [
+                      const Color(0xFFFEF3C7),
+                      const Color(0xFFFDE68A).withValues(alpha: 0.6),
+                      Colors.white.withValues(alpha: 0.9),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.60 : 0.70),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.25 : 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Персональна пропозиція',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444).withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'АКЦІЯ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Для: $ownerName',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : const Color(0xFF78350F),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.black.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.35 : 0.30),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.tag, size: 15, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        discountDescription,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (discounts.length > 1) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '+ ще ${discounts.length - 1} активних персональних знижок',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 350.ms).slideY(begin: -0.05);
   }
 
   Widget _buildModalCategoryTab(String tabKey, String label, IconData icon, bool isSelected, bool isDark, VoidCallback onTap) {
@@ -1049,7 +1434,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       if (user != null) {'id': user.name, 'name': user.name, 'isParent': true, 'isCurrentUser': true},
       if (otherParentName != null && otherParentName.isNotEmpty)
         {'id': otherParentName, 'name': otherParentName, 'isParent': true, 'isPartner': true, 'targetUserId': otherParentId},
-      ...children.map((c) => {'id': c.name, 'name': c.name, 'isParent': false}),
+      ...children.map((c) => {'id': c.name, 'name': c.currentAge != null ? '${c.name} (${c.currentAge} р.)' : c.name, 'isParent': false}),
       if (hasSplitSubscription || _selectedOwner == 'Всі (Спліт)')
         {'id': 'Всі (Спліт)', 'name': 'Спліт (2 ос.)', 'isParent': false, 'isSplit': true},
     ];
@@ -1075,6 +1460,14 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             ? currentSub.remainingClasses.clamp(0, currentSub.totalClasses)
             : currentSub.remainingClasses)
         : 0;
+
+    final userDiscountsAsync = ref.watch(userDiscountsStreamProvider);
+    final userDiscounts = userDiscountsAsync.value ?? <SubscriptionDiscount>[];
+
+    final matchingDiscountsForOwner = userDiscounts.where((d) {
+      if (d.targetMember == 'all') return true;
+      return d.targetMember.trim().toLowerCase() == effectiveOwner.trim().toLowerCase();
+    }).toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -1200,6 +1593,21 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             ),
             const SizedBox(height: 12),
             
+            if (matchingDiscountsForOwner.isNotEmpty) ...[
+              _buildPersonalDiscountPromoBanner(
+                discounts: matchingDiscountsForOwner,
+                ownerName: effectiveOwner,
+                isDark: isDark,
+                themeConfig: themeConfig,
+                onTap: () {
+                  if (user != null) {
+                    _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig, discounts: userDiscounts);
+                  }
+                },
+              ),
+              const SizedBox(height: 14),
+            ],
+
             // 3D Subscription Card or Empty State
             if (currentSub == null)
               Container(
@@ -1594,7 +2002,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                   ],
                 ),
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig),
+                  onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig, discounts: userDiscounts),
                   icon: _isLoading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),

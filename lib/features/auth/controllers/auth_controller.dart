@@ -8,12 +8,14 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
+import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
 
 part 'auth_controller.g.dart';
 
 @Riverpod(keepAlive: true)
 class AuthController extends _$AuthController {
   bool _isLoggingIn = false;
+  bool _isLoggingOut = false;
 
   @override
   AppUser? build() {
@@ -47,6 +49,7 @@ class AuthController extends _$AuthController {
     }
 
     FirebaseAuth.instance.authStateChanges().listen((user) async {
+      if (_isLoggingOut) return;
       final prefs = await SharedPreferences.getInstance();
       final savedRoleString = prefs.getString('userRole');
       final mockUserId = prefs.getString('mockUserId');
@@ -270,8 +273,11 @@ class AuthController extends _$AuthController {
         final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
         final docSnap = await docRef.get();
         final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-        if (password.trim() != storedPassword.trim()) {
+        if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
           throw Exception('Невірний пароль');
+        }
+        if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+          docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
         }
 
         if (docSnap.exists) {
@@ -320,7 +326,12 @@ class AuthController extends _$AuthController {
         final docRef = FirebaseFirestore.instance.collection('users').doc('mock_owner');
         final docSnap = await docRef.get();
         final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-        if (password.trim() != storedPassword.trim()) throw Exception('Невірний пароль');
+        if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+          throw Exception('Невірний пароль');
+        }
+        if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+          docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+        }
         state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
         await _syncRoleToPrefs(state);
         final prefs = await SharedPreferences.getInstance();
@@ -337,8 +348,11 @@ class AuthController extends _$AuthController {
         if (usersSnap.docs.isNotEmpty) {
           final userData = usersSnap.docs.first.data();
           final storedPassword = (userData['password'] as String?) ?? '1';
-          if (password.trim() != storedPassword.trim()) {
+          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
             throw Exception('Невірний пароль');
+          }
+          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+            usersSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
           }
           state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
@@ -379,8 +393,11 @@ class AuthController extends _$AuthController {
         if (usersSnap.docs.isNotEmpty) {
           final userData = usersSnap.docs.first.data();
           final storedPassword = (userData['password'] as String?) ?? '1';
-          if (password.trim() != storedPassword.trim()) {
+          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
             throw Exception('Невірний пароль');
+          }
+          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+            usersSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
           }
           state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
@@ -431,8 +448,11 @@ class AuthController extends _$AuthController {
         if (emailSnap.docs.isNotEmpty) {
           final userData = emailSnap.docs.first.data();
           final storedPassword = (userData['password'] as String?) ?? '1';
-          if (password.trim() != storedPassword.trim()) {
+          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
             throw Exception('Невірний пароль');
+          }
+          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+            emailSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
           }
           state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
@@ -551,7 +571,7 @@ class AuthController extends _$AuthController {
         'role': 'parent',
         'phone': ?normalizedPhone,
         'loginId': assignedLoginId,
-        'password': password.trim(),
+        'password': PasswordSecurityHelper.hashPassword(password.trim()),
         'email': ?userEmail,
         'avatarUrl': 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
         'createdAt': FieldValue.serverTimestamp(),
@@ -588,18 +608,25 @@ class AuthController extends _$AuthController {
   }
 
   Future<void> logout() async {
+    _isLoggingOut = true;
     try {
-      await FirebaseAuth.instance.signOut();
-      await GoogleSignIn().signOut();
-    } catch (_) {}
-    state = null;
-    await _syncRoleToPrefs(null);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('mockUserId');
-    await prefs.remove('clientId');
-    await prefs.remove('userName');
-    await prefs.remove('cachedUserJson');
-    await prefs.remove('needsOnboarding');
+      state = null;
+      await _syncRoleToPrefs(null);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('mockUserId');
+      await prefs.remove('clientId');
+      await prefs.remove('userName');
+      await prefs.remove('cachedUserJson');
+      await prefs.remove('needsOnboarding');
+      await prefs.remove('userRole');
+
+      try {
+        await FirebaseAuth.instance.signOut();
+        await GoogleSignIn().signOut();
+      } catch (_) {}
+    } finally {
+      _isLoggingOut = false;
+    }
   }
 
   Future<void> updateAvatar(Uint8List bytes, {VoidCallback? onSuccess, void Function(String)? onError}) async {

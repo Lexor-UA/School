@@ -1,6 +1,7 @@
 class CoachAttendeeInfo {
   final String id;
   final String name;
+  final String? parentId;
   final String? parentName;
   final int? age;
   final String? phone;
@@ -17,6 +18,7 @@ class CoachAttendeeInfo {
   const CoachAttendeeInfo({
     required this.id,
     required this.name,
+    this.parentId,
     this.parentName,
     this.age,
     this.phone,
@@ -34,6 +36,7 @@ class CoachAttendeeInfo {
   CoachAttendeeInfo copyWith({
     String? id,
     String? name,
+    String? parentId,
     String? parentName,
     int? age,
     String? phone,
@@ -50,6 +53,7 @@ class CoachAttendeeInfo {
     return CoachAttendeeInfo(
       id: id ?? this.id,
       name: name ?? this.name,
+      parentId: parentId ?? this.parentId,
       parentName: parentName ?? this.parentName,
       age: age ?? this.age,
       phone: phone ?? this.phone,

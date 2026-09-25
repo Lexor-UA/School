@@ -316,6 +316,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                               suffixIcon: IconButton(
                                 tooltip: 'Готово',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                                 icon: const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18),
                                 onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
                               ),
@@ -446,12 +448,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       _buildTextField(
                                         controller: child.ageController,
                                         icon: LucideIcons.calendarDays,
-                                        hint: '${'onboarding.child_age_hint'.tr()} (1-15)',
+                                        hint: 'onboarding.child_age_hint'.tr(),
                                         keyboardType: TextInputType.number,
                                         textInputAction: TextInputAction.done,
                                         onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                                         suffixIcon: IconButton(
                                           tooltip: 'Готово',
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                                           icon: const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18),
                                           onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
                                         ),
@@ -573,7 +577,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPressed: () async {
                   final router = GoRouter.of(context);
                   await ref.read(authControllerProvider.notifier).logout();
-                  if (mounted) router.go('/');
+                  if (mounted) router.go('/?skipSplash=true');
                 },
               ),
             ),
@@ -607,9 +611,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-        prefixIcon: Icon(icon, color: Colors.white70),
+        hintStyle: TextStyle(
+          color: Colors.white.withValues(alpha: 0.5),
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(icon, color: Colors.white70, size: 20),
+        prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: 42),
         suffixIcon: suffixIcon,
+        suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        isDense: true,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(

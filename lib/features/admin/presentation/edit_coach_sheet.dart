@@ -85,13 +85,13 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     try {
       final userRef = FirebaseFirestore.instance.collection('users').doc(widget.coachId);
 
-      await userRef.update({
+      await userRef.set({
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'rateGroup': rateGroup,
         'rateIndividual': rateIndividual,
         'rateSplit': rateSplit,
-      }).timeout(const Duration(seconds: 5));
+      }, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);

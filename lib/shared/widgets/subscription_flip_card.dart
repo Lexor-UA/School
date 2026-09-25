@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -37,6 +38,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
   }
 
   void _toggleFlip() {
+    HapticFeedback.lightImpact();
     if (_isFront) {
       _controller.forward();
     } else {

@@ -92,6 +92,8 @@ class BookingResult {
 @Riverpod(keepAlive: true)
 class ScheduleController extends _$ScheduleController {
   ClassConflict? lastConflict;
+  bool _isCreatingRecurringGroup = false;
+  bool _isCleaningUpDuplicates = false;
 
   ClassConflict? _evaluateConflictAgainst({
     required List<GroupClass> classes,
@@ -275,7 +277,7 @@ class ScheduleController extends _$ScheduleController {
         .orderBy('startTime')
         .snapshots()
         .map((snapshot) {
-      final List<GroupClass> classes = [];
+      final Map<String, GroupClass> uniqueClasses = {};
       for (final doc in snapshot.docs) {
         try {
           final data = Map<String, dynamic>.from(doc.data() as Map);
@@ -303,12 +305,12 @@ class ScheduleController extends _$ScheduleController {
             });
           }
 
-          classes.add(GroupClass.fromJson(data));
+          uniqueClasses[doc.id] = GroupClass.fromJson(data);
         } catch (e) {
           debugPrint('Warning: Failed to parse class document ${doc.id}: $e');
         }
       }
-      return classes;
+      return uniqueClasses.values.toList();
     });
   }
 
@@ -342,7 +344,7 @@ class ScheduleController extends _$ScheduleController {
     }
 
     String ownerName = targetOwnerName ?? getMemberName(childId);
-    final isAdult = childId == effectiveUserId || familyParentIds.contains(childId);
+    final isAdult = childId == effectiveUserId || (targetUserId == null && familyParentIds.contains(childId));
 
     // Get the subscription for effective user / family
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
@@ -500,7 +502,7 @@ class ScheduleController extends _$ScheduleController {
               return;
             }
 
-            if (!isAttAdult && effectiveSubscription.isAdultSubscription) {
+            if (!isAttAdult && effectiveSubscription.isAdultOnlySubscription) {
               result = const BookingResult(
                 isSuccess: false,
                 message: 'Дорослий абонемент не може використовуватися для дитячих занять.',
@@ -509,7 +511,7 @@ class ScheduleController extends _$ScheduleController {
               return;
             }
 
-            if (isAttAdult && effectiveSubscription.isChildSubscription) {
+            if (isAttAdult && effectiveSubscription.isChildOnlySubscription) {
               result = const BookingResult(
                 isSuccess: false,
                 message: 'Дитячий абонемент не може використовуватися для дорослих занять.',
@@ -525,7 +527,7 @@ class ScheduleController extends _$ScheduleController {
             if (childAge != null && !groupClass.isAgeCompatible(childAge)) {
               final range = groupClass.ageRange;
               final msg = childAge <= 5
-                  ? 'Для дітей до 5 років включно (${child?.name ?? ''}, вік: $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+                  ? 'Для дітей до 6 років (1–5 років включно) (${child?.name ?? ''}, вік: $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
                   : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
               result = BookingResult(
                 isSuccess: false,
@@ -616,12 +618,15 @@ class ScheduleController extends _$ScheduleController {
         List<String> newEnrolled = List.from(groupClass.enrolledChildIds)..addAll(attendeesToAdd);
         int newRemaining = remainingClasses - 1;
         
+        final bookedMap = Map<String, dynamic>.from((data['bookedSubscriptions'] as Map?) ?? {});
+        for (final attId in attendeesToAdd) {
+          bookedMap[attId] = effectiveSubscription.id;
+        }
+
         final Map<String, dynamic> classUpdates = {
           'enrolledChildIds': newEnrolled,
+          'bookedSubscriptions': bookedMap,
         };
-        for (final attId in attendeesToAdd) {
-          classUpdates['bookedSubscriptions.$attId'] = effectiveSubscription.id;
-        }
 
         transaction.update(classRef, classUpdates);
         transaction.update(subRef, {
@@ -638,7 +643,7 @@ class ScheduleController extends _$ScheduleController {
                 status: BookingStatus.success,
               )
             : BookingResult.success;
-      });
+      }, timeout: const Duration(seconds: 10), maxAttempts: 2);
       
       if (result.isSuccess && bookedClass != null) {
         final enrolledNames = confirmedAttendees.isNotEmpty
@@ -756,18 +761,20 @@ class ScheduleController extends _$ScheduleController {
           if (newEnrolled.isEmpty && isCustomBooking) {
             transaction.delete(classRef);
           } else {
-            final Map<String, dynamic> classUpdates = {'enrolledChildIds': newEnrolled};
+            final bookedMap = Map<String, dynamic>.from((data['bookedSubscriptions'] as Map?) ?? {});
             for (final mId in membersToRemove) {
-              if (bookedSubMap?.containsKey(mId) == true) {
-                classUpdates['bookedSubscriptions.$mId'] = FieldValue.delete();
-              }
+              bookedMap.remove(mId);
             }
+            final Map<String, dynamic> classUpdates = {
+              'enrolledChildIds': newEnrolled,
+              'bookedSubscriptions': bookedMap,
+            };
             transaction.update(classRef, classUpdates);
           }
           
           success = true;
         }
-      });
+      }, timeout: const Duration(seconds: 10), maxAttempts: 2);
       
       if (success && cancelledClass != null) {
         _logActivity(
@@ -1063,8 +1070,12 @@ class ScheduleController extends _$ScheduleController {
       }
       
       // Optimistically update state so consecutive creations see the new class instantly
-      final current = state.value ?? const <GroupClass>[];
-      state = AsyncData<List<GroupClass>>([...current, newClass]);
+      final Map<String, GroupClass> dedup = {};
+      for (final c in (state.value ?? const <GroupClass>[])) {
+        dedup[c.id] = c;
+      }
+      dedup[newClass.id] = newClass;
+      state = AsyncData<List<GroupClass>>(dedup.values.toList());
 
       return true;
     } catch (e) {
@@ -1090,6 +1101,11 @@ class ScheduleController extends _$ScheduleController {
     if (user == null) {
       return const CreateRecurringClassesResult(createdCount: 0);
     }
+    if (_isCreatingRecurringGroup) {
+      debugPrint('createRecurringClasses: Rejected concurrent call.');
+      return const CreateRecurringClassesResult(createdCount: 0);
+    }
+    _isCreatingRecurringGroup = true;
 
     try {
       final List<DateTime> validStartTimes = [];
@@ -1202,9 +1218,15 @@ class ScheduleController extends _$ScheduleController {
         await batch.commit();
       }
 
-      // Optimistically update state so newly created recurring classes are immediately visible
-      final current = state.value ?? [];
-      state = AsyncData([...current, ...createdClasses]);
+      // Optimistically update state so newly created recurring classes are immediately visible without duplicates
+      final Map<String, GroupClass> dedup = {};
+      for (final c in (state.value ?? const <GroupClass>[])) {
+        dedup[c.id] = c;
+      }
+      for (final c in createdClasses) {
+        dedup[c.id] = c;
+      }
+      state = AsyncData(dedup.values.toList());
 
       return CreateRecurringClassesResult(
         createdCount: validStartTimes.length,
@@ -1214,6 +1236,97 @@ class ScheduleController extends _$ScheduleController {
     } catch (e) {
       debugPrint('Error creating recurring classes: $e');
       return const CreateRecurringClassesResult(createdCount: 0);
+    } finally {
+      _isCreatingRecurringGroup = false;
+    }
+  }
+
+  /// Scans active classes and deletes identical ghost/duplicate classes created in the same slot.
+  /// A duplicate is defined as having the same (date, startTime, lane, coachId, title) where enrolledChildIds is empty.
+  /// Keeps the version with enrolled students (or the first created), and removes redundant duplicates from Firestore.
+  Future<int> cleanupDuplicateClasses() async {
+    if (_isCleaningUpDuplicates) return 0;
+    _isCleaningUpDuplicates = true;
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final snap = await firestore
+          .collection('classes')
+          .where('startTime', isGreaterThanOrEqualTo: DateTime.now().subtract(const Duration(days: 45)).toIso8601String())
+          .get();
+
+      final Map<String, List<GroupClass>> slotGroups = {};
+
+      for (final doc in snap.docs) {
+        try {
+          final data = Map<String, dynamic>.from(doc.data() as Map);
+          data['id'] = doc.id;
+          if (data['startTime'] is Timestamp) {
+            data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+          }
+          if (data['endTime'] is Timestamp) {
+            data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+          }
+          final gc = GroupClass.fromJson(data);
+          final key = '${gc.startTime.toIso8601String()}_${gc.endTime.toIso8601String()}_${gc.lane.trim().toLowerCase()}_${gc.coachId.trim()}_${gc.title.trim().toLowerCase()}';
+          slotGroups.putIfAbsent(key, () => []).add(gc);
+        } catch (_) {}
+      }
+
+      final List<String> idsToDelete = [];
+
+      for (final entry in slotGroups.entries) {
+        final group = entry.value;
+        if (group.length <= 1) continue;
+
+        // Sort: classes with enrolled students come first
+        group.sort((a, b) => b.enrolledChildIds.length.compareTo(a.enrolledChildIds.length));
+
+        // Keep group[0]. For i = 1..length-1, delete if enrolledChildIds is empty
+        for (int i = 1; i < group.length; i++) {
+          final candidate = group[i];
+          if (candidate.enrolledChildIds.isEmpty) {
+            idsToDelete.add(candidate.id);
+          }
+        }
+      }
+
+      // Also clean up any in-memory duplicates in state.value with duplicate IDs
+      final current = state.value ?? [];
+      final Map<String, GroupClass> uniqueState = {};
+      final deletedSet = idsToDelete.toSet();
+      for (final c in current) {
+        if (!deletedSet.contains(c.id)) {
+          uniqueState[c.id] = c;
+        }
+      }
+      state = AsyncData(uniqueState.values.toList());
+
+      if (idsToDelete.isEmpty) {
+        return 0;
+      }
+
+      // Delete from Firestore in batches
+      const chunkSize = 400;
+      for (int i = 0; i < idsToDelete.length; i += chunkSize) {
+        final chunk = idsToDelete.sublist(
+          i,
+          (i + chunkSize > idsToDelete.length) ? idsToDelete.length : i + chunkSize,
+        );
+        final batch = firestore.batch();
+        for (final id in chunk) {
+          batch.delete(firestore.collection('classes').doc(id));
+        }
+        await batch.commit();
+      }
+
+      debugPrint('Successfully cleaned up ${idsToDelete.length} duplicate classes.');
+      return idsToDelete.length;
+    } catch (e) {
+      debugPrint('Error cleaning up duplicate classes: $e');
+      return 0;
+    } finally {
+      _isCleaningUpDuplicates = false;
     }
   }
 

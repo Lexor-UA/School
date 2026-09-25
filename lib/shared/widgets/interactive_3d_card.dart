@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// A premium interactive 3D card that tilts in space on touch/drag/hover,
 /// featuring a dynamic holographic iridescent sheen and specular lighting.
@@ -68,6 +69,7 @@ class _Interactive3DCardState extends State<Interactive3DCard> with SingleTicker
   }
 
   void _onInteractionStart(Offset localPosition, BoxConstraints constraints) {
+    HapticFeedback.selectionClick();
     _springController.stop();
     _isInteracting = true;
     _updateTilt(localPosition, constraints);

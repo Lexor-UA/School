@@ -519,56 +519,39 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               Row(
                 children: [
                   // Avatar
-                  Stack(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.35) : Colors.white,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length].first.withValues(alpha: currentTheme.isDark ? 0.35 : 0.30),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.35) : Colors.white,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length].first.withValues(alpha: currentTheme.isDark ? 0.35 : 0.30),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                        child: Center(
-                          child: Text(
-                            _getInitials(name),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        _getInitials(name),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 13,
-                          height: 13,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: currentTheme.isDark ? const Color(0xFF0D2542) : Colors.white, width: 2.2),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(width: 14),
 

@@ -24,6 +24,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
   final TextEditingController _searchController = TextEditingController();
 
   String _getDialogRole(ChatDialog dialog, Map<String, String> userRoles) {
+    if (dialog.type == 'coach_client') {
+      return 'coach_client';
+    }
     final lowerName = dialog.clientName.toLowerCase();
     // 1. Password recovery
     if (dialog.id.startsWith('recovery_') ||
@@ -117,7 +120,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                     for (final d in rawDialogs) {
                       final role = _getDialogRole(d, userRoles);
                       final isRecovery = role == 'recovery';
-                      final key = isRecovery ? d.id : '${d.clientId}_$role';
+                      final isCoachClient = role == 'coach_client';
+                      final key = (isRecovery || isCoachClient) ? d.id : '${d.clientId}_$role';
                       if (!deduplicatedMap.containsKey(key)) {
                         deduplicatedMap[key] = d;
                       } else {
@@ -140,17 +144,21 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                     final coachesCount = dialogs.where((d) => _getDialogRole(d, userRoles) == 'coach').length;
                     final clientsCount = dialogs.where((d) => _getDialogRole(d, userRoles) == 'parent').length;
                     final recoveryCount = dialogs.where((d) => _getDialogRole(d, userRoles) == 'recovery').length;
+                    final coachClientCount = dialogs.where((d) => _getDialogRole(d, userRoles) == 'coach_client').length;
 
                     // Filter dialogs
                     List<ChatDialog> filteredDialogs = dialogs.where((d) {
                       final role = _getDialogRole(d, userRoles);
                       final matchesSearch = _searchQuery.isEmpty ||
                           d.clientName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                          (d.coachName != null && d.coachName!.toLowerCase().contains(_searchQuery.toLowerCase())) ||
+                          (d.childName != null && d.childName!.toLowerCase().contains(_searchQuery.toLowerCase())) ||
                           d.lastMessage.toLowerCase().contains(_searchQuery.toLowerCase());
                       final matchesUnread = !_onlyUnread || d.unreadAdminCount > 0;
                       final matchesCategory = _selectedCategoryIndex == 0 ||
                           (_selectedCategoryIndex == 1 && role == 'coach') ||
-                          (_selectedCategoryIndex == 2 && role == 'parent');
+                          (_selectedCategoryIndex == 2 && role == 'parent') ||
+                          (_selectedCategoryIndex == 3 && role == 'coach_client');
                       return matchesSearch && matchesUnread && matchesCategory;
                     }).toList();
 
@@ -429,12 +437,13 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                         ),
                         const SizedBox(height: 12),
 
-                        // 3 Compact Proportional Category Tabs on full width
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 4,
-                              child: _buildCategoryTab(
+                        // 4 Category Tabs
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              _buildCategoryTab(
                                 label: 'Всі',
                                 count: dialogs.length,
                                 isSelected: _selectedCategoryIndex == 0,
@@ -442,11 +451,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 currentTheme: currentTheme,
                                 onTap: () => setState(() => _selectedCategoryIndex = 0),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              flex: 7,
-                              child: _buildCategoryTab(
+                              const SizedBox(width: 8),
+                              _buildCategoryTab(
                                 label: 'Тренери',
                                 icon: '🏊',
                                 count: coachesCount,
@@ -456,11 +462,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 currentTheme: currentTheme,
                                 onTap: () => setState(() => _selectedCategoryIndex = 1),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              flex: 7,
-                              child: _buildCategoryTab(
+                              const SizedBox(width: 8),
+                              _buildCategoryTab(
                                 label: 'Клієнти',
                                 icon: '👤',
                                 count: clientsCount,
@@ -470,8 +473,19 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 currentTheme: currentTheme,
                                 onTap: () => setState(() => _selectedCategoryIndex = 2),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              _buildCategoryTab(
+                                label: 'Нагляд',
+                                icon: '👁️',
+                                count: coachClientCount,
+                                isSelected: _selectedCategoryIndex == 3,
+                                accentColor: const Color(0xFFA855F7),
+                                isDark: isDark,
+                                currentTheme: currentTheme,
+                                onTap: () => setState(() => _selectedCategoryIndex = 3),
+                              ),
+                            ],
+                          ),
                         ),
 
                         // VIP Golden Alert Banner for Password Recovery Requests
@@ -673,7 +687,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8.5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8.5),
           decoration: BoxDecoration(
             gradient: isSelected
                 ? (isDark
@@ -834,8 +848,11 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
     final role = _getDialogRole(dialog, userRoles);
     final isRecovery = role == 'recovery';
     final isCoach = role == 'coach';
+    final isCoachClient = role == 'coach_client';
 
-    String displayName = dialog.clientName;
+    String displayName = isCoachClient
+        ? '${dialog.coachName ?? 'Тренер'} ↔ ${dialog.clientName}'
+        : dialog.clientName;
     if (isRecovery) {
       displayName = displayName
           .replaceFirst(RegExp(r'^🔑\s*'), '')
@@ -846,7 +863,13 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
 
     // Role-specific card background gradient
     final List<Color> cardGradientColors = isDark
-        ? (isUnread
+        ? (isCoachClient
+            ? [
+                Colors.white.withValues(alpha: 0.22),
+                const Color(0xFF8B5CF6).withValues(alpha: 0.24),
+                const Color(0xFF2E1065).withValues(alpha: 0.50),
+              ]
+            : (isUnread
             ? (isRecovery
                 ? [
                     Colors.white.withValues(alpha: 0.24),
@@ -868,9 +891,14 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                 Colors.white.withValues(alpha: 0.16),
                 const Color(0xFF0284C7).withValues(alpha: 0.10),
                 const Color(0xFF081C30).withValues(alpha: 0.40),
-              ])
-        : (isUnread
-            ? (isRecovery
+              ]))
+        : (isCoachClient
+            ? const [
+                Colors.white,
+                Color(0xFFFAF5FF),
+              ]
+            : (isUnread
+                ? (isRecovery
                 ? const [
                     Colors.white,
                     Color(0xFFFFFBEB),
@@ -887,15 +915,17 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
             : const [
                 Colors.white,
                 Color(0xFFF8FAFC),
-              ]);
+              ]));
 
-    final Color cardBorderColor = isUnread
+    final Color cardBorderColor = isCoachClient
+        ? const Color(0xFFA78BFA)
+        : (isUnread
         ? (isRecovery
             ? const Color(0xFFF59E0B)
             : (isCoach
                 ? const Color(0xFF10B981)
                 : const Color(0xFF0284C7)))
-        : (isDark ? Colors.white.withValues(alpha: 0.32) : const Color(0xFFBAE6FD));
+        : (isDark ? Colors.white.withValues(alpha: 0.32) : const Color(0xFFBAE6FD)));
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -906,9 +936,26 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
           child: InkWell(
             onTap: () {
               Navigator.pop(context);
-              context.go(
-                '/admin/chat?clientName=${Uri.encodeComponent(dialog.clientName)}&clientId=${dialog.clientId}',
-              );
+              if (isCoachClient) {
+                final uri = Uri(
+                  path: '/admin/chat',
+                  queryParameters: {
+                    'dialogId': dialog.id,
+                    'clientId': dialog.clientId,
+                    'clientName': dialog.clientName,
+                    'coachId': dialog.coachId ?? '',
+                    'coachName': dialog.coachName ?? 'Тренер',
+                    if (dialog.childName != null && dialog.childName!.isNotEmpty)
+                      'childName': dialog.childName!,
+                    'isMonitoring': 'true',
+                  },
+                );
+                context.go(uri.toString());
+              } else {
+                context.go(
+                  '/admin/chat?clientName=${Uri.encodeComponent(dialog.clientName)}&clientId=${dialog.clientId}',
+                );
+              }
             },
             borderRadius: BorderRadius.circular(20),
             splashColor: (isRecovery
@@ -965,11 +1012,13 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                           border: Border.all(
                             color: isRecovery
                                 ? const Color(0xFFFDE68A)
-                                : (isCoach
-                                    ? const Color(0xFF10B981).withValues(alpha: isUnread ? 0.9 : 0.6)
-                                    : (isUnread
-                                        ? const Color(0xFF0284C7).withValues(alpha: 0.85)
-                                        : (isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFBAE6FD)))),
+                                : (isCoachClient
+                                    ? const Color(0xFFA78BFA).withValues(alpha: 0.85)
+                                    : (isCoach
+                                        ? const Color(0xFF10B981).withValues(alpha: isUnread ? 0.9 : 0.6)
+                                        : (isUnread
+                                            ? const Color(0xFF0284C7).withValues(alpha: 0.85)
+                                            : (isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFBAE6FD))))),
                             width: 2,
                           ),
                           boxShadow: [
@@ -977,6 +1026,11 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               BoxShadow(
                                 color: const Color(0xFFF59E0B).withValues(alpha: 0.45),
                                 blurRadius: 12,
+                              )
+                            else if (isCoachClient)
+                              BoxShadow(
+                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                                blurRadius: 10,
                               )
                             else if (isUnread)
                               BoxShadow(
@@ -1000,7 +1054,21 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                   child: Text('🔑', style: TextStyle(fontSize: 22)),
                                 ),
                               )
-                            : StreamBuilder<DocumentSnapshot>(
+                            : isCoachClient
+                                ? Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(LucideIcons.eye, color: Colors.white, size: 22),
+                                    ),
+                                  )
+                                : StreamBuilder<DocumentSnapshot>(
                                 stream: FirebaseFirestore.instance
                                     .collection('users')
                                     .doc(dialog.clientId)
@@ -1072,7 +1140,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                           decoration: BoxDecoration(
                             color: isRecovery
                                 ? const Color(0xFFF59E0B)
-                                : const Color(0xFF10B981),
+                                : (isCoachClient
+                                    ? const Color(0xFFA855F7)
+                                    : (isCoach ? const Color(0xFF10B981) : const Color(0xFF10B981))),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isDark ? const Color(0xFF0A1422) : Colors.white,
@@ -1080,7 +1150,11 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: isRecovery ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                                color: isRecovery
+                                    ? const Color(0xFFF59E0B)
+                                    : (isCoachClient
+                                        ? const Color(0xFFA855F7)
+                                        : (isCoach ? const Color(0xFF10B981) : const Color(0xFF10B981))),
                                 blurRadius: 6,
                               ),
                             ],
@@ -1115,7 +1189,63 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                   ),
                                   const SizedBox(width: 8),
                                   // Role Badge with strict WCAG AAA contrast
-                                  if (isRecovery)
+                                  if (isCoachClient)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? const Color(0xFFA855F7).withValues(alpha: 0.22)
+                                                : const Color(0xFFF3E8FF),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: isDark
+                                                  ? const Color(0xFFA855F7).withValues(alpha: 0.60)
+                                                  : const Color(0xFFE9D5FF),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text('👁️ ', style: TextStyle(fontSize: 8.5)),
+                                              Text(
+                                                'НАГЛЯД',
+                                                style: TextStyle(
+                                                  color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
+                                                  fontSize: 9.5,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (dialog.childName != null && dialog.childName!.isNotEmpty) ...[
+                                          const SizedBox(width: 5),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? Colors.white.withValues(alpha: 0.08)
+                                                  : const Color(0xFFF1F5F9),
+                                              borderRadius: BorderRadius.circular(5),
+                                            ),
+                                            child: Text(
+                                              dialog.childName!,
+                                              style: TextStyle(
+                                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    )
+                                  else if (isRecovery)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                                       decoration: BoxDecoration(
@@ -1218,9 +1348,11 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 color: isUnread
                                     ? (isRecovery
                                         ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706))
-                                        : (isCoach
-                                            ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
-                                            : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))))
+                                        : (isCoachClient
+                                            ? (isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE))
+                                            : (isCoach
+                                                ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                                                : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)))))
                                     : (isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.75) : const Color(0xFF64748B)),
                                 fontSize: 12,
                                 fontWeight: isUnread ? FontWeight.w700 : FontWeight.w500,
@@ -1245,7 +1377,39 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (isUnread) ...[
+                            if (isCoachClient) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFFA855F7).withValues(alpha: 0.18) : const Color(0xFFF3E8FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isDark ? const Color(0xFFA855F7).withValues(alpha: 0.40) : const Color(0xFFD8B4FE),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      LucideIcons.eye,
+                                      size: 11,
+                                      color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Стежити',
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (isUnread) ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

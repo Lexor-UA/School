@@ -18,6 +18,8 @@ abstract class Child with _$Child {
     @Default(0) int xp,
     @Default(100) int maxXp,
     @Default([]) List<Achievement> achievements,
+    @Default('cityswim') String organizationId,
+    @Default('kyiv') String branchId,
   }) = _Child;
 
   factory Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);

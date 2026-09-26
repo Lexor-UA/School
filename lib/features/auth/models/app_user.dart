@@ -4,7 +4,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'app_user.freezed.dart';
 part 'app_user.g.dart';
 
-enum UserRole { parent, coach, owner, admin }
+enum UserRole { parent, coach, owner, admin, superAdmin }
+
+extension AppUserRoleX on AppUser {
+  bool get isSuperAdmin => role == UserRole.superAdmin;
+  bool get isOwnerOrSuperAdmin => role == UserRole.owner || role == UserRole.superAdmin;
+}
 
 @freezed
 abstract class Achievement with _$Achievement {
@@ -27,6 +32,9 @@ abstract class AppUser with _$AppUser {
     required UserRole role,
     String? phone,
     String? loginId,
+    @Default('cityswim') String organizationId,
+    @Default('kyiv') String branchId,
+    @Default(['kyiv']) List<String> branchIds,
     @Default(1) int level,
     @Default(0) int xp,
     @Default(100) int maxXp,

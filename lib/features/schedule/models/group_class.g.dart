@@ -26,6 +26,11 @@ _GroupClass _$GroupClassFromJson(Map<String, dynamic> json) => _GroupClass(
       const [],
   category: json['category'] as String,
   lane: json['lane'] as String? ?? '',
+  organizationId: json['organizationId'] as String? ?? 'cityswim',
+  branchId: json['branchId'] as String? ?? 'kyiv',
+  timezone: json['timezone'] as String? ?? 'Europe/Kyiv',
+  locationId: json['locationId'] as String? ?? 'kyiv_main',
+  poolId: json['poolId'] as String? ?? 'pool_25m',
 );
 
 Map<String, dynamic> _$GroupClassToJson(_GroupClass instance) =>
@@ -41,4 +46,9 @@ Map<String, dynamic> _$GroupClassToJson(_GroupClass instance) =>
       'attendedChildIds': instance.attendedChildIds,
       'category': instance.category,
       'lane': instance.lane,
+      'organizationId': instance.organizationId,
+      'branchId': instance.branchId,
+      'timezone': instance.timezone,
+      'locationId': instance.locationId,
+      'poolId': instance.poolId,
     };

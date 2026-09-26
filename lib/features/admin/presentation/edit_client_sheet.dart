@@ -21,6 +21,8 @@ import 'package:swimming_school_app/features/parent/controllers/family_controlle
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription_discount.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
 
 class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -56,33 +58,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   bool _isSuccess = false;
   String _selectedSubOwner = '';
 
-  final List<Map<String, dynamic>> _services = [
-    // Дитячі абонементи: Молодша група (6-8 років)
-    {'name': 'Дитячий абонемент 6-8 років (4 тренування)', 'price': 1200, 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
-    {'name': 'Дитячий абонемент 6-8 років (8 тренувань)', 'price': 1900, 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
-    {'name': 'Дитячий абонемент 6-8 років (12 тренувань)', 'price': 2600, 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
-    {'name': 'Разове дитяче тренування 6-8 років', 'price': 500, 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '6-8'},
-
-    // Дитячі абонементи: Старша група (9-15 років)
-    {'name': 'Дитячий абонемент 9-15 років (4 тренування)', 'price': 1200, 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
-    {'name': 'Дитячий абонемент 9-15 років (8 тренувань)', 'price': 1900, 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
-    {'name': 'Дитячий абонемент 9-15 років (12 тренувань)', 'price': 2600, 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
-    {'name': 'Разове дитяче тренування 9-15 років', 'price': 500, 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '9-15'},
-
-    // Дорослі абонементи
-    {'name': 'Разове відвідування (Доросла група)', 'price': 600, 'classes': 1, 'validityDays': 365, 'isAdult': true},
-    {'name': 'Абонемент на 4 тренування (Доросла група)', 'price': 1600, 'classes': 4, 'validityDays': 30, 'isAdult': true},
-    {'name': 'Абонемент на 8 тренувань (Доросла група)', 'price': 2900, 'classes': 8, 'validityDays': 30, 'isAdult': true},
-
-    // Дитячі індивідуальні абонементи (доступні для будь-якого віку, єдині дозволені для дітей до 5 років)
-    {'name': 'Дитячий індивідуальний абонемент (4 тренування)', 'price': 2200, 'classes': 4, 'validityDays': 30, 'isAdult': false, 'isIndividual': true},
-    {'name': 'Дитячий індивідуальний абонемент (8 тренувань)', 'price': 4000, 'classes': 8, 'validityDays': 30, 'isAdult': false, 'isIndividual': true},
-    {'name': 'Разове індивідуальне тренування (діти)', 'price': 650, 'classes': 1, 'validityDays': 365, 'isAdult': false, 'isIndividual': true},
-
-    // Спліт абонементи (2 особи: дитина + дорослий або 2 дитини)
-    {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'price': 3400, 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
-    {'name': 'Разове спліт-тренування (2 особи)', 'price': 900, 'classes': 1, 'validityDays': 365, 'isAdult': null, 'isSplit': true},
-  ];
+  List<Map<String, dynamic>> get _services {
+    final effectiveBranch = ref.watch(effectiveBranchProvider);
+    return SubscriptionPackageCatalog.getServicesMapForBranch(effectiveBranch.id);
+  }
 
   @override
   void initState() {
@@ -910,6 +889,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       }
                     }
 
+                    final effectiveBranch = ref.read(effectiveBranchProvider);
+
                     final newSub = Subscription(
                       id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${selectedOwner.hashCode}',
                       userId: widget.clientId,
@@ -919,6 +900,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       serviceName: selectedService,
                       expiryDate: expiry,
                       ownerName: selectedOwner,
+                      organizationId: effectiveBranch.organizationId,
+                      branchId: effectiveBranch.id,
+                      currency: effectiveBranch.currencyCode,
+                      currencySymbol: effectiveBranch.currencySymbol,
                     );
                     
                     try {
@@ -1033,6 +1018,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
 
   void _showAddDiscountDialog(List<String> availableOwners, List<Map<String, dynamic>> familyMembers) {
     final isDark = ref.read(appThemeControllerProvider).isDark;
+    final currSymbol = ref.read(effectiveBranchProvider).currencySymbol;
     
     // Default selection
     String selectedOwner = 'all'; // 'all' or specific owner name
@@ -1242,11 +1228,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             ),
                             ..._services.map((s) {
                               final name = s['name'] as String;
-                              final price = s['price'] as int?;
+                              final price = s['price'] as int? ?? s['priceNum'] as int?;
                               return DropdownMenuItem(
                                 value: name,
                                 child: Text(
-                                  '$name — ${price ?? 0} грн',
+                                  '$name — ${price ?? 0} $currSymbol',
                                   style: const TextStyle(fontSize: 12),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1266,7 +1252,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     if (basePrice > 0) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Базова вартість: $basePrice грн',
+                        'Базова вартість: $basePrice $currSymbol',
                         style: TextStyle(
                           color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                           fontSize: 11.5,
@@ -1384,7 +1370,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                         decoration: InputDecoration(
                           labelText: 'Акційна ціна для клієнта',
                           labelStyle: TextStyle(color: isDark ? Colors.white60 : const Color(0xFF64748B)),
-                          suffixText: 'грн',
+                          suffixText: currSymbol,
                           suffixStyle: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
                           prefixIcon: const Icon(LucideIcons.banknote, color: Color(0xFF10B981), size: 18),
                           filled: true,
@@ -1522,7 +1508,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                 ],
                                 if (previewPrice != null) ...[
                                   Text(
-                                    '$previewPrice грн',
+                                    '$previewPrice $currSymbol',
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669),
                                       fontSize: 16,
@@ -1554,7 +1540,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                             if (previewSavings != null && previewSavings > 0) ...[
                               const SizedBox(height: 4),
                               Text(
-                                'Економія клієнта: $previewSavings грн',
+                                'Економія клієнта: $previewSavings $currSymbol',
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                                   fontSize: 11.5,
@@ -1607,11 +1593,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     if (discountMode == 'fixedPrice') {
                       final val = int.tryParse(priceController.text.trim());
                       if (val == null || val <= 0) {
-                        setStateDialog(() => localError = 'Введіть коректну ціну в грн');
+                        setStateDialog(() => localError = 'Введіть коректну ціну в $currSymbol');
                         return;
                       }
                       if (basePrice > 0 && val >= basePrice) {
-                        setStateDialog(() => localError = 'Акційна ціна має бути меншою за базову ($basePrice грн)');
+                        setStateDialog(() => localError = 'Акційна ціна має бути меншою за базову ($basePrice $currSymbol)');
                         return;
                       }
                       discountedPrice = val;
@@ -1652,7 +1638,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       final admin = ref.read(authControllerProvider);
                       if (admin != null) {
                         final desc = discountMode == 'fixedPrice'
-                            ? '$discountedPrice грн'
+                            ? '$discountedPrice $currSymbol'
                             : '-$discountPercent%';
                         await logAdminAction(
                           'Надано знижку ($desc) для "${widget.initialName}"',
@@ -1660,7 +1646,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                         );
                       }
 
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Row(
@@ -1950,7 +1936,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                           ),
                                         ],
                                         TextSpan(
-                                          text: '${discount.discountedPrice} грн',
+                                          text: '${discount.discountedPrice} ${ref.watch(effectiveBranchProvider).currencySymbol}',
                                           style: TextStyle(
                                             color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669),
                                             fontWeight: FontWeight.w800,
@@ -1959,7 +1945,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                                         ),
                                         if (discount.originalPrice > discount.discountedPrice) ...[
                                           TextSpan(
-                                            text: ' (економія ${discount.originalPrice - discount.discountedPrice} грн)',
+                                            text: ' (економія ${discount.originalPrice - discount.discountedPrice} ${ref.watch(effectiveBranchProvider).currencySymbol})',
                                             style: TextStyle(
                                               color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                                               fontSize: 11,

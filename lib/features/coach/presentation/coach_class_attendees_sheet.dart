@@ -13,6 +13,7 @@ import 'package:swimming_school_app/features/subscription/models/subscription.da
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 void showCoachClassAttendeesSheet(BuildContext context, GroupClass gClass) {
   showModalBottomSheet(
@@ -197,6 +198,26 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
   }
 
   Future<void> _toggleAttendance(CoachAttendeeInfo attendee) async {
+    final currentUser = ref.read(authControllerProvider);
+    if (currentUser != null && currentUser.role == UserRole.coach) {
+      final coachBranch = currentUser.branchId;
+      final coachBranches = currentUser.branchIds;
+      final classBranch = _currentClass.branchId;
+      final hasAccess = coachBranch == classBranch || coachBranches.contains(classBranch);
+      if (!hasAccess) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('У вас немає доступу до відмітки відвідування в іншій філії'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     final isPresent = _currentClass.attendedChildIds.contains(attendee.id);
     final updatedAttended = isPresent
         ? (List<String>.from(_currentClass.attendedChildIds)..remove(attendee.id))

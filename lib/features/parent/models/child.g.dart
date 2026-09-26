@@ -13,11 +13,7 @@ _Child _$ChildFromJson(Map<String, dynamic> json) => _Child(
   age: (json['age'] as num?)?.toInt(),
   birthDate: json['birthDate'] == null
       ? null
-      : (json['birthDate'] is String
-          ? DateTime.tryParse(json['birthDate'] as String)
-          : (json['birthDate'] is dynamic && json['birthDate'].runtimeType.toString().contains('Timestamp'))
-              ? (json['birthDate'] as dynamic).toDate()
-              : null),
+      : DateTime.parse(json['birthDate'] as String),
   colorHex: json['colorHex'] as String? ?? '0xFF40C4FF',
   level: (json['level'] as num?)?.toInt() ?? 1,
   xp: (json['xp'] as num?)?.toInt() ?? 0,
@@ -27,6 +23,8 @@ _Child _$ChildFromJson(Map<String, dynamic> json) => _Child(
           ?.map((e) => Achievement.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  organizationId: json['organizationId'] as String? ?? 'cityswim',
+  branchId: json['branchId'] as String? ?? 'kyiv',
 );
 
 Map<String, dynamic> _$ChildToJson(_Child instance) => <String, dynamic>{
@@ -40,4 +38,6 @@ Map<String, dynamic> _$ChildToJson(_Child instance) => <String, dynamic>{
   'xp': instance.xp,
   'maxXp': instance.maxXp,
   'achievements': instance.achievements,
+  'organizationId': instance.organizationId,
+  'branchId': instance.branchId,
 };

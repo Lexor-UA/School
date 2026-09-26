@@ -20,6 +20,8 @@ class ChatDialog {
   final int unreadCoachCount;
   final List<String> participantIds;
   final String? lastSenderId;
+  final String organizationId;
+  final String branchId;
 
   const ChatDialog({
     required this.id,
@@ -39,6 +41,8 @@ class ChatDialog {
     this.unreadCoachCount = 0,
     this.participantIds = const [],
     this.lastSenderId,
+    this.organizationId = 'cityswim',
+    this.branchId = 'kyiv',
   });
 
   factory ChatDialog.fromJson(Map<String, dynamic> json) {
@@ -63,6 +67,8 @@ class ChatDialog {
               .toList() ??
           const [],
       lastSenderId: json['lastSenderId'] as String?,
+      organizationId: json['organizationId'] as String? ?? 'cityswim',
+      branchId: json['branchId'] as String? ?? 'kyiv',
     );
   }
 
@@ -85,6 +91,8 @@ class ChatDialog {
       'unreadCoachCount': unreadCoachCount,
       'participantIds': participantIds,
       if (lastSenderId != null) 'lastSenderId': lastSenderId,
+      'organizationId': organizationId,
+      'branchId': branchId,
     };
   }
 
@@ -106,6 +114,8 @@ class ChatDialog {
     int? unreadCoachCount,
     List<String>? participantIds,
     String? lastSenderId,
+    String? organizationId,
+    String? branchId,
   }) {
     return ChatDialog(
       id: id ?? this.id,
@@ -125,6 +135,8 @@ class ChatDialog {
       unreadCoachCount: unreadCoachCount ?? this.unreadCoachCount,
       participantIds: participantIds ?? this.participantIds,
       lastSenderId: lastSenderId ?? this.lastSenderId,
+      organizationId: organizationId ?? this.organizationId,
+      branchId: branchId ?? this.branchId,
     );
   }
 

@@ -68,6 +68,8 @@ class ChildrenController extends _$ChildrenController {
       age: calculatedAge,
       birthDate: birthDate,
       colorHex: colorHex ?? '0xFF40C4FF',
+      organizationId: user.organizationId,
+      branchId: user.branchId,
     );
 
     final childData = newChild.toJson();
@@ -329,6 +331,10 @@ class ChildrenController extends _$ChildrenController {
             'totalClasses': remaining,
             'remainingClasses': remaining,
             'isActive': true,
+            'organizationId': subData['organizationId'] ?? child.organizationId,
+            'branchId': subData['branchId'] ?? child.branchId,
+            'currency': subData['currency'] ?? 'UAH',
+            'currencySymbol': subData['currencySymbol'] ?? '₴',
             'createdAt': FieldValue.serverTimestamp(),
           };
           if (expiry != null) {

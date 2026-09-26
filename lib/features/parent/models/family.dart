@@ -8,6 +8,8 @@ class Family {
   final Map<String, String> parentPhones;
   final String inviteCode;
   final DateTime createdAt;
+  final String organizationId;
+  final String branchId;
 
   const Family({
     required this.id,
@@ -17,6 +19,8 @@ class Family {
     this.parentPhones = const {},
     required this.inviteCode,
     required this.createdAt,
+    this.organizationId = 'cityswim',
+    this.branchId = 'kyiv',
   });
 
   bool get isPaired => parentIds.length > 1 || parentNames.length > 1;
@@ -86,6 +90,8 @@ class Family {
       parentPhones: parseStringMap(json['parentPhones']),
       inviteCode: json['inviteCode'] as String? ?? '',
       createdAt: parseDate(json['createdAt']),
+      organizationId: json['organizationId'] as String? ?? 'cityswim',
+      branchId: json['branchId'] as String? ?? 'kyiv',
     );
   }
 
@@ -98,6 +104,8 @@ class Family {
       'parentPhones': parentPhones,
       'inviteCode': inviteCode,
       'createdAt': Timestamp.fromDate(createdAt),
+      'organizationId': organizationId,
+      'branchId': branchId,
     };
   }
 }

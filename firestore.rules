@@ -1,0 +1,209 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for multi-tenancy and authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasUserData() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return hasUserData() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data : {};
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'superAdmin' ||
+        (hasUserData() && getUserData().role == 'superAdmin')
+      );
+    }
+
+    function isOwner() {
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        request.auth.token.role == 'owner' ||
+        (hasUserData() && getUserData().role == 'owner')
+      );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        isOwner() ||
+        request.auth.token.role == 'admin' ||
+        (hasUserData() && getUserData().role == 'admin')
+      );
+    }
+
+    function isCoach() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'coach' ||
+        (hasUserData() && getUserData().role == 'coach')
+      );
+    }
+
+    function userBranch() {
+      return (request.auth.token.branchId != null) ? request.auth.token.branchId :
+        ((hasUserData() && getUserData().branchId != null) ? getUserData().branchId : 'kyiv');
+    }
+
+    function userOrgId() {
+      return (request.auth.token.organizationId != null) ? request.auth.token.organizationId :
+        ((hasUserData() && getUserData().organizationId != null) ? getUserData().organizationId : 'cityswim');
+    }
+
+    function isStaffForBranch(branchId) {
+      return isOwner() || (
+        isAdmin() && (userBranch() == branchId || (branchId == null && userBranch() == 'kyiv'))
+      );
+    }
+
+    // --- Organizations and Branches ---
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+
+      match /branches/{branchId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner();
+      }
+    }
+
+    // --- Users (Clients, Coaches, Admins, Owners) ---
+    match /users/{userId} {
+      // Any authenticated user can read their own profile.
+      // Coaches are only readable within the same branch.
+      // Admins read within their branch; Owners read all.
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isOwner() ||
+        isStaffForBranch(resource.data.branchId) ||
+        (resource.data.role == 'coach' && (resource.data.branchId == userBranch() || (resource.data.branchId == null && userBranch() == 'kyiv')))
+      );
+
+      // Registration: User can create their own account profile
+      allow create: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isAdmin()
+      );
+
+      // Profile updates: user self or admin/owner of that branch
+      allow update: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isStaffForBranch(resource.data.branchId)
+      );
+
+      allow delete: if isOwner();
+    }
+
+    // --- Children Profiles ---
+    match /children/{childId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.parentId ||
+        isStaffForBranch(resource.data.branchId)
+      );
+
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.parentId ||
+        isStaffForBranch(request.resource.data.branchId)
+      );
+
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.parentId ||
+        isStaffForBranch(resource.data.branchId)
+      );
+    }
+
+    // --- Schedule & Group Classes ---
+    match /classes/{classId} {
+      // Schedule is strictly readable only within user's branch (Owner reads all)
+      allow read: if isAuthenticated() && (
+        isOwner() ||
+        resource.data.branchId == userBranch() ||
+        (resource.data.branchId == null && userBranch() == 'kyiv')
+      );
+
+      // Creation & deletion: staff of that branch (or Owner)
+      allow create: if isAuthenticated() && isStaffForBranch(request.resource.data.branchId);
+      allow delete: if isAuthenticated() && isStaffForBranch(resource.data.branchId);
+
+      // Updating:
+      // 1. Staff of that branch
+      // 2. Assigned coach of that class updating attendance only
+      // 3. Parents enrolling or cancelling within their own branch
+      allow update: if isAuthenticated() && (
+        isStaffForBranch(resource.data.branchId) ||
+        (isCoach() && (isOwner() || userBranch() == resource.data.branchId) && resource.data.coachId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendedChildIds'])) ||
+        ((userBranch() == resource.data.branchId || isOwner()) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledChildIds']))
+      );
+    }
+
+    // --- Subscriptions ---
+    match /subscriptions/{subId} {
+      // Clients read their own subscriptions; Branch staff read within their branch; Owner reads all
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isStaffForBranch(resource.data.branchId)
+      );
+
+      // Issue / modify subscription: Branch admin or Owner
+      allow create: if isAuthenticated() && isStaffForBranch(request.resource.data.branchId);
+      allow update: if isAuthenticated() && (
+        isStaffForBranch(resource.data.branchId) ||
+        // Class deduction during verified booking
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['remainingClasses', 'isActive']))
+      );
+      allow delete: if isAuthenticated() && isStaffForBranch(resource.data.branchId);
+    }
+
+    // --- Chat Dialogs & Messages ---
+    match /chats/{dialogId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.clientId ||
+        request.auth.uid == resource.data.coachId ||
+        isStaffForBranch(resource.data.branchId)
+      );
+
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.clientId ||
+        isStaffForBranch(request.resource.data.branchId)
+      );
+
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.clientId ||
+        request.auth.uid == resource.data.coachId ||
+        isStaffForBranch(resource.data.branchId)
+      );
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
+      }
+    }
+
+    // --- Family Connections ---
+    match /family_connections/{familyId} {
+      allow read: if isAuthenticated() && (
+        resource.data.parentIds.hasAny([request.auth.uid]) ||
+        isOwner() ||
+        (isAdmin() && isStaffForBranch(resource.data.branchId))
+      );
+      allow write: if isAuthenticated() && (
+        request.resource.data.parentIds.hasAny([request.auth.uid]) ||
+        isOwner() ||
+        (isAdmin() && isStaffForBranch(request.resource.data.branchId))
+      );
+    }
+
+    // --- Audit Logs ---
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable logs
+    }
+  }
+}

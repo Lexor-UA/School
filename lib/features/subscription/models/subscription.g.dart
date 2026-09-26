@@ -18,6 +18,10 @@ _Subscription _$SubscriptionFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['expiryDate'] as String),
       ownerName: json['ownerName'] as String?,
+      organizationId: json['organizationId'] as String? ?? 'cityswim',
+      branchId: json['branchId'] as String? ?? 'kyiv',
+      currency: json['currency'] as String? ?? 'UAH',
+      currencySymbol: json['currencySymbol'] as String? ?? '₴',
     );
 
 Map<String, dynamic> _$SubscriptionToJson(_Subscription instance) =>
@@ -30,4 +34,8 @@ Map<String, dynamic> _$SubscriptionToJson(_Subscription instance) =>
       'serviceName': instance.serviceName,
       'expiryDate': instance.expiryDate?.toIso8601String(),
       'ownerName': instance.ownerName,
+      'organizationId': instance.organizationId,
+      'branchId': instance.branchId,
+      'currency': instance.currency,
+      'currencySymbol': instance.currencySymbol,
     };

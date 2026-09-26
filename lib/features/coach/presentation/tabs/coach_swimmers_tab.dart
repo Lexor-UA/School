@@ -425,8 +425,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
       );
     }
 
+    final coachBranch = coach?.branchId ?? 'kyiv';
+    final coachBranches = coach?.branchIds ?? [coachBranch];
+
     // Filter classes where this coach is assigned
     final coachClasses = allClasses.where((c) {
+      final matchesBranch = c.branchId == coachBranch || coachBranches.contains(c.branchId);
+      if (!matchesBranch) return false;
       if (coachId.isNotEmpty && c.coachId == coachId) return true;
       if (coachName.isNotEmpty && c.coachName.trim().toLowerCase() == coachName) return true;
       return false;
@@ -782,9 +787,16 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
       );
     }
 
+    final coach = ref.watch(authControllerProvider);
+    final coachBranch = coach?.branchId ?? 'kyiv';
+    final coachBranches = coach?.branchIds ?? [coachBranch];
+    final branchClasses = coach != null
+        ? allClasses.where((c) => c.branchId == coachBranch || coachBranches.contains(c.branchId)).toList()
+        : allClasses;
+
     // Extract unique school groups (by title and lane)
     final Map<String, GroupClass> uniqueGroupsMap = {};
-    for (final c in allClasses) {
+    for (final c in branchClasses) {
       final key = '${c.title.trim().toLowerCase()}_${c.lane.trim().toLowerCase()}';
       if (!uniqueGroupsMap.containsKey(key)) {
         uniqueGroupsMap[key] = c;
@@ -1214,8 +1226,26 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
               );
             }
 
-            final childDocs = childSnap.data?.docs ?? [];
-            final userDocs = userSnap.data?.docs ?? [];
+            final coach = ref.watch(authControllerProvider);
+            final coachBranch = coach?.branchId ?? 'kyiv';
+            final coachBranches = coach?.branchIds ?? [coachBranch];
+
+            final allChildDocs = childSnap.data?.docs ?? [];
+            final allUserDocs = userSnap.data?.docs ?? [];
+
+            final childDocs = coach != null
+                ? allChildDocs.where((d) {
+                    final bId = (d.data() as Map<String, dynamic>?)?['branchId'] as String? ?? 'kyiv';
+                    return coachBranch == bId || coachBranches.contains(bId);
+                  }).toList()
+                : allChildDocs;
+
+            final userDocs = coach != null
+                ? allUserDocs.where((d) {
+                    final bId = (d.data() as Map<String, dynamic>?)?['branchId'] as String? ?? 'kyiv';
+                    return coachBranch == bId || coachBranches.contains(bId);
+                  }).toList()
+                : allUserDocs;
 
             final List<Map<String, dynamic>> allSwimmers = [];
 

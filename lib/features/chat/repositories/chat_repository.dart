@@ -8,11 +8,15 @@ class ChatRepository {
   CollectionReference get _chats => _firestore.collection('chats');
 
   /// Stream all dialogs for the Admin Support & Monitoring Center
-  Stream<List<ChatDialog>> streamAdminDialogs() {
+  Stream<List<ChatDialog>> streamAdminDialogs({String? branchId}) {
     return _chats.orderBy('updatedAt', descending: true).snapshots().map((snapshot) {
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => ChatDialog.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
+      if (branchId == null || branchId.isEmpty) {
+        return list;
+      }
+      return list.where((d) => d.branchId == branchId).toList();
     });
   }
 
@@ -87,6 +91,8 @@ class ChatRepository {
     String? childName,
     String type = 'support', // 'support', 'coach_client', 'recovery'
     String? clientRole,
+    String? organizationId,
+    String? branchId,
   }) async {
     final messageId = _chats.doc(dialogId).collection('messages').doc().id;
     final now = DateTime.now();
@@ -168,6 +174,8 @@ class ChatRepository {
       'coachAvatar': ?coachAvatar,
       'childName': ?childName,
       'clientRole': ?clientRole,
+      'organizationId': ?organizationId,
+      'branchId': ?branchId,
     }, SetOptions(merge: true));
 
     await batch.commit();

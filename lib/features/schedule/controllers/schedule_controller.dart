@@ -14,6 +14,9 @@ import 'package:swimming_school_app/features/subscription/models/subscription.da
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/schedule/models/class_conflict.dart';
 import 'package:intl/intl.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/schedule/services/recurring_schedule_generator.dart';
+import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
 
 part 'schedule_controller.g.dart';
 
@@ -103,81 +106,23 @@ class ScheduleController extends _$ScheduleController {
     required String coachId,
     String? excludeClassId,
     List<String> enrolledChildIds = const [],
+    String? branchId,
+    String? locationId,
+    String? poolId,
   }) {
-    final overlappingClasses = classes.where((c) {
-      if (excludeClassId != null && c.id == excludeClassId) return false;
-      return c.startTime.isBefore(endTime) && c.endTime.isAfter(startTime);
-    }).toList();
-
-    // 1. Pool Capacity: Maximum 4 simultaneous classes in the 4-lane pool
-    if (overlappingClasses.length >= 4) {
-      final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-      final endTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
-      return ClassConflict(
-        type: ClassConflictType.laneConflict,
-        conflictingClass: overlappingClasses.first,
-        message: 'Усі 4 доріжки басейну вже зайняті з $timeStr до $endTimeStr (максимум 4 заняття одночасно).',
-      );
-    }
-
-    final l1 = lane.trim().toLowerCase();
-    final isWholePool1 = l1.contains('весь') || l1.contains('всі');
-    final hasLane = lane.trim().isNotEmpty && lane.trim() != 'Будь-яка';
-
-    for (final c in overlappingClasses) {
-      final l2 = c.lane.trim().toLowerCase();
-      final isWholePool2 = l2.contains('весь') || l2.contains('всі');
-      final cHasLane = c.lane.trim().isNotEmpty && c.lane.trim() != 'Будь-яка';
-
-      // 2. Whole Pool or Direct Lane conflict check
-      if (isWholePool1 || isWholePool2) {
-        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
-        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
-        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : 'не вказано';
-        return ClassConflict(
-          type: ClassConflictType.laneConflict,
-          conflictingClass: c,
-          message: isWholePool2
-              ? 'Весь басейн вже зайнятий з $timeStr до $endTimeStr заняттям «${c.title}» (тренер: $coachNameDisplay).'
-              : 'Для оренди всього басейну на цей час не повинно бути інших занять ($timeStr-$endTimeStr).',
-        );
-      } else if (hasLane && cHasLane && l1 == l2) {
-        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
-        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
-        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : 'не вказано';
-        return ClassConflict(
-          type: ClassConflictType.laneConflict,
-          conflictingClass: c,
-          message: 'Доріжка «$lane» вже зайнята з $timeStr до $endTimeStr заняттям «${c.title}» (тренер: $coachNameDisplay).',
-        );
-      }
-
-      // 3. Coach conflict check
-      final hasCoach = coachId.trim().isNotEmpty && coachId.trim() != 'unassigned';
-      final cHasCoach = c.coachId.trim().isNotEmpty && c.coachId.trim() != 'unassigned';
-      if (hasCoach && cHasCoach && c.coachId == coachId) {
-        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
-        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
-        final laneDisplay = c.lane.isNotEmpty ? c.lane : 'басейн';
-        return ClassConflict(
-          type: ClassConflictType.coachConflict,
-          conflictingClass: c,
-          message: 'Тренер ${c.coachName} вже проводить заняття «${c.title}» з $timeStr до $endTimeStr ($laneDisplay).',
-        );
-      }
-
-      // 4. Member conflict check
-      if (enrolledChildIds.isNotEmpty && c.enrolledChildIds.any((id) => enrolledChildIds.contains(id))) {
-        final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
-        final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
-        return ClassConflict(
-          type: ClassConflictType.participantConflict,
-          conflictingClass: c,
-          message: 'Один з обраних учасників вже записаний на інше тренування з $timeStr до $endTimeStr («${c.title}»).',
-        );
-      }
-    }
-    return null;
+    final effectiveBranchId = branchId ?? ref.read(effectiveBranchProvider).id;
+    return RecurringScheduleGenerator.evaluateConflict(
+      classes: classes,
+      startTimeUtc: startTime,
+      endTimeUtc: endTime,
+      branchId: effectiveBranchId,
+      locationId: locationId,
+      poolId: poolId,
+      lane: lane,
+      coachId: coachId,
+      excludeClassId: excludeClassId,
+      enrolledChildIds: enrolledChildIds,
+    );
   }
 
   ClassConflict? checkClassConflict({
@@ -188,6 +133,9 @@ class ScheduleController extends _$ScheduleController {
     String? excludeClassId,
     List<String> enrolledChildIds = const [],
     List<GroupClass>? additionalClasses,
+    String? branchId,
+    String? locationId,
+    String? poolId,
   }) {
     final combined = <GroupClass>[
       ...(state.value ?? const <GroupClass>[]),
@@ -201,6 +149,9 @@ class ScheduleController extends _$ScheduleController {
       coachId: coachId,
       excludeClassId: excludeClassId,
       enrolledChildIds: enrolledChildIds,
+      branchId: branchId,
+      locationId: locationId,
+      poolId: poolId,
     );
   }
 
@@ -212,6 +163,9 @@ class ScheduleController extends _$ScheduleController {
     String? excludeClassId,
     List<String> enrolledChildIds = const [],
     List<GroupClass>? additionalClasses,
+    String? branchId,
+    String? locationId,
+    String? poolId,
   }) async {
     // 1. Fast in-memory check
     final localConflict = checkClassConflict(
@@ -222,6 +176,9 @@ class ScheduleController extends _$ScheduleController {
       excludeClassId: excludeClassId,
       enrolledChildIds: enrolledChildIds,
       additionalClasses: additionalClasses,
+      branchId: branchId,
+      locationId: locationId,
+      poolId: poolId,
     );
     if (localConflict != null) return localConflict;
 
@@ -262,6 +219,9 @@ class ScheduleController extends _$ScheduleController {
         coachId: coachId,
         excludeClassId: excludeClassId,
         enrolledChildIds: enrolledChildIds,
+        branchId: branchId,
+        locationId: locationId,
+        poolId: poolId,
       );
     } catch (e) {
       debugPrint('Error in checkAuthoritativeConflict: $e');
@@ -271,16 +231,24 @@ class ScheduleController extends _$ScheduleController {
 
   @override
   Stream<List<GroupClass>> build() {
-    return FirebaseFirestore.instance
-        .collection('classes')
-        .where('startTime', isGreaterThanOrEqualTo: DateTime.now().subtract(const Duration(days: 45)).toIso8601String())
-        .orderBy('startTime')
-        .snapshots()
-        .map((snapshot) {
+    final tenancyState = ref.watch(tenancyControllerProvider);
+    final activeBranchId = tenancyState.activeBranchId;
+    final isAllLocations = tenancyState.isAllLocationsSelected;
+
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('classes');
+
+    if (!isAllLocations && activeBranchId != null) {
+      query = query.where('branchId', isEqualTo: activeBranchId);
+    }
+
+    final cutoff = DateTime.now().subtract(const Duration(days: 45)).toIso8601String();
+    query = query.where('startTime', isGreaterThanOrEqualTo: cutoff);
+
+    return query.snapshots().map((snapshot) {
       final Map<String, GroupClass> uniqueClasses = {};
       for (final doc in snapshot.docs) {
         try {
-          final data = Map<String, dynamic>.from(doc.data() as Map);
+          final data = Map<String, dynamic>.from(doc.data());
           data['id'] = doc.id;
           if (data['startTime'] is Timestamp) {
             data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
@@ -305,12 +273,17 @@ class ScheduleController extends _$ScheduleController {
             });
           }
 
-          uniqueClasses[doc.id] = GroupClass.fromJson(data);
+          final groupClass = GroupClass.fromJson(data);
+          if (isAllLocations || groupClass.branchId == activeBranchId) {
+            uniqueClasses[doc.id] = groupClass;
+          }
         } catch (e) {
           debugPrint('Warning: Failed to parse class document ${doc.id}: $e');
         }
       }
-      return uniqueClasses.values.toList();
+      final result = uniqueClasses.values.toList();
+      result.sort((a, b) => a.startTime.compareTo(b.startTime));
+      return result;
     });
   }
 
@@ -431,6 +404,21 @@ class ScheduleController extends _$ScheduleController {
         data['id'] = classDoc.id;
         final groupClass = GroupClass.fromJson(data);
         bookedClass = groupClass;
+
+        // Multi-tenancy cross-branch integrity check (TZ Point 29)
+        final bookingIntegrity = BranchDataIntegrityValidator.validateClientBooking(
+          clientBranchId: user.branchId,
+          classBranchId: groupClass.branchId,
+          subscriptionBranchId: effectiveSubscription.branchId,
+        );
+        if (!bookingIntegrity.isValid) {
+          result = BookingResult(
+            isSuccess: false,
+            message: bookingIntegrity.errorMessage ?? 'Запис між різними філіями заборонено.',
+            status: BookingStatus.error,
+          );
+          return;
+        }
 
         // Strict category validation between class and subscription
         if (groupClass.isSplit && !effectiveSubscription.isSplitSubscription) {
@@ -829,6 +817,33 @@ class ScheduleController extends _$ScheduleController {
     }
     lastConflict = null;
 
+    final activeBranch = ref.read(effectiveBranchProvider);
+
+    // Multi-tenancy coach assignment guard (TZ Point 30)
+    if (coachId != 'unassigned' && coachId.isNotEmpty) {
+      try {
+        final coachDoc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
+        if (coachDoc.exists) {
+          final coachData = Map<String, dynamic>.from(coachDoc.data() as Map);
+          coachData['id'] = coachDoc.id;
+          final coachUser = AppUser.fromJson(coachData);
+          final coachValidation = BranchDataIntegrityValidator.validateCoachAssignment(
+            coach: coachUser,
+            branchId: activeBranch.id,
+          );
+          if (!coachValidation.isValid) {
+            lastConflict = ClassConflict(
+              type: ClassConflictType.coachConflict,
+              message: coachValidation.errorMessage ?? 'Тренер не має доступу до цієї філії.',
+            );
+            return false;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error validating coach in createClass: $e');
+      }
+    }
+
     Subscription? subscription;
     final Map<String, Subscription> memberSubscriptions = {};
     final Map<String, int> deductionCounts = {};
@@ -951,6 +966,7 @@ class ScheduleController extends _$ScheduleController {
     }
 
     try {
+      final activeBranch = ref.read(effectiveBranchProvider);
       final newClassRef = FirebaseFirestore.instance.collection('classes').doc();
       final newClass = GroupClass(
         id: newClassRef.id,
@@ -963,6 +979,9 @@ class ScheduleController extends _$ScheduleController {
         enrolledChildIds: enrolledChildIds,
         category: category,
         lane: lane,
+        organizationId: activeBranch.organizationId,
+        branchId: activeBranch.id,
+        timezone: activeBranch.timezone,
       );
 
       if (subscription != null) {
@@ -1096,6 +1115,9 @@ class ScheduleController extends _$ScheduleController {
     required int maxCapacity,
     required String category,
     required String lane,
+    String? locationId,
+    String? poolId,
+    List<String> enrolledChildIds = const [],
   }) async {
     final user = ref.read(authControllerProvider);
     if (user == null) {
@@ -1108,9 +1130,47 @@ class ScheduleController extends _$ScheduleController {
     _isCreatingRecurringGroup = true;
 
     try {
-      final List<DateTime> validStartTimes = [];
-      final List<DateTime> skippedDates = [];
-      final List<ClassConflict> conflicts = [];
+      final activeBranch = ref.read(effectiveBranchProvider);
+
+      // Validate location and pool hierarchy integrity (TZ Point 30)
+      final locationPoolIntegrity = BranchDataIntegrityValidator.validateLocationAndPool(
+        branchId: activeBranch.id,
+        locationId: locationId,
+        poolId: poolId,
+      );
+      if (!locationPoolIntegrity.isValid) {
+        lastConflict = ClassConflict(
+          type: ClassConflictType.laneConflict,
+          message: locationPoolIntegrity.errorMessage ?? 'Невірна локація або басейн.',
+        );
+        return const CreateRecurringClassesResult(createdCount: 0);
+      }
+
+      // Validate coach assignment integrity (TZ Point 30)
+      if (coachId != 'unassigned' && coachId.isNotEmpty) {
+        try {
+          final coachDoc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
+          if (coachDoc.exists) {
+            final coachData = Map<String, dynamic>.from(coachDoc.data() as Map);
+            coachData['id'] = coachDoc.id;
+            final coachUser = AppUser.fromJson(coachData);
+            final coachIntegrity = BranchDataIntegrityValidator.validateCoachAssignment(
+              coach: coachUser,
+              branchId: activeBranch.id,
+            );
+            if (!coachIntegrity.isValid) {
+              lastConflict = ClassConflict(
+                type: ClassConflictType.coachConflict,
+                message: coachIntegrity.errorMessage ?? 'Тренер не має доступу до цієї філії.',
+              );
+              return const CreateRecurringClassesResult(createdCount: 0);
+            }
+          }
+        } catch (e) {
+          debugPrint('Error validating coach in createRecurringClasses: $e');
+        }
+      }
+
       final totalDays = durationWeeks * 7;
       final baseDate = DateTime(startDate.year, startDate.month, startDate.day);
       final rangeEnd = baseDate.add(Duration(days: totalDays + 1));
@@ -1140,49 +1200,38 @@ class ScheduleController extends _$ScheduleController {
         } catch (_) {}
       }
 
-      final List<GroupClass> existingList = allKnownClasses.values.toList();
-      final List<GroupClass> newlyGenerated = [];
+      final existingList = allKnownClasses.values.toList();
 
-      for (int i = 0; i < totalDays; i++) {
-        final date = baseDate.add(Duration(days: i));
-        if (weekdays.contains(date.weekday)) {
-          final classStart = DateTime(date.year, date.month, date.day, hour, minute);
-          final classEnd = classStart.add(Duration(minutes: durationMinutes));
+      final options = RecurringScheduleOptions(
+        title: title,
+        branchId: activeBranch.id,
+        organizationId: activeBranch.organizationId,
+        locationId: locationId ?? '',
+        poolId: poolId ?? '',
+        lane: lane,
+        category: category,
+        coachId: coachId,
+        coachName: coachName,
+        maxCapacity: maxCapacity,
+        startDate: startDate,
+        hour: hour,
+        minute: minute,
+        durationMinutes: durationMinutes,
+        weekdays: weekdays,
+        durationWeeks: durationWeeks,
+        enrolledChildIds: enrolledChildIds,
+      );
 
-          final combined = <GroupClass>[...existingList, ...newlyGenerated];
-          final conflict = _evaluateConflictAgainst(
-            classes: combined,
-            startTime: classStart,
-            endTime: classEnd,
-            lane: lane,
-            coachId: coachId,
-          );
+      final genResult = RecurringScheduleGenerator.generate(
+        options: options,
+        existingClasses: existingList,
+      );
 
-          if (conflict != null) {
-            skippedDates.add(classStart);
-            conflicts.add(conflict);
-          } else {
-            validStartTimes.add(classStart);
-            newlyGenerated.add(GroupClass(
-              id: 'temp_${classStart.millisecondsSinceEpoch}',
-              title: title,
-              startTime: classStart,
-              endTime: classEnd,
-              coachId: coachId,
-              coachName: coachName,
-              maxCapacity: maxCapacity,
-              category: category,
-              lane: lane,
-            ));
-          }
-        }
-      }
-
-      if (validStartTimes.isEmpty) {
+      if (genResult.classesToCreate.isEmpty) {
         return CreateRecurringClassesResult(
           createdCount: 0,
-          skippedDates: skippedDates,
-          conflicts: conflicts,
+          skippedDates: genResult.skippedDates,
+          conflicts: genResult.conflicts,
         );
       }
 
@@ -1190,28 +1239,15 @@ class ScheduleController extends _$ScheduleController {
       const chunkSize = 400;
       final List<GroupClass> createdClasses = [];
 
-      for (int i = 0; i < validStartTimes.length; i += chunkSize) {
-        final chunk = validStartTimes.sublist(
+      for (int i = 0; i < genResult.classesToCreate.length; i += chunkSize) {
+        final chunk = genResult.classesToCreate.sublist(
           i,
-          (i + chunkSize > validStartTimes.length) ? validStartTimes.length : i + chunkSize,
+          (i + chunkSize > genResult.classesToCreate.length) ? genResult.classesToCreate.length : i + chunkSize,
         );
         final batch = firestore.batch();
-        for (final st in chunk) {
+        for (final item in chunk) {
           final docRef = firestore.collection('classes').doc();
-          final et = st.add(Duration(minutes: durationMinutes));
-          final groupClass = GroupClass(
-            id: docRef.id,
-            title: title,
-            startTime: st,
-            endTime: et,
-            coachId: coachId,
-            coachName: coachName,
-            maxCapacity: maxCapacity,
-            enrolledChildIds: const [],
-            attendedChildIds: const [],
-            category: category,
-            lane: lane,
-          );
+          final groupClass = item.copyWith(id: docRef.id);
           batch.set(docRef, groupClass.toJson());
           createdClasses.add(groupClass);
         }
@@ -1229,9 +1265,9 @@ class ScheduleController extends _$ScheduleController {
       state = AsyncData(dedup.values.toList());
 
       return CreateRecurringClassesResult(
-        createdCount: validStartTimes.length,
-        skippedDates: skippedDates,
-        conflicts: conflicts,
+        createdCount: createdClasses.length,
+        skippedDates: genResult.skippedDates,
+        conflicts: genResult.conflicts,
       );
     } catch (e) {
       debugPrint('Error creating recurring classes: $e');
@@ -1354,6 +1390,33 @@ class ScheduleController extends _$ScheduleController {
       return false;
     }
     lastConflict = null;
+
+    // Multi-tenancy coach assignment guard (TZ Point 30)
+    if (coachId != 'unassigned' && coachId.isNotEmpty) {
+      try {
+        final classDoc = await FirebaseFirestore.instance.collection('classes').doc(classId).get();
+        final classBranchId = (classDoc.data()?['branchId'] as String?) ?? 'kyiv';
+        final coachDoc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
+        if (coachDoc.exists) {
+          final coachData = Map<String, dynamic>.from(coachDoc.data() as Map);
+          coachData['id'] = coachDoc.id;
+          final coachUser = AppUser.fromJson(coachData);
+          final coachValidation = BranchDataIntegrityValidator.validateCoachAssignment(
+            coach: coachUser,
+            branchId: classBranchId,
+          );
+          if (!coachValidation.isValid) {
+            lastConflict = ClassConflict(
+              type: ClassConflictType.coachConflict,
+              message: coachValidation.errorMessage ?? 'Тренер не має доступу до цієї філії.',
+            );
+            return false;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error validating coach in updateClass: $e');
+      }
+    }
 
     try {
       await FirebaseFirestore.instance.collection('classes').doc(classId).update({

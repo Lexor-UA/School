@@ -29,6 +29,11 @@ _AppUser _$AppUserFromJson(Map<String, dynamic> json) => _AppUser(
   role: $enumDecode(_$UserRoleEnumMap, json['role']),
   phone: json['phone'] as String?,
   loginId: json['loginId'] as String?,
+  organizationId: json['organizationId'] as String? ?? 'cityswim',
+  branchId: json['branchId'] as String? ?? 'kyiv',
+  branchIds:
+      (json['branchIds'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const ['kyiv'],
   level: (json['level'] as num?)?.toInt() ?? 1,
   xp: (json['xp'] as num?)?.toInt() ?? 0,
   maxXp: (json['maxXp'] as num?)?.toInt() ?? 100,
@@ -47,6 +52,9 @@ Map<String, dynamic> _$AppUserToJson(_AppUser instance) => <String, dynamic>{
   'role': _$UserRoleEnumMap[instance.role]!,
   'phone': instance.phone,
   'loginId': instance.loginId,
+  'organizationId': instance.organizationId,
+  'branchId': instance.branchId,
+  'branchIds': instance.branchIds,
   'level': instance.level,
   'xp': instance.xp,
   'maxXp': instance.maxXp,
@@ -59,4 +67,5 @@ const _$UserRoleEnumMap = {
   UserRole.coach: 'coach',
   UserRole.owner: 'owner',
   UserRole.admin: 'admin',
+  UserRole.superAdmin: 'superAdmin',
 };

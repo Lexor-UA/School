@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
 
 part 'group_class.freezed.dart';
 part 'group_class.g.dart';
@@ -18,9 +19,18 @@ abstract class GroupClass with _$GroupClass {
     @Default([]) List<String> attendedChildIds,
     required String category, // 'Плавання', 'Стрибки' etc.
     @Default('') String lane, // 'Доріжка 3' etc.
+    @Default('cityswim') String organizationId,
+    @Default('kyiv') String branchId,
+    @Default('Europe/Kyiv') String timezone,
+    @Default('kyiv_main') String locationId,
+    @Default('pool_25m') String poolId,
   }) = _GroupClass;
 
-  factory GroupClass.fromJson(Map<String, dynamic> json) {
+  factory GroupClass.fromJson(Map<String, dynamic> json) => _$GroupClassFromJson(
+        _normalizeJson(json),
+      );
+
+  static Map<String, dynamic> _normalizeJson(Map<String, dynamic> json) {
     final copy = Map<String, dynamic>.from(json);
     if (copy['startTime'] is Timestamp) {
       copy['startTime'] = (copy['startTime'] as Timestamp).toDate().toIso8601String();
@@ -28,7 +38,7 @@ abstract class GroupClass with _$GroupClass {
     if (copy['endTime'] is Timestamp) {
       copy['endTime'] = (copy['endTime'] as Timestamp).toDate().toIso8601String();
     }
-    return _$GroupClassFromJson(copy);
+    return copy;
   }
 }
 
@@ -126,3 +136,35 @@ bool isServiceAgeCompatible(String title, int? age) {
   if (range == null) return true;
   return age >= range.$1 && age <= range.$2;
 }
+
+extension GroupClassTimezoneX on GroupClass {
+  /// Місцевий час початку тренування за часовим поясом філії
+  DateTime get branchStartTime =>
+      BranchTimezoneHelper.toBranchLocalTime(startTime, timezone.isNotEmpty ? timezone : branchId);
+
+  /// Місцевий час завершення тренування за часовим поясом філії
+  DateTime get branchEndTime =>
+      BranchTimezoneHelper.toBranchLocalTime(endTime, timezone.isNotEmpty ? timezone : branchId);
+
+  /// Форматований час початку тренування у часовому поясі філії (HH:mm)
+  String formatBranchTime({String pattern = 'HH:mm'}) {
+    return BranchTimezoneHelper.formatTime(startTime,
+        branchId: timezone.isNotEmpty ? timezone : branchId, pattern: pattern);
+  }
+
+  /// Форматована дата тренування у часовому поясі філії (dd.MM.yyyy)
+  String formatBranchDate({String pattern = 'dd.MM.yyyy'}) {
+    return BranchTimezoneHelper.formatDate(startTime,
+        branchId: timezone.isNotEmpty ? timezone : branchId, pattern: pattern);
+  }
+
+  /// Форматований інтервал часу тренування у часовому поясі філії (HH:mm - HH:mm)
+  String formatBranchTimeRange({String pattern = 'HH:mm'}) {
+    final start = BranchTimezoneHelper.formatTime(startTime,
+        branchId: timezone.isNotEmpty ? timezone : branchId, pattern: pattern);
+    final end = BranchTimezoneHelper.formatTime(endTime,
+        branchId: timezone.isNotEmpty ? timezone : branchId, pattern: pattern);
+    return '$start - $end';
+  }
+}
+

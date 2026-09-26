@@ -13,10 +13,16 @@ import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dart';
 import 'package:swimming_school_app/features/auth/presentation/password_recovery_screen.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   final bool skipSplash;
-  const RoleSelectionScreen({super.key, this.skipSplash = false});
+  final String? initialBranchId;
+  const RoleSelectionScreen({
+    super.key,
+    this.skipSplash = false,
+    this.initialBranchId,
+  });
 
   @override
   ConsumerState<RoleSelectionScreen> createState() =>
@@ -32,6 +38,13 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.initialBranchId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showClientAuthModal(context, ref, initialTab: 1);
+      });
+    }
 
     if (widget.skipSplash) {
       return;
@@ -135,6 +148,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         break;
       case UserRole.owner:
         context.go('/owner');
+        break;
+      case UserRole.superAdmin:
+        context.go('/superadmin');
         break;
     }
   }
@@ -969,6 +985,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     final regPasswordController = TextEditingController();
 
     int activeTab = initialTab;
+    String selectedBranchId = widget.initialBranchId ?? ref.read(effectiveBranchProvider).id;
     bool isModalLoading = false;
     bool obscureLoginPassword = true;
     bool obscureRegPassword = true;
@@ -1065,7 +1082,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   name: name,
                   phone: login,
                   password: password,
+                  branchId: selectedBranchId,
                 );
+                ref.read(tenancyControllerProvider.notifier).selectBranch(selectedBranchId);
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);
@@ -1410,6 +1429,189 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
                                           children: [
+                                            // Branch Invitation Details Banner
+                                            Builder(
+                                              builder: (context) {
+                                                final isVienna = selectedBranchId == 'vienna';
+                                                return Container(
+                                                  margin: const EdgeInsets.only(bottom: 12),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: isVienna
+                                                          ? [
+                                                              const Color(0xFFEF4444).withValues(alpha: 0.16),
+                                                              const Color(0xFF00E5FF).withValues(alpha: 0.10),
+                                                            ]
+                                                          : [
+                                                              const Color(0xFF0072FF).withValues(alpha: 0.16),
+                                                              const Color(0xFF00E5FF).withValues(alpha: 0.10),
+                                                            ],
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    border: Border.all(
+                                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Text(isVienna ? '🇦🇹' : '🇺🇦', style: const TextStyle(fontSize: 18)),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              isVienna ? 'CitySwim Відень · HappyLand' : 'CitySwim Київ · Басейн 25м',
+                                                              style: const TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 12.5,
+                                                                fontWeight: FontWeight.w700,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              isVienna
+                                                                  ? 'Klosterneuburg · Валюта: EUR (€)'
+                                                                  : 'вул. Спортивна, 1 · Валюта: UAH (₴)',
+                                                              style: TextStyle(
+                                                                color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
+                                                                fontSize: 11,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 16),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+
+                                            // Branch / School Location Selector
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.only(left: 4, bottom: 6),
+                                                  child: Row(
+                                                    children: [
+                                                      const Icon(LucideIcons.mapPin, size: 13, color: Color(0xFF00E5FF)),
+                                                      const SizedBox(width: 5),
+                                                      Text(
+                                                        'Оберіть філію навчання:',
+                                                        style: TextStyle(
+                                                          color: Colors.white.withValues(alpha: 0.85),
+                                                          fontSize: 12.5,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.all(3.5),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withValues(alpha: 0.08),
+                                                    borderRadius: BorderRadius.circular(16),
+                                                    border: Border.all(
+                                                      color: Colors.white.withValues(alpha: 0.16),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      // Kyiv
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () => setModalState(() => selectedBranchId = 'kyiv'),
+                                                          child: AnimatedContainer(
+                                                            duration: const Duration(milliseconds: 200),
+                                                            padding: const EdgeInsets.symmetric(vertical: 9),
+                                                            decoration: BoxDecoration(
+                                                              gradient: selectedBranchId == 'kyiv'
+                                                                  ? const LinearGradient(
+                                                                      colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                                                                    )
+                                                                  : null,
+                                                              borderRadius: BorderRadius.circular(13),
+                                                              boxShadow: selectedBranchId == 'kyiv'
+                                                                  ? [
+                                                                      BoxShadow(
+                                                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                                                        blurRadius: 8,
+                                                                      ),
+                                                                    ]
+                                                                  : null,
+                                                            ),
+                                                            child: const Row(
+                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                              children: [
+                                                                Text('🇺🇦', style: TextStyle(fontSize: 15)),
+                                                                SizedBox(width: 6),
+                                                                Text(
+                                                                  'Київ',
+                                                                  style: TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 13,
+                                                                    fontWeight: FontWeight.w700,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      // Vienna
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () => setModalState(() => selectedBranchId = 'vienna'),
+                                                          child: AnimatedContainer(
+                                                            duration: const Duration(milliseconds: 200),
+                                                            padding: const EdgeInsets.symmetric(vertical: 9),
+                                                            decoration: BoxDecoration(
+                                                              gradient: selectedBranchId == 'vienna'
+                                                                  ? const LinearGradient(
+                                                                      colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                                                                    )
+                                                                  : null,
+                                                              borderRadius: BorderRadius.circular(13),
+                                                              boxShadow: selectedBranchId == 'vienna'
+                                                                  ? [
+                                                                      BoxShadow(
+                                                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                                                        blurRadius: 8,
+                                                                      ),
+                                                                    ]
+                                                                  : null,
+                                                            ),
+                                                            child: const Row(
+                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                              children: [
+                                                                Text('🇦🇹', style: TextStyle(fontSize: 15)),
+                                                                SizedBox(width: 6),
+                                                                Text(
+                                                                  'Відень',
+                                                                  style: TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 13,
+                                                                    fontWeight: FontWeight.w700,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+
+                                            const SizedBox(height: 14),
+
                                             // Full Name
                                             TextField(
                                               controller: regNameController,

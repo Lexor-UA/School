@@ -27,8 +27,14 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final allClasses = scheduleAsync.value ?? [];
 
+    final coachBranch = user?.branchId ?? 'kyiv';
+    final coachBranches = user?.branchIds ?? [coachBranch];
+    final branchClasses = user != null
+        ? allClasses.where((c) => c.branchId == coachBranch || coachBranches.contains(c.branchId)).toList()
+        : allClasses;
+
     // Filter classes for selected day
-    final dayClassesAll = allClasses.where((c) =>
+    final dayClassesAll = branchClasses.where((c) =>
       c.startTime.year == _selectedDate.year &&
       c.startTime.month == _selectedDate.month &&
       c.startTime.day == _selectedDate.day
@@ -53,7 +59,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Month Header & Calendar Card
-          _buildCalendarCard(allClasses, themeConfig),
+          _buildCalendarCard(branchClasses, themeConfig),
           const SizedBox(height: 14),
 
           // Selected Day Schedule Section

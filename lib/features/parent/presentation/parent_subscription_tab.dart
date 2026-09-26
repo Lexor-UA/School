@@ -17,6 +17,11 @@ import 'package:swimming_school_app/features/parent/controllers/children_control
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription_discount.dart';
+import 'package:collection/collection.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
+import 'package:swimming_school_app/features/payment/presentation/widgets/branch_payment_modal.dart';
+import 'package:swimming_school_app/features/payment/services/branch_payment_service.dart';
 
 class SelectedSubscriptionOwnerNotifier extends Notifier<String?> {
   @override
@@ -77,33 +82,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
   bool _isLoading = false;
   String _selectedOwner = '';
 
-  final List<Map<String, dynamic>> _services = [
-    // Дитячі абонементи: Молодша група (6-8 років)
-    {'name': 'Дитячий абонемент 6-8 років (4 тренування)', 'price': '1200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
-    {'name': 'Дитячий абонемент 6-8 років (8 тренувань)', 'price': '1900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
-    {'name': 'Дитячий абонемент 6-8 років (12 тренувань)', 'price': '2600 грн', 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '6-8'},
-    {'name': 'Разове дитяче тренування 6-8 років', 'price': '500 грн', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '6-8'},
-
-    // Дитячі абонементи: Старша група (9-15 років)
-    {'name': 'Дитячий абонемент 9-15 років (4 тренування)', 'price': '1200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
-    {'name': 'Дитячий абонемент 9-15 років (8 тренувань)', 'price': '1900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
-    {'name': 'Дитячий абонемент 9-15 років (12 тренувань)', 'price': '2600 грн', 'classes': 12, 'validityDays': 30, 'isAdult': false, 'ageGroup': '9-15'},
-    {'name': 'Разове дитяче тренування 9-15 років', 'price': '500 грн', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'ageGroup': '9-15'},
-
-    // Дорослі абонементи
-    {'name': 'Абонемент на 4 тренування (Доросла група)', 'price': '1600 грн', 'classes': 4, 'validityDays': 30, 'isAdult': true},
-    {'name': 'Абонемент на 8 тренувань (Доросла група)', 'price': '2900 грн', 'classes': 8, 'validityDays': 30, 'isAdult': true},
-    {'name': 'Разове відвідування (Доросла група)', 'price': '600 грн', 'classes': 1, 'validityDays': 365, 'isAdult': true},
-
-    // Дитячі індивідуальні абонементи (доступні для дітей будь-якого віку, єдині дозволені для дітей до 5 років)
-    {'name': 'Дитячий індивідуальний абонемент (4 тренування)', 'price': '2200 грн', 'classes': 4, 'validityDays': 30, 'isAdult': false, 'isIndividual': true},
-    {'name': 'Дитячий індивідуальний абонемент (8 тренувань)', 'price': '4000 грн', 'classes': 8, 'validityDays': 30, 'isAdult': false, 'isIndividual': true},
-    {'name': 'Разове індивідуальне тренування (діти)', 'price': '650 грн', 'classes': 1, 'validityDays': 365, 'isAdult': false, 'isIndividual': true},
-
-    // Спліт абонементи (2 особи: дитина + дорослий або 2 дитини)
-    {'name': 'Спліт-абонемент на 8 занять (2 особи)', 'price': '3400 грн', 'classes': 8, 'validityDays': 30, 'isAdult': null, 'isSplit': true},
-    {'name': 'Разове спліт-тренування (2 особи)', 'price': '900 грн', 'classes': 1, 'validityDays': 365, 'isAdult': null, 'isSplit': true},
-  ];
+  List<Map<String, dynamic>> get _services {
+    final effectiveBranch = ref.watch(effectiveBranchProvider);
+    return SubscriptionPackageCatalog.getServicesMapForBranch(effectiveBranch.id);
+  }
 
   void _payForSubscription(String userId, String owner, String selectedService) async {
     setState(() => _isLoading = true);
@@ -239,6 +221,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       final classes = serviceDetails['classes'] as int;
       final validityDays = serviceDetails['validityDays'] as int;
       final expiry = DateTime.now().add(Duration(days: validityDays));
+      final effectiveBranch = ref.read(effectiveBranchProvider);
       
       final newSub = Subscription(
         id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${owner.hashCode}',
@@ -249,9 +232,39 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         serviceName: selectedService,
         expiryDate: expiry,
         ownerName: isSplit ? 'Всі (Спліт)' : owner,
+        organizationId: effectiveBranch.organizationId,
+        branchId: effectiveBranch.id,
+        currency: effectiveBranch.currencyCode,
+        currencySymbol: effectiveBranch.currencySymbol,
       );
       
       await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
+
+      // Логування платежу через BranchPaymentService (ТЗ п. 20)
+      try {
+        final pkg = SubscriptionPackageCatalog.getPackagesForBranch(effectiveBranch.id)
+            .firstWhereOrNull((p) => p.name == selectedService) ??
+            SubscriptionPackage(
+              id: 'pkg_${selectedService.hashCode}',
+              name: selectedService,
+              branchId: effectiveBranch.id,
+              price: (serviceDetails['priceNum'] as num?)?.toInt() ?? 0,
+              currency: effectiveBranch.currencyCode,
+              currencySymbol: effectiveBranch.currencySymbol,
+              classes: classes,
+              validityDays: validityDays,
+            );
+        await ref.read(branchPaymentServiceProvider).processMockPayment(
+          branchId: effectiveBranch.id,
+          clientId: targetUserId,
+          clientName: currentUser?.name ?? owner,
+          childName: isOwnerAdult ? null : owner,
+          package: pkg,
+          latency: Duration.zero,
+        );
+      } catch (e) {
+        debugPrint('Notice: BranchPaymentService logging: $e');
+      }
       
       if (mounted) {
         final successMsg = isPartner
@@ -294,6 +307,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     required String partnerName,
     required String serviceName,
     required int price,
+    String currencySymbol = '₴',
     required bool isDark,
     required AppThemeConfig themeConfig,
   }) {
@@ -409,7 +423,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Сума до сплати: $price грн',
+              'Сума до сплати: $price $currencySymbol',
               style: TextStyle(
                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 fontSize: 15,
@@ -475,6 +489,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final effectiveBranch = ref.watch(effectiveBranchProvider);
+        final currencySymbol = effectiveBranch.currencySymbol;
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             int totalPrice = 0;
@@ -1102,6 +1119,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         child: ElevatedButton(
                           onPressed: totalPrice > 0 && selectedService != null
                               ? () async {
+                                  final branch = ref.read(effectiveBranchProvider);
                                   if (isPartner) {
                                     final confirm = await _showPartnerPaymentConfirmationDialog(
                                       context: context,
@@ -1109,6 +1127,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                       partnerName: effectiveOwner,
                                       serviceName: selectedService!,
                                       price: totalPrice,
+                                      currencySymbol: branch.currencySymbol,
                                       isDark: isDark,
                                       themeConfig: themeConfig,
                                     );
@@ -1116,7 +1135,23 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                   }
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
-                                  _payForSubscription(targetUserId, effectiveOwner, selectedService!);
+
+                                  final package = SubscriptionPackageCatalog.getPackagesForBranch(branch.id)
+                                      .firstWhereOrNull((p) => p.name == selectedService);
+                                  if (package != null && context.mounted) {
+                                    await BranchPaymentModal.show(
+                                      context: context,
+                                      package: package,
+                                      clientId: targetUserId,
+                                      clientName: currentUser?.name ?? effectiveOwner,
+                                      childName: isOwnerAdult ? null : effectiveOwner,
+                                      onPaymentSuccess: () {
+                                        ref.invalidate(subscriptionControllerProvider);
+                                      },
+                                    );
+                                  } else {
+                                    _payForSubscription(targetUserId, effectiveOwner, selectedService!);
+                                  }
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -1132,7 +1167,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             children: [
                               Text(
                                 totalPrice > 0
-                                    ? '${'parent.pay'.tr()} $totalPrice грн'
+                                    ? '${'parent.pay'.tr()} $totalPrice $currencySymbol'
                                     : 'parent.choose_subscription'.tr(),
                                 style: TextStyle(
                                   color: totalPrice > 0 ? Colors.white : (isDark ? Colors.white38 : themeConfig.textMuted),
@@ -1145,7 +1180,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               if (activeDiscount != null && totalPrice > 0) ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Знижка врахована (Економія ${originalSelectedPrice - totalPrice} грн)',
+                                  'Знижка врахована (Економія ${originalSelectedPrice - totalPrice} $currencySymbol)',
                                   style: TextStyle(
                                     color: Colors.amber.shade200,
                                     fontSize: 11,
@@ -1179,16 +1214,20 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     if (discounts.isEmpty) return const SizedBox.shrink();
 
     final primaryDiscount = discounts.first;
+    final branch = ref.watch(effectiveBranchProvider);
+    final currencySymbol = branch.currencySymbol;
     final String discountDescription;
     if (primaryDiscount.discountType == 'percent') {
       discountDescription = primaryDiscount.serviceName == 'all'
           ? '-${primaryDiscount.discountPercent}% на будь-який абонемент'
           : '-${primaryDiscount.discountPercent}% на ${primaryDiscount.serviceName}';
     } else {
-      final saved = primaryDiscount.originalPrice! - (primaryDiscount.discountedPrice ?? 0);
+      final orig = primaryDiscount.originalPrice;
+      final disc = primaryDiscount.discountedPrice;
+      final saved = orig - disc;
       discountDescription = primaryDiscount.serviceName == 'all'
-          ? 'Спеціальна фіксована ціна ${primaryDiscount.discountedPrice} грн'
-          : '${primaryDiscount.discountedPrice} грн на ${primaryDiscount.serviceName}${saved != null && saved > 0 ? " (Економія $saved грн)" : ""}';
+          ? 'Спеціальна фіксована ціна $disc $currencySymbol'
+          : '$disc $currencySymbol на ${primaryDiscount.serviceName}${saved > 0 ? " (Економія $saved $currencySymbol)" : ""}';
     }
 
     return ClipRRect(

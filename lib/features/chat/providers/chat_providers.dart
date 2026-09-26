@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/features/chat/models/chat_dialog.dart';
 import 'package:swimming_school_app/features/chat/models/chat_message.dart';
 import 'package:swimming_school_app/features/chat/repositories/chat_repository.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   return ChatRepository();
@@ -10,7 +11,9 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 
 final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) {
   final repo = ref.watch(chatRepositoryProvider);
-  return repo.streamAdminDialogs();
+  final tenancy = ref.watch(tenancyControllerProvider);
+  final branchId = tenancy.isAllLocationsSelected ? null : tenancy.activeBranchId;
+  return repo.streamAdminDialogs(branchId: branchId);
 });
 
 final clientChatDialogStreamProvider = StreamProvider.family<ChatDialog?, String>((ref, clientId) {

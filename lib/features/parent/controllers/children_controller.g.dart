@@ -34,7 +34,7 @@ final class ChildrenControllerProvider
 }
 
 String _$childrenControllerHash() =>
-    r'8f022ad726b642f4327bae875f638728f2faaeb2';
+    r'0fc2e83ffb9877791799505361c3353ab35599a4';
 
 abstract class _$ChildrenController extends $StreamNotifier<List<Child>> {
   Stream<List<Child>> build();

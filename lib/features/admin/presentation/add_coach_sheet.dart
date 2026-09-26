@@ -8,6 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AddCoachSheet extends ConsumerStatefulWidget {
   const AddCoachSheet({super.key});
@@ -75,6 +76,8 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
       final rateIndividual = int.tryParse(_rateIndividualController.text.trim()) ?? 450;
       final rateSplit = int.tryParse(_rateSplitController.text.trim()) ?? 600;
 
+      final activeBranchId = ref.read(tenancyControllerProvider).activeBranchId;
+
       await userRef.set({
         'id': userRef.id,
         'name': _nameController.text.trim(),
@@ -82,6 +85,9 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
         'phone': _phoneController.text.trim(),
         'loginId': generatedLogin,
         'avatarUrl': '',
+        'organizationId': 'cityswim',
+        'branchId': activeBranchId,
+        'branchIds': [activeBranchId],
         'rateGroup': rateGroup,
         'rateIndividual': rateIndividual,
         'rateSplit': rateSplit,

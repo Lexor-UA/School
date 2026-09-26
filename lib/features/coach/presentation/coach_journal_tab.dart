@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/coach/presentation/coach_dashboard.dart';
 import 'package:swimming_school_app/features/coach/presentation/qr_scanner_screen.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
@@ -100,6 +101,25 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
   }
 
   Future<void> _toggleAttendance(GroupClass gClass, String childId) async {
+    final user = ref.read(authControllerProvider);
+    if (user != null && user.role == UserRole.coach) {
+      final coachBranch = user.branchId;
+      final coachBranches = user.branchIds;
+      final hasAccess = coachBranch == gClass.branchId || coachBranches.contains(gClass.branchId);
+      if (!hasAccess) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('У вас немає доступу до відмітки відвідування в іншій філії'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     final isAttended = gClass.attendedChildIds.contains(childId);
     final newAttended = isAttended
         ? (List<String>.from(gClass.attendedChildIds)..remove(childId))
@@ -198,8 +218,14 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
           final yesterday = today.subtract(const Duration(days: 1));
           final tomorrow = today.add(const Duration(days: 1));
 
+          final coachBranch = user?.branchId ?? 'kyiv';
+          final coachBranches = user?.branchIds ?? [coachBranch];
+          final branchClasses = user != null
+              ? allClasses.where((c) => c.branchId == coachBranch || coachBranches.contains(c.branchId)).toList()
+              : allClasses;
+
           // 1. Filter by selected day
-          final dayClasses = allClasses.where((c) {
+          final dayClasses = branchClasses.where((c) {
             final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
             return _isSameDay(classDate, _selectedDate);
           }).toList()

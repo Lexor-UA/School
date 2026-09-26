@@ -15,15 +15,17 @@ abstract class Subscription with _$Subscription {
     String? serviceName,
     DateTime? expiryDate,
     String? ownerName,
+    @Default('cityswim') String organizationId,
+    @Default('kyiv') String branchId,
+    @Default('UAH') String currency,
+    @Default('₴') String currencySymbol,
   }) = _Subscription;
 
-  factory Subscription.fromJson(Map<String, dynamic> json) {
-    final copy = Map<String, dynamic>.from(json);
-    if (copy['expiryDate'] is Timestamp) {
-      copy['expiryDate'] = (copy['expiryDate'] as Timestamp).toDate().toIso8601String();
-    }
-    return _$SubscriptionFromJson(copy);
-  }
+  factory Subscription.fromJson(Map<String, dynamic> json) => _$SubscriptionFromJson(
+        json['expiryDate'] is Timestamp
+            ? {...json, 'expiryDate': (json['expiryDate'] as Timestamp).toDate().toIso8601String()}
+            : json,
+      );
 }
 
 extension SubscriptionAudienceX on Subscription {

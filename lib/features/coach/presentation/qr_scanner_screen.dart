@@ -10,6 +10,7 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/coach/models/qr_check_in_result.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   final GroupClass? targetClass;
@@ -62,9 +63,12 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
     HapticFeedback.mediumImpact();
 
+    final coachUser = ref.read(authControllerProvider);
     final result = await ref.read(subscriptionControllerProvider.notifier).processQrCheckIn(
       code: code.trim(),
       targetClass: _selectedClass!,
+      scanningCoachBranchId: coachUser?.branchId,
+      scanningCoachBranchIds: coachUser?.branchIds,
     );
 
     if (!mounted) return;

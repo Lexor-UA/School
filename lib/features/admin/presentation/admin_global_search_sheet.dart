@@ -17,6 +17,7 @@ import 'admin_calendar_screen.dart';
 import 'admin_clients_screen.dart';
 import 'admin_coaches_screen.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AdminGlobalSearchSheet extends ConsumerStatefulWidget {
   final int initialCategoryIndex;
@@ -146,16 +147,41 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   final allUsers = usersSnapshot.data?.docs ?? [];
                   final allChildren = childrenSnapshot.data?.docs ?? [];
 
-                  // Categorize users
+                  final tenancyState = ref.watch(tenancyControllerProvider);
+                  final activeBranchId = tenancyState.activeBranchId;
+                  final isAllLocations = tenancyState.isAllLocationsSelected;
+
+                  // Categorize users with branch isolation
                   final clients = allUsers.where((u) {
                     final data = u.data() as Map<String, dynamic>;
-                    return (data['role'] ?? '') == 'parent';
+                    if ((data['role'] ?? '') != 'parent') return false;
+                    if (isAllLocations) return true;
+                    return (data['branchId'] as String? ?? 'kyiv') == activeBranchId;
                   }).toList();
 
                   final coaches = allUsers.where((u) {
                     final data = u.data() as Map<String, dynamic>;
-                    return (data['role'] ?? '') == 'coach';
+                    if ((data['role'] ?? '') != 'coach') return false;
+                    if (isAllLocations) return true;
+                    final bId = data['branchId'] as String? ?? 'kyiv';
+                    final bIds = (data['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
+                    return bId == activeBranchId || bIds.contains(activeBranchId);
                   }).toList();
+
+                  final children = isAllLocations
+                      ? allChildren
+                      : allChildren.where((ch) {
+                          final data = ch.data() as Map<String, dynamic>;
+                          return (data['branchId'] as String? ?? 'kyiv') == activeBranchId;
+                        }).toList();
+
+                  final branchClasses = isAllLocations
+                      ? allClasses
+                      : allClasses.where((cl) => cl.branchId == activeBranchId).toList();
+
+                  final branchSubscriptions = isAllLocations
+                      ? allSubscriptions
+                      : allSubscriptions.where((s) => s.branchId == activeBranchId).toList();
 
                   // Filter results based on search query
                   final q = _query.toLowerCase().trim();
@@ -170,7 +196,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     return name.contains(q) || phone.contains(q) || login.contains(q);
                   }).toList();
 
-                  final matchingChildren = allChildren.where((ch) {
+                  final matchingChildren = children.where((ch) {
                     if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 4) return false;
                     if (q.isEmpty) return true;
                     final d = ch.data() as Map<String, dynamic>;
@@ -188,7 +214,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     return name.contains(q) || phone.contains(q) || login.contains(q);
                   }).toList();
 
-                  final matchingClasses = allClasses.where((cl) {
+                  final matchingClasses = branchClasses.where((cl) {
                     if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 3) return false;
                     if (q.isEmpty) return true;
                     final title = cl.title.toLowerCase();
@@ -198,7 +224,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                     return title.contains(q) || coach.contains(q) || lane.contains(q) || cat.contains(q);
                   }).toList();
 
-                  final matchingSubs = allSubscriptions.where((s) {
+                  final matchingSubs = branchSubscriptions.where((s) {
                     if (_selectedCategoryIndex != 0 && _selectedCategoryIndex != 2) return false;
                     if (q.isEmpty) return true;
                     final sName = (s.serviceName ?? '').toLowerCase();

@@ -38,10 +38,17 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final coachBranch = user?.branchId ?? 'kyiv';
+    final coachBranches = user?.branchIds ?? [coachBranch];
+
     final todayClasses = allClasses.where((c) {
       final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
       if (!classDate.isAtSameMomentAs(today)) return false;
       final isMock = user?.id == 'mock_coach';
+      if (!isMock) {
+        final matchesBranch = c.branchId == coachBranch || coachBranches.contains(c.branchId);
+        if (!matchesBranch) return false;
+      }
       final matchesId = c.coachId == user?.id;
       final matchesName = user != null &&
           user.name.isNotEmpty &&

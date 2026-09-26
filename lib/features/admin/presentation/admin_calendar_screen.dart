@@ -13,6 +13,7 @@ import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/admin/presentation/create_class_sheet.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AdminCalendarScreen extends ConsumerStatefulWidget {
   final String? initialCoachId;
@@ -71,8 +72,16 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final allClasses = scheduleAsync.value ?? [];
 
+    final tenancyState = ref.watch(tenancyControllerProvider);
+    final activeBranchId = tenancyState.activeBranchId;
+    final isAllLocations = tenancyState.isAllLocationsSelected;
+
+    final branchClasses = isAllLocations
+        ? allClasses
+        : allClasses.where((c) => c.branchId == activeBranchId).toList();
+
     final Map<String, GroupClass> uniqueDayClasses = {};
-    for (final c in allClasses) {
+    for (final c in branchClasses) {
       final matchesDate = c.startTime.year == _selectedDate.year && 
         c.startTime.month == _selectedDate.month && 
         c.startTime.day == _selectedDate.day;
@@ -163,7 +172,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   // Month Header & Calendar Card
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildCalendarCard(allClasses, currentTheme),
+                    child: _buildCalendarCard(branchClasses, currentTheme),
                   ),
                   const SizedBox(height: 10),
 
@@ -507,7 +516,19 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           return const SizedBox.shrink();
         }
 
-        final coachDocs = snapshot.data!.docs;
+        final tenancyState = ref.watch(tenancyControllerProvider);
+        final activeBranchId = tenancyState.activeBranchId;
+        final isAllLocations = tenancyState.isAllLocationsSelected;
+
+        final rawCoachDocs = snapshot.data!.docs;
+        final coachDocs = isAllLocations
+            ? rawCoachDocs
+            : rawCoachDocs.where((c) {
+                final d = c.data() as Map<String, dynamic>;
+                final bId = d['branchId'] as String? ?? 'kyiv';
+                final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
+                return bId == activeBranchId || bIds.contains(activeBranchId);
+              }).toList();
 
         return SizedBox(
           height: 38,

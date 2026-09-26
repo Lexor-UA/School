@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,23 +9,58 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/coach/models/qr_check_in_result.dart';
+import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 part 'subscription_controller.g.dart';
 
 @Riverpod(keepAlive: true)
 class SubscriptionController extends _$SubscriptionController {
+  StreamSubscription<QuerySnapshot>? _subSubscription;
+
   @override
   List<Subscription> build() {
+    ref.onDispose(() {
+      _subSubscription?.cancel();
+      _subSubscription = null;
+    });
+
     _listenToSubscriptions();
     return [];
   }
 
   void _listenToSubscriptions() {
-    FirebaseFirestore.instance.collection('subscriptions').snapshots().listen((snapshot) {
+    _subSubscription?.cancel();
+
+    final user = ref.watch(authControllerProvider);
+    final tenancyState = ref.watch(tenancyControllerProvider);
+    final activeBranchId = tenancyState.activeBranchId;
+    final isAllLocations = tenancyState.isAllLocationsSelected;
+
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('subscriptions');
+
+    if (user != null) {
+      if (user.role == UserRole.parent) {
+        final family = ref.watch(familyStreamProvider).value;
+        final relevantUserIds = <String>[
+          user.id,
+          if (family != null) ...family.parentIds,
+        ];
+        if (relevantUserIds.length == 1) {
+          query = query.where('userId', isEqualTo: relevantUserIds.first);
+        } else if (relevantUserIds.length > 1) {
+          query = query.where('userId', whereIn: relevantUserIds);
+        }
+      } else if (!isAllLocations && activeBranchId != null) {
+        query = query.where('branchId', isEqualTo: activeBranchId);
+      }
+    }
+
+    _subSubscription = query.snapshots().listen((snapshot) {
       final List<Subscription> subs = [];
       for (final doc in snapshot.docs) {
         try {
-          final data = Map<String, dynamic>.from(doc.data() as Map);
+          final data = Map<String, dynamic>.from(doc.data());
           data['id'] = doc.id;
           if (data['expiryDate'] is Timestamp) {
             data['expiryDate'] = (data['expiryDate'] as Timestamp).toDate().toIso8601String();
@@ -37,6 +73,8 @@ class SubscriptionController extends _$SubscriptionController {
       
       _checkExpirations(subs);
       state = subs;
+    }, onError: (e) {
+      debugPrint('Error listening to subscriptions: $e');
     });
   }
 
@@ -255,13 +293,16 @@ class SubscriptionController extends _$SubscriptionController {
     }).toList();
   }
 
-  Future<bool> deductClass(String code) async {
+  Future<bool> deductClass(String code, {String? targetBranchId}) async {
     final cleanCode = code.trim();
     if (cleanCode.isEmpty) return false;
 
     // 1. Direct search by userId or sub.id
     int subIndex = state.indexWhere((sub) =>
-        (sub.userId == cleanCode || sub.id == cleanCode) && sub.isActive && sub.remainingClasses > 0);
+        (sub.userId == cleanCode || sub.id == cleanCode) &&
+        sub.isActive &&
+        sub.remainingClasses > 0 &&
+        (targetBranchId == null || sub.branchId == targetBranchId));
 
     // 2. Fallback smart lookup by loginId, phone, or child ID
     if (subIndex == -1) {
@@ -296,7 +337,10 @@ class SubscriptionController extends _$SubscriptionController {
 
         if (resolvedUserId != null) {
           subIndex = state.indexWhere((sub) =>
-              sub.userId == resolvedUserId && sub.isActive && sub.remainingClasses > 0);
+              sub.userId == resolvedUserId &&
+              sub.isActive &&
+              sub.remainingClasses > 0 &&
+              (targetBranchId == null || sub.branchId == targetBranchId));
         }
       } catch (e) {
         debugPrint('Error looking up client in deductClass: $e');
@@ -306,6 +350,10 @@ class SubscriptionController extends _$SubscriptionController {
     if (subIndex == -1) return false;
 
     final sub = state[subIndex];
+    if (targetBranchId != null && sub.branchId != targetBranchId) {
+      return false;
+    }
+
     final newRemaining = sub.remainingClasses - 1;
     final newIsActive = newRemaining > 0;
     
@@ -321,7 +369,17 @@ class SubscriptionController extends _$SubscriptionController {
     }
   }
 
-  bool canSubscriptionBeUsedForClass(Subscription sub, GroupClass gClass) {
+  bool canSubscriptionBeUsedForClass(Subscription sub, GroupClass gClass, {String? clientBranchId}) {
+    // 0. Branch isolation & data integrity check (TZ Point 29)
+    final integrityResult = BranchDataIntegrityValidator.validateAttendanceDeduction(
+      subscription: sub,
+      groupClass: gClass,
+      clientBranchId: clientBranchId,
+    );
+    if (!integrityResult.isValid) {
+      return false;
+    }
+
     // 1. Split classes: only split subscriptions are valid
     if (gClass.isSplit) {
       return sub.isSplitSubscription;
@@ -362,6 +420,8 @@ class SubscriptionController extends _$SubscriptionController {
   Future<QrCheckInResult> processQrCheckIn({
     required String code,
     required GroupClass targetClass,
+    String? scanningCoachBranchId,
+    List<String>? scanningCoachBranchIds,
   }) async {
     final cleanCode = code.trim();
     if (cleanCode.isEmpty) {
@@ -369,6 +429,20 @@ class SubscriptionController extends _$SubscriptionController {
         status: QrCheckInStatus.notFound,
         message: 'Порожній QR-код.',
       );
+    }
+
+    // 0. Coach Branch Authorization Check
+    if (scanningCoachBranchId != null) {
+      final allowedBranches = scanningCoachBranchIds ?? [scanningCoachBranchId];
+      if (scanningCoachBranchId != targetClass.branchId && !allowedBranches.contains(targetClass.branchId)) {
+        final coachBranchName = scanningCoachBranchId == 'vienna' ? 'CitySwim Vienna 🇦🇹' : 'CitySwim Kyiv 🇺🇦';
+        final classBranchName = targetClass.branchId == 'vienna' ? 'CitySwim Vienna 🇦🇹' : 'CitySwim Kyiv 🇺🇦';
+        return QrCheckInResult(
+          status: QrCheckInStatus.wrongService,
+          classTitle: targetClass.title,
+          message: 'Тренер з філії $coachBranchName не має доступу до списання перепусток на занятті $classBranchName.',
+        );
+      }
     }
 
     // 1. Validate date: class MUST be scheduled for today
@@ -476,6 +550,22 @@ class SubscriptionController extends _$SubscriptionController {
       return const QrCheckInResult(
         status: QrCheckInStatus.notFound,
         message: 'Абонемент або клієнта не знайдено за цим кодом.',
+      );
+    }
+
+    // 2.5 Tenancy Branch Check (Cross-branch security guard & data integrity)
+    final integrityResult = BranchDataIntegrityValidator.validateAttendanceDeduction(
+      subscription: targetSub,
+      groupClass: targetClass,
+    );
+    if (!integrityResult.isValid) {
+      return QrCheckInResult(
+        status: QrCheckInStatus.wrongService,
+        studentName: targetSub.ownerName,
+        classTitle: targetClass.title,
+        subServiceName: targetSub.serviceName,
+        remainingClasses: targetSub.remainingClasses,
+        message: integrityResult.errorMessage ?? 'Перепустку заблоковано через міжфіліальну ізоляцію.',
       );
     }
 

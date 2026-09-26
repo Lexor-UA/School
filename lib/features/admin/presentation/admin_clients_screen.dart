@@ -18,6 +18,7 @@ import 'add_client_sheet.dart';
 import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AdminClientsScreen extends ConsumerStatefulWidget {
   const AdminClientsScreen({super.key});
@@ -451,14 +452,31 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 ),
 
                 // 3 & 4. Filter Chips & Clients List backed by real-time Stream
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
+                Builder(
+                  builder: (context) {
+                    final tenancyState = ref.watch(tenancyControllerProvider);
+                    final activeBranchId = tenancyState.activeBranchId;
+                    final isAllLocations = tenancyState.isAllLocationsSelected;
+
+                    Query<Map<String, dynamic>> clientsQuery = FirebaseFirestore.instance
                         .collection('users')
-                        .where('role', isEqualTo: 'parent')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      final allClients = snapshot.hasData ? snapshot.data!.docs : <QueryDocumentSnapshot>[];
+                        .where('role', isEqualTo: 'parent');
+
+                    if (!isAllLocations && activeBranchId != null) {
+                      clientsQuery = clientsQuery.where('branchId', isEqualTo: activeBranchId);
+                    }
+
+                    return Expanded(
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: clientsQuery.snapshots(),
+                        builder: (context, snapshot) {
+                          final rawClients = snapshot.hasData ? snapshot.data!.docs : <QueryDocumentSnapshot>[];
+                          final allClients = isAllLocations
+                              ? rawClients
+                              : rawClients.where((c) {
+                                  final d = c.data() as Map<String, dynamic>;
+                                  return (d['branchId'] as String? ?? 'kyiv') == activeBranchId;
+                                }).toList();
                       final now = DateTime.now();
 
                       final int totalCount = allClients.length;
@@ -553,6 +571,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                                 loginId: loginId,
                                                 password: password,
                                                 subscriptions: userSubs,
+                                                branchId: (data['branchId'] as String? ?? 'kyiv'),
+                                                isAllLocations: isAllLocations,
                                                 index: index,
                                                 currentTheme: currentTheme,
                                               );
@@ -563,7 +583,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                       );
                     },
                   ),
-                ),
+                );
+              },
+            ),
               ],
             ),
           ),
@@ -847,6 +869,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     required String password,
     required List<dynamic> subscriptions,
     bool hasDiscounts = false,
+    String branchId = 'kyiv',
+    bool isAllLocations = false,
     required int index,
     required AppThemeConfig currentTheme,
   }) {
@@ -1031,6 +1055,40 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                   'ЗНИЖКА',
                                   style: TextStyle(
                                     color: Color(0xFFF59E0B),
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (isAllLocations) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: branchId == 'vienna'
+                                  ? const Color(0xFFDC2626).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12)
+                                  : const Color(0xFF0284C7).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: branchId == 'vienna'
+                                    ? const Color(0xFFF87171).withValues(alpha: 0.5)
+                                    : const Color(0xFF38BDF8).withValues(alpha: 0.5),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  branchId == 'vienna' ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                                  style: TextStyle(
+                                    color: branchId == 'vienna'
+                                        ? (currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
+                                        : (currentTheme.isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1)),
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.3,

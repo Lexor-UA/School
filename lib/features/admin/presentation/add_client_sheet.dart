@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AddClientSheet extends ConsumerStatefulWidget {
   const AddClientSheet({super.key});
@@ -36,6 +37,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
   bool _isLoading = false;
   String? _errorMessage;
   String? _generatedLogin;
+  String? _selectedBranchId;
 
   @override
   void dispose() {
@@ -109,6 +111,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       final generatedLogin = 'client${maxClientNum + 1}';
 
       final userRef = FirebaseFirestore.instance.collection('users').doc();
+      final effectiveBranch = ref.read(effectiveBranchProvider);
+      final branchId = _selectedBranchId ?? effectiveBranch.id;
+      final organizationId = effectiveBranch.organizationId;
 
       final userData = <String, dynamic>{
         'id': userRef.id,
@@ -118,6 +123,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         'loginId': generatedLogin,
         'password': '1',
         'avatarUrl': '',
+        'organizationId': organizationId,
+        'branchId': branchId,
       };
       if (clientAge != null) {
         userData['age'] = clientAge;
@@ -137,6 +144,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           'xp': 0,
           'maxXp': 100,
           'notes': childAge != null ? 'Вік: $childAge' : '',
+          'organizationId': organizationId,
+          'branchId': branchId,
         };
         if (childAge != null) {
           childData['age'] = childAge;
@@ -539,6 +548,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+          // Branch selector (Kyiv vs Vienna)
+          _buildBranchSelector(isDark: isDark),
+          const SizedBox(height: 16),
           _buildTextField('admin.add_client_name_hint'.tr() == 'admin.add_client_name_hint' ? "ПІБ або ім'я клієнта" : 'admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, isDark: isDark),
           const SizedBox(height: 14),
           _buildTextField('admin.add_client_phone_hint'.tr() == 'admin.add_client_phone_hint' ? 'Номер телефону' : 'admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true, isDark: isDark),
@@ -898,6 +910,128 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBranchSelector({required bool isDark}) {
+    final effectiveBranch = ref.watch(effectiveBranchProvider);
+    final activeId = _selectedBranchId ?? effectiveBranch.id;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildBranchOption(
+              branchId: 'kyiv',
+              title: 'Київ',
+              flag: '🇺🇦',
+              subtitle: 'UAH ₴',
+              isSelected: activeId == 'kyiv',
+              isDark: isDark,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildBranchOption(
+              branchId: 'vienna',
+              title: 'Відень',
+              flag: '🇦🇹',
+              subtitle: 'EUR €',
+              isSelected: activeId == 'vienna',
+              isDark: isDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBranchOption({
+    required String branchId,
+    required String title,
+    required String flag,
+    required String subtitle,
+    required bool isSelected,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedBranchId = branchId;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: branchId == 'vienna'
+                      ? (isDark
+                          ? [const Color(0xFFDC2626), const Color(0xFF991B1B)]
+                          : [const Color(0xFFEF4444), const Color(0xFFDC2626)])
+                      : (isDark
+                          ? [const Color(0xFF00E5FF), const Color(0xFF0077B6)]
+                          : [const Color(0xFF0284C7), const Color(0xFF0369A1)]),
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (branchId == 'vienna' ? const Color(0xFFDC2626) : const Color(0xFF0284C7))
+                        .withValues(alpha: isDark ? 0.35 : 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

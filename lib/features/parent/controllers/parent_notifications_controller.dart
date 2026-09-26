@@ -6,8 +6,10 @@ import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
+import 'package:swimming_school_app/features/notification/services/branch_notification_service.dart';
 
 class ParentNotification {
   final String id;
@@ -260,9 +262,23 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
       }
     }
 
-    // 5. Deduplicate by ID and filter out cleared notifications
+    // 5. Automated branch-aware upcoming class reminders (24h and 2h)
+    if (user != null) {
+      final classesAsync = ref.watch(scheduleControllerProvider);
+      final classes = classesAsync.value ?? const <GroupClass>[];
+      final branchReminders = BranchNotificationService.generateUpcomingRemindersForClasses(
+        classes: classes,
+        userId: user.id,
+        enrolledChildIds: childIds,
+      );
 
-    // Deduplicate by ID and filter out cleared notifications
+      for (final reminder in branchReminders) {
+        final isRead = savedReadIds.contains(reminder.id);
+        allNotifications.add(reminder.toParentNotification().copyWith(isRead: isRead));
+      }
+    }
+
+    // 6. Deduplicate by ID and filter out cleared notifications
     final uniqueMap = <String, ParentNotification>{};
     for (final notif in allNotifications) {
       if (!savedClearedIds.contains(notif.id) && !uniqueMap.containsKey(notif.id)) {

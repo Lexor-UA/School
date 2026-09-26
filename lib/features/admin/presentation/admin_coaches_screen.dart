@@ -13,6 +13,7 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'add_coach_sheet.dart';
 import 'edit_coach_sheet.dart';
 import 'admin_calendar_screen.dart';
@@ -286,7 +287,20 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         return _buildEmptyState(currentTheme);
                       }
 
-                      var coaches = snapshot.data!.docs;
+                      final tenancyState = ref.watch(tenancyControllerProvider);
+                      final activeBranchId = tenancyState.activeBranchId;
+                      final isAllLocations = tenancyState.isAllLocationsSelected;
+
+                      final rawCoaches = snapshot.data!.docs;
+                      var coaches = isAllLocations
+                          ? rawCoaches
+                          : rawCoaches.where((c) {
+                              final d = c.data() as Map<String, dynamic>;
+                              final bId = d['branchId'] as String? ?? 'kyiv';
+                              final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
+                              return bId == activeBranchId || bIds.contains(activeBranchId);
+                            }).toList();
+
                       if (_searchQuery.isNotEmpty) {
                         coaches = coaches.where((c) {
                           final data = c.data() as Map<String, dynamic>;
@@ -300,7 +314,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       }
 
                       if (coaches.isEmpty) {
-                        return _buildNoSearchResults(currentTheme);
+                        return _searchQuery.isNotEmpty
+                            ? _buildNoSearchResults(currentTheme)
+                            : _buildEmptyState(currentTheme);
                       }
 
                       return ListView.separated(

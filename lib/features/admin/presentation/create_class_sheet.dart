@@ -10,6 +10,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/schedule/models/class_conflict.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
+import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
 import 'widgets/apple_time_wheel_picker.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
@@ -37,9 +40,38 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   TimeOfDay _selectedTime = const TimeOfDay(hour: 16, minute: 0);
   
   int _maxCapacity = 8;
-  String _selectedPoolType = 'Спортивний басейн';
-  String _selectedLane = 'Доріжка 1';
-  final List<String> _sportLanes = ['Доріжка 1', 'Доріжка 2', 'Доріжка 3', 'Доріжка 4', 'Весь басейн'];
+  String? _selectedPoolId;
+  String _selectedLane = '';
+
+  BranchConfig get _currentBranchConfig {
+    final branch = ref.watch(effectiveBranchProvider);
+    return BranchConfig.forBranch(branch.id);
+  }
+
+  BranchLocation? get _currentLocation {
+    final locs = _currentBranchConfig.locations;
+    return locs.isNotEmpty ? locs.first : null;
+  }
+
+  List<BranchPool> get _availablePools {
+    return _currentLocation?.pools ?? const [];
+  }
+
+  BranchPool? get _activePool {
+    final pools = _availablePools;
+    if (_selectedPoolId != null) {
+      for (final p in pools) {
+        if (p.id == _selectedPoolId) return p;
+      }
+    }
+    return pools.isNotEmpty ? pools.first : null;
+  }
+
+  List<String> get _currentLanes {
+    final pool = _activePool;
+    if (pool == null) return const [];
+    return pool.lanes;
+  }
 
   static const unassignedCoach = AppUser(
     id: 'unassigned',
@@ -149,13 +181,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       _selectedTime = TimeOfDay(hour: c.startTime.hour, minute: c.startTime.minute);
       _maxCapacity = c.maxCapacity;
       _selectedCategory = _categories.contains(c.category) ? c.category : _categories.first;
-      if (c.lane == 'Дитячий басейн') {
-        _selectedPoolType = 'Дитячий басейн';
-        _selectedLane = 'Дитячий басейн';
-      } else {
-        _selectedPoolType = 'Спортивний басейн';
-        _selectedLane = c.lane.isNotEmpty ? c.lane : 'Доріжка 1';
-      }
+      _selectedLane = c.lane;
       _selectedWeekdays = {c.startTime.weekday};
     } else {
       _titleController = TextEditingController(text: 'Junior Pro');
@@ -163,8 +189,6 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       if (widget.initialDate != null) {
         _selectedTime = TimeOfDay(hour: widget.initialDate!.hour, minute: widget.initialDate!.minute);
       }
-      _selectedPoolType = 'Спортивний басейн';
-      _selectedLane = 'Доріжка 1';
       _selectedWeekdays = {_selectedDate.weekday};
     }
   }
@@ -363,6 +387,51 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     final effectiveCoachId = isUnassigned ? 'unassigned' : _selectedCoach!.id;
     final effectiveCoachName = isUnassigned ? 'Тренер не призначений' : _selectedCoach!.name;
 
+    final activeBranch = ref.read(effectiveBranchProvider);
+
+    // Multi-tenancy integrity guard: coach assignment (TZ Point 30)
+    if (!isUnassigned && _selectedCoach != null) {
+      final coachCheck = BranchDataIntegrityValidator.validateCoachAssignment(
+        coach: _selectedCoach,
+        branchId: activeBranch.id,
+      );
+      if (!coachCheck.isValid) {
+        setState(() => _isSaving = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(coachCheck.errorMessage ?? 'Тренер не має доступу до цієї філії'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    // Multi-tenancy integrity guard: location and pool (TZ Point 30)
+    final poolCheck = BranchDataIntegrityValidator.validateLocationAndPool(
+      branchId: activeBranch.id,
+      locationId: _currentLocation?.id,
+      poolId: _selectedPoolId ?? _activePool?.id,
+    );
+    if (!poolCheck.isValid) {
+      setState(() => _isSaving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(poolCheck.errorMessage ?? 'Невірна локація або басейн для цієї філії'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+      return;
+    }
+
     // Upfront check for conflict on the chosen date/time/lane/coach
     final upfrontConflict = ref.read(scheduleControllerProvider.notifier).checkClassConflict(
       startTime: startTime,
@@ -370,6 +439,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       lane: _selectedLane,
       coachId: effectiveCoachId,
       excludeClassId: widget.classToEdit?.id,
+      poolId: _selectedPoolId ?? _activePool?.id,
+      locationId: _currentLocation?.id,
     );
     if (upfrontConflict != null) {
       if (!_isRecurring || _selectedWeekdays.contains(_selectedDate.weekday)) {
@@ -387,6 +458,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         lane: _selectedLane,
         coachId: effectiveCoachId,
         excludeClassId: widget.classToEdit!.id,
+        poolId: _selectedPoolId ?? _activePool?.id,
+        locationId: _currentLocation?.id,
       );
       if (conflict != null) {
         setState(() => _isSaving = false);
@@ -434,6 +507,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         maxCapacity: _maxCapacity,
         category: _selectedCategory,
         lane: _selectedLane,
+        locationId: _currentLocation?.id,
+        poolId: _selectedPoolId ?? _activePool?.id,
       );
 
       if (result.createdCount == 0 && result.hasSkipped) {
@@ -538,6 +613,23 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final activeBranch = ref.watch(effectiveBranchProvider);
+    final pools = _availablePools;
+    if (_selectedPoolId == null && pools.isNotEmpty) {
+      if (_isEditing) {
+        final matching = pools.where((p) => p.lanes.contains(_selectedLane)).firstOrNull;
+        _selectedPoolId = matching?.id ?? pools.first.id;
+      } else {
+        _selectedPoolId = pools.first.id;
+        if (_selectedLane.isEmpty && pools.first.lanes.isNotEmpty) {
+          _selectedLane = pools.first.lanes.first;
+        }
+      }
+    }
+    if (_selectedLane.isEmpty && _activePool != null && _activePool!.lanes.isNotEmpty) {
+      _selectedLane = _activePool!.lanes.first;
+    }
+
     final coachesAsync = ref.watch(coachesProvider);
     ref.watch(scheduleControllerProvider);
     final mediaQuery = MediaQuery.of(context);
@@ -734,7 +826,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           children: [
                             _buildLabel('admin.class_coach'.tr(), isDark: isDark),
                             coachesAsync.when(
-                              data: (coachesList) {
+                              data: (rawCoachesList) {
+                                final coachesList = rawCoachesList.where((c) => c.branchId == activeBranch.id).toList();
                                 final availableCoaches = [unassignedCoach, ...coachesList];
 
                                 if (_selectedCoach == null) {
@@ -1674,147 +1767,144 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   Widget _buildPoolAndLaneSelector({required bool isDark}) {
-    final isSport = _selectedPoolType == 'Спортивний басейн';
+    final activeBranch = ref.watch(effectiveBranchProvider);
+    final location = _currentLocation;
+    final pools = _availablePools;
+    final activePool = _activePool;
+    final currentLanes = _currentLanes;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Басейн та місце проведення', isDark: isDark),
-        const SizedBox(height: 2),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildLabel('Басейн та місце проведення', isDark: isDark),
+            // Branch badge pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.14) : const Color(0xFFE0F2FE),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFF7DD3FC),
+                  width: 0.9,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    activeBranch.flag,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    location?.name ?? activeBranch.name,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
 
-        // 1. Primary Pool Type Selector (Дитячий vs Спортивний)
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+        // 1. Primary Pool Selector (Tabs / Pills)
+        if (pools.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+              ),
+            ),
+            child: Row(
+              children: pools.map((pool) {
+                final isSelected = activePool?.id == pool.id;
+                final isWellen = pool.id.contains('wellen') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('baby');
+
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedPoolId = pool.id;
+                        if (pool.lanes.isNotEmpty && !pool.lanes.contains(_selectedLane)) {
+                          _selectedLane = pool.lanes.first;
+                        }
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                      decoration: BoxDecoration(
+                        gradient: isSelected
+                            ? (isWellen
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                                  )
+                                : const LinearGradient(
+                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  ))
+                            : null,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: (isWellen ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.40),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isWellen ? LucideIcons.baby : LucideIcons.waves,
+                            size: 16,
+                            color: isSelected ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
+                          ),
+                          const SizedBox(width: 7),
+                          Flexible(
+                            child: Text(
+                              pool.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
+                                fontSize: 12.5,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
-          child: Row(
-            children: [
-              // Спортивний басейн
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedPoolType = 'Спортивний басейн';
-                      if (_selectedLane == 'Дитячий басейн') {
-                        _selectedLane = 'Доріжка 1';
-                      }
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: isSport
-                          ? const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: isSport
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.waves,
-                          size: 16,
-                          color: isSport ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Спортивний',
-                          style: TextStyle(
-                            color: isSport
-                                ? Colors.white
-                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
-                            fontSize: 13,
-                            fontWeight: isSport ? FontWeight.w800 : FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+          const SizedBox(height: 12),
+        ],
 
-              // Дитячий басейн
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedPoolType = 'Дитячий басейн';
-                      _selectedLane = 'Дитячий басейн';
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: !isSport
-                          ? const LinearGradient(
-                              colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: !isSport
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF38BDF8).withValues(alpha: 0.40),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.baby,
-                          size: 16,
-                          color: !isSport ? Colors.white : (isDark ? Colors.amberAccent : const Color(0xFF64748B)),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Дитячий басейн',
-                          style: TextStyle(
-                            color: !isSport
-                                ? Colors.white
-                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
-                            fontSize: 13,
-                            fontWeight: !isSport ? FontWeight.w800 : FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 2. Sub-section: Lanes for Спортивний басейн OR Info Card for Дитячий басейн
-        if (isSport) ...[
-          const SizedBox(height: 14),
+        // 2. Sub-section: Lanes / Zones Selector
+        if (currentLanes.isNotEmpty) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Оберіть доріжку:',
+                'Оберіть доріжку / зону:',
                 style: TextStyle(
                   color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                   fontSize: 12,
@@ -1830,7 +1920,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  _selectedLane,
+                  _selectedLane.isNotEmpty ? _selectedLane : (currentLanes.first),
                   style: TextStyle(
                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                     fontSize: 11,
@@ -1844,7 +1934,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _sportLanes.map((lane) {
+              children: currentLanes.map((lane) {
                 final isSelected = _selectedLane == lane;
                 final conflictForThisLane = _checkConflictFor(
                   lane: lane,
@@ -1927,7 +2017,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
             ),
           ),
         ] else ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -1943,7 +2033,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Дитячий басейн без поділу на доріжки (мала глибина для дітей)',
+                    'Басейн без додаткового поділу на доріжки',
                     style: TextStyle(
                       color: isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0369A1),
                       fontSize: 12,

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 part 'auth_controller.g.dart';
 
@@ -164,6 +165,8 @@ class AuthController extends _$AuthController {
       await prefs.setString('userRole', user.role.name);
       await prefs.setString('clientId', user.id);
       await prefs.setString('userName', user.name);
+      await prefs.setString('userBranchId', user.branchId);
+      await prefs.setString('userOrgId', user.organizationId);
       try {
         await prefs.setString('cachedUserJson', jsonEncode(user.toJson()));
       } catch (e) {
@@ -173,6 +176,8 @@ class AuthController extends _$AuthController {
       await prefs.remove('userRole');
       await prefs.remove('clientId');
       await prefs.remove('userName');
+      await prefs.remove('userBranchId');
+      await prefs.remove('userOrgId');
       await prefs.remove('cachedUserJson');
     }
   }
@@ -494,6 +499,7 @@ class AuthController extends _$AuthController {
     required String phone,
     required String password,
     String? email,
+    String? branchId,
   }) async {
     try {
       final rawLogin = phone.trim();
@@ -565,6 +571,9 @@ class AuthController extends _$AuthController {
           ? (parts.length > 1 ? '${parts[0][0]}+${parts[1][0]}' : parts[0][0])
           : 'Client';
 
+      final effectiveBranch = ref.read(effectiveBranchProvider);
+      final effectiveBranchId = branchId ?? effectiveBranch.id;
+
       final newClientData = {
         'id': newDocRef.id,
         'name': name.trim(),
@@ -575,6 +584,8 @@ class AuthController extends _$AuthController {
         'email': ?userEmail,
         'avatarUrl': 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
         'createdAt': FieldValue.serverTimestamp(),
+        'branchId': effectiveBranchId,
+        'organizationId': effectiveBranch.organizationId,
       };
 
       await newDocRef.set(newClientData);
@@ -586,6 +597,8 @@ class AuthController extends _$AuthController {
         phone: normalizedPhone,
         loginId: assignedLoginId,
         avatarUrl: 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
+        branchId: effectiveBranchId,
+        organizationId: effectiveBranch.organizationId,
       );
 
       state = newUser;

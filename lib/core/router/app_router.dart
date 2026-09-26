@@ -13,6 +13,8 @@ import '../../features/owner/presentation/owner_staff_screen.dart';
 import '../../features/owner/presentation/owner_payouts_screen.dart';
 
 import '../../features/admin/presentation/admin_chat_screen.dart';
+import '../../features/tenancy/controllers/tenancy_controller.dart';
+import '../../features/tenancy/presentation/aquatix_lab_super_admin_screen.dart';
 
 class KeyboardDismissNavigatorObserver extends NavigatorObserver {
   void _dismissKeyboard() {
@@ -48,7 +50,33 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (context, state) {
           final skipSplash = state.uri.queryParameters['skipSplash'] == 'true';
-          return RoleSelectionScreen(skipSplash: skipSplash);
+          final branchParam = state.uri.queryParameters['branch'];
+          if (branchParam != null && (branchParam == 'kyiv' || branchParam == 'vienna')) {
+            Future.microtask(() {
+              ref.read(tenancyControllerProvider.notifier).selectBranch(branchParam);
+            });
+          }
+          return RoleSelectionScreen(skipSplash: skipSplash, initialBranchId: branchParam);
+        },
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) {
+          final branchParam = state.uri.queryParameters['branch'] ?? 'kyiv';
+          Future.microtask(() {
+            ref.read(tenancyControllerProvider.notifier).selectBranch(branchParam);
+          });
+          return RoleSelectionScreen(skipSplash: true, initialBranchId: branchParam);
+        },
+      ),
+      GoRoute(
+        path: '/register/:branchId',
+        builder: (context, state) {
+          final branchParam = state.pathParameters['branchId'] ?? 'kyiv';
+          Future.microtask(() {
+            ref.read(tenancyControllerProvider.notifier).selectBranch(branchParam);
+          });
+          return RoleSelectionScreen(skipSplash: true, initialBranchId: branchParam);
         },
       ),
       GoRoute(
@@ -114,6 +142,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const OwnerPayoutsScreen(),
           ),
         ]
+      ),
+      GoRoute(
+        path: '/superadmin',
+        builder: (context, state) => const AquatixLabSuperAdminScreen(),
       ),
     ],
   );

@@ -28,6 +28,8 @@ import 'package:swimming_school_app/features/admin/presentation/widgets/admin_qu
 import 'package:swimming_school_app/features/admin/models/activity_log.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
+import 'widgets/branch_selector_pill.dart';
+import 'package:swimming_school_app/features/tenancy/presentation/widgets/branch_invitation_qr_button.dart';
 
 class AdminMain extends ConsumerStatefulWidget {
   const AdminMain({super.key});
@@ -129,6 +131,20 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               slivers: [
                 _buildAppBar(context, ref, dashboardState.recentActions),
+
+                // 0. Селектор філій для Owner та бейдж філії для персоналу
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 6.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        BranchSelectorPill(),
+                        BranchInvitationQrButton(),
+                      ],
+                    ),
+                  ),
+                ),
 
                 // Search Bar
                 SliverToBoxAdapter(

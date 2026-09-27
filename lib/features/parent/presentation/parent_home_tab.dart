@@ -22,6 +22,7 @@ import 'package:swimming_school_app/features/parent/presentation/widgets/parent_
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collection/collection.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
@@ -145,7 +146,11 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user?.name ?? 'Гість',
+                      (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+                          ? user.name
+                          : (FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
+                              ? FirebaseAuth.instance.currentUser!.displayName!.trim()
+                              : 'Гість'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -167,18 +172,30 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.92),
+                      gradient: isDark
+                          ? const LinearGradient(
+                              colors: [Color(0xFF0E2E50), Color(0xFF081C32)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isDark ? null : Colors.white.withValues(alpha: 0.92),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
-                        width: 1,
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFFBAE6FD),
+                        width: 1.2,
                       ),
                       boxShadow: isDark
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
                                 blurRadius: 10,
                                 spreadRadius: 1,
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.40),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ]
                           : [
@@ -349,35 +366,34 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isDark
-                      ? [
-                          const Color(0xFF0E3D64).withValues(alpha: 0.60),
-                          const Color(0xFF092842).withValues(alpha: 0.72),
+                      ? const [
+                          Color(0xFF0A2239),
+                          Color(0xFF051525),
                         ]
-                      : [
-                          Colors.white.withValues(alpha: 0.95),
-                          const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                      : const [
+                          Colors.white,
+                          Color(0xFFF0F9FF),
                         ],
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.32) : const Color(0xFFBAE6FD),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? const Color(0xFF003B73).withValues(alpha: 0.35)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
                         : const Color(0xFF0284C7).withValues(alpha: 0.12),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
-                  BoxShadow(
-                    color: isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
+                  if (isDark)
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.50),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
                 ],
               ),
               child: Column(
@@ -488,7 +504,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                         ? 'HappyLand · ${nextClass.lane}'
                                         : 'HappyLand',
                                     style: TextStyle(
-                                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
+                                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -508,7 +524,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                           ? 'Тренер призначається'
                                           : nextClass.coachName,
                                       style: TextStyle(
-                                        color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
+                                        color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -526,10 +542,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
                       border: Border(
                         top: BorderSide(
-                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
                           width: 0.9,
                         ),
                       ),
@@ -651,26 +667,32 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isDark
-                      ? [
-                          const Color(0xFF0E3D64).withValues(alpha: 0.60),
-                          const Color(0xFF092842).withValues(alpha: 0.72),
+                      ? const [
+                          Color(0xFF0A2239),
+                          Color(0xFF051525),
                         ]
-                      : [
-                          Colors.white.withValues(alpha: 0.95),
-                          const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                      : const [
+                          Colors.white,
+                          Color(0xFFF0F9FF),
                         ],
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.32) : const Color(0xFFBAE6FD),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isDark ? const Color(0xFF003B73).withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.12) : const Color(0xFF0284C7).withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
+                  if (isDark)
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.50),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
                 ],
               ),
               child: Column(
@@ -681,9 +703,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                     'У вас немає запланованих занять.\nДодайте заняття в календарі!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: textColor,
+                      color: isDark ? const Color(0xFFF1F5F9) : textColor,
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600,
+                      height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 16),

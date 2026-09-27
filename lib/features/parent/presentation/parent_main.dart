@@ -10,6 +10,9 @@ import 'package:swimming_school_app/features/parent/presentation/parent_profile_
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/core/router/app_router.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
 class ParentTabNotifier extends Notifier<int> {
   @override
@@ -39,6 +42,12 @@ class _ParentMainState extends ConsumerState<ParentMain> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AppUser?>(authControllerProvider, (previous, next) {
+      if (next == null && mounted) {
+        ref.read(goRouterProvider).go('/?skipSplash=true');
+      }
+    });
+
     final selectedIndex = ref.watch(parentTabProvider);
     final themeConfig = ref.watch(appThemeControllerProvider);
 

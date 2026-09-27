@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -10,6 +11,7 @@ import 'package:swimming_school_app/features/chat/providers/chat_providers.dart'
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
+import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 
 void showClientDialogsSheet(BuildContext context) {
@@ -183,7 +185,10 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pop(context);
+                          },
                           icon: Icon(
                             LucideIcons.x,
                             color: isLight ? const Color(0xFF64748B) : Colors.white70,
@@ -277,7 +282,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                                           themeConfig: themeConfig,
                                         )),
                                   ] else if (coachDialogs.isEmpty) ...[
-                                    _buildNoCoachesYetState(isLight, themeConfig),
+                                    _buildNoCoachesYetState(context, isLight, themeConfig),
                                   ],
                                 ],
                               );
@@ -300,8 +305,8 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
         boxShadow: [
           BoxShadow(
             color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                .withValues(alpha: isLight ? 0.08 : 0.12),
-            blurRadius: 12,
+                .withValues(alpha: isLight ? 0.08 : 0.15),
+            blurRadius: 14,
             offset: const Offset(0, 3),
           ),
         ],
@@ -313,7 +318,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
             gradient: LinearGradient(
               colors: isLight
                   ? [Colors.white, const Color(0xFFF8FAFC)]
-                  : [const Color(0xFF0F2E52), const Color(0xFF07192F)],
+                  : [const Color(0xFF0E3254), const Color(0xFF071B33)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -322,7 +327,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
               color: isLight
                   ? const Color(0xFF0284C7).withValues(alpha: 0.30)
                   : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-              width: 1.1,
+              width: 1.2,
             ),
           ),
           child: Material(
@@ -330,6 +335,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
               onTap: () {
+                HapticFeedback.lightImpact();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ParentChatScreen()),
@@ -344,15 +350,15 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       height: 44,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0284C7).withValues(alpha: 0.35),
-                            blurRadius: 8,
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -378,18 +384,24 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                               ),
                               const SizedBox(width: 6),
                               Container(
-                                width: 7,
-                                height: 7,
+                                width: 7.5,
+                                height: 7.5,
                                 decoration: const BoxDecoration(
                                   color: Color(0xFF10B981),
                                   shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color(0xFF10B981),
+                                      blurRadius: 5,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Підтримка, абонементи та питання розкладу',
+                            'Підтримка клієнтів та абонементи',
                             style: TextStyle(
                               color: themeConfig.textSecondary,
                               fontSize: 12,
@@ -753,40 +765,143 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
     );
   }
 
-  Widget _buildNoCoachesYetState(bool isLight, AppThemeConfig themeConfig) {
+  Widget _buildNoCoachesYetState(BuildContext context, bool isLight, AppThemeConfig themeConfig) {
     return Container(
       margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF081C33).withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(18),
+        color: isLight
+            ? Colors.white.withValues(alpha: 0.85)
+            : const Color(0xFF0A223D).withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.15),
+          color: isLight
+              ? const Color(0xFFE2E8F0)
+              : const Color(0xFF00E5FF).withValues(alpha: 0.22),
+          width: 1.1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                .withValues(alpha: isLight ? 0.05 : 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Icon(
-            LucideIcons.userCheck,
-            size: 34,
-            color: isLight ? const Color(0xFF94A3B8) : Colors.white38,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isLight
+                    ? [const Color(0xFFE0F2FE), const Color(0xFFBAE6FD)]
+                    : const [
+                        Color(0xFF0E3D64),
+                        Color(0xFF082038),
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF00E5FF).withValues(alpha: isLight ? 0.40 : 0.50),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                LucideIcons.calendarCheck2,
+                size: 22,
+                color: isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+              ),
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Запишіться на заняття',
             style: TextStyle(
               color: themeConfig.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              letterSpacing: 0.2,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Після запису на тренування тут з\'явиться можливість прямого зв\'язку з вашим тренером',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: themeConfig.textSecondary,
-              fontSize: 11.5,
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'Після запису на тренування тут з\'явиться можливість прямого зв\'язку з вашим тренером',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: themeConfig.textSecondary,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Sapphire CTA button: "Переглянути розклад"
+          Container(
+            height: 44,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isLight
+                    ? [const Color(0xFF0284C7), const Color(0xFF0369A1)]
+                    : const [Color(0xFF0E3D64), Color(0xFF082038)],
+              ),
+              border: Border.all(
+                color: const Color(0xFF00E5FF).withValues(alpha: isLight ? 0.45 : 0.65),
+                width: 1.3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+                ref.read(parentTabProvider.notifier).setTab(1);
+              },
+              icon: const Icon(
+                LucideIcons.calendarDays,
+                size: 16,
+                color: Color(0xFF00E5FF),
+              ),
+              label: const Text(
+                'Переглянути розклад',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                ),
+              ),
             ),
           ),
         ],

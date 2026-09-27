@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -480,6 +481,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
       child: GestureDetector(
         onTap: () {
           if (!isSelected) {
+            HapticFeedback.selectionClick();
             setState(() {
               _selectedPeriod = period;
             });
@@ -493,15 +495,23 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                 ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: currentTheme.accentGradient,
+                    colors: isDark
+                        ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   )
                 : null,
             color: isSelected ? null : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40)
+                  : Colors.transparent,
+              width: 1.2,
+            ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -519,22 +529,29 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                       : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: 0.2,
                 ),
               ),
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.28)
+                      ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.25))
                       : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.06)),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.20)
+                        : Colors.transparent,
+                    width: 1.0,
+                  ),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
                     color: isSelected
-                        ? Colors.white
+                        ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
                         : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,

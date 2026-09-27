@@ -1,5 +1,7 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -104,12 +106,6 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           _isSuccess = true;
           _generatedLogin = generatedLogin;
         });
-
-        Future.delayed(const Duration(seconds: 4), () {
-          if (mounted) {
-            Navigator.pop(context);
-          }
-        });
       }
     } catch (e) {
       if (mounted) {
@@ -125,39 +121,45 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
   Widget build(BuildContext context) {
     final currentTheme = ref.watch(appThemeControllerProvider);
     final isDark = currentTheme.isDark;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = math.max(mediaQuery.viewInsets.bottom, mediaQuery.padding.bottom);
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.90,
+        maxHeight: mediaQuery.size.height * 0.90,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  Colors.white.withValues(alpha: 0.22),
-                  const Color(0xFF0284C7).withValues(alpha: 0.26),
-                  const Color(0xFF0A223D).withValues(alpha: 0.55),
-                ]
-              : [
-                  Colors.white.withValues(alpha: 0.98),
-                  const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+        color: isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.97) : null,
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF0F1E32).withValues(alpha: 0.98),
+                  const Color(0xFF070E1A).withValues(alpha: 0.99),
                 ],
-        ),
+              )
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFFFFF),
+                  Color(0xFFF0F9FF),
+                ],
+              ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.35)
-              : currentTheme.cardBorder,
+              ? Colors.white.withValues(alpha: 0.18)
+              : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
                 ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                : currentTheme.cardShadow,
-            blurRadius: 28,
+                : const Color(0xFF003B73).withValues(alpha: 0.12),
+            blurRadius: 32,
             offset: const Offset(0, -6),
           ),
         ],
@@ -167,120 +169,386 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
-            child: _isSuccess ? _buildSuccessState(currentTheme) : _buildFormState(currentTheme),
+            padding: EdgeInsets.fromLTRB(22, 14, 22, bottomInset + 18),
+            child: _isSuccess
+                ? _buildSuccessState(currentTheme, isDark)
+                : _buildFormState(currentTheme, isDark),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSuccessState(AppThemeConfig currentTheme) {
+  Widget _buildSuccessState(AppThemeConfig currentTheme, bool isDark) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 24),
+        // Top drag handle & close button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const SizedBox(width: 36),
+            Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : currentTheme.glassCardBg,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? Colors.white.withValues(alpha: 0.15) : currentTheme.cardBorder,
+                    ),
+                  ),
+                  child: Icon(
+                    LucideIcons.x,
+                    color: currentTheme.textSecondary,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Glowing Success Icon
         Container(
-          padding: const EdgeInsets.all(16),
+          width: 68,
+          height: 68,
           decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF047857)],
+            ),
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.2), blurRadius: 20)],
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF10B981).withValues(alpha: 0.50),
+                blurRadius: 24,
+              ),
+            ],
           ),
-          child: const Icon(LucideIcons.check, color: Color(0xFF10B981), size: 48),
-        ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
-        const SizedBox(height: 24),
+          child: const Center(
+            child: Icon(LucideIcons.check, color: Colors.white, size: 36),
+          ),
+        ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+        const SizedBox(height: 18),
+
         Text(
           'admin.add_coach_success_title'.tr(),
-          style: TextStyle(color: currentTheme.textPrimary, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-        ).animate().fadeIn(delay: 100.ms),
-        const SizedBox(height: 8),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDark ? Colors.white : currentTheme.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+          ),
+        ).animate().fadeIn(delay: 150.ms),
+        const SizedBox(height: 6),
+
         Text(
-          _nameController.text,
-          style: TextStyle(color: currentTheme.textSecondary, fontSize: 16),
-        ).animate().fadeIn(delay: 200.ms),
-        const SizedBox(height: 32),
+          _nameController.text.trim(),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ).animate().fadeIn(delay: 250.ms),
+        const SizedBox(height: 22),
+
+        // Solid Oceanic Credentials Card
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: currentTheme.isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : currentTheme.glassCardBg,
-            borderRadius: BorderRadius.circular(20),
+            color: isDark ? const Color(0xFF0D2137) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: currentTheme.isDark
-                  ? Colors.white.withValues(alpha: 0.25)
-                  : currentTheme.cardBorder,
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
+              width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
-              Text('admin.add_client_credentials_title'.tr().toUpperCase(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-              const SizedBox(height: 16),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(LucideIcons.user, color: currentTheme.accentPrimary, size: 18),
-                  const SizedBox(width: 12),
-                  Text('admin.clients_login_label'.tr(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 16)),
-                  const SizedBox(width: 6),
-                  Text(_generatedLogin ?? '', style: TextStyle(color: currentTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    'admin.add_client_credentials_title'.tr().toUpperCase(),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Clipboard.setData(ClipboardData(
+                        text: '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}\n${'admin.clients_password_label'.tr()}1',
+                      ));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Text('admin.coaches_copied_msg'.tr(args: [_nameController.text.trim()])),
+                            ],
+                          ),
+                          backgroundColor: const Color(0xFF10B981),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFFBAE6FD),
+                          width: 1.1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.copy,
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                            size: 13,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'admin.clients_copy'.tr(),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Icon(LucideIcons.key, color: currentTheme.accentPrimary, size: 18),
-                  const SizedBox(width: 12),
-                  Text('admin.clients_password_label'.tr(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 16)),
-                  const SizedBox(width: 6),
-                  Text('1', style: TextStyle(color: currentTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: 1.2,
+                    height: 20,
+                    color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.keyRound, size: 15, color: Color(0xFFFBBF24)),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${'admin.clients_password_label'.tr()}1',
+                        style: const TextStyle(
+                          color: Color(0xFFFBBF24),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],
           ),
-        ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
-        const SizedBox(height: 16),
+        ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.08),
+        const SizedBox(height: 24),
+
+        // Sapphire VIP CTA: «Готово»
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF0E3D64), const Color(0xFF082038)]
+                    : [const Color(0xFF0284C7), const Color(0xFF0369A1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(
+                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8),
+                width: 1.4,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(context);
+                },
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'admin.done'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ).animate().fadeIn(delay: 450.ms).slideY(begin: 0.08),
       ],
     );
   }
 
-  Widget _buildFormState(AppThemeConfig currentTheme) {
+  Widget _buildFormState(AppThemeConfig currentTheme, bool isDark) {
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: currentTheme.textSecondary.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
+          // Drag handle & Close button row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(LucideIcons.userPlus, color: currentTheme.accentPrimary),
-              const SizedBox(width: 12),
-              Text(
-                'admin.add_coach_title'.tr(),
-                style: TextStyle(
-                  color: currentTheme.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 36),
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : currentTheme.glassCardBg,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.15) : currentTheme.cardBorder,
+                      ),
+                    ),
+                    child: Icon(
+                      LucideIcons.x,
+                      color: currentTheme.textSecondary,
+                      size: 18,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
+
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.15) : const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.30) : const Color(0xFFBAE6FD),
+                  ),
+                ),
+                child: Icon(
+                  LucideIcons.userPlus,
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'admin.add_coach_title'.tr(),
+                style: TextStyle(
+                  color: isDark ? Colors.white : currentTheme.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Form fields
           _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, currentTheme),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, currentTheme, isNumber: true),
           const SizedBox(height: 22),
 
@@ -300,7 +568,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
               Text(
                 'Ставки заробітної плати (ЗП)',
                 style: TextStyle(
-                  color: currentTheme.textPrimary,
+                  color: isDark ? Colors.white : currentTheme.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -331,38 +599,80 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             color: const Color(0xFFF59E0B),
             currentTheme: currentTheme,
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 24),
           
           if (_errorMessage != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withValues(alpha: 0.1),
+                color: Colors.redAccent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
               ),
               child: Text(
                 'Помилка: $_errorMessage',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+                style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 13.5, fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 16),
           ],
+
+          // Sapphire VIP CTA: Зберегти тренера
           SizedBox(
             width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: currentTheme.accentPrimary,
-                foregroundColor: currentTheme.isDark ? const Color(0xFF061426) : Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 6,
-                shadowColor: currentTheme.accentPrimary.withValues(alpha: 0.4),
+            height: 54,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF0E3D64), const Color(0xFF082038)]
+                      : currentTheme.accentGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8),
+                  width: 1.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.20),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              onPressed: _isLoading ? null : _submit,
-              child: _isLoading 
-                  ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: currentTheme.isDark ? const Color(0xFF061426) : Colors.white, strokeWidth: 2))
-                  : Text('admin.add_coach_save_btn'.tr(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _isLoading ? null : () {
+                    HapticFeedback.lightImpact();
+                    _submit();
+                  },
+                  child: Center(
+                    child: _isLoading 
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(LucideIcons.userCheck, color: Color(0xFF00E5FF), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'admin.add_coach_save_btn'.tr(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -374,20 +684,32 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF0D2137) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+          color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
+          width: 1.1,
         ),
       ),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-        style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: isDark ? Colors.white : currentTheme.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: currentTheme.textMuted),
-          prefixIcon: Icon(icon, color: currentTheme.accentPrimary),
+          hintStyle: TextStyle(
+            color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : currentTheme.textMuted,
+            fontSize: 13.5,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
+            size: 19,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
@@ -405,9 +727,12 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF8FAFC),
+        color: isDark ? const Color(0xFF0D2137) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.35 : 0.45),
+          width: 1.1,
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
@@ -429,22 +754,28 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 Text(
                   label,
                   style: TextStyle(
-                    color: currentTheme.textSecondary,
+                    color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                     fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
                 TextField(
                   controller: controller,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(color: currentTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                     hintText: '0',
-                    hintStyle: TextStyle(color: currentTheme.textMuted),
+                    hintStyle: TextStyle(
+                      color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.4) : currentTheme.textMuted,
+                    ),
                   ),
                 ),
               ],
@@ -459,7 +790,11 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             ),
             child: Text(
               '₴ / зан',
-              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: isDark ? color : (color == const Color(0xFF00E5FF) ? const Color(0xFF0284C7) : color),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],

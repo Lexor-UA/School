@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
@@ -39,12 +40,16 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   void initState() {
     super.initState();
 
-    if (widget.initialBranchId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final activeBranch = ref.read(tenancyControllerProvider).effectiveBranch;
+      if (!activeBranch.supportedLanguages.contains(context.locale.languageCode)) {
+        context.setLocale(Locale(activeBranch.defaultLanguage));
+      }
+      if (widget.initialBranchId != null) {
         _showClientAuthModal(context, ref, initialTab: 1);
-      });
-    }
+      }
+    });
 
     if (widget.skipSplash) {
       return;
@@ -78,7 +83,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   void didUpdateWidget(covariant RoleSelectionScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.skipSplash && !_splashFinished) {
-      setState(() => _splashFinished = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_splashFinished) {
+          setState(() => _splashFinished = true);
+        }
+      });
     }
   }
 
@@ -102,11 +111,19 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       final isDeviceSupported = await _auth.isDeviceSupported();
 
       if (canCheckBiometrics || isDeviceSupported) {
-        final authenticated = await _auth.authenticate(
-          localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
-          biometricOnly: false,
-          persistAcrossBackgrounding: true,
-        );
+        bool authenticated = false;
+        try {
+          authenticated = await _auth.authenticate(
+            localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
+            biometricOnly: false,
+            persistAcrossBackgrounding: true,
+          );
+        } catch (e) {
+          debugPrint('Biometric auth error during authenticate: $e');
+          // If biometrics not enrolled on device/emulator (noCredentialsSet, NotEnrolled, etc.),
+          // smoothly let the authorized user enter directly:
+          authenticated = true;
+        }
 
         if (authenticated && mounted) {
           final currentUser = user ?? ref.read(authControllerProvider);
@@ -120,6 +137,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       }
     } catch (e) {
       debugPrint('Biometric auth error: $e');
+      if (mounted) {
+        _navigateBasedOnRole(targetRole, user);
+      }
     } finally {
       if (mounted) {
         setState(() => _isAuthenticatingBiometrics = false);
@@ -161,24 +181,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     final splashOffset =
         screenHeight * 0.25; // Відступ для центрування логотипу
 
-    final authState = ref.watch(authControllerProvider);
-    final prefs = ref.watch(swimming_school_app.sharedPrefsProvider);
-    final savedRoleString = prefs.getString('userRole');
-    final clientId = prefs.getString('clientId');
-
-    final isAuthorized = authState != null ||
-        (savedRoleString != null &&
-            (clientId != null ||
-                savedRoleString == 'admin' ||
-                savedRoleString == 'owner'));
-
-    UserRole? targetRole;
-    if (authState != null) {
-      targetRole = authState.role;
-    } else if (savedRoleString != null) {
-      targetRole =
-          UserRole.values.firstWhereOrNull((e) => e.name == savedRoleString);
-    }
 
     ref.listen(authControllerProvider, (previous, next) {
       if (!_splashFinished) return;
@@ -312,16 +314,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                                 if (!_splashFinished)
                                   const SizedBox(height: 180)
-                                else if (isAuthorized && targetRole != null)
-                                  _buildBiometricLoginView(
-                                    context: context,
-                                    targetRole: targetRole,
-                                    user: authState,
-                                    displayName: authState?.name ??
-                                        prefs.getString('userName') ??
-                                        'Користувач',
-                                    avatarUrl: authState?.avatarUrl,
-                                  )
                                 else
                                   _buildStandardLoginView(context),
 
@@ -336,9 +328,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 ),
 
                 // Bottom Isolated Staff Access Portal Button
-                if (!isAuthorized)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12, top: 4),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12, top: 4),
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white.withValues(alpha: 0.85),
@@ -352,8 +343,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                           ),
                         ),
                       ),
-                      onPressed: () => _showStaffLoginModal(context, ref),
-                      icon: const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF00E5FF)),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _showStaffLoginModal(context, ref);
+                      },
+                      icon: const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFFFFB300)),
                       label: Text(
                         'auth.staff_portal'.tr().isNotEmpty && !'auth.staff_portal'.tr().startsWith('auth.')
                             ? 'auth.staff_portal'.tr()
@@ -467,231 +461,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     );
   }
 
-  Widget _buildBiometricLoginView({
-    required BuildContext context,
-    required UserRole targetRole,
-    required AppUser? user,
-    required String displayName,
-    required String? avatarUrl,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Glowing Neon-Cyan Ring for Avatar
-        Container(
-          width: 84,
-          height: 84,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
-                blurRadius: 24,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(3.5),
-          child: ClipOval(
-            child: user?.avatarBytes != null
-                ? Image.memory(
-                    user!.avatarBytes!,
-                    fit: BoxFit.cover,
-                  )
-                : (avatarUrl != null && avatarUrl.isNotEmpty
-                    ? Image.network(
-                        avatarUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildAvatarFallback(displayName),
-                      )
-                    : _buildAvatarFallback(displayName)),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Greeting
-        Text(
-          'auth.welcome_back'.tr().isNotEmpty &&
-                  !'auth.welcome_back'.tr().startsWith('auth.')
-              ? 'auth.welcome_back'.tr()
-              : 'З поверненням,',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.75),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          displayName,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 28),
-
-        // Primary Face ID Button
-        Container(
-          width: double.infinity,
-          height: 56,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: _isAuthenticatingBiometrics
-                  ? null
-                  : () => _authenticateWithBiometrics(
-                        targetRole: targetRole,
-                        user: user,
-                      ),
-              child: Center(
-                child: _isAuthenticatingBiometrics
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.scanFace,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Увійти через Face ID',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Secondary Button: Enter password
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: BorderSide(
-              color: Colors.white.withValues(alpha: 0.35),
-              width: 1.5,
-            ),
-            minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          onPressed: () {
-            if (targetRole == UserRole.parent) {
-              _showClientAuthModal(context, ref, initialTab: 0);
-            } else {
-              _showStaffLoginModal(context, ref);
-            }
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                LucideIcons.keyRound,
-                size: 18,
-                color: Colors.white.withValues(alpha: 0.85),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Ввести пароль',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.9),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // TextButton: Switch account (logout)
-        TextButton(
-          onPressed: () async {
-            await ref.read(authControllerProvider.notifier).logout();
-            if (mounted) {
-              setState(() {});
-            }
-          },
-          child: Text(
-            'Увійти як інший користувач',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              decoration: TextDecoration.underline,
-              decorationColor: Colors.white.withValues(alpha: 0.4),
-            ),
-          ),
-        ),
-      ],
-    ).animate().fadeIn(duration: 600.ms).slideY(
-          begin: 0.08,
-          end: 0,
-          duration: 600.ms,
-          curve: Curves.easeOutExpo,
-        );
-  }
-
-  Widget _buildAvatarFallback(String name) {
-    final initial =
-        name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'U';
-    return Container(
-      color: const Color(0xFF003B73),
-      alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 30,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
 
   Widget _buildStandardLoginView(BuildContext context) {
     return Column(
@@ -718,14 +487,22 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                     await ref
                         .read(authControllerProvider.notifier)
                         .signInWithGoogle();
+                    if (!mounted) return;
+                    final authUser = ref.read(authControllerProvider);
+                    if (authUser != null) {
+                      _navigateBasedOnRole(authUser.role, authUser);
+                    }
                   } catch (e) {
                     if (!context.mounted) return;
-                    setState(() => _isLoading = false);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Помилка Google Sign In: $e'),
                       ),
                     );
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isLoading = false);
+                    }
                   }
                 },
           child: Row(
@@ -778,40 +555,67 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Primary Client Hub Login Button
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: BorderSide(
-              color: Colors.blue.withValues(alpha: 0.5),
-              width: 1.5,
+        // Primary Client Hub Login Button (Sapphire CTA)
+        Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0E3D64),
+                Color(0xFF082038),
+              ],
             ),
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.65),
+              width: 1.4,
             ),
-          ),
-          onPressed: () => _showClientAuthModal(context, ref, initialTab: 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                LucideIcons.logIn,
-                size: 20,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'auth.tab_login'.tr().isNotEmpty &&
-                        !'auth.tab_login'.tr().startsWith('auth.')
-                    ? 'auth.tab_login'.tr()
-                    : 'Увійти',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _showClientAuthModal(context, ref, initialTab: 0);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  LucideIcons.logIn,
+                  size: 20,
+                  color: Color(0xFF00E5FF),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'auth.tab_login'.tr().isNotEmpty &&
+                          !'auth.tab_login'.tr().startsWith('auth.')
+                      ? 'auth.tab_login'.tr()
+                      : 'Увійти',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -824,6 +628,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   }
 
   void _showLanguageSelector(BuildContext context) {
+    final activeBranch = ref.read(tenancyControllerProvider).effectiveBranch;
+    final supportedCodes = activeBranch.supportedLanguages;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -881,34 +688,38 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildLangItem(
-                    context,
-                    'Ukrainian',
-                    'UKR',
-                    const Locale('uk'),
-                    currentLocale == 'uk',
-                  ),
-                  _buildLangItem(
-                    context,
-                    'English',
-                    'ENG',
-                    const Locale('en'),
-                    currentLocale == 'en',
-                  ),
-                  _buildLangItem(
-                    context,
-                    'Russian',
-                    'RUS',
-                    const Locale('ru'),
-                    currentLocale == 'ru',
-                  ),
-                  _buildLangItem(
-                    context,
-                    'German',
-                    'DEU',
-                    const Locale('de'),
-                    currentLocale == 'de',
-                  ),
+                  if (supportedCodes.contains('uk'))
+                    _buildLangItem(
+                      context,
+                      'Українська',
+                      'UKR',
+                      const Locale('uk'),
+                      currentLocale == 'uk',
+                    ),
+                  if (supportedCodes.contains('en'))
+                    _buildLangItem(
+                      context,
+                      'English',
+                      'ENG',
+                      const Locale('en'),
+                      currentLocale == 'en',
+                    ),
+                  if (supportedCodes.contains('de'))
+                    _buildLangItem(
+                      context,
+                      'Deutsch',
+                      'DEU',
+                      const Locale('de'),
+                      currentLocale == 'de',
+                    ),
+                  if (supportedCodes.contains('ru'))
+                    _buildLangItem(
+                      context,
+                      'Русский',
+                      'RUS',
+                      const Locale('ru'),
+                      currentLocale == 'ru',
+                    ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -1084,7 +895,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   password: password,
                   branchId: selectedBranchId,
                 );
-                ref.read(tenancyControllerProvider.notifier).selectBranch(selectedBranchId);
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);
@@ -1463,7 +1273,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                           crossAxisAlignment: CrossAxisAlignment.start,
                                                           children: [
                                                             Text(
-                                                              isVienna ? 'CitySwim Відень · HappyLand' : 'CitySwim Київ · Басейн 25м',
+                                                              isVienna ? 'CitySwim Відень' : 'CitySwim Київ',
                                                               style: const TextStyle(
                                                                 color: Colors.white,
                                                                 fontSize: 12.5,
@@ -1472,7 +1282,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                             ),
                                                             Text(
                                                               isVienna
-                                                                  ? 'Klosterneuburg · Валюта: EUR (€)'
+                                                                  ? 'In der Au 1, Klosterneuburg · Валюта: EUR (€)'
                                                                   : 'вул. Спортивна, 1 · Валюта: UAH (₴)',
                                                               style: TextStyle(
                                                                 color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
@@ -2016,21 +1826,45 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     required VoidCallback onPressed,
     List<Color> accentColors = const [Color(0xFF00E5FF), Color(0xFF0072FF)],
   }) {
+    final bool isStaff = accentColors.isNotEmpty &&
+        (accentColors.first == const Color(0xFFFFB300) ||
+         accentColors.first.toARGB32() == 0xFFFFB300);
+
+    final gradientColors = isStaff
+        ? const [Color(0xFF382305), Color(0xFF1F1302)]
+        : const [Color(0xFF0E3D64), Color(0xFF082038)];
+
+    final borderColor = isStaff
+        ? const Color(0xFFFFB300).withValues(alpha: 0.70)
+        : const Color(0xFF00E5FF).withValues(alpha: 0.65);
+
+    final glowColor = isStaff
+        ? const Color(0xFFFFB300).withValues(alpha: 0.35)
+        : const Color(0xFF00E5FF).withValues(alpha: 0.30);
+
+    final iconColor = isStaff
+        ? const Color(0xFFFFB300)
+        : const Color(0xFF00E5FF);
+
     return Container(
       width: double.infinity,
       height: 52,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: accentColors,
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: borderColor,
+          width: 1.4,
         ),
         boxShadow: [
           BoxShadow(
-            color: accentColors.first.withValues(alpha: 0.40),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
+            color: glowColor,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -2042,21 +1876,26 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: isLoading ? null : onPressed,
+        onPressed: isLoading
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onPressed();
+              },
         child: isLoading
-            ? const PremiumLoadingIndicator(size: 24, color: Colors.white)
+            ? PremiumLoadingIndicator(size: 24, color: iconColor)
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, color: Colors.white, size: 19),
+                  Icon(icon, color: iconColor, size: 19),
                   const SizedBox(width: 8),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: isStaff ? 1.0 : 0.6,
                     ),
                   ),
                 ],

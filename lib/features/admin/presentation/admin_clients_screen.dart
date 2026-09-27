@@ -19,6 +19,7 @@ import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'widgets/branch_selector_pill.dart';
 
 class AdminClientsScreen extends ConsumerStatefulWidget {
   const AdminClientsScreen({super.key});
@@ -331,16 +332,30 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: currentTheme.accentGradient,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: currentTheme.isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : LinearGradient(
+                  colors: currentTheme.accentGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          border: currentTheme.isDark
+              ? Border.all(
+                  color: const Color(0xFF00E5FF),
+                  width: 1.4,
+                )
+              : null,
           boxShadow: [
             BoxShadow(
-              color: currentTheme.accentPrimary.withValues(alpha: 0.45),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+              color: currentTheme.isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                  : currentTheme.accentPrimary.withValues(alpha: 0.45),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -349,6 +364,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(24),
             onTap: () {
+              HapticFeedback.lightImpact();
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -361,7 +377,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.userPlus, color: Colors.white, size: 19),
+                  Icon(
+                    LucideIcons.userPlus,
+                    color: currentTheme.isDark ? const Color(0xFF00E5FF) : Colors.white,
+                    size: 19,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'admin.clients_new_btn'.tr(),
@@ -445,9 +465,18 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 // 1. Header
                 _buildHeader(context, currentTheme),
 
+                // 1.5 Branch Selector Pill (Kyiv / Vienna / All Locations)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 2, 20, 6),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: BranchSelectorPill(),
+                  ),
+                ),
+
                 // 2. Search Bar
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
                   child: _buildSearchBar(currentTheme),
                 ),
 
@@ -458,25 +487,33 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     final activeBranchId = tenancyState.activeBranchId;
                     final isAllLocations = tenancyState.isAllLocationsSelected;
 
-                    Query<Map<String, dynamic>> clientsQuery = FirebaseFirestore.instance
+                    // Stream users collection without fragile multi-field indexes that fail on un-indexed live Firestore
+                    final Stream<QuerySnapshot<Map<String, dynamic>>> clientsStream = FirebaseFirestore.instance
                         .collection('users')
-                        .where('role', isEqualTo: 'parent');
-
-                    if (!isAllLocations && activeBranchId != null) {
-                      clientsQuery = clientsQuery.where('branchId', isEqualTo: activeBranchId);
-                    }
+                        .snapshots();
 
                     return Expanded(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: clientsQuery.snapshots(),
+                      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: clientsStream,
                         builder: (context, snapshot) {
-                          final rawClients = snapshot.hasData ? snapshot.data!.docs : <QueryDocumentSnapshot>[];
-                          final allClients = isAllLocations
-                              ? rawClients
-                              : rawClients.where((c) {
-                                  final d = c.data() as Map<String, dynamic>;
-                                  return (d['branchId'] as String? ?? 'kyiv') == activeBranchId;
-                                }).toList();
+                          if (snapshot.hasError) {
+                            debugPrint('[AdminClientsScreen] Firestore stream error: ${snapshot.error}');
+                            return _buildErrorState(snapshot.error, currentTheme);
+                          }
+
+                          final rawDocs = snapshot.hasData ? snapshot.data!.docs : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+                          final allClients = rawDocs.where((c) {
+                            final d = c.data();
+                            final role = (d['role'] as String?)?.toLowerCase();
+                            // Exclude coaches, admins, owners, superadmins
+                            if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin') {
+                              return false;
+                            }
+                            if (isAllLocations) return true;
+                            final bId = d['branchId'] as String? ?? 'kyiv';
+                            final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
+                            return bId == activeBranchId || bIds.contains(activeBranchId);
+                          }).toList();
                       final now = DateTime.now();
 
                       final int totalCount = allClients.length;
@@ -541,9 +578,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             child: snapshot.connectionState == ConnectionState.waiting
                                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
                                 : (allClients.isEmpty
-                                    ? _buildEmptyState()
+                                    ? _buildEmptyState(currentTheme, activeBranchId)
                                     : (clients.isEmpty
-                                        ? _buildNoSearchResults()
+                                        ? _buildNoSearchResults(currentTheme)
                                         : ListView.separated(
                                             padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
                                             physics: const BouncingScrollPhysics(),
@@ -616,48 +653,62 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  'admin.clients_title'.tr(),
+                  style: TextStyle(
+                    color: currentTheme.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(
-                      'admin.clients_title'.tr(),
-                      style: TextStyle(
-                        color: currentTheme.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: currentTheme.statusActiveBadgeBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: currentTheme.accentPrimary.withValues(alpha: 0.35)),
+                        color: currentTheme.isDark
+                            ? currentTheme.accentPrimary.withValues(alpha: 0.18)
+                            : const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.45),
+                          width: 0.8,
+                        ),
                       ),
                       child: Text(
                         'admin.clients_parents_students'.tr(),
                         style: TextStyle(
-                          color: currentTheme.statusActiveBadgeText,
-                          fontSize: 10.5,
+                          color: currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: 0.1,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'admin.clients_subtitle'.tr(),
+                        style: TextStyle(
+                          color: currentTheme.isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'admin.clients_subtitle'.tr(),
-                  style: TextStyle(
-                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
-                    fontSize: 12,
-                  ),
                 ),
               ],
             ),
@@ -767,6 +818,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(right: 14),
       child: Row(
         children: [
           _buildFilterPill(0, 'admin.clients_filter_all'.tr(), totalCount, currentTheme),
@@ -781,40 +833,58 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
   Widget _buildFilterPill(int index, String label, int count, AppThemeConfig currentTheme) {
     final isSelected = _selectedFilterIndex == index;
+    final isDark = currentTheme.isDark;
+
+    Color? statusDotColor;
+    if (index == 1) {
+      statusDotColor = const Color(0xFF10B981);
+    } else if (index == 2) {
+      statusDotColor = const Color(0xFFF43F5E);
+    }
+
     return GestureDetector(
-      onTap: () => setState(() => _selectedFilterIndex = index),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedFilterIndex = index);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? LinearGradient(
-                  colors: currentTheme.accentGradient,
-                )
+              ? (isDark
+                  ? const LinearGradient(
+                      colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : LinearGradient(
+                      colors: currentTheme.accentGradient,
+                    ))
               : null,
           color: isSelected
               ? null
-              : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white),
+              : (isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.65) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? currentTheme.accentPrimary
-                : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1)),
-            width: 1.1,
+                ? (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary)
+                : (isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFCBD5E1)),
+            width: isSelected ? 1.2 : 1.0,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: currentTheme.accentPrimary.withValues(alpha: 0.25),
-                    blurRadius: 8,
+                    color: (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary).withValues(alpha: isDark ? 0.35 : 0.30),
+                    blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
                 ]
-              : (currentTheme.isDark
+              : (isDark
                   ? null
                   : [
                       BoxShadow(
-                        color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                        color: const Color(0xFF003B73).withValues(alpha: 0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),
@@ -823,33 +893,61 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (statusDotColor != null) ...[
+              Container(
+                width: 6.5,
+                height: 6.5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: statusDotColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: statusDotColor.withValues(alpha: 0.65),
+                      blurRadius: 5,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
             Text(
               label,
               style: TextStyle(
                 color: isSelected
                     ? Colors.white
-                    : (currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
+                    : (isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF1E293B)),
                 fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                letterSpacing: 0.1,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 7),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.28)
-                    : (currentTheme.isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0)),
+                    ? (isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                        : Colors.white.withValues(alpha: 0.28))
+                    : (isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
+                        : const Color(0xFF0284C7).withValues(alpha: 0.10)),
                 borderRadius: BorderRadius.circular(10),
+                border: isSelected && isDark
+                    ? Border.all(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                        width: 0.8,
+                      )
+                    : null,
               ),
               child: Text(
                 '$count',
                 style: TextStyle(
                   color: isSelected
-                      ? Colors.white
-                      : (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                      ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
+                      : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                   fontSize: 11,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   letterSpacing: 0.2,
                 ),
               ),
@@ -1510,32 +1608,274 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
 }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppThemeConfig currentTheme, String? activeBranchId) {
+    final isDark = currentTheme.isDark;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(LucideIcons.users, size: 50, color: Colors.white.withValues(alpha: 0.2)),
-          const SizedBox(height: 16),
-          Text('admin.clients_empty_title'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text('admin.clients_empty_desc'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        physics: const BouncingScrollPhysics(),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF0D2137).withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? currentTheme.accentPrimary.withValues(alpha: 0.35)
+                  : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : const Color(0xFF003B73).withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: currentTheme.accentGradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(LucideIcons.users, size: 28, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'admin.clients_empty_title'.tr(),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'admin.clients_empty_desc'.tr(),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              InkWell(
+                onTap: () async {
+                  HapticFeedback.mediumImpact();
+                  try {
+                    final targetBranch = (activeBranchId == null || activeBranchId.isEmpty || activeBranchId == 'all') ? 'kyiv' : activeBranchId;
+                    final demoClient = {
+                      'id': 'demo_client',
+                      'name': 'Олександр Спіян',
+                      'role': 'parent',
+                      'phone': '+380685566322',
+                      'loginId': 'client',
+                      'password': '1',
+                      'avatarUrl': 'https://ui-avatars.com/api/?name=Oleksandr+Spiian&background=0284c7&color=ffffff',
+                      'branchId': targetBranch,
+                      'branchIds': [targetBranch],
+                      'organizationId': 'cityswim',
+                      'createdAt': FieldValue.serverTimestamp(),
+                    };
+                    await FirebaseFirestore.instance.collection('users').doc('demo_client').set(demoClient, SetOptions(merge: true));
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Тестового клієнта "Олександр Спіян" успішно відновлено!'),
+                          backgroundColor: const Color(0xFF10B981),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('Error restoring demo client: $e');
+                  }
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: currentTheme.accentGradient),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.userCheck, size: 16, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text(
+                        'Відновити тестового клієнта',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton.icon(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const AddClientSheet(),
+                  );
+                },
+                icon: Icon(
+                  LucideIcons.userPlus,
+                  size: 15,
+                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                ),
+                label: Text(
+                  'Створити нову анкету',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildNoSearchResults() {
+  Widget _buildNoSearchResults(AppThemeConfig currentTheme) {
+    final isDark = currentTheme.isDark;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(LucideIcons.userX, size: 44, color: Colors.white.withValues(alpha: 0.2)),
-          const SizedBox(height: 14),
-          Text('admin.clients_not_found'.tr(), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('admin.clients_not_found_desc'.tr(), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12.5)),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF0D2137).withValues(alpha: 0.75)
+                : Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.userX, size: 40, color: currentTheme.accentPrimary),
+              const SizedBox(height: 12),
+              Text(
+                'admin.clients_not_found'.tr(),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'admin.clients_not_found_desc'.tr(),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(Object? error, AppThemeConfig currentTheme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+              ),
+              child: const Icon(LucideIcons.alertTriangle, size: 36, color: Color(0xFFFB7185)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Помилка завантаження бази клієнтів',
+              style: TextStyle(
+                color: currentTheme.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              error?.toString() ?? 'Не вдалося підключитися до бази даних',
+              style: TextStyle(
+                color: currentTheme.textSecondary,
+                fontSize: 12.5,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => setState(() {}),
+              icon: const Icon(LucideIcons.refreshCw, size: 16),
+              label: const Text('Спробувати знову'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: currentTheme.accentPrimary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

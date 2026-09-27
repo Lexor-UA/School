@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -67,9 +68,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.22),
-                    const Color(0xFF0284C7).withValues(alpha: 0.26),
-                    const Color(0xFF0A223D).withValues(alpha: 0.52),
+                    const Color(0xFF0F1E32).withValues(alpha: 0.96),
+                    const Color(0xFF070E1A).withValues(alpha: 0.98),
                   ],
                 )
               : const LinearGradient(
@@ -77,12 +77,12 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.white,
-                    Color(0xFFF8FAFC),
+                    Color(0xFFF1F5F9),
                   ],
                 ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+            color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
             width: 1.2,
           ),
           boxShadow: [
@@ -449,7 +449,10 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 isSelected: _selectedCategoryIndex == 0,
                                 isDark: isDark,
                                 currentTheme: currentTheme,
-                                onTap: () => setState(() => _selectedCategoryIndex = 0),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _selectedCategoryIndex = 0);
+                                },
                               ),
                               const SizedBox(width: 8),
                               _buildCategoryTab(
@@ -460,7 +463,10 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 accentColor: const Color(0xFF10B981),
                                 isDark: isDark,
                                 currentTheme: currentTheme,
-                                onTap: () => setState(() => _selectedCategoryIndex = 1),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _selectedCategoryIndex = 1);
+                                },
                               ),
                               const SizedBox(width: 8),
                               _buildCategoryTab(
@@ -471,7 +477,10 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 accentColor: const Color(0xFF38BDF8),
                                 isDark: isDark,
                                 currentTheme: currentTheme,
-                                onTap: () => setState(() => _selectedCategoryIndex = 2),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _selectedCategoryIndex = 2);
+                                },
                               ),
                               const SizedBox(width: 8),
                               _buildCategoryTab(
@@ -482,7 +491,10 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 accentColor: const Color(0xFFA855F7),
                                 isDark: isDark,
                                 currentTheme: currentTheme,
-                                onTap: () => setState(() => _selectedCategoryIndex = 3),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _selectedCategoryIndex = 3);
+                                },
                               ),
                             ],
                           ),
@@ -678,7 +690,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
     required VoidCallback onTap,
     Color? accentColor,
   }) {
-    final color = accentColor ?? (isDark ? const Color(0xFF38BDF8) : currentTheme.accentPrimary);
+    final color = accentColor ?? (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary);
 
     return Material(
       color: Colors.transparent,
@@ -687,47 +699,36 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8.5),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
             gradient: isSelected
-                ? (isDark
-                    ? null
-                    : LinearGradient(
-                        colors: [
-                          color,
-                          Color.lerp(color, const Color(0xFF0369A1), 0.25)!,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ))
+                ? LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                        : [Color.lerp(color, const Color(0xFF0284C7), 0.7)!, const Color(0xFF0369A1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
                 : null,
             color: isSelected
-                ? (isDark ? color.withValues(alpha: 0.30) : null)
-                : (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white),
+                ? null
+                : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
-                  ? (isDark ? color.withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.40))
-                  : (isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD)),
-              width: isSelected ? 1.4 : 1.1,
+                  ? color.withValues(alpha: isDark ? 0.75 : 0.45)
+                  : (isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFBAE6FD)),
+              width: isSelected ? 1.3 : 1.0,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: color.withValues(alpha: isDark ? 0.25 : 0.30),
-                      blurRadius: 8,
+                      color: color.withValues(alpha: isDark ? 0.28 : 0.20),
+                      blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
                   ]
-                : (isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]),
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -735,39 +736,41 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
             children: [
               if (icon != null) ...[
                 Text(icon, style: const TextStyle(fontSize: 12)),
-                const SizedBox(width: 3.5),
+                const SizedBox(width: 4),
               ],
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155)),
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: -0.1,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? (isDark ? color.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.25))
+                      ? (isDark ? color.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.25))
                       : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected
+                        ? color.withValues(alpha: isDark ? 0.45 : 0.25)
+                        : Colors.transparent,
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
                     color: isSelected
-                        ? Colors.white
+                        ? (isDark ? color : Colors.white)
                         : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
-                    fontSize: 10,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

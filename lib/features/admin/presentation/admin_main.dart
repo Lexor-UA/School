@@ -1078,7 +1078,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             ? LucideIcons.waves
                             : (state.nearestClass != null ? LucideIcons.clock : LucideIcons.shieldCheck),
                         size: 14,
-                        color: isSessionActive ? const Color(0xFF059669) : currentTheme.accentPrimary,
+                        color: isSessionActive ? const Color(0xFF10B981) : currentTheme.accentPrimary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -1107,14 +1107,14 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                              ? const Color(0xFF10B981).withValues(alpha: 0.20)
                               : currentTheme.statusActiveBadgeBg,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: isDark
-                                ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                ? const Color(0xFF10B981).withValues(alpha: 0.45)
                                 : currentTheme.statusActiveBadgeText.withValues(alpha: 0.35),
-                            width: 0.6,
+                            width: 0.8,
                           ),
                         ),
                         child: Row(
@@ -1123,7 +1123,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             Text(
                               '●',
                               style: TextStyle(
-                                color: isDark ? const Color(0xFF059669) : currentTheme.statusActiveBadgeText,
+                                color: isDark ? const Color(0xFF34D399) : currentTheme.statusActiveBadgeText,
                                 fontSize: 7,
                               ),
                             ),
@@ -1131,8 +1131,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             Text(
                               'admin.normal_badge'.tr(),
                               style: TextStyle(
-                                color: isDark ? const Color(0xFF059669) : currentTheme.statusActiveBadgeText,
-                                fontSize: 9,
+                                color: isDark ? const Color(0xFF34D399) : currentTheme.statusActiveBadgeText,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -2096,7 +2096,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFE2E8F0),
+                      color: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0),
                       borderRadius: BorderRadius.circular(7),
                     ),
                     child: FractionallySizedBox(
@@ -2106,19 +2106,17 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: isDark
-                                ? [Colors.white, Colors.white.withValues(alpha: 0.85)]
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
                                 : currentTheme.accentGradient,
                           ),
                           borderRadius: BorderRadius.circular(7),
-                          boxShadow: isDark
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: currentTheme.accentPrimary.withValues(alpha: 0.35),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -2146,56 +2144,65 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
                 const SizedBox(height: 18),
 
-                // Button
+                // Sapphire VIP CTA Button: Відкрити в розкладі
                 SizedBox(
                   width: double.infinity,
+                  height: 54,
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: isDark
-                          ? null
-                          : LinearGradient(
-                              colors: currentTheme.accentGradient,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                      ),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF00E5FF)
+                            : Colors.white.withValues(alpha: 0.6),
+                        width: 1.4,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: (isDark ? const Color(0xFF003B73) : currentTheme.accentPrimary).withValues(alpha: 0.35),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.20),
+                          blurRadius: 14,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AdminCalendarScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? Colors.white : Colors.transparent,
-                        foregroundColor: isDark ? const Color(0xFF003B73) : Colors.white,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(LucideIcons.calendar, size: 16, color: isDark ? const Color(0xFF003B73) : Colors.white),
-                          const SizedBox(width: 8),
-                          Text(
-                            'admin.open_in_schedule'.tr(),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: isDark ? const Color(0xFF003B73) : Colors.white,
-                              letterSpacing: 0.3,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AdminCalendarScreen()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.calendar,
+                              size: 18,
+                              color: isDark ? const Color(0xFF00E5FF) : Colors.white,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'admin.open_in_schedule'.tr(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14.5,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

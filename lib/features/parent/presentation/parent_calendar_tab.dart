@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +19,7 @@ import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_calendar_card.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_class_cards.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 
 class ParentCalendarTab extends ConsumerStatefulWidget {
@@ -67,9 +67,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final dayClasses = uniqueDayClasses.values.toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
+    final fbUser = FirebaseAuth.instance.currentUser;
+    final parentDisplayName = (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+        ? user.name.trim()
+        : (fbUser?.displayName?.trim().isNotEmpty == true
+            ? fbUser!.displayName!.trim()
+            : 'Мій розклад');
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
+        toolbarHeight: 46,
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -94,17 +102,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
 
             // 1. Sleek Frosted Glass Child / Parent Selector
             _buildChildSelector(
               currentTheme,
-              user?.id ?? '',
-              user?.name ?? 'Я',
+              user?.id ?? fbUser?.uid ?? '',
+              parentDisplayName,
               partnerId,
               partnerName,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // 2. VisionOS Frosted Glass Calendar Card
             Padding(
@@ -118,7 +126,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                 allFamilyIds: allFamilyIds,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
 
             // 3. On-Screen Live Day Schedule Section
             Padding(
@@ -160,7 +168,11 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     }
 
     final isAdult = selectedChildId == user?.id || (partnerId != null && selectedChildId == partnerId);
-    String memberName = user?.name ?? 'Я';
+    String memberName = (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+        ? user.name.trim()
+        : (FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
+            ? FirebaseAuth.instance.currentUser!.displayName!.trim()
+            : 'Мій розклад');
     if (!isAdult) {
       final ch = children.firstWhereOrNull((c) => c.id == selectedChildId);
       if (ch != null) memberName = ch.name;
@@ -193,6 +205,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      enableDrag: true,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
       builder: (context) => CreateIndividualClassSheet(
         selectedDate: selectedDate,
@@ -231,129 +245,176 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F1E32) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(
-                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
-                width: 1,
-              ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0B2238),
+                      Color(0xFF07192C),
+                      Color(0xFF04101D),
+                    ]
+                  : const [
+                      Colors.white,
+                      Color(0xFFF0F9FF),
+                    ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black12,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.45) : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  'Для кого забронювати тренування?',
-                  style: TextStyle(
-                    color: currentTheme.textPrimary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Для кого забронювати тренування?',
+                style: TextStyle(
+                  color: isDark ? Colors.white : currentTheme.textPrimary,
+                  fontSize: 17.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Оберіть члена сім\'ї для створення індивідуального розкладу',
-                  style: TextStyle(
-                    color: isDark ? Colors.white60 : currentTheme.textSecondary,
-                    fontSize: 13,
-                  ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Оберіть члена сім\'ї для створення індивідуального розкладу',
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(height: 16),
-                ...allMembers.map((m) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        final isAdult = m.isParent;
-                        final memberId = m.id;
-                        final memberName = m.name;
-                        final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
-                        final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
-                        final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [if (user != null) user.id];
-                        var sub = subscriptionController.getSubscriptionForOwner(memberId, memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
-                        sub ??= subscriptionController.getSubscriptionForOwner(user?.id ?? '', memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
-                        if (sub?.expiryDate != null) {
-                          final endOfExpiryDay = DateTime(sub!.expiryDate!.year, sub.expiryDate!.month, sub.expiryDate!.day, 23, 59, 59);
-                          if (selectedDateOnly.isAfter(endOfExpiryDay)) {
-                            final expiryStr = DateFormat('dd.MM.yyyy').format(sub.expiryDate!);
-                            final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
-                            AppSnackBar.showError(
-                              context,
-                              'Термін дії абонемента для $memberName закінчується $expiryStr (до обраної дати $selDateStr).',
-                            );
-                            return;
-                          }
+              ),
+              const SizedBox(height: 18),
+              ...allMembers.map((m) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      final isAdult = m.isParent;
+                      final memberId = m.id;
+                      final memberName = m.name;
+                      final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+                      final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
+                      final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [if (user != null) user.id];
+                      var sub = subscriptionController.getSubscriptionForOwner(memberId, memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
+                      sub ??= subscriptionController.getSubscriptionForOwner(user?.id ?? '', memberName, isAdult: isAdult, isSplit: false, familyUserIds: familyParentIds);
+                      if (sub?.expiryDate != null) {
+                        final endOfExpiryDay = DateTime(sub!.expiryDate!.year, sub.expiryDate!.month, sub.expiryDate!.day, 23, 59, 59);
+                        if (selectedDateOnly.isAfter(endOfExpiryDay)) {
+                          final expiryStr = DateFormat('dd.MM.yyyy').format(sub.expiryDate!);
+                          final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
+                          AppSnackBar.showError(
+                            context,
+                            'Термін дії абонемента для $memberName закінчується $expiryStr (до обраної дати $selDateStr).',
+                          );
+                          return;
                         }
-                        Navigator.pop(ctx);
-                        _openIndividualClassSheet(m.id, m.isParent);
-                      },
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F9FF),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: m.color.withValues(alpha: 0.35),
-                            width: 1,
+                      }
+                      Navigator.pop(ctx);
+                      _openIndividualClassSheet(m.id, m.isParent);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0A243D) : const Color(0xFFF0F9FF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : m.color.withValues(alpha: 0.45),
+                          width: 1.2,
+                        ),
+                        boxShadow: isDark
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: m.color.withValues(alpha: 0.22),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: m.color.withValues(alpha: 0.60),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: m.color.withValues(alpha: 0.30),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              m.isParent ? LucideIcons.user : LucideIcons.baby,
+                              color: isDark ? Colors.white : m.color,
+                              size: 17,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: m.color.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                m.isParent ? LucideIcons.user : LucideIcons.baby,
-                                color: m.color,
-                                size: 16,
-                              ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  m.name,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                if (m.isParent)
+                                  Text(
+                                    'Батьки / Дорослий',
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              m.name,
-                              style: TextStyle(
-                                color: currentTheme.textPrimary,
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              LucideIcons.chevronRight,
-                              color: isDark ? Colors.white38 : Colors.black26,
-                              size: 16,
-                            ),
-                          ],
-                        ),
+                          ),
+                          Icon(
+                            LucideIcons.chevronRight,
+                            color: isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
+                            size: 18,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                )),
-              ],
-            ),
+                ),
+              )),
+            ],
           ),
         ),
       ),
@@ -473,7 +534,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           borderRadius: BorderRadius.circular(20),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5.5),
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
@@ -493,14 +554,14 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               color: isSelected
                   ? null
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.10)
+                      ? const Color(0xFF0B2540)
                       : Colors.white.withValues(alpha: 0.80)),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
                     ? (isDark ? const Color(0xFF00E5FF) : color)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.16)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
                         : const Color(0xFFBAE6FD)),
                 width: isSelected ? 1.4 : 1.0,
               ),
@@ -676,39 +737,42 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               GestureDetector(
                 onTap: () => _showBookingSheet(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6.5),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isDark
-                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                          : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                          ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.45),
-                      width: 0.8,
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
+                          : Colors.white.withValues(alpha: 0.35),
+                      width: 1.4,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                        blurRadius: 8,
+                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.18),
+                        blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(LucideIcons.plus, color: Colors.white, size: 13),
-                      SizedBox(width: 4),
-                      Text(
+                      Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : Colors.white, size: 13),
+                      const SizedBox(width: 4.5),
+                      const Text(
                         'Записатись',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],
@@ -717,11 +781,11 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
 
         if (enrolledClasses.isEmpty && availableClasses.isEmpty && pastUnenrolledClasses.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 2),
             child: _buildEmptyDayState(currentTheme, isPastDay: isPastDay),
           )
         else
@@ -855,153 +919,167 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     return Center(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              gradient: isDark
-                  ? LinearGradient(
-                      colors: [
-                        const Color(0xFF0E3D64).withValues(alpha: 0.55),
-                        const Color(0xFF092842).withValues(alpha: 0.70),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.95),
-                        const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
-                width: 1.2,
-              ),
-              boxShadow: isDark
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF003B73).withValues(alpha: 0.35),
-                        blurRadius: 18,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0B2238),
+                      Color(0xFF07192C),
+                      Color(0xFF04101D),
                     ]
-                  : [
-                      BoxShadow(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
+                  : const [
+                      Colors.white,
+                      Color(0xFFF0F9FF),
                     ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isPastDay
-                        ? (isDark ? const Color(0xFF64748B).withValues(alpha: 0.15) : const Color(0xFFE2E8F0))
-                        : (isDark
-                            ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-                            : currentTheme.accentPrimary.withValues(alpha: 0.10)),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isPastDay
-                          ? (isDark ? const Color(0xFF94A3B8).withValues(alpha: 0.35) : const Color(0xFFCBD5E1))
-                          : (isDark
-                              ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                              : currentTheme.accentPrimary.withValues(alpha: 0.25)),
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      isPastDay ? LucideIcons.calendarX2 : LucideIcons.calendarCheck,
-                      color: isPastDay
-                          ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
-                          : (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary),
-                      size: 22,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  isPastDay ? 'Занять у цей день не було' : 'parent.no_classes_this_day_calendar'.tr(),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: currentTheme.textPrimary,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isPastDay
-                      ? 'На обрану дату не було заплановано тренувань'
-                      : 'Бажаєте провести тренування у цей день?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isDark ? Colors.white60 : currentTheme.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                if (!isPastDay) ...[
-                  const SizedBox(height: 14),
-                  GestureDetector(
-                    onTap: () => _showBookingSheet(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isDark
-                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                              : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.50),
-                          width: 0.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.plus, color: Colors.white, size: 16),
-                          SizedBox(width: 6),
-                          Text(
-                            'Забронювати тренування',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.32) : const Color(0xFFBAE6FD),
+              width: 1.3,
             ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: isPastDay
+                      ? null
+                      : (isDark
+                          ? const LinearGradient(
+                              colors: [Color(0xFF0E3152), Color(0xFF082038)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null),
+                  color: isPastDay
+                      ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0))
+                      : (isDark ? null : currentTheme.accentPrimary.withValues(alpha: 0.12)),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isPastDay
+                        ? (isDark ? const Color(0xFF64748B) : const Color(0xFFCBD5E1))
+                        : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : currentTheme.accentPrimary),
+                    width: 1.2,
+                  ),
+                  boxShadow: !isPastDay && isDark
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Icon(
+                    isPastDay ? LucideIcons.calendarX2 : LucideIcons.calendarCheck,
+                    color: isPastDay
+                        ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
+                        : (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary),
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isPastDay ? 'Занять у цей день не було' : 'parent.no_classes_this_day_calendar'.tr(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? Colors.white : currentTheme.textPrimary,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                isPastDay
+                    ? 'На обрану дату не було заплановано тренувань'
+                    : 'Бажаєте провести тренування у цей день?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFCBD5E1) : currentTheme.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (!isPastDay) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => _showBookingSheet(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
+                            : Colors.white.withValues(alpha: 0.35),
+                        width: 1.4,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.18),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : Colors.white, size: 15),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Забронювати тренування',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

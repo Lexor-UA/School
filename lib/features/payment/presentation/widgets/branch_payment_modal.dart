@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -73,34 +73,52 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     final activeBranch = tenancyState.effectiveBranch;
     final paymentConfig = ref.watch(branchPaymentServiceProvider).getPaymentConfig(widget.package.branchId);
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-      child: Container(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 14,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = math.max(mediaQuery.padding.bottom, 16.0) +
+        (mediaQuery.viewInsets.bottom > 0 ? mediaQuery.viewInsets.bottom : 16.0);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * 0.90,
+      ),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 14,
+        bottom: bottomPadding,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? const [
+                  Color(0xFF0B2238),
+                  Color(0xFF07192C),
+                  Color(0xFF04101D),
+                ]
+              : const [
+                  Colors.white,
+                  Color(0xFFF0F9FF),
+                ],
         ),
-        decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border.all(
           color: isDark
-              ? const Color(0xFF061426).withValues(alpha: 0.96)
-              : Colors.white.withValues(alpha: 0.98),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: 0.08),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+              : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.20),
+            blurRadius: 30,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: _completedReceipt != null
             ? _buildReceiptView(context, _completedReceipt!, currentTheme, isDark)
             : _buildCheckoutView(context, currentTheme, isDark, activeBranch, paymentConfig),
@@ -201,11 +219,31 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0C2642),
+                      Color(0xFF071B30),
+                    ]
+                  : const [
+                      Color(0xFFF0F9FF),
+                      Colors.white,
+                    ],
+            ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD),
+              width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +255,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                     child: Text(
                       widget.package.name,
                       style: TextStyle(
-                        color: currentTheme.textPrimary,
+                        color: isDark ? Colors.white : currentTheme.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -226,14 +264,22 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                   Text(
                     widget.package.formattedPricePretty,
                     style: TextStyle(
-                      color: currentTheme.accentPrimary,
+                      color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
+                      shadows: isDark
+                          ? [
+                              Shadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   _buildMetaBadge(
@@ -327,21 +373,21 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: currentTheme.accentPrimary.withValues(alpha: isDark ? 0.12 : 0.08),
+            color: isDark ? const Color(0xFF082238) : currentTheme.accentPrimary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: currentTheme.accentPrimary.withValues(alpha: 0.25),
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.30) : currentTheme.accentPrimary.withValues(alpha: 0.25),
             ),
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.info, color: currentTheme.accentPrimary, size: 18),
+              Icon(LucideIcons.info, color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Безпечний режим: реальні кошти не списуються. Після підтвердження абонемент буде миттєво активовано у філії $branchTitle, а ви отримаєте електронну квитанцію.',
                   style: TextStyle(
-                    color: currentTheme.textPrimary,
+                    color: isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary,
                     fontSize: 12,
                     height: 1.3,
                   ),
@@ -353,15 +399,35 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         const SizedBox(height: 22),
 
         // Action Button
-        SizedBox(
+        Container(
           width: double.infinity,
           height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+            ),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.35),
+              width: 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: ElevatedButton(
             onPressed: _isProcessing ? null : _handlePayment,
             style: ElevatedButton.styleFrom(
-              backgroundColor: currentTheme.accentPrimary,
-              foregroundColor: Colors.white,
-              elevation: 4,
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -371,23 +437,27 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Color(0xFF00E5FF),
                       strokeWidth: 2.5,
                     ),
                   )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.checkCircle2, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Підтвердити оплату (${widget.package.formattedPricePretty})',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Підтвердити оплату (${widget.package.formattedPricePretty})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
           ),
         ),
@@ -408,36 +478,45 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         HapticFeedback.selectionClick();
         setState(() => _selectedMethod = id);
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? currentTheme.accentPrimary.withValues(alpha: isDark ? 0.22 : 0.14)
-              : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
-          borderRadius: BorderRadius.circular(12),
+              ? (isDark ? const Color(0xFF0E3860) : const Color(0xFFE0F2FE))
+              : (isDark ? const Color(0xFF0B2540) : const Color(0xFFF8FAFC)),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
-                ? currentTheme.accentPrimary
-                : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
-            width: isSelected ? 1.5 : 1,
+                ? (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary)
+                : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFCBD5E1)),
+            width: isSelected ? 1.6 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary).withValues(alpha: isDark ? 0.30 : 0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
         ),
         child: Column(
           children: [
             Icon(
               icon,
               size: 20,
-              color: isSelected ? currentTheme.accentPrimary : currentTheme.textSecondary,
+              color: isSelected ? (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary) : (isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? currentTheme.accentPrimary : currentTheme.textPrimary,
+                color: isSelected ? (isDark ? Colors.white : currentTheme.accentPrimary) : (isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary),
                 fontSize: 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -457,20 +536,24 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+        color: isDark ? const Color(0xFF0F3152) : const Color(0xFFE0F2FE),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: currentTheme.textSecondary),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12, color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary),
+          const SizedBox(width: 5),
           Text(
             text,
             style: TextStyle(
-              color: currentTheme.textSecondary,
+              color: isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary,
               fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -526,11 +609,31 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0C2642),
+                      Color(0xFF071B30),
+                    ]
+                  : const [
+                      Color(0xFFF0F9FF),
+                      Colors.white,
+                    ],
             ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,7 +644,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                   Text(
                     'Квитанція № ${receipt.receiptNumber}',
                     style: TextStyle(
-                      color: currentTheme.accentPrimary,
+                      color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -549,27 +652,35 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                   Text(
                     receipt.formattedAmount,
                     style: TextStyle(
-                      color: currentTheme.textPrimary,
+                      color: isDark ? Colors.white : currentTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-              const Divider(height: 18),
-              _buildReceiptRow('Платник', receipt.clientName, currentTheme),
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                height: 1,
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE2E8F0),
+              ),
+              _buildReceiptRow('Платник', receipt.clientName, currentTheme, isDark),
               if (receipt.childName != null)
-                _buildReceiptRow('Учень', receipt.childName!, currentTheme),
-              _buildReceiptRow('Пакет', receipt.packageName, currentTheme),
-              _buildReceiptRow('Кількість занять', '${receipt.classesCount} тренувань', currentTheme),
-              _buildReceiptRow('Шлюз філії', receipt.paymentGateway, currentTheme),
-              _buildReceiptRow('Транзакція', receipt.transactionId, currentTheme),
-              const Divider(height: 18),
+                _buildReceiptRow('Учень', receipt.childName!, currentTheme, isDark),
+              _buildReceiptRow('Пакет', receipt.packageName, currentTheme, isDark),
+              _buildReceiptRow('Кількість занять', _formatClassesCount(receipt.classesCount), currentTheme, isDark),
+              _buildReceiptRow('Шлюз філії', receipt.paymentGateway, currentTheme, isDark),
+              _buildReceiptRow('Транзакція', receipt.transactionId, currentTheme, isDark),
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                height: 1,
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE2E8F0),
+              ),
               // Legal summary
               Text(
                 'Реквізити надавача послуг (${receipt.legalDetails['companyName'] ?? ''}):',
                 style: TextStyle(
-                  color: currentTheme.textSecondary,
+                  color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -578,7 +689,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
               Text(
                 '${receipt.legalDetails['taxIdLabel'] ?? 'Код'}: ${receipt.legalDetails['taxId'] ?? ''} • ${receipt.legalDetails['address'] ?? ''}',
                 style: TextStyle(
-                  color: currentTheme.textSecondary,
+                  color: isDark ? const Color(0xFF64748B) : currentTheme.textSecondary,
                   fontSize: 11,
                 ),
               ),
@@ -588,23 +699,58 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         const SizedBox(height: 20),
 
         // Close button
-        SizedBox(
+        Container(
           width: double.infinity,
-          height: 48,
+          height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+            ),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.35),
+              width: 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: ElevatedButton(
             onPressed: () {
+              HapticFeedback.lightImpact();
               Navigator.of(context).pop(receipt);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: currentTheme.accentPrimary,
-              foregroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
-              'Готово',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'Готово',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ),
@@ -612,7 +758,19 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     );
   }
 
-  Widget _buildReceiptRow(String label, String value, dynamic currentTheme) {
+  String _formatClassesCount(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return '$count заняття';
+    } else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+      return '$count заняття';
+    } else {
+      return '$count занять';
+    }
+  }
+
+  Widget _buildReceiptRow(String label, String value, dynamic currentTheme, [bool isDark = false]) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Row(
@@ -620,12 +778,12 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         children: [
           Text(
             label,
-            style: TextStyle(color: currentTheme.textSecondary, fontSize: 12),
+            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary, fontSize: 12),
           ),
           Text(
             value,
             style: TextStyle(
-              color: currentTheme.textPrimary,
+              color: isDark ? Colors.white : currentTheme.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),

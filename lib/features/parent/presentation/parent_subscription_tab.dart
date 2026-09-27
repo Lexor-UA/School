@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -21,7 +22,20 @@ import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
 import 'package:swimming_school_app/features/payment/presentation/widgets/branch_payment_modal.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/features/payment/services/branch_payment_service.dart';
+
+String _pluralizeClasses(int count) {
+  final mod10 = count % 10;
+  final mod100 = count % 100;
+  if (mod10 == 1 && mod100 != 11) {
+    return '$count заняття';
+  } else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return '$count заняття';
+  } else {
+    return '$count занять';
+  }
+}
 
 class SelectedSubscriptionOwnerNotifier extends Notifier<String?> {
   @override
@@ -558,31 +572,37 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             return ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               clipBehavior: Clip.antiAlias,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24, tileMode: TileMode.decal),
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.85,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: isDark
-                          ? [
-                              const Color(0xFF0E3D64).withValues(alpha: 0.94),
-                              const Color(0xFF092842).withValues(alpha: 0.98),
-                            ]
-                          : [
-                              Colors.white.withValues(alpha: 0.96),
-                              const Color(0xFFF0F9FF).withValues(alpha: 0.98),
-                            ],
-                    ),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
-                      width: 1.2,
-                    ),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.85,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? const [
+                            Color(0xFF0B2238),
+                            Color(0xFF07192C),
+                            Color(0xFF04101D),
+                          ]
+                        : const [
+                            Colors.white,
+                            Color(0xFFF0F9FF),
+                          ],
                   ),
-                  padding: const EdgeInsets.all(24),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.15),
+                      blurRadius: 28,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -815,12 +835,12 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                   gradient: LinearGradient(
                                     colors: isSelected
                                         ? [
-                                            (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9)).withValues(alpha: isDark ? 0.22 : 0.16),
-                                            const Color(0xFF0284C7).withValues(alpha: isDark ? 0.10 : 0.06),
+                                            (isDark ? const Color(0xFF0E3860) : const Color(0xFFE0F2FE)),
+                                            (isDark ? const Color(0xFF0A2644) : const Color(0xFFBAE6FD)),
                                           ]
                                         : [
-                                            isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.85),
-                                            isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white.withValues(alpha: 0.60),
+                                            isDark ? const Color(0xFF0B2540) : Colors.white,
+                                            isDark ? const Color(0xFF071B2F) : const Color(0xFFF8FAFC),
                                           ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -828,19 +848,25 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                   border: Border.all(
                                     color: isSelected
                                         ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                        : (isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFBAE6FD)),
-                                    width: isSelected ? 1.5 : 1.0,
+                                        : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD)),
+                                    width: isSelected ? 1.6 : 1.0,
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: isSelected
                                       ? [
                                           BoxShadow(
-                                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.15),
-                                            blurRadius: 12,
+                                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.18),
+                                            blurRadius: 14,
                                             offset: const Offset(0, 3),
                                           ),
                                         ]
-                                      : [],
+                                      : [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
                                 ),
                                 child: Row(
                                   children: [
@@ -1096,21 +1122,26 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         height: 56,
                         decoration: BoxDecoration(
                           gradient: totalPrice > 0 && selectedService != null
-                              ? const LinearGradient(
-                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              ? LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 )
                               : null,
                           borderRadius: BorderRadius.circular(18),
                           border: totalPrice > 0 && selectedService != null
-                              ? Border.all(color: Colors.white.withValues(alpha: 0.30), width: 1.2)
+                              ? Border.all(
+                                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.35),
+                                  width: 1.4,
+                                )
                               : null,
                           boxShadow: totalPrice > 0 && selectedService != null
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                    blurRadius: 18,
+                                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                                    blurRadius: 16,
                                     offset: const Offset(0, 4),
                                   ),
                                 ]
@@ -1119,6 +1150,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         child: ElevatedButton(
                           onPressed: totalPrice > 0 && selectedService != null
                               ? () async {
+                                  HapticFeedback.lightImpact();
                                   final branch = ref.read(effectiveBranchProvider);
                                   if (isPartner) {
                                     final confirm = await _showPartnerPaymentConfirmationDialog(
@@ -1167,8 +1199,8 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             children: [
                               Text(
                                 totalPrice > 0
-                                    ? '${'parent.pay'.tr()} $totalPrice $currencySymbol'
-                                    : 'parent.choose_subscription'.tr(),
+                                    ? '${'parent.pay'.tr() == 'parent.pay' ? 'Оплатити' : 'parent.pay'.tr()} $totalPrice $currencySymbol'
+                                    : ('parent.choose_subscription_btn'.tr() == 'parent.choose_subscription_btn' ? 'Оберіть абонемент' : 'parent.choose_subscription_btn'.tr()),
                                 style: TextStyle(
                                   color: totalPrice > 0 ? Colors.white : (isDark ? Colors.white38 : themeConfig.textMuted),
                                   fontSize: 15.5,
@@ -1196,7 +1228,6 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     ],
                   ),
                 ),
-              ),
             );
           },
         );
@@ -1398,24 +1429,24 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 : null,
             color: isSelected
                 ? null
-                : (isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9)),
+                : (isDark ? const Color(0xFF0B2540) : const Color(0xFFF1F5F9)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
-                  ? Colors.white.withValues(alpha: 0.3)
-                  : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1)),
+                  ? Colors.white.withValues(alpha: 0.35)
+                  : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFCBD5E1)),
               width: 1,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 13, color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569))),
+              Icon(icon, size: 13, color: isSelected ? Colors.white : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569))),
               const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  color: isSelected ? Colors.white : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569)),
                   fontSize: 11.5,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 ),
@@ -1467,15 +1498,19 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
           }).toList()
         : <Subscription>[];
     
-    final hasSplitSubscription = allSubs.any((s) => s.isSplitSubscription && s.isActive && s.remainingClasses > 0);
+    final fbUser = FirebaseAuth.instance.currentUser;
+    final parentName = (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+        ? user.name.trim()
+        : (fbUser?.displayName?.trim().isNotEmpty == true
+            ? fbUser!.displayName!.trim()
+            : 'Мій абонемент');
 
     final filterOwners = [
-      if (user != null) {'id': user.name, 'name': user.name, 'isParent': true, 'isCurrentUser': true},
+      {'id': parentName, 'name': parentName, 'isParent': true, 'isCurrentUser': true},
       if (otherParentName != null && otherParentName.isNotEmpty)
         {'id': otherParentName, 'name': otherParentName, 'isParent': true, 'isPartner': true, 'targetUserId': otherParentId},
       ...children.map((c) => {'id': c.name, 'name': c.currentAge != null ? '${c.name} (${c.currentAge} р.)' : c.name, 'isParent': false}),
-      if (hasSplitSubscription || _selectedOwner == 'Всі (Спліт)')
-        {'id': 'Всі (Спліт)', 'name': 'Спліт (2 ос.)', 'isParent': false, 'isSplit': true},
+      {'id': 'Всі (Спліт)', 'name': 'Спліт (2 ос.)', 'isParent': false, 'isSplit': true},
     ];
 
     String effectiveOwner = _selectedOwner;
@@ -1647,67 +1682,111 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               const SizedBox(height: 14),
             ],
 
-            // 3D Subscription Card or Empty State
+            // 3D Subscription Card or Empty State (True Liquid Glassmorphism)
             if (currentSub == null)
               Container(
                 width: double.infinity,
-                height: 220,
+                height: 236,
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: isDark
-                        ? [
-                            const Color(0xFF0E3D64).withValues(alpha: 0.50),
-                            const Color(0xFF092842).withValues(alpha: 0.65),
+                        ? const [
+                            Color(0xFF0B2238),
+                            Color(0xFF07192C),
+                            Color(0xFF04101D),
                           ]
-                        : [
-                            Colors.white.withValues(alpha: 0.90),
-                            const Color(0xFFF0F9FF).withValues(alpha: 0.85),
+                        : const [
+                            Colors.white,
+                            Color(0xFFF0F9FF),
                           ],
                   ),
-                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
-                    width: 1.2,
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                    width: 1.3,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.10 : 0.08),
+                      blurRadius: 28,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // 3D Concentric Glowing Orb badge
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
+                        gradient: RadialGradient(
+                          center: const Alignment(-0.25, -0.3),
+                          radius: 0.9,
+                          colors: isDark
+                              ? [
+                                  const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                  const Color(0xFF0284C7).withValues(alpha: 0.25),
+                                  const Color(0xFF003B73).withValues(alpha: 0.45),
+                                ]
+                              : [
+                                  const Color(0xFFE0F2FE),
+                                  const Color(0xFFBAE6FD),
+                                  const Color(0xFF7DD3FC),
+                                ],
+                        ),
                         border: Border.all(
-                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.25),
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.60) : Colors.white,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.20),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.creditCard,
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          size: 32,
                         ),
                       ),
-                      child: Icon(
-                        LucideIcons.creditCard,
-                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                        size: 32,
-                      ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     Text(
                       'Немає активного абонемента',
                       style: TextStyle(
                         color: isDark ? Colors.white : themeConfig.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Для "$effectiveOwner" абонемент ще не оформлено',
+                      effectiveOwner.isNotEmpty && effectiveOwner != 'Мій абонемент'
+                          ? 'Для "$effectiveOwner" абонемент ще не оформлено'
+                          : 'Абонемент ще не оформлено',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: isDark ? Colors.white60 : themeConfig.textSecondary,
+                        color: isDark ? const Color(0xFFE2E8F0) : themeConfig.textSecondary,
                         fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
                       ),
                     ),
                   ],
@@ -1725,219 +1804,205 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             
             const SizedBox(height: 24),
 
-            // Info Details (Oceanic Sapphire Glass Panel)
+            // Info Details (Oceanic Sapphire Liquid Glass Panel)
             if (currentSub != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                clipBehavior: Clip.antiAlias,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [
-                                const Color(0xFF0E3D64).withValues(alpha: 0.60),
-                                const Color(0xFF092842).withValues(alpha: 0.75),
-                              ]
-                            : [
-                                Colors.white.withValues(alpha: 0.95),
-                                const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
-                        width: 1.2,
-                      ),
-                      boxShadow: isDark
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF003B73).withValues(alpha: 0.35),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
-                              ),
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                                blurRadius: 16,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? const [
+                            Color(0xFF0B2238),
+                            Color(0xFF07192C),
+                            Color(0xFF04101D),
+                          ]
+                        : const [
+                            Colors.white,
+                            Color(0xFFF0F9FF),
+                          ],
+                  ),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                    width: 1.3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.10 : 0.08),
+                      blurRadius: 28,
+                      offset: const Offset(0, 8),
                     ),
-                    child: Column(
-                      children: [
-                        // Row 1: Власник
-                        _buildDetailRow(
-                          icon: LucideIcons.user,
-                          label: 'parent.owner'.tr(),
-                          valueWidget: Text(
-                            currentSub.ownerName ?? 'Клієнт',
-                            style: TextStyle(
-                              color: themeConfig.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                          isDark: isDark,
-                          themeConfig: themeConfig,
-                          iconColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF2563EB),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.06),
+                      blurRadius: 18,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Row 1: Власник
+                    _buildDetailRow(
+                      icon: LucideIcons.user,
+                      label: 'parent.owner'.tr(),
+                      valueWidget: Text(
+                        currentSub.ownerName ?? 'Клієнт',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : themeConfig.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
                         ),
+                      ),
+                      isDark: isDark,
+                      themeConfig: themeConfig,
+                      iconColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF2563EB),
+                    ),
 
-                        _buildRowDivider(isDark),
+                    _buildRowDivider(isDark),
 
-                        // Row 2: Залишилось занять
-                        _buildDetailRow(
-                          icon: LucideIcons.waves,
-                          label: 'Залишилось занять',
-                          valueWidget: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '$safeRemaining',
+                    // Row 2: Залишилось занять
+                    _buildDetailRow(
+                      icon: LucideIcons.waves,
+                      label: 'Залишилось занять',
+                      valueWidget: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$safeRemaining',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' з ${currentSub.totalClasses > 0 ? currentSub.totalClasses : safeRemaining}',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFE2E8F0) : themeConfig.textPrimary,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      isDark: isDark,
+                      themeConfig: themeConfig,
+                      iconColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    ),
+
+                    _buildRowDivider(isDark),
+
+                    // Row 3: Діє до
+                    _buildDetailRow(
+                      icon: LucideIcons.calendar,
+                      label: 'parent.valid_until'.tr(),
+                      valueWidget: Text(
+                        currentSub.expiryDate != null
+                            ? DateFormat('dd.MM.yyyy').format(currentSub.expiryDate!)
+                            : 'parent.unlimited'.tr(),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : themeConfig.textPrimary,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      isDark: isDark,
+                      themeConfig: themeConfig,
+                      iconColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1),
+                    ),
+
+                    _buildRowDivider(isDark),
+
+                    // Row 4: Статус
+                    _buildDetailRow(
+                      icon: LucideIcons.shieldCheck,
+                      label: 'parent.status'.tr(),
+                      valueWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.16 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                                : const Color(0xFF059669).withValues(alpha: 0.40),
+                            width: 0.9,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5.5),
+                            Text(
+                              'parent.active'.tr(),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      isDark: isDark,
+                      themeConfig: themeConfig,
+                      iconColor: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                    ),
+
+                    if (family != null && family.isPaired && currentSub.userId != user?.id && !currentSub.isAdultSubscription) ...[
+                      _buildRowDivider(isDark),
+                      _buildDetailRow(
+                        icon: LucideIcons.heartHandshake,
+                        label: 'Спільний доступ',
+                        valueWidget: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.users, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'від ${family.getOtherParentName(user?.id ?? "") ?? "партнера"}',
+                                  maxLines: 1,
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' з ${currentSub.totalClasses > 0 ? currentSub.totalClasses : safeRemaining}',
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white70 : themeConfig.textPrimary,
-                                    fontSize: 14.5,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          isDark: isDark,
-                          themeConfig: themeConfig,
-                          iconColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                        ),
-
-                        _buildRowDivider(isDark),
-
-                        // Row 3: Діє до
-                        _buildDetailRow(
-                          icon: LucideIcons.calendar,
-                          label: 'parent.valid_until'.tr(),
-                          valueWidget: Text(
-                            currentSub.expiryDate != null
-                                ? DateFormat('dd.MM.yyyy').format(currentSub.expiryDate!)
-                                : 'parent.unlimited'.tr(),
-                            style: TextStyle(
-                              color: themeConfig.textPrimary,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          isDark: isDark,
-                          themeConfig: themeConfig,
-                          iconColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1),
-                        ),
-
-                        _buildRowDivider(isDark),
-
-                        // Row 4: Статус
-                        _buildDetailRow(
-                          icon: LucideIcons.shieldCheck,
-                          label: 'parent.status'.tr(),
-                          valueWidget: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.16 : 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.45)
-                                    : const Color(0xFF059669).withValues(alpha: 0.40),
-                                width: 0.9,
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.08),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 5.5),
-                                Text(
-                                  'parent.active'.tr(),
-                                  style: TextStyle(
-                                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          isDark: isDark,
-                          themeConfig: themeConfig,
-                          iconColor: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                          ],
                         ),
-
-                        if (family != null && family.isPaired && currentSub.userId != user?.id && !currentSub.isAdultSubscription) ...[
-                          _buildRowDivider(isDark),
-                          _buildDetailRow(
-                            icon: LucideIcons.heartHandshake,
-                            label: 'Спільний доступ',
-                            valueWidget: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.users, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                                const SizedBox(width: 5),
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      'від ${family.getOtherParentName(user?.id ?? "") ?? "партнера"}',
-                                      maxLines: 1,
-                                      style: TextStyle(
-                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            isDark: isDark,
-                            themeConfig: themeConfig,
-                            iconColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                        isDark: isDark,
+                        themeConfig: themeConfig,
+                        iconColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      ),
+                    ],
+                  ],
                 ),
               ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.08),
 
@@ -1949,30 +2014,36 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: isDark
-                        ? [
-                            const Color(0xFF10B981).withValues(alpha: 0.18),
-                            const Color(0xFF064E3B).withValues(alpha: 0.28),
+                        ? const [
+                            Color(0xFF042F24),
+                            Color(0xFF021C15),
                           ]
-                        : [
-                            const Color(0xFFECFDF5),
-                            const Color(0xFFD1FAE5),
+                        : const [
+                            Colors.white,
+                            Color(0xFFECFDF5),
                           ],
                   ),
-                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.40 : 0.50),
+                    color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.50) : const Color(0xFF34D399),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.12),
-                      blurRadius: 14,
-                      offset: const Offset(0, 3),
+                      color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.16 : 0.08),
+                      blurRadius: 18,
+                      offset: const Offset(0, 4),
                     ),
+                    if (isDark)
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
                   ],
                 ),
                 child: Row(
@@ -1980,7 +2051,11 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.22),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.50),
+                          width: 1.2,
+                        ),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 22),
@@ -2000,9 +2075,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Для "$effectiveOwner" вже діє абонемент (залишилось $safeRemaining занять). Новий абонемент буде доступний після завершення занять.',
+                            'Для "$effectiveOwner" вже діє абонемент (залишилось ${_pluralizeClasses(safeRemaining)}). Новий абонемент буде доступний після завершення занять.',
                             style: TextStyle(
-                              color: isDark ? Colors.white70 : const Color(0xFF047857),
+                              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF047857),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w500,
                               height: 1.25,
@@ -2018,50 +2093,75 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                 width: double.infinity,
-                height: 54,
+                height: 56,
                 decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
-                    colors: isDark
-                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                        : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
+                    colors: isDark
+                        ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   ),
-                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.45),
-                    width: 1.2,
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.35),
+                    width: 1.4,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.40 : 0.30),
-                      blurRadius: 18,
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.32 : 0.22),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
+                      blurRadius: 14,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading || user == null ? null : () => _showPaymentSheet(user.id, effectiveOwner, isDark, themeConfig, discounts: userDiscounts),
+                  onPressed: _isLoading || (user == null && FirebaseAuth.instance.currentUser == null)
+                      ? null
+                      : () {
+                          HapticFeedback.lightImpact();
+                          _showPaymentSheet(
+                            user?.id ?? FirebaseAuth.instance.currentUser!.uid,
+                            effectiveOwner,
+                            isDark,
+                            themeConfig,
+                            discounts: userDiscounts,
+                          );
+                        },
                   icon: _isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(LucideIcons.creditCard, color: Colors.white, size: 21),
                   label: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
                       _isLoading
                           ? 'parent.processing'.tr()
-                          : (effectiveOwner == user?.name
+                          : (effectiveOwner.isEmpty || effectiveOwner == user?.name || effectiveOwner == parentName || effectiveOwner == 'Мій абонемент'
                               ? 'parent.pay_subscription'.tr()
                               : 'Оформити для $effectiveOwner'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                 ),
               ),
@@ -2113,7 +2213,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             Text(
               label,
               style: TextStyle(
-                color: isDark ? const Color(0xFFB0D4EC) : themeConfig.textSecondary,
+                color: isDark ? const Color(0xFFE2E8F0) : themeConfig.textSecondary,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,

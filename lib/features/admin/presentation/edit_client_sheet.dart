@@ -2002,9 +2002,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           end: Alignment.bottomCenter,
           colors: isDark
               ? [
-                  Colors.white.withValues(alpha: 0.22),
-                  const Color(0xFF0284C7).withValues(alpha: 0.26),
-                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                  const Color(0xFF0F1E32).withValues(alpha: 0.96),
+                  const Color(0xFF070E1A).withValues(alpha: 0.98),
                 ]
               : [
                   Colors.white.withValues(alpha: 0.98),
@@ -2013,7 +2012,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+          color: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
@@ -2042,7 +2041,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               Flexible(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.only(
-                    bottom: mediaQuery.viewInsets.bottom + 24,
+                    bottom: max(mediaQuery.viewInsets.bottom, mediaQuery.padding.bottom) + 24,
                     left: 24,
                     right: 24,
                     top: 16,
@@ -2062,10 +2061,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 14, 16, 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.8),
+        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.95),
         border: Border(
           bottom: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD).withValues(alpha: 0.6),
+            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFBAE6FD).withValues(alpha: 0.6),
             width: 1,
           ),
         ),
@@ -2662,18 +2661,22 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 if (!classSnap.hasData || classSnap.data!.docs.isEmpty) {
                   return Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                      color: isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.6) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+                        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0),
                       ),
                     ),
                     child: Center(
                       child: Text(
                         'Немає активних записів',
-                        style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+                        style: TextStyle(
+                          color: isDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
                       ),
                     ),
                   );
@@ -2694,10 +2697,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+                        color: isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.7) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isDark ? Colors.blueAccent.withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
                         ),
                         boxShadow: isDark
                             ? null
@@ -3162,44 +3165,55 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Icon(
-                  LucideIcons.baby,
-                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'admin.add_client_children_title'.tr(),
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.baby,
+                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                    size: 20,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'admin.add_client_children_title'.tr(),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             TextButton.icon(
               onPressed: () => _showAddChildDialog(parentIds: parentIds, family: family),
               icon: Icon(
                 LucideIcons.plus,
                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                size: 16,
+                size: 15,
               ),
               label: Text(
                 'admin.add'.tr(),
                 style: TextStyle(
                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                   fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
               ),
               style: TextButton.styleFrom(
                 backgroundColor: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
           ],
@@ -3418,45 +3432,56 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Icon(
-                  LucideIcons.heartHandshake,
-                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Сімейний зв\'язок (CRM)',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.heartHandshake,
+                    color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                    size: 20,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Сімейний зв\'язок (CRM)',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             if (!isPaired)
               TextButton.icon(
                 onPressed: () => _showLinkParentDialog(context, isDark: isDark, existingFamily: family),
                 icon: Icon(
                   LucideIcons.userPlus,
                   color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-                  size: 16,
+                  size: 15,
                 ),
                 label: const Text(
-                  'Зв\'язати в пару',
+                  'Зв\'язати пару',
                   style: TextStyle(
                     color: Color(0xFF10B981),
                     fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
                 ),
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
           ],
@@ -3479,40 +3504,49 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(LucideIcons.users, color: Color(0xFF10B981), size: 18),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Партнер: ${partnerName ?? "Невідомо"}',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
                             ),
-                            if (partnerPhone != null && partnerPhone.isNotEmpty)
-                              Text(
-                                partnerPhone,
-                                style: TextStyle(
-                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                                  fontSize: 12,
+                            child: const Icon(LucideIcons.users, color: Color(0xFF10B981), size: 18),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Партнер: ${partnerName ?? "Невідомо"}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14.5,
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ],
+                                if (partnerPhone != null && partnerPhone.isNotEmpty)
+                                  Text(
+                                    partnerPhone,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(

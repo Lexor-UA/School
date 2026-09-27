@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
-import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 
 part 'auth_controller.g.dart';
 
@@ -17,6 +17,18 @@ part 'auth_controller.g.dart';
 class AuthController extends _$AuthController {
   bool _isLoggingIn = false;
   bool _isLoggingOut = false;
+
+  Branch _getEffectiveBranchSync() {
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      final branchId = prefs.getString('userBranchId') ?? prefs.getString('selected_branch_id');
+      if (branchId != null) {
+        final found = Branch.defaultBranches.firstWhereOrNull((b) => b.id == branchId);
+        if (found != null) return found;
+      }
+    } catch (_) {}
+    return Branch.kyiv;
+  }
 
   @override
   AppUser? build() {
@@ -141,16 +153,30 @@ class AuthController extends _$AuthController {
         final effectiveId = clientId ?? user.uid;
         bool hasCachedState = state != null;
 
-        if (savedRoleString != null) {
-          final role = UserRole.values.firstWhereOrNull((e) => e.name == savedRoleString) ?? UserRole.parent;
-          if (state == null || state!.id != effectiveId) {
-            state = AppUser(
-              id: effectiveId,
-              name: user.displayName ?? prefs.getString('userName') ?? 'User',
-              role: role,
-            );
-            hasCachedState = true;
-          }
+        final role = savedRoleString != null
+            ? (UserRole.values.firstWhereOrNull((e) => e.name == savedRoleString) ?? UserRole.parent)
+            : UserRole.parent;
+
+        if (state == null || state!.id != effectiveId) {
+          final effectiveName = (user.displayName != null && user.displayName!.trim().isNotEmpty)
+              ? user.displayName!.trim()
+              : (prefs.getString('userName') ?? 'Користувач');
+          final effectivePhoto = user.photoURL ??
+              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(effectiveName)}&background=0284c7&color=ffffff';
+          final effectiveBranch = _getEffectiveBranchSync();
+          final branchId = prefs.getString('userBranchId') ?? effectiveBranch.id;
+
+          state = AppUser(
+            id: effectiveId,
+            name: effectiveName,
+            role: role,
+            avatarUrl: effectivePhoto,
+            branchId: branchId,
+            branchIds: [branchId],
+            organizationId: effectiveBranch.organizationId,
+          );
+          hasCachedState = true;
+          await _syncRoleToPrefs(state);
         }
 
         await _fetchUserFromFirestore(effectiveId, hasCachedState: hasCachedState);
@@ -194,14 +220,39 @@ class AuthController extends _$AuthController {
         state = AppUser.fromJson(doc.data()!);
         await _syncRoleToPrefs(state);
       } else {
+        // If the user is authenticated in Firebase Auth, never drop session!
+        final currentAuthUser = FirebaseAuth.instance.currentUser;
+        if (currentAuthUser != null && currentAuthUser.uid == uid) {
+          final prefs = await SharedPreferences.getInstance();
+          final effectiveBranch = _getEffectiveBranchSync();
+          final branchId = prefs.getString('userBranchId') ?? effectiveBranch.id;
+          final name = (currentAuthUser.displayName != null && currentAuthUser.displayName!.trim().isNotEmpty)
+              ? currentAuthUser.displayName!.trim()
+              : (prefs.getString('userName') ?? 'Користувач');
+          final avatar = currentAuthUser.photoURL ??
+              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=0284c7&color=ffffff';
+
+          state = AppUser(
+            id: uid,
+            name: name,
+            role: UserRole.parent,
+            avatarUrl: avatar,
+            branchId: branchId,
+            branchIds: [branchId],
+            organizationId: effectiveBranch.organizationId,
+          );
+          await _syncRoleToPrefs(state);
+          return;
+        }
+
         if (!_isLoggingIn) {
           // If we already have a cached state, do not drop session on transient cache miss
           if (!hasCachedState) {
             state = null;
             await _syncRoleToPrefs(null);
             try {
-              await FirebaseAuth.instance.signOut();
-              await GoogleSignIn().signOut();
+              await FirebaseAuth.instance.signOut().timeout(const Duration(seconds: 3));
+              await GoogleSignIn().signOut().timeout(const Duration(seconds: 3));
             } catch (_) {}
             return;
           } else {
@@ -210,11 +261,14 @@ class AuthController extends _$AuthController {
         }
 
         final currentUser = FirebaseAuth.instance.currentUser;
-        // Create default user if missing in Firestore (we don't save it yet)
+        final effectiveBranch = _getEffectiveBranchSync();
         state = AppUser(
           id: uid,
           name: currentUser?.displayName ?? 'New User',
           role: UserRole.parent,
+          branchId: effectiveBranch.id,
+          branchIds: [effectiveBranch.id],
+          organizationId: effectiveBranch.organizationId,
         );
         await _syncRoleToPrefs(state);
       }
@@ -225,7 +279,7 @@ class AuthController extends _$AuthController {
         state = null;
         await _syncRoleToPrefs(null);
         try {
-          await FirebaseAuth.instance.signOut();
+          await FirebaseAuth.instance.signOut().timeout(const Duration(seconds: 3));
         } catch (_) {}
       }
     }
@@ -257,8 +311,90 @@ class AuthController extends _$AuthController {
       );
 
       final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      if (userCredential.user != null) {
-        await _fetchUserFromFirestore(userCredential.user!.uid);
+      final fbUser = userCredential.user;
+      if (fbUser != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final effectiveBranch = _getEffectiveBranchSync();
+        final assignedBranchId = prefs.getString('userBranchId') ?? effectiveBranch.id;
+
+        final googleName = (fbUser.displayName != null && fbUser.displayName!.trim().isNotEmpty)
+            ? fbUser.displayName!.trim()
+            : (googleUser.displayName != null && googleUser.displayName!.trim().isNotEmpty
+                ? googleUser.displayName!.trim()
+                : 'Користувач');
+        final googlePhoto = fbUser.photoURL ?? googleUser.photoUrl;
+        final googleEmail = fbUser.email ?? googleUser.email;
+
+        final defaultAvatar = (googlePhoto != null && googlePhoto.isNotEmpty)
+            ? googlePhoto
+            : '';
+
+        final userDocRef = FirebaseFirestore.instance.collection('users').doc(fbUser.uid);
+        final userDocSnap = await userDocRef.get();
+
+        if (!userDocSnap.exists) {
+          // New Google Client registration
+          await prefs.setBool('needsOnboarding', true);
+          final initialUserData = {
+            'id': fbUser.uid,
+            'name': googleName,
+            'role': 'parent',
+            'email': googleEmail,
+            'avatarUrl': defaultAvatar,
+            'branchId': assignedBranchId,
+            'branchIds': [assignedBranchId],
+            'organizationId': effectiveBranch.organizationId,
+            'onboardingCompleted': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          };
+          await userDocRef.set(initialUserData, SetOptions(merge: true));
+
+          state = AppUser(
+            id: fbUser.uid,
+            name: googleName,
+            role: UserRole.parent,
+            avatarUrl: defaultAvatar,
+            branchId: assignedBranchId,
+            branchIds: [assignedBranchId],
+            organizationId: effectiveBranch.organizationId,
+          );
+        } else {
+          // Existing user doc
+          final data = userDocSnap.data()!;
+          final existingName = (data['name'] as String?)?.trim();
+          final existingAvatar = data['avatarUrl'] as String?;
+          final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User')
+              ? existingName
+              : googleName;
+          final effectiveAvatar = (existingAvatar != null && existingAvatar.isNotEmpty && !existingAvatar.contains('ui-avatars.com'))
+              ? existingAvatar
+              : defaultAvatar;
+
+          final updatedData = {
+            if (existingName == null || existingName.isEmpty || existingName == 'New User') 'name': googleName,
+            if (existingAvatar == null || existingAvatar.isEmpty || existingAvatar.contains('ui-avatars.com')) 'avatarUrl': defaultAvatar,
+            if (data['email'] == null) 'email': googleEmail,
+            if (data['branchId'] == null) 'branchId': assignedBranchId,
+            if (data['branchIds'] == null) 'branchIds': [assignedBranchId],
+            if (data['organizationId'] == null) 'organizationId': effectiveBranch.organizationId,
+            if (data['role'] == null) 'role': 'parent',
+          };
+          if (updatedData.isNotEmpty) {
+            await userDocRef.set(updatedData, SetOptions(merge: true));
+          }
+
+          state = AppUser.fromJson({
+            ...data,
+            'id': fbUser.uid,
+            'name': effectiveName,
+            'avatarUrl': effectiveAvatar,
+            'email': data['email'] ?? googleEmail,
+          });
+          final isCompleted = (data['onboardingCompleted'] as bool?) ?? (data['phone'] != null);
+          await prefs.setBool('needsOnboarding', !isCompleted);
+        }
+        await _syncRoleToPrefs(state);
+        await prefs.setString('clientId', fbUser.uid);
       }
     } catch (e) {
       debugPrint('Error during Google Sign In: $e');
@@ -423,6 +559,9 @@ class AuthController extends _$AuthController {
             'loginId': 'client',
             'password': '1',
             'avatarUrl': 'https://ui-avatars.com/api/?name=Oleksandr+Spiian&background=0284c7&color=ffffff',
+            'branchId': 'kyiv',
+            'branchIds': ['kyiv'],
+            'organizationId': 'cityswim',
             'createdAt': FieldValue.serverTimestamp(),
           };
           await FirebaseFirestore.instance.collection('users').doc('demo_client').set(demoClient, SetOptions(merge: true));
@@ -432,6 +571,9 @@ class AuthController extends _$AuthController {
             role: UserRole.parent,
             phone: '+380685566322',
             loginId: 'client',
+            branchId: 'kyiv',
+            branchIds: ['kyiv'],
+            organizationId: 'cityswim',
             avatarUrl: 'https://ui-avatars.com/api/?name=Oleksandr+Spiian&background=0284c7&color=ffffff',
           );
           await _syncRoleToPrefs(state);
@@ -571,7 +713,7 @@ class AuthController extends _$AuthController {
           ? (parts.length > 1 ? '${parts[0][0]}+${parts[1][0]}' : parts[0][0])
           : 'Client';
 
-      final effectiveBranch = ref.read(effectiveBranchProvider);
+      final effectiveBranch = _getEffectiveBranchSync();
       final effectiveBranchId = branchId ?? effectiveBranch.id;
 
       final newClientData = {
@@ -634,8 +776,10 @@ class AuthController extends _$AuthController {
       await prefs.remove('userRole');
 
       try {
-        await FirebaseAuth.instance.signOut();
-        await GoogleSignIn().signOut();
+        await FirebaseAuth.instance.signOut().timeout(const Duration(seconds: 3));
+      } catch (_) {}
+      try {
+        await GoogleSignIn().signOut().timeout(const Duration(seconds: 3));
       } catch (_) {}
     } finally {
       _isLoggingOut = false;
@@ -643,32 +787,51 @@ class AuthController extends _$AuthController {
   }
 
   Future<void> updateAvatar(Uint8List bytes, {VoidCallback? onSuccess, void Function(String)? onError}) async {
-    if (state == null) return;
-    
-    final user = state!;
+    final currentAuthUser = FirebaseAuth.instance.currentUser;
+    final effectiveId = state?.id ?? currentAuthUser?.uid;
+    if (effectiveId == null) {
+      if (onError != null) onError('Не вдалося визначити профіль користувача');
+      return;
+    }
+
+    final user = state;
     try {
-      // Оптимістичне оновлення для миттєвого відображення
-      state = user.copyWith(avatarBytes: bytes);
-      
       final base64String = base64Encode(bytes);
       final newUrl = 'data:image/jpeg;base64,$base64String';
 
-      // Update Firestore
-      await FirebaseFirestore.instance.collection('users').doc(user.id).update({
+      // Оптимістичне оновлення для миттєвого відображення
+      if (user != null) {
+        state = user.copyWith(avatarBytes: bytes);
+      }
+
+      // Update Firestore with SetOptions(merge: true) to never fail
+      await FirebaseFirestore.instance.collection('users').doc(effectiveId).set({
         'avatarUrl': newUrl,
-      });
+      }, SetOptions(merge: true));
 
       // Update local state permanently
-      state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
+      if (user != null) {
+        state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        final effectiveBranch = _getEffectiveBranchSync();
+        state = AppUser(
+          id: effectiveId,
+          name: currentAuthUser?.displayName ?? (prefs.getString('userName') ?? 'Користувач'),
+          role: UserRole.parent,
+          avatarUrl: newUrl,
+          branchId: effectiveBranch.id,
+          branchIds: [effectiveBranch.id],
+          organizationId: effectiveBranch.organizationId,
+        );
+      }
       await _syncRoleToPrefs(state);
       debugPrint('Successfully uploaded and updated avatar!');
       if (onSuccess != null) onSuccess();
-      
     } catch (e) {
       debugPrint('Error uploading avatar: $e');
       if (onError != null) onError(e.toString());
-      // Revert optimistic update on error
-      if (state?.id == user.id) {
+      if (user != null && state?.id == user.id) {
         state = user;
       }
     }
@@ -677,6 +840,7 @@ class AuthController extends _$AuthController {
   Future<void> completeOnboarding(
     String name,
     String phone, {
+    String? branchId,
     int? age,
     String? goal,
     String? level,
@@ -685,10 +849,35 @@ class AuthController extends _$AuthController {
     String? childName,
     dynamic childAge,
   }) async {
-    if (state == null) return;
-    
     try {
-      final user = state!;
+      AppUser user;
+      final currentAuthUser = FirebaseAuth.instance.currentUser;
+      final prefs = await SharedPreferences.getInstance();
+      final effectiveBranch = _getEffectiveBranchSync();
+
+      if (state != null) {
+        user = state!;
+      } else {
+        final clientId = prefs.getString('clientId') ?? currentAuthUser?.uid;
+        if (clientId == null) {
+          debugPrint('Cannot complete onboarding: no user ID found');
+          return;
+        }
+        final assignedBranchId = branchId ?? (prefs.getString('userBranchId') ?? effectiveBranch.id);
+        final photo = currentAuthUser?.photoURL ??
+            'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=0284c7&color=ffffff';
+        user = AppUser(
+          id: clientId,
+          name: name,
+          role: UserRole.parent,
+          avatarUrl: photo,
+          branchId: assignedBranchId,
+          branchIds: [assignedBranchId],
+          organizationId: effectiveBranch.organizationId,
+        );
+      }
+      final assignedBranchId = branchId ?? (user.branchId.isNotEmpty ? user.branchId : effectiveBranch.id);
+      final organizationId = effectiveBranch.organizationId;
       
       // Calculate max client loginId
       final usersSnap = await FirebaseFirestore.instance.collection('users').get();
@@ -710,6 +899,9 @@ class AuthController extends _$AuthController {
         name: name,
         phone: phone,
         loginId: newLoginId,
+        branchId: assignedBranchId,
+        branchIds: [assignedBranchId],
+        organizationId: organizationId,
       );
 
       // Save user to Firestore including age, goal, level
@@ -725,6 +917,9 @@ class AuthController extends _$AuthController {
       }
       userMap['isAdultOnly'] = isAdultOnly;
       userMap['onboardingCompleted'] = true;
+      userMap['branchId'] = assignedBranchId;
+      userMap['branchIds'] = [assignedBranchId];
+      userMap['organizationId'] = organizationId;
       await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).set(userMap);
 
       // Save children if provided as list
@@ -783,8 +978,10 @@ class AuthController extends _$AuthController {
         await childRef.set(childData);
       }
 
-      final prefs = await SharedPreferences.getInstance();
       await prefs.remove('needsOnboarding');
+
+      await prefs.setString('selected_branch_id', assignedBranchId);
+      await prefs.setString('userBranchId', assignedBranchId);
 
       state = updatedUser;
       await _syncRoleToPrefs(state);
@@ -805,9 +1002,9 @@ class AuthController extends _$AuthController {
       state = user.copyWith(avatarUrl: newUrl, avatarBytes: null);
       await _syncRoleToPrefs(state);
 
-      await FirebaseFirestore.instance.collection('users').doc(user.id).update({
+      await FirebaseFirestore.instance.collection('users').doc(user.id).set({
         'avatarUrl': newUrl,
-      });
+      }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Error deleting avatar: $e');
     }

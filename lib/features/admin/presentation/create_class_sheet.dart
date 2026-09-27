@@ -1,5 +1,7 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
@@ -200,6 +202,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   Future<void> _selectDate() async {
+    HapticFeedback.lightImpact();
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final picked = await showDatePicker(
       context: context,
@@ -212,9 +215,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
             colorScheme: isDark
                 ? const ColorScheme.dark(
                     primary: Color(0xFF00E5FF),
-                    onPrimary: Colors.black,
-                    surface: Color(0xFF162D4A),
+                    onPrimary: Color(0xFF04182B),
+                    surface: Color(0xFF0F1E32),
                     onSurface: Colors.white,
+                    surfaceContainerHigh: Color(0xFF0F1E32),
                   )
                 : const ColorScheme.light(
                     primary: Color(0xFF0284C7),
@@ -222,8 +226,53 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     surface: Colors.white,
                     onSurface: Color(0xFF0F172A),
                   ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+              headerBackgroundColor: isDark ? const Color(0xFF0E3D64) : const Color(0xFF0284C7),
+              headerForegroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                  width: 1.3,
+                ),
+              ),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFF04182B);
+                }
+                if (states.contains(WidgetState.disabled)) {
+                  return isDark ? Colors.white24 : Colors.black26;
+                }
+                return isDark ? Colors.white : const Color(0xFF0F172A);
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFF00E5FF);
+                }
+                return null;
+              }),
+              todayForegroundColor: WidgetStateProperty.all(const Color(0xFF00E5FF)),
+              todayBackgroundColor: WidgetStateProperty.all(const Color(0xFF00E5FF).withValues(alpha: 0.15)),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: isDark ? Colors.white70 : const Color(0xFF64748B),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF00E5FF),
+                textStyle: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
             dialogTheme: DialogThemeData(
-              backgroundColor: isDark ? const Color(0xFF162D4A) : Colors.white,
+              backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                  width: 1.3,
+                ),
+              ),
             ),
           ),
           child: child!,
@@ -231,6 +280,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       },
     );
     if (picked != null) {
+      HapticFeedback.selectionClick();
       setState(() {
         _selectedDate = picked;
         _selectedWeekdays.add(picked.weekday);
@@ -646,9 +696,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           end: Alignment.bottomCenter,
           colors: isDark
               ? [
-                  Colors.white.withValues(alpha: 0.22),
-                  const Color(0xFF0284C7).withValues(alpha: 0.26),
-                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+                  const Color(0xFF0F1E32).withValues(alpha: 0.96),
+                  const Color(0xFF070E1A).withValues(alpha: 0.98),
                 ]
               : [
                   Colors.white.withValues(alpha: 0.98),
@@ -658,7 +707,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.35)
+              ? Colors.white.withValues(alpha: 0.18)
               : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
@@ -685,7 +734,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               22,
               12,
               22,
-              mediaQuery.viewInsets.bottom + 24,
+              mediaQuery.viewInsets.bottom + math.max(mediaQuery.padding.bottom, 16) + 12,
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -784,7 +833,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         child: IconButton(
                           padding: EdgeInsets.zero,
                           icon: Icon(LucideIcons.x, color: isDark ? Colors.white70 : const Color(0xFF475569), size: 17),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pop(context);
+                          },
                         ),
                       ),
                     ],
@@ -1033,25 +1085,29 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
 
                       return Container(
                         width: double.infinity,
-                        height: 52,
+                        height: 54,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: hasConflict
-                                ? const [Color(0xFFEF4444), Color(0xFFB91C1C)]
-                                : const [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                                ? const [Color(0xFFEF4444), Color(0xFF7F1D1D)]
+                                : (isDark
+                                    ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: hasConflict ? 0.60 : 0.40),
-                            width: hasConflict ? 1.4 : 1,
+                            color: hasConflict
+                                ? const Color(0xFFF87171)
+                                : (isDark ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.60)),
+                            width: 1.4,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (hasConflict ? const Color(0xFFEF4444) : const Color(0xFF00B4D8)).withValues(alpha: 0.45),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
+                              color: (hasConflict ? const Color(0xFFEF4444) : const Color(0xFF00E5FF)).withValues(alpha: isDark ? 0.30 : 0.20),
+                              blurRadius: 14,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -1060,9 +1116,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           child: InkWell(
                             onTap: _isSaving
                                 ? null
-                                : (hasConflict
-                                    ? () => _showConflictDialog(context, activeConflict, isDark)
-                                    : _save),
+                                : () {
+                                    if (hasConflict) {
+                                      HapticFeedback.mediumImpact();
+                                      _showConflictDialog(context, activeConflict, isDark);
+                                    } else {
+                                      HapticFeedback.mediumImpact();
+                                      _save();
+                                    }
+                                  },
                             borderRadius: BorderRadius.circular(16),
                             child: Center(
                               child: _isSaving
@@ -1084,7 +1146,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                           hasConflict
                                               ? LucideIcons.triangleAlert
                                               : (_isEditing ? LucideIcons.check : (_isRecurring ? LucideIcons.users : LucideIcons.sparkles)),
-                                          color: Colors.white,
+                                          color: hasConflict ? Colors.white : (isDark ? const Color(0xFF00E5FF) : Colors.white),
                                           size: 18,
                                         ),
                                         const SizedBox(width: 8),
@@ -1101,7 +1163,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 15.5,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w800,
                                             letterSpacing: 0.3,
                                           ),
                                         ),
@@ -1187,7 +1249,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         child: DropdownButton<String>(
           value: effectiveValue,
           isExpanded: true,
-          dropdownColor: isDark ? const Color(0xFF0E2544) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          menuMaxHeight: 320,
+          elevation: 12,
+          dropdownColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
           style: TextStyle(
             color: isDark ? Colors.white : const Color(0xFF0F172A),
             fontSize: 14,
@@ -1207,7 +1272,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               ),
             ),
           )).toList(),
-          onChanged: onChanged,
+          onChanged: (v) {
+            HapticFeedback.selectionClick();
+            onChanged(v);
+          },
         ),
       ),
     );
@@ -1247,7 +1315,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         child: DropdownButton<AppUser>(
           value: effectiveValue,
           isExpanded: true,
-          dropdownColor: isDark ? const Color(0xFF0E2544) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          menuMaxHeight: 320,
+          elevation: 12,
+          dropdownColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
           style: TextStyle(
             color: isDark ? Colors.white : const Color(0xFF0F172A),
             fontSize: 14,
@@ -1261,28 +1332,30 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           selectedItemBuilder: (context) {
             return items.map((i) {
               final isUnassigned = i.id == 'unassigned';
+              final displayName = isUnassigned ? 'Не обрано' : i.name;
               return Align(
                 alignment: Alignment.centerLeft,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isUnassigned) ...[
-                      const Icon(LucideIcons.alertCircle, size: 16, color: Color(0xFFD97706)),
-                      const SizedBox(width: 8),
+                      const Icon(LucideIcons.alertCircle, size: 15, color: Color(0xFFD97706)),
+                      const SizedBox(width: 6),
                     ] else ...[
-                      Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                      const SizedBox(width: 8),
+                      Icon(LucideIcons.user, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                      const SizedBox(width: 6),
                     ],
                     Flexible(
                       child: Text(
-                        i.name,
+                        displayName,
                         style: TextStyle(
                           color: isUnassigned
                               ? const Color(0xFFD97706)
                               : (isDark ? Colors.white : const Color(0xFF0F172A)),
                           fontWeight: isUnassigned ? FontWeight.w700 : FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 13.5,
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1306,7 +1379,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ],
                   Expanded(
                     child: Text(
-                      i.name,
+                      isUnassigned ? 'Не обрано (без тренера)' : i.name,
                       style: TextStyle(
                         color: isUnassigned
                             ? const Color(0xFFD97706)
@@ -1321,7 +1394,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               ),
             );
           }).toList(),
-          onChanged: onChanged,
+          onChanged: (v) {
+            HapticFeedback.selectionClick();
+            onChanged(v);
+          },
         ),
       ),
     );
@@ -1331,10 +1407,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
+        color: isDark ? const Color(0xFF0A1625) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1),
         ),
       ),
       child: Row(
@@ -1342,22 +1418,30 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           // 1. Regular Group (Primary default)
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _isRecurring = true),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _isRecurring = true);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   gradient: _isRecurring
                       ? const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
                         )
                       : null,
                   borderRadius: BorderRadius.circular(12),
+                  border: _isRecurring
+                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
+                      : Border.all(color: Colors.transparent, width: 1.3),
                   boxShadow: _isRecurring
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
-                            blurRadius: 12,
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                            blurRadius: 10,
                           ),
                         ]
                       : null,
@@ -1368,7 +1452,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.users,
                       size: 15,
-                      color: _isRecurring ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
+                      color: _isRecurring ? const Color(0xFF00E5FF) : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1390,21 +1474,29 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           // 2. Single Class (Alternative option)
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _isRecurring = false),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _isRecurring = false);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   gradient: !_isRecurring
                       ? const LinearGradient(
-                          colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
                         )
                       : null,
                   borderRadius: BorderRadius.circular(12),
+                  border: !_isRecurring
+                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
+                      : Border.all(color: Colors.transparent, width: 1.3),
                   boxShadow: !_isRecurring
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
                             blurRadius: 10,
                           ),
                         ]
@@ -1416,9 +1508,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.calendar,
                       size: 15,
-                      color: !_isRecurring
-                          ? Colors.white
-                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
+                      color: !_isRecurring ? const Color(0xFF00E5FF) : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1428,7 +1518,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             ? Colors.white
                             : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                         fontSize: 13,
-                        fontWeight: !_isRecurring ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: !_isRecurring ? FontWeight.w800 : FontWeight.w600,
                       ),
                     ),
                   ],
@@ -1482,6 +1572,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 2.5),
                 child: GestureDetector(
                   onTap: () {
+                    HapticFeedback.selectionClick();
                     setState(() {
                       if (isSelected) {
                         if (_selectedWeekdays.length > 1) {
@@ -1500,21 +1591,21 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                              colors: [Color(0xFF0E3D64), Color(0xFF082038)],
                             )
                           : null,
-                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
+                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF00E5FF)
-                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
-                        width: isSelected ? 1.2 : 1,
+                            : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
+                        width: isSelected ? 1.3 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1582,7 +1673,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: GestureDetector(
-                  onTap: () => setState(() => _durationWeeks = w),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _durationWeeks = w);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
@@ -1591,22 +1685,22 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              colors: [Color(0xFF0E3D64), Color(0xFF082038)],
                             )
                           : null,
-                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
+                      color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF00E5FF)
-                            : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
-                        width: isSelected ? 1.2 : 1,
+                            : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
+                        width: isSelected ? 1.3 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                blurRadius: 10,
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                                blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
                             ]
@@ -1633,7 +1727,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           sub,
                           style: TextStyle(
                             color: isSelected
-                                ? Colors.white.withValues(alpha: 0.92)
+                                ? const Color(0xFF00E5FF)
                                 : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
                             fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -1819,10 +1913,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
+              color: isDark ? const Color(0xFF0A1625) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+                color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1),
               ),
             ),
             child: Row(
@@ -1833,6 +1927,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 return Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      HapticFeedback.selectionClick();
                       setState(() {
                         _selectedPoolId = pool.id;
                         if (pool.lanes.isNotEmpty && !pool.lanes.contains(_selectedLane)) {
@@ -1842,22 +1937,29 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                       decoration: BoxDecoration(
                         gradient: isSelected
-                            ? (isWellen
-                                ? const LinearGradient(
-                                    colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
-                                  )
-                                : const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                                  ))
+                            ? const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                              )
                             : null,
+                        color: isSelected
+                            ? null
+                            : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF00E5FF)
+                              : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
+                          width: isSelected ? 1.3 : 1.0,
+                        ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: (isWellen ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.40),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1870,20 +1972,25 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           Icon(
                             isWellen ? LucideIcons.baby : LucideIcons.waves,
                             size: 16,
-                            color: isSelected ? Colors.white : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
+                            color: isSelected
+                                ? const Color(0xFF00E5FF)
+                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                           ),
                           const SizedBox(width: 7),
                           Flexible(
                             child: Text(
                               pool.name,
-                              maxLines: 1,
+                              maxLines: 2,
+                              softWrap: true,
+                              textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
                                     : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
-                                fontSize: 12.5,
+                                fontSize: 12,
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                height: 1.2,
                               ),
                             ),
                           ),
@@ -1949,7 +2056,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => setState(() => _selectedLane = lane),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedLane = lane);
+                      },
                       borderRadius: BorderRadius.circular(20),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
@@ -1961,27 +2071,29 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                       colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
                                     )
                                   : const LinearGradient(
-                                      colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [Color(0xFF0E3D64), Color(0xFF082038)],
                                     ))
                               : null,
                           color: isSelected
                               ? null
                               : (isLaneBusy
                                   ? Colors.orangeAccent.withValues(alpha: isDark ? 0.16 : 0.12)
-                                  : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9))),
+                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9))),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? (isLaneBusy ? const Color(0xFFF87171) : const Color(0xFF00E5FF))
                                 : (isLaneBusy
                                     ? Colors.orangeAccent.withValues(alpha: 0.6)
-                                    : (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1))),
-                            width: isLaneBusy ? 1.3 : 1,
+                                    : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1))),
+                            width: isSelected || isLaneBusy ? 1.3 : 1,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: (isLaneBusy ? const Color(0xFFEF4444) : const Color(0xFF00B4D8)).withValues(alpha: 0.45),
+                                    color: (isLaneBusy ? const Color(0xFFEF4444) : const Color(0xFF00E5FF)).withValues(alpha: 0.28),
                                     blurRadius: 10,
                                     offset: const Offset(0, 2),
                                   ),
@@ -1992,7 +2104,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (isSelected) ...[
-                              const Icon(LucideIcons.check, size: 13, color: Colors.white),
+                              Icon(LucideIcons.check, size: 13, color: isLaneBusy ? Colors.white : const Color(0xFF00E5FF)),
                               const SizedBox(width: 5),
                             ],
                             Text(

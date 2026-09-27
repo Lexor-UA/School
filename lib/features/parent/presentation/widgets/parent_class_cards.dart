@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +14,214 @@ import 'package:swimming_school_app/features/parent/presentation/parent_subscrip
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:collection/collection.dart';
+
+Future<bool?> _showCancelConfirmationDialog({
+  required BuildContext context,
+  required bool isDark,
+  required String title,
+  required String message,
+  required String confirmButtonText,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? const [
+                    Color(0xFF0B2238),
+                    Color(0xFF07192C),
+                    Color(0xFF04101D),
+                  ]
+                : const [
+                    Colors.white,
+                    Color(0xFFF0F9FF),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
+            width: 1.3,
+          ),
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.50),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: isDark ? 0.20 : 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: isDark ? 0.45 : 0.35),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.redAccent.withValues(alpha: isDark ? 0.30 : 0.15),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    LucideIcons.alertTriangle,
+                    color: Colors.redAccent,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              style: TextStyle(
+                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                // "Назад" sapphire button
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.pop(ctx, false);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0B2540) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFCBD5E1),
+                            width: 1.2,
+                          ),
+                          boxShadow: isDark
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.20),
+                                    blurRadius: 6,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Назад',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF334155),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // "Скасувати" ruby button
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.pop(ctx, true);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF881337), Color(0xFF4C0519)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.85),
+                            width: 1.3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            confirmButtonText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 class ParentEnrolledClassCard extends ConsumerWidget {
   final GroupClass c;
@@ -144,54 +352,49 @@ class ParentEnrolledClassCard extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              gradient: isDark
-                  ? LinearGradient(
-                      colors: [
-                        const Color(0xFF0E3D64).withValues(alpha: 0.60),
-                        const Color(0xFF092842).withValues(alpha: 0.72),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.95),
-                        const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
-                width: 1.2,
-              ),
-              boxShadow: isDark
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF003B73).withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0B2238),
+                      Color(0xFF07192C),
+                      Color(0xFF04101D),
                     ]
-                  : [
-                      BoxShadow(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
+                  : const [
+                      Colors.white,
+                      Color(0xFFF0F9FF),
                     ],
             ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.32) : const Color(0xFFBAE6FD),
+              width: 1.3,
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.40),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -199,13 +402,13 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                   children: [
                     // Time pill
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE0F2FE),
-                        borderRadius: BorderRadius.circular(8),
+                        color: isDark ? const Color(0xFF0B2540) : const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFBAE6FD),
-                          width: 0.8,
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                          width: 1.0,
                         ),
                       ),
                       child: Row(
@@ -213,10 +416,10 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                         children: [
                           Icon(
                             LucideIcons.clock,
-                            size: 12,
+                            size: 12.5,
                             color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 5),
                           Text(
                             timeFormatted,
                             style: TextStyle(
@@ -272,33 +475,41 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                         }
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? const Color(0xFF10B981).withValues(alpha: 0.16)
+                                ? const Color(0xFF10B981).withValues(alpha: 0.18)
                                 : const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.55)
                                   : const Color(0xFFA7F3D0),
-                              width: 0.8,
+                              width: 1.0,
                             ),
+                            boxShadow: isDark
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                                      blurRadius: 6,
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 LucideIcons.checkCircle2,
-                                size: 12,
+                                size: 13,
                                 color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 5),
                               Text(
                                 'parent.booking_confirmed'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
-                                  fontSize: 11,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -313,12 +524,32 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                     // Action menu (Only visible for upcoming classes)
                     if (c.startTime.isAfter(DateTime.now()))
                       PopupMenuButton<String>(
-                        icon: Icon(
-                          LucideIcons.moreHorizontal,
-                          color: isDark ? Colors.white70 : currentTheme.textSecondary,
-                          size: 18,
+                        icon: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0B2540) : Colors.white.withValues(alpha: 0.90),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            LucideIcons.moreHorizontal,
+                            color: isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
+                            size: 16,
+                          ),
                         ),
-                        color: isDark ? const Color(0xFF0F1E32) : Colors.white,
+                        color: isDark ? const Color(0xFF0A243D) : Colors.white,
+                        elevation: 14,
+                        shadowColor: Colors.black.withValues(alpha: 0.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                            width: 1.2,
+                          ),
+                        ),
                         onSelected: (value) async {
                           if (value == 'cancel') {
                             if (targetChildId != 'all') {
@@ -329,34 +560,14 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                       ? (partnerName ?? 'партнера')
                                       : (matchedChild?.name ?? 'дитину'));
 
-                              final confirm = await showDialog<bool>(
+                              final confirm = await _showCancelConfirmationDialog(
                                 context: context,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
-                                  title: Text(
-                                    c.isSplit ? 'Скасувати спліт-заняття?' : 'Скасувати запис?',
-                                    style: TextStyle(color: currentTheme.textPrimary),
-                                  ),
-                                  content: Text(
-                                    c.isSplit
-                                        ? 'Оскільки це спліт-тренування (2 особи), скасування скасує запис для ОБОХ учасників, а заняття буде повернено на ваші абонементи. Продовжити?'
-                                        : 'Ви впевнені, що хочете скасувати запис для $targetCancelName на заняття "${c.title}"?',
-                                    style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
-                                      child: const Text('Назад'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      child: Text(
-                                        c.isSplit ? 'Скасувати для обох' : 'Скасувати',
-                                        style: const TextStyle(color: Colors.redAccent),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                isDark: isDark,
+                                title: c.isSplit ? 'Скасувати спліт-заняття?' : 'Скасувати запис?',
+                                message: c.isSplit
+                                    ? 'Оскільки це спліт-тренування (2 особи), скасування скасує запис для ОБОХ учасників, а заняття буде повернено на ваші абонементи. Продовжити?'
+                                    : 'Ви впевнені, що хочете скасувати запис для $targetCancelName на заняття "${c.title}"?',
+                                confirmButtonText: c.isSplit ? 'Скасувати для обох' : 'Скасувати',
                               );
                               if (confirm == true) {
                                 await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, targetChildId);
@@ -364,58 +575,24 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                             } else {
                               // On 'all' view: if split class, cancel both participants
                               if (c.isSplit) {
-                                final confirm = await showDialog<bool>(
+                                final confirm = await _showCancelConfirmationDialog(
                                   context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
-                                    title: Text(
-                                      'Скасувати спліт-заняття?',
-                                      style: TextStyle(color: currentTheme.textPrimary),
-                                    ),
-                                    content: Text(
-                                      'Оскільки це спліт-тренування (2 особи), скасування зніме запис для обох учасників (${enrolledMembers.map((e) => e.name.replaceAll(' (Я)', '')).join(' та ')}), а заняття буде повернено на ваші абонементи. Продовжити?',
-                                      style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, false),
-                                        child: const Text('Назад'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, true),
-                                        child: const Text('Скасувати для обох', style: TextStyle(color: Colors.redAccent)),
-                                      ),
-                                    ],
-                                  ),
+                                  isDark: isDark,
+                                  title: 'Скасувати спліт-заняття?',
+                                  message: 'Оскільки це спліт-тренування (2 особи), скасування зніме запис для обох учасників (${enrolledMembers.map((e) => e.name.replaceAll(' (Я)', '')).join(' та ')}), а заняття буде повернено на ваші абонементи. Продовжити?',
+                                  confirmButtonText: 'Скасувати для обох',
                                 );
                                 if (confirm == true && enrolledMembers.isNotEmpty) {
                                   await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, enrolledMembers.first.id);
                                 }
                               } else if (enrolledMembers.length == 1) {
                                 final m = enrolledMembers.first;
-                                final confirm = await showDialog<bool>(
+                                final confirm = await _showCancelConfirmationDialog(
                                   context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
-                                    title: Text(
-                                      'Скасувати запис?',
-                                      style: TextStyle(color: currentTheme.textPrimary),
-                                    ),
-                                    content: Text(
-                                      'Ви впевнені, що хочете скасувати запис для ${m.name} на заняття "${c.title}"?',
-                                      style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, false),
-                                        child: const Text('Назад'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, true),
-                                        child: const Text('Скасувати', style: TextStyle(color: Colors.redAccent)),
-                                      ),
-                                    ],
-                                  ),
+                                  isDark: isDark,
+                                  title: 'Скасувати запис?',
+                                  message: 'Ви впевнені, що хочете скасувати запис для ${m.name} на заняття "${c.title}"?',
+                                  confirmButtonText: 'Скасувати',
                                 );
                                 if (confirm == true) {
                                   await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, m.id);
@@ -425,104 +602,119 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                   context: context,
                                   backgroundColor: Colors.transparent,
                                   builder: (ctx) => ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                                      child: Container(
-                                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFF0F1E32) : Colors.white,
-                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                          border: Border.all(
-                                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
-                                            width: 1,
-                                          ),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                                    child: Container(
+                                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: isDark
+                                              ? const [
+                                                  Color(0xFF0B2238),
+                                                  Color(0xFF07192C),
+                                                  Color(0xFF04101D),
+                                                ]
+                                              : const [
+                                                  Colors.white,
+                                                  Color(0xFFF0F9FF),
+                                                ],
                                         ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Center(
-                                              child: Container(
-                                                width: 40,
-                                                height: 4,
-                                                decoration: BoxDecoration(
-                                                  color: isDark ? Colors.white24 : Colors.black12,
-                                                  borderRadius: BorderRadius.circular(2),
-                                                ),
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                                        border: Border.all(
+                                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Center(
+                                            child: Container(
+                                              width: 44,
+                                              height: 4.5,
+                                              decoration: BoxDecoration(
+                                                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : Colors.black12,
+                                                borderRadius: BorderRadius.circular(2),
                                               ),
                                             ),
-                                            const SizedBox(height: 14),
-                                            Text(
-                                              'Чий запис скасувати?',
-                                              style: TextStyle(
-                                                color: currentTheme.textPrimary,
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.w800,
-                                              ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Чий запис скасувати?',
+                                            style: TextStyle(
+                                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                                              fontSize: 17.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.2,
                                             ),
-                                            const SizedBox(height: 16),
-                                            ...enrolledMembers.map((m) => Padding(
-                                              padding: const EdgeInsets.only(bottom: 8),
-                                              child: Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: () async {
-                                                    Navigator.pop(ctx);
-                                                    await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, m.id);
-                                                  },
-                                                  borderRadius: BorderRadius.circular(14),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                                    decoration: BoxDecoration(
-                                                      color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F9FF),
-                                                      borderRadius: BorderRadius.circular(14),
-                                                      border: Border.all(
-                                                        color: m.color.withValues(alpha: 0.35),
-                                                        width: 1,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ...enrolledMembers.map((m) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 10),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () async {
+                                                  Navigator.pop(ctx);
+                                                  await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, m.id);
+                                                },
+                                                borderRadius: BorderRadius.circular(16),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                                  decoration: BoxDecoration(
+                                                    color: isDark ? const Color(0xFF0A243D) : const Color(0xFFF0F9FF),
+                                                    borderRadius: BorderRadius.circular(16),
+                                                    border: Border.all(
+                                                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : m.color.withValues(alpha: 0.45),
+                                                      width: 1.2,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 36,
+                                                        height: 36,
+                                                        decoration: BoxDecoration(
+                                                          color: m.color.withValues(alpha: 0.22),
+                                                          shape: BoxShape.circle,
+                                                          border: Border.all(
+                                                            color: m.color.withValues(alpha: 0.60),
+                                                            width: 1.2,
+                                                          ),
+                                                        ),
+                                                        child: Icon(
+                                                          m.isParent ? LucideIcons.user : LucideIcons.baby,
+                                                          color: isDark ? Colors.white : m.color,
+                                                          size: 17,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    child: Row(
-                                                      children: [
-                                                        Container(
-                                                          width: 32,
-                                                          height: 32,
-                                                          decoration: BoxDecoration(
-                                                            color: m.color.withValues(alpha: 0.2),
-                                                            shape: BoxShape.circle,
-                                                          ),
-                                                          child: Icon(
-                                                            m.isParent ? LucideIcons.user : LucideIcons.baby,
-                                                            color: m.color,
-                                                            size: 16,
-                                                          ),
+                                                      const SizedBox(width: 14),
+                                                      Text(
+                                                        m.name,
+                                                        style: TextStyle(
+                                                          color: isDark ? Colors.white : currentTheme.textPrimary,
+                                                          fontSize: 15,
+                                                          fontWeight: FontWeight.w800,
                                                         ),
-                                                        const SizedBox(width: 12),
-                                                        Text(
-                                                          m.name,
-                                                          style: TextStyle(
-                                                            color: currentTheme.textPrimary,
-                                                            fontSize: 14.5,
-                                                            fontWeight: FontWeight.w700,
-                                                          ),
+                                                      ),
+                                                      const Spacer(),
+                                                      const Text(
+                                                        'Скасувати',
+                                                        style: TextStyle(
+                                                          color: Colors.redAccent,
+                                                          fontSize: 13.5,
+                                                          fontWeight: FontWeight.w800,
                                                         ),
-                                                        const Spacer(),
-                                                        const Text(
-                                                          'Скасувати',
-                                                          style: TextStyle(
-                                                            color: Colors.redAccent,
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w700,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
-                                            )),
-                                          ],
-                                        ),
+                                            ),
+                                          )),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -532,13 +724,27 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'cancel',
                             child: Row(
                               children: [
-                                Icon(LucideIcons.trash2, color: Colors.redAccent, size: 16),
-                                SizedBox(width: 8),
-                                Text('Скасувати запис', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent.withValues(alpha: isDark ? 0.18 : 0.10),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 14),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'Скасувати запис',
+                                  style: TextStyle(
+                                    color: Colors.redAccent,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -876,7 +1082,6 @@ class ParentEnrolledClassCard extends ConsumerWidget {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -920,54 +1125,49 @@ class ParentAvailableClassCard extends ConsumerWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              gradient: isDark
-                  ? LinearGradient(
-                      colors: [
-                        const Color(0xFF0E3D64).withValues(alpha: 0.55),
-                        const Color(0xFF092842).withValues(alpha: 0.68),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.95),
-                        const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
-                width: 1.2,
-              ),
-              boxShadow: isDark
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF003B73).withValues(alpha: 0.30),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0B2238),
+                      Color(0xFF07192C),
+                      Color(0xFF04101D),
                     ]
-                  : [
-                      BoxShadow(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
+                  : const [
+                      Colors.white,
+                      Color(0xFFF0F9FF),
                     ],
             ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.32) : const Color(0xFFBAE6FD),
+              width: 1.3,
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.40),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1287,7 +1487,6 @@ class ParentAvailableClassCard extends ConsumerWidget {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -1313,34 +1512,43 @@ class ParentPastClassCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              gradient: isDark
-                  ? LinearGradient(
-                      colors: [
-                        const Color(0xFF0E2238).withValues(alpha: 0.40),
-                        const Color(0xFF091624).withValues(alpha: 0.50),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.70),
-                        const Color(0xFFF8FAFC).withValues(alpha: 0.65),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0xFF334155).withValues(alpha: 0.35) : const Color(0xFFE2E8F0),
-                width: 1.0,
-              ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF071828),
+                      Color(0xFF05121F),
+                    ]
+                  : const [
+                      Colors.white,
+                      Color(0xFFF8FAFC),
+                    ],
             ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE2E8F0),
+              width: 1.0,
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1475,7 +1683,6 @@ class ParentPastClassCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
@@ -1570,19 +1777,30 @@ void showChildPickerForQuickBooking(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F1E32) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(
-                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
-                width: 1,
-              ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? const [
+                      Color(0xFF0B2238),
+                      Color(0xFF07192C),
+                      Color(0xFF04101D),
+                    ]
+                  : const [
+                      Colors.white,
+                      Color(0xFFF0F9FF),
+                    ],
             ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+          ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1696,7 +1914,6 @@ void showChildPickerForQuickBooking(
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -1765,19 +1982,30 @@ void showSplitBookingSheet(
 
             return ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F1E32) : Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
-                      width: 1.2,
-                    ),
+              child: Container(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? const [
+                            Color(0xFF0B2238),
+                            Color(0xFF07192C),
+                            Color(0xFF04101D),
+                          ]
+                        : const [
+                            Colors.white,
+                            Color(0xFFF0F9FF),
+                          ],
                   ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                    width: 1.2,
+                  ),
+                ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2078,7 +2306,6 @@ void showSplitBookingSheet(
                     ],
                   ),
                 ),
-              ),
             );
           },
         );

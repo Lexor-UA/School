@@ -275,61 +275,90 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
 
               // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(LucideIcons.baby, color: Colors.white, size: 20),
                         ),
-                        child: const Icon(LucideIcons.baby, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Додати дитину',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Додати дитину',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'До 15 років (16+ — окремий акаунт)',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white54 : Colors.black54,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          Text(
-                            'До 15 років включно (від 16 років — окремий акаунт)',
-                            style: TextStyle(
-                              color: isDark ? Colors.white54 : Colors.black54,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 6),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (_childCount > 1)
                         IconButton(
-                          icon: const Icon(LucideIcons.minusCircle, color: Colors.redAccent, size: 22),
+                          icon: const Icon(LucideIcons.minusCircle, color: Colors.redAccent, size: 21),
                           tooltip: 'Прибрати дитину',
-                          onPressed: _removeChild,
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _removeChild();
+                          },
                         ),
                       IconButton(
-                        icon: const Icon(LucideIcons.plusCircle, color: Color(0xFF10B981), size: 22),
+                        icon: const Icon(LucideIcons.plusCircle, color: Color(0xFF10B981), size: 21),
                         tooltip: 'Додати ще одну дитину',
-                        onPressed: _addChild,
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          _addChild();
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(LucideIcons.x, color: isDark ? Colors.white54 : Colors.black45, size: 20),
+                        tooltip: 'Закрити',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
                       ),
                     ],
                   ),
@@ -650,27 +679,38 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
               ),
               const SizedBox(height: 16),
 
-              // Save button
+              // Save button (Emerald VIP CTA)
               Container(
                 width: double.infinity,
                 height: 54,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF059669)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF064E3B), Color(0xFF022C22)]
+                        : const [Color(0xFF10B981), Color(0xFF059669)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.70 : 0.40),
+                    width: 1.4,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                      blurRadius: 14,
+                      color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.25),
+                      blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _save,
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          HapticFeedback.lightImpact();
+                          _save();
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -682,15 +722,24 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(color: Color(0xFF10B981), strokeWidth: 2.2),
                         )
-                      : Text(
-                          _childCount > 1 ? 'Зберегти дітей ($_childCount)' : 'Зберегти профіль дитини',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            height: 1.25,
-                          ),
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(LucideIcons.check, size: 19, color: Color(0xFF10B981)),
+                            const SizedBox(width: 8),
+                            Text(
+                              _childCount > 1 ? 'Зберегти дітей ($_childCount)' : 'Зберегти профіль дитини',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
                         ),
                 ),
               ),
@@ -946,42 +995,70 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
 
               // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [childColor, childColor.withValues(alpha: 0.8)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: childColor.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [childColor, childColor.withValues(alpha: 0.8)],
                             ),
-                          ],
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: childColor.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(LucideIcons.user, color: Colors.white, size: 20),
                         ),
-                        child: const Icon(LucideIcons.user, color: Colors.white, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Редагувати дитину',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 20),
+                        tooltip: 'Видалити профіль дитини',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                _confirmDelete();
+                              },
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Редагувати дитину',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      IconButton(
+                        icon: Icon(LucideIcons.x, color: isDark ? Colors.white54 : Colors.black45, size: 20),
+                        tooltip: 'Закрити',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
                       ),
                     ],
-                  ),
-                  IconButton(
-                    icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 22),
-                    tooltip: 'Видалити профіль дитини',
-                    onPressed: _isLoading ? null : _confirmDelete,
                   ),
                 ],
               ),
@@ -1377,7 +1454,12 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        onPressed: _isLoading ? null : _confirmDelete,
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                _confirmDelete();
+                              },
                         icon: const Icon(LucideIcons.trash2, size: 18),
                         label: const Text(
                           'Видалити',
@@ -1402,6 +1484,10 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: childColor.withValues(alpha: isDark ? 0.75 : 0.45),
+                          width: 1.4,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: childColor.withValues(alpha: 0.35),
@@ -1411,7 +1497,12 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                         ],
                       ),
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _save,
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                _save();
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -1425,13 +1516,20 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                 height: 22,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text(
-                                'Зберегти зміни',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.25,
-                                ),
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(LucideIcons.check, size: 19, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Зберегти зміни',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                ],
                               ),
                       ),
                     ),

@@ -63,9 +63,9 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
               end: Alignment.bottomCenter,
               colors: isDarkMode
                   ? const [
-                      Color(0xFF0F3258), // Luminous rich sapphire oceanic at top
-                      Color(0xFF091F38), // Oceanic depth tone
-                      Color(0xFF061527), // Deep ocean at bottom
+                      Color(0xFF0B2238), // Solid rich oceanic at top
+                      Color(0xFF07192C), // Oceanic depth tone
+                      Color(0xFF04101D), // Deep rich oceanic at bottom
                     ]
                   : const [
                       Color(0xFFFFFFFF),
@@ -75,20 +75,20 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             border: Border.all(
               color: isDarkMode
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
                   : const Color(0xFFBAE6FD),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDarkMode
-                    ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
                     : const Color(0xFF0284C7).withValues(alpha: 0.12),
                 blurRadius: 36,
                 offset: const Offset(0, -6),
               ),
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.80 : 0.25),
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.90 : 0.25),
                 blurRadius: 32,
                 offset: const Offset(0, -10),
               ),
@@ -98,48 +98,8 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             clipBehavior: Clip.antiAlias,
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20, tileMode: TileMode.decal),
-              child: Stack(
-                children: [
-                  // Ambient volumetric radial glow orbs for luminous depth
-                  if (isDarkMode) ...[
-                    Positioned(
-                      top: -20,
-                      right: -30,
-                      child: Container(
-                        width: 220,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFF00E5FF).withValues(alpha: 0.18),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 40,
-                      left: -40,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFF38BDF8).withValues(alpha: 0.14),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  SafeArea(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
+              child: SafeArea(
                     top: false,
                     bottom: true,
                     child: Padding(
@@ -343,8 +303,15 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                               color: (isDarkMode
                                                       ? const Color(0xFF00E5FF)
                                                       : const Color(0xFF0284C7))
-                                                  .withValues(alpha: 0.12),
+                                                  .withValues(alpha: 0.14),
                                               shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: (isDarkMode
+                                                        ? const Color(0xFF00E5FF)
+                                                        : const Color(0xFF0284C7))
+                                                    .withValues(alpha: 0.35),
+                                                width: 1.1,
+                                              ),
                                             ),
                                             child: Icon(
                                               LucideIcons.bellOff,
@@ -358,16 +325,22 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                           Text(
                                             'Сповіщень немає',
                                             style: TextStyle(
-                                              color: textColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                              color: isDarkMode ? Colors.white : textColor,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 17,
+                                              letterSpacing: -0.2,
                                             ),
                                           ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: 5),
                                           Text(
                                             'Тут з\'являтимуться нагадування про заняття, абонементи та повідомлення',
                                             textAlign: TextAlign.center,
-                                            style: TextStyle(color: textSubColor, fontSize: 13),
+                                            style: TextStyle(
+                                              color: isDarkMode ? const Color(0xFFE2E8F0) : textSubColor,
+                                              fontSize: 13.5,
+                                              height: 1.4,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -413,7 +386,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                           ),
                           const SizedBox(height: 16),
 
-                          // Premium Tactile Close Button
+                          // Premium Tactile Close Button (Contrast Sapphire with Neon Cyan Rim)
                           InkWell(
                             onTap: () => Navigator.pop(context),
                             borderRadius: BorderRadius.circular(16),
@@ -423,41 +396,47 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: isDarkMode
-                                      ? [
-                                          const Color(0xFF103358).withValues(alpha: 0.85),
-                                          const Color(0xFF0C2440).withValues(alpha: 0.95),
+                                      ? const [
+                                          Color(0xFF0E2E50), // Elevated rich sapphire
+                                          Color(0xFF081C32), // Deep sapphire
                                         ]
-                                      : [
-                                          const Color(0xFFF1F5F9),
-                                          const Color(0xFFE2E8F0),
+                                      : const [
+                                          Color(0xFFF1F5F9),
+                                          Color(0xFFE2E8F0),
                                         ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isDarkMode
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
                                       : const Color(0xFFCBD5E1),
                                   width: 1.2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: isDarkMode
-                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.08)
+                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
                                         : Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 3),
                                   ),
+                                  if (isDarkMode)
+                                    BoxShadow(
+                                      color: const Color(0xFF021020).withValues(alpha: 0.60),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
                                 ],
                               ),
                               child: Center(
                                 child: Text(
                                   'parent.close'.tr() == 'parent.close' ? 'Закрити' : 'parent.close'.tr(),
                                   style: TextStyle(
-                                    color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
+                                    color: isDarkMode ? const Color(0xFFE0F7FA) : const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15.5,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -468,13 +447,11 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildNotificationCard({
@@ -522,13 +499,13 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
           end: Alignment.bottomRight,
           colors: isDark
               ? (notif.isRead
-                  ? [
-                      const Color(0xFF103358).withValues(alpha: 0.72),
-                      const Color(0xFF0B213B).withValues(alpha: 0.85),
+                  ? const [
+                      Color(0xFF0E2D4A),
+                      Color(0xFF081C30),
                     ]
-                  : [
-                      const Color(0xFF154475).withValues(alpha: 0.85),
-                      const Color(0xFF0D2C4E).withValues(alpha: 0.95),
+                  : const [
+                      Color(0xFF123B62),
+                      Color(0xFF0B253F),
                     ])
               : (notif.isRead
                   ? const [Color(0xFFFFFFFF), Color(0xFFF8FAFC)]
@@ -538,10 +515,10 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
         border: Border.all(
           color: notif.isRead
               ? (isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.24)
                   : const Color(0xFFE2E8F0))
               : (isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.55)
                   : const Color(0xFFBAE6FD)),
           width: notif.isRead ? 1.1 : 1.3,
         ),

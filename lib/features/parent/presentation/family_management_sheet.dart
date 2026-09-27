@@ -32,11 +32,9 @@ class FamilyManagementSheet extends ConsumerStatefulWidget {
 
 class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
   final TextEditingController _codeController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
   bool _showQrCode = false;
   String? _errorMessage;
-  String? _phoneErrorMessage;
 
   @override
   void initState() {
@@ -50,7 +48,6 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
   @override
   void dispose() {
     _codeController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -72,50 +69,6 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     );
   }
 
-  Future<void> _submitPhoneInvite() async {
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
-      setState(() => _phoneErrorMessage = 'Введіть номер телефону');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _phoneErrorMessage = null;
-    });
-
-    final result = await ref.read(familyControllerProvider).invitePartnerByPhone(phone);
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.error != null) {
-      setState(() => _phoneErrorMessage = result.error);
-    } else {
-      HapticFeedback.heavyImpact();
-      _phoneController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(LucideIcons.send, color: Colors.greenAccent, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Запрошення надіслано ${result.targetUserName != null ? "користувачу ${result.targetUserName}" : ""}! Партнер побачить сповіщення у додатку.',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF064E3B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    }
-  }
 
   Future<void> _submitJoinCode() async {
     final code = _codeController.text.trim();
@@ -340,7 +293,10 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       color: isDark ? Colors.white54 : Colors.black45,
                       size: 20,
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pop(context);
+                    },
                   ),
                 ],
               ),
@@ -475,40 +431,6 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
 
                         // 2) Join Existing Family
                         _buildJoinCodeCard(isDark),
-                        const SizedBox(height: 18),
-
-                        // Divider with OR
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: isDark ? Colors.white12 : Colors.black12,
-                                thickness: 1,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                'АБО',
-                                style: TextStyle(
-                                  color: isDark ? Colors.white38 : Colors.black38,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: isDark ? Colors.white12 : Colors.black12,
-                                thickness: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-
-                        // 3) Invite Partner by Phone
-                        _buildPhoneInviteCard(isDark),
                       ],
                     ],
                   ),
@@ -864,19 +786,48 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                 const SizedBox(width: 8),
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00E5FF),
-                      foregroundColor: const Color(0xFF0F1E32),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                      ),
+                      border: Border.all(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.65),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    onPressed: () => _copyToClipboard(code),
-                    icon: const Icon(LucideIcons.copy, size: 15),
-                    label: const Text(
-                      'Копіювати',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () => _copyToClipboard(code),
+                      icon: const Icon(LucideIcons.copy, size: 15, color: Color(0xFF00E5FF)),
+                      label: const Text(
+                        'Копіювати',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12.5,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -922,7 +873,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
         color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.65),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.35),
+          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.20),
           width: 1.2,
         ),
       ),
@@ -942,7 +893,10 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               ),
               InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: _openQrScanner,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _openQrScanner();
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
@@ -988,7 +942,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               letterSpacing: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: 'Введіть код (наприклад FAM-123456)',
+              hintText: 'Код сім\'ї (наприклад FAM-123456)',
               hintStyle: TextStyle(
                 color: isDark ? Colors.white38 : Colors.black38,
                 fontSize: 13,
@@ -1006,7 +960,10 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 ),
                 tooltip: 'Сканувати QR-код',
-                onPressed: _openQrScanner,
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _openQrScanner();
+                },
               ),
               filled: true,
               fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
@@ -1034,27 +991,38 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           ],
           const SizedBox(height: 14),
 
-          // Submit Button
+          // Submit Button (Sapphire CTA)
           Container(
             width: double.infinity,
             height: 52,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+              gradient: LinearGradient(
+                colors: isDark
+                    ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.65 : 0.40),
+                width: 1.4,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
+                  color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _submitJoinCode,
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      _submitJoinCode();
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -1066,16 +1034,22 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(color: Color(0xFF00E5FF), strokeWidth: 2.2),
                     )
                   : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.userCheck, size: 18),
+                        Icon(LucideIcons.userCheck, size: 19, color: Color(0xFF00E5FF)),
                         SizedBox(width: 8),
                         Text(
                           'Об\'єднати акаунти',
-                          style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold, height: 1.25),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            height: 1.25,
+                          ),
                         ),
                       ],
                     ),
@@ -1086,146 +1060,4 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     );
   }
 
-  Widget _buildPhoneInviteCard(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.65),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.25),
-          width: 1.2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(LucideIcons.phoneForwarded, color: Color(0xFF10B981), size: 16),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '3. Запросити за номером телефону',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Введіть номер телефону чоловіка або дружини. Ми надішлемо інтерактивне сповіщення з кнопкою швидкого підключення:',
-            style: TextStyle(
-              color: isDark ? Colors.white60 : Colors.black54,
-              fontSize: 12,
-              height: 1.25,
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Phone Input Field
-          TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: InputDecoration(
-              hintText: '+380 або 0...',
-              hintStyle: TextStyle(
-                color: isDark ? Colors.white38 : Colors.black38,
-                fontSize: 13,
-              ),
-              prefixIcon: Icon(
-                LucideIcons.phone,
-                size: 18,
-                color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-              ),
-              filled: true,
-              fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5),
-              ),
-            ),
-          ),
-
-          if (_phoneErrorMessage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _phoneErrorMessage!,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ],
-          const SizedBox(height: 14),
-
-          // Submit Button
-          Container(
-            width: double.infinity,
-            height: 52,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF059669)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submitPhoneInvite,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.send, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Надіслати запрошення',
-                          style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold, height: 1.25),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

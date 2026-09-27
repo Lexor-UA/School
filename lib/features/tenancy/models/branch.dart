@@ -87,6 +87,16 @@ class Branch {
 
   String get flag => flagEmoji;
 
+  /// Підтримувані мови для філії
+  List<String> get supportedLanguages {
+    if (id == 'kyiv' || country.toUpperCase() == 'UA') {
+      return const ['uk', 'en']; // Тільки Українська та Англійська для України
+    } else if (id == 'vienna' || country.toUpperCase() == 'AT') {
+      return const ['de', 'en', 'uk'];
+    }
+    return const ['uk', 'en'];
+  }
+
   /// Локалізована назва міста для UI
   String localizedCity(String languageCode) {
     if (id == 'kyiv') {
@@ -95,8 +105,6 @@ class Branch {
           return 'Київ';
         case 'de':
           return 'Kiew';
-        case 'ru':
-          return 'Киев';
         default:
           return 'Kyiv';
       }
@@ -106,8 +114,6 @@ class Branch {
           return 'Відень';
         case 'de':
           return 'Wien';
-        case 'ru':
-          return 'Вена';
         default:
           return 'Vienna';
       }

@@ -1,8 +1,9 @@
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -20,7 +21,304 @@ import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
 import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/client_dialogs_sheet.dart';
+import 'package:swimming_school_app/core/router/app_router.dart';
+
+/// Варіанти стилізації карток та елементів екрана профілю для порівняння та тестування
+enum ProfileStyleVariant {
+  deepSapphireGlass, // Варіант 1: «Deep Sapphire Glass» (Преміальне сапфірове скло, 85-90% непрозорість, перловий текст #E2E8F0, смарагдовий акцент)
+  solidOceanicCards, // Варіант 2: «Solid Oceanic Cards» (Солідні океанічні плашки 96-98%, максимальний контраст #F1F5F9, неоновий контур #00E5FF)
+  originalClassic,   // Оригінал (Повний відкат до попереднього стану: білий frost 10-12%, підписи #B0D4EC)
+}
+
+/// Поточний активний стиль профілю (для легкого перемикання між варіантами або повернення як було)
+const ProfileStyleVariant currentProfileVariant = ProfileStyleVariant.solidOceanicCards;
+
+class _ProfileStyleConfig {
+  static BoxDecoration cardDecoration(bool isDark, {double radius = 22}) {
+    if (!isDark) {
+      return BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.70),
+            Colors.white.withValues(alpha: 0.30),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.60),
+          width: 1.1,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x140284C7),
+            blurRadius: 18,
+            offset: Offset(0, 4),
+          ),
+        ],
+      );
+    }
+
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0E2847).withValues(alpha: 0.85),
+              const Color(0xFF071B30).withValues(alpha: 0.90),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.18),
+            width: 1.1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF021020).withValues(alpha: 0.55),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        );
+
+      case ProfileStyleVariant.solidOceanicCards:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0A2239).withValues(alpha: 0.96),
+              const Color(0xFF051525).withValues(alpha: 0.98),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF010A14).withValues(alpha: 0.70),
+              blurRadius: 22,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        );
+
+      case ProfileStyleVariant.originalClassic:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.12),
+              Colors.white.withValues(alpha: 0.04),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.18),
+            width: 1.1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        );
+    }
+  }
+
+  static Color subtitleColor(bool isDark, Color fallbackSubColor) {
+    if (!isDark) return fallbackSubColor;
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+        return const Color(0xFFE2E8F0);
+      case ProfileStyleVariant.solidOceanicCards:
+        return const Color(0xFFF1F5F9);
+      case ProfileStyleVariant.originalClassic:
+        return const Color(0xFFB0D4EC);
+    }
+  }
+
+  static Color statsUnitColor(bool isDark, Color fallbackAccent) {
+    if (!isDark) return fallbackAccent;
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+        return const Color(0xFF38BDF8);
+      case ProfileStyleVariant.solidOceanicCards:
+        return const Color(0xFF00E5FF);
+      case ProfileStyleVariant.originalClassic:
+        return fallbackAccent;
+    }
+  }
+
+  static BoxDecoration statusBadgeDecoration(bool isDark, Color accentColor) {
+    if (!isDark) {
+      return BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF0284C7).withValues(alpha: 0.14),
+            const Color(0xFF0369A1).withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(
+          color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+          width: 0.9,
+        ),
+      );
+    }
+
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF00E5FF).withValues(alpha: 0.22),
+              const Color(0xFF0284C7).withValues(alpha: 0.10),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.65),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+              blurRadius: 8,
+            ),
+          ],
+        );
+      case ProfileStyleVariant.solidOceanicCards:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF0284C7).withValues(alpha: 0.30),
+              const Color(0xFF0369A1).withValues(alpha: 0.18),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: const Color(0xFF38BDF8).withValues(alpha: 0.75),
+            width: 1.1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+              blurRadius: 10,
+            ),
+          ],
+        );
+      case ProfileStyleVariant.originalClassic:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              accentColor.withValues(alpha: 0.22),
+              accentColor.withValues(alpha: 0.08),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: accentColor.withValues(alpha: 0.45),
+            width: 0.9,
+          ),
+        );
+    }
+  }
+
+  static Color statusBadgeTextColor(bool isDark, Color accentColor) {
+    if (!isDark) return const Color(0xFF0284C7);
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+        return const Color(0xFFE0F7FA);
+      case ProfileStyleVariant.solidOceanicCards:
+        return Colors.white;
+      case ProfileStyleVariant.originalClassic:
+        return accentColor;
+    }
+  }
+
+  static BoxDecoration addChildButtonDecoration(bool isDark) {
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+        return BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF10B981), Color(0xFF059669)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: const Color(0xFF34D399).withValues(alpha: 0.8),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withValues(alpha: 0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        );
+      case ProfileStyleVariant.solidOceanicCards:
+        return BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF059669), Color(0xFF047857)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: const Color(0xFF10B981),
+            width: 1.1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF059669).withValues(alpha: 0.45),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        );
+      case ProfileStyleVariant.originalClassic:
+        return BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.14),
+              const Color(0xFF059669).withValues(alpha: isDark ? 0.15 : 0.06),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                : const Color(0xFF059669).withValues(alpha: 0.45),
+            width: 0.9,
+          ),
+        );
+    }
+  }
+
+  static Color addChildTextColor(bool isDark) {
+    switch (currentProfileVariant) {
+      case ProfileStyleVariant.deepSapphireGlass:
+      case ProfileStyleVariant.solidOceanicCards:
+        return Colors.white;
+      case ProfileStyleVariant.originalClassic:
+        return isDark ? const Color(0xFF34D399) : const Color(0xFF047857);
+    }
+  }
+}
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -61,14 +359,21 @@ class ParentProfileTab extends ConsumerWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.85),
+                  color: isDark ? const Color(0xFF0E2847).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.92),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.3)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
                         : const Color(0xFFBAE6FD),
-                    width: 1,
+                    width: 1.1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark ? const Color(0xFF021020).withValues(alpha: 0.45) : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
@@ -194,11 +499,14 @@ class ParentProfileTab extends ConsumerWidget {
     Color subColor,
     Color accentColor,
   ) {
+    final fbUser = FirebaseAuth.instance.currentUser;
     final contactInfo = (user?.phone != null && user!.phone!.isNotEmpty)
         ? user.phone!
-        : (user?.loginId != null && user!.loginId!.isNotEmpty)
-            ? user.loginId!
-            : null;
+        : (fbUser?.email != null && fbUser!.email!.isNotEmpty)
+            ? fbUser.email!
+            : (user?.loginId != null && user!.loginId!.isNotEmpty)
+                ? user.loginId!
+                : null;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -207,28 +515,7 @@ class ParentProfileTab extends ConsumerWidget {
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: isDark ? 0.12 : 0.70),
-                Colors.white.withValues(alpha: isDark ? 0.04 : 0.30),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.60),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: accentColor.withValues(alpha: isDark ? 0.12 : 0.06),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -270,7 +557,11 @@ class ParentProfileTab extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          user?.name ?? 'Олександр',
+                          (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+                              ? user.name
+                              : (fbUser?.displayName?.trim().isNotEmpty == true
+                                  ? fbUser!.displayName!.trim()
+                                  : 'Олександр'),
                           style: TextStyle(
                             color: textColor,
                             fontSize: 18.5,
@@ -285,7 +576,7 @@ class ParentProfileTab extends ConsumerWidget {
                           Text(
                             contactInfo,
                             style: TextStyle(
-                              color: isDark ? const Color(0xFFB0D4EC) : subColor,
+                              color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -302,32 +593,20 @@ class ParentProfileTab extends ConsumerWidget {
                     fit: BoxFit.scaleDown,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            (isDark ? accentColor : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.22 : 0.14),
-                            (isDark ? accentColor : const Color(0xFF0369A1)).withValues(alpha: isDark ? 0.08 : 0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: (isDark ? accentColor : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.45 : 0.35),
-                          width: 0.9,
-                        ),
-                      ),
+                      decoration: _ProfileStyleConfig.statusBadgeDecoration(isDark, accentColor),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             LucideIcons.shieldCheck,
                             size: 13.5,
-                            color: isDark ? accentColor : const Color(0xFF0284C7),
+                            color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
                           ),
                           const SizedBox(width: 5),
                           Text(
                             hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
                             style: TextStyle(
-                              color: isDark ? accentColor : const Color(0xFF0284C7),
+                              color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.1,
@@ -453,7 +732,7 @@ class ParentProfileTab extends ConsumerWidget {
               Text(
                 unit,
                 style: TextStyle(
-                  color: color,
+                  color: _ProfileStyleConfig.statsUnitColor(isDark, color),
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -465,7 +744,7 @@ class ParentProfileTab extends ConsumerWidget {
         Text(
           label,
           style: TextStyle(
-            color: isDark ? const Color(0xFFB0D4EC) : subColor,
+            color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
             fontSize: 12.5,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
@@ -503,21 +782,7 @@ class ParentProfileTab extends ConsumerWidget {
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: isDark ? 0.10 : 0.65),
-                Colors.white.withValues(alpha: isDark ? 0.03 : 0.25),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.16 : 0.50),
-              width: 1.0,
-            ),
-          ),
+          decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -923,7 +1188,7 @@ class ParentProfileTab extends ConsumerWidget {
                       child: Text(
                         'Додайте дитину для тренувань',
                         style: TextStyle(
-                          color: isDark ? const Color(0xFFB0D4EC) : subColor,
+                          color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -939,34 +1204,20 @@ class ParentProfileTab extends ConsumerWidget {
                     onTap: () => _showAddChildDialog(context, ref, isDark),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.14),
-                            const Color(0xFF059669).withValues(alpha: isDark ? 0.15 : 0.06),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: isDark
-                              ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                              : const Color(0xFF059669).withValues(alpha: 0.45),
-                          width: 0.9,
-                        ),
-                      ),
+                      decoration: _ProfileStyleConfig.addChildButtonDecoration(isDark),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             LucideIcons.plus,
                             size: 14,
-                            color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                            color: _ProfileStyleConfig.addChildTextColor(isDark),
                           ),
                           const SizedBox(width: 4.5),
                           Text(
                             'Додати',
                             style: TextStyle(
-                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                              color: _ProfileStyleConfig.addChildTextColor(isDark),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1001,21 +1252,7 @@ class ParentProfileTab extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
         child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: isDark ? 0.10 : 0.65),
-                Colors.white.withValues(alpha: isDark ? 0.03 : 0.25),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.50),
-              width: 1.0,
-            ),
-          ),
+          decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1082,7 +1319,7 @@ class ParentProfileTab extends ConsumerWidget {
                 icon: LucideIcons.messageSquare,
                 gradientColors: const [Color(0xFF06B6D4), Color(0xFF0284C7)],
                 title: 'Повідомлення та підтримка',
-                subtitle: 'Онлайн-чат із адміністратором та тренерами',
+                subtitle: 'Чат з адміністратором та тренером',
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
@@ -1115,7 +1352,369 @@ class ParentProfileTab extends ConsumerWidget {
                     : null,
                 onTap: () => showClientDialogsSheet(context),
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 64, right: 16),
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                              Colors.transparent,
+                            ]
+                          : [
+                              const Color(0xFFBAE6FD).withValues(alpha: 0.50),
+                              Colors.transparent,
+                            ],
+                    ),
+                  ),
+                ),
+              ),
+              // Row 4: Branch Location (Locked upon registration)
+              _buildGroupedItem(
+                icon: LucideIcons.mapPin,
+                gradientColors: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                title: 'Філія та локація',
+                subtitle: user?.branchId == 'vienna' ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                textColor: textColor,
+                subColor: subColor,
+                isDark: isDark,
+                showChevron: false,
+                trailingWidget: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                              const Color(0xFF0284C7).withValues(alpha: 0.10),
+                            ]
+                          : [
+                              const Color(0xFFE0F2FE),
+                              const Color(0xFFBAE6FD).withValues(alpha: 0.6),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: currentProfileVariant == ProfileStyleVariant.originalClassic ? 0.45 : 0.65)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.18),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
+                        ),
+                        child: Icon(
+                          LucideIcons.lock,
+                          size: 10,
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Закріплено',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                          color: _ProfileStyleConfig.statusBadgeTextColor(isDark, const Color(0xFF00E5FF)),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Icon(
+                        LucideIcons.chevronRight,
+                        size: 12,
+                        color: (isDark ? (currentProfileVariant == ProfileStyleVariant.originalClassic ? const Color(0xFF00E5FF) : Colors.white) : const Color(0xFF0284C7)).withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showBranchInfoSheet(context, isDark, user?.branchId ?? 'kyiv');
+                },
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBranchInfoSheet(BuildContext context, bool isDark, String branchId) {
+    final isVienna = branchId == 'vienna';
+    final branchTitle = isVienna ? 'CitySwim Відень' : 'CitySwim Київ';
+    final flag = isVienna ? '🇦🇹' : '🇺🇦';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 16,
+              bottom: math.max(MediaQuery.of(ctx).padding.bottom, 20) + 16,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.97),
+                  isDark ? const Color(0xFF070E1A).withValues(alpha: 0.98) : const Color(0xFFF1F5F9).withValues(alpha: 0.98),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top drag handle with close button row
+                Row(
+                  children: [
+                    const SizedBox(width: 34),
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        LucideIcons.x,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                        size: 20,
+                      ),
+                      tooltip: 'Закрити',
+                      padding: const EdgeInsets.all(6),
+                      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Location Pin Icon Badge
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                          : const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.65 : 0.45),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.15),
+                        blurRadius: 18,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      LucideIcons.mapPin,
+                      size: 28,
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Title
+                Text(
+                  '$flag $branchTitle',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.12) : const Color(0xFFE0F2FE),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFF7DD3FC),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.shieldCheck,
+                        size: 14,
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Основна закріплена філія',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Info Card
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0D2137).withValues(alpha: 0.65) : const Color(0xFFF0F9FF),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
+                      width: 1.1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                        ),
+                        child: Icon(
+                          LucideIcons.info,
+                          size: 16,
+                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Ця філія закріплена за вашим акаунтом для персонального розкладу та абонементів. Якщо ви бажаєте змінити філію, будь ласка, зверніться до адміністратора.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.45,
+                            color: isDark ? Colors.white.withValues(alpha: 0.78) : const Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+
+                // Button (Sapphire VIP CTA)
+                Container(
+                  width: double.infinity,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40),
+                      width: 1.4,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.20),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pop(ctx);
+                      showClientDialogsSheet(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.messageSquare,
+                          size: 19,
+                          color: isDark ? const Color(0xFF00E5FF) : Colors.white,
+                        ),
+                        const SizedBox(width: 9),
+                        const Text(
+                          'Написати адміністратору',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1131,6 +1730,7 @@ class ParentProfileTab extends ConsumerWidget {
     required Color subColor,
     required bool isDark,
     Widget? trailingWidget,
+    bool showChevron = true,
     required VoidCallback onTap,
   }) {
     return Material(
@@ -1151,6 +1751,13 @@ class ParentProfileTab extends ConsumerWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors.first.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Icon(icon, color: Colors.white, size: 18),
@@ -1162,22 +1769,30 @@ class ParentProfileTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15.5,
-                        color: textColor,
-                        letterSpacing: -0.1,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15.5,
+                          color: textColor,
+                          letterSpacing: -0.1,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 1.5),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: isDark ? const Color(0xFFB0D4EC) : subColor,
-                        fontWeight: FontWeight.w500,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -1185,13 +1800,18 @@ class ParentProfileTab extends ConsumerWidget {
               ),
               if (trailingWidget != null) ...[
                 trailingWidget,
-                const SizedBox(width: 6),
+                if (showChevron) const SizedBox(width: 6),
               ],
-              Icon(
-                LucideIcons.chevronRight,
-                size: 16,
-                color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.7) : subColor.withValues(alpha: 0.6),
-              ),
+              if (showChevron)
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: isDark
+                      ? (currentProfileVariant == ProfileStyleVariant.originalClassic
+                          ? const Color(0xFFB0D4EC).withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.7))
+                      : subColor.withValues(alpha: 0.6),
+                ),
             ],
           ),
         ),
@@ -1199,76 +1819,74 @@ class ParentProfileTab extends ConsumerWidget {
     );
   }
 
-  // 5. Luminous Ruby Logout Button (High-contrast, vibrant ruby glass in light & dark themes)
+  // 5. Luminous Velvet Ruby Logout Button (High-contrast, vibrant ruby gradient with crisp white text)
   Widget _buildLogoutFooter(BuildContext context, WidgetRef ref, bool isDark) {
-    final rubyAccent = isDark ? const Color(0xFFFF4D6D) : const Color(0xFFE11D48);
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () => _confirmLogout(context, ref, isDark),
-            child: Container(
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [
-                          const Color(0xFFDC2626).withValues(alpha: 0.32),
-                          const Color(0xFF7F1D1D).withValues(alpha: 0.45),
-                        ]
-                      : [
-                          const Color(0xFFFFF1F2),
-                          const Color(0xFFFFE4E6),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFFFB7185).withValues(alpha: 0.70)
-                      : const Color(0xFFFDA4AF),
-                  width: 1.3,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDark ? const Color(0xFFE11D48) : const Color(0xFFBE123C))
-                        .withValues(alpha: isDark ? 0.32 : 0.14),
-                    blurRadius: 18,
-                    offset: const Offset(0, 4),
-                  ),
-                  if (isDark)
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.40),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  const Color(0xFFFF2A55),
+                  const Color(0xFFC00030),
+                ]
+              : [
+                  const Color(0xFFFF3366),
+                  const Color(0xFFE11D48),
                 ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.logOut, color: rubyAccent, size: 19),
-                  const SizedBox(width: 10),
-                  Text(
-                    'parent.logout_short'.tr(),
-                    style: TextStyle(
-                      color: rubyAccent,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.40),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF2A55).withValues(alpha: isDark ? 0.42 : 0.28),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+          if (isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _confirmLogout(context, ref, isDark);
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(LucideIcons.logOut, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'parent.logout_short'.tr(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1296,11 +1914,13 @@ class ParentProfileTab extends ConsumerWidget {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              ref.read(parentTabProvider.notifier).setTab(0);
-              await ref.read(authControllerProvider.notifier).logout();
-              if (context.mounted) {
-                context.go('/?skipSplash=true');
+              try {
+                await ref.read(authControllerProvider.notifier).logout();
+              } catch (e) {
+                debugPrint('Logout error: $e');
               }
+              ref.read(parentTabProvider.notifier).setTab(0);
+              ref.read(goRouterProvider).go('/?skipSplash=true');
             },
             child: const Text('Вийти'),
           ),
@@ -1367,22 +1987,30 @@ class ParentProfileTab extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Push-сповіщення',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Push-сповіщення',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 1.5),
-                Text(
-                  'Нагадування про тренування',
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFFB0D4EC) : subColor,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Нагадування про тренування',
+                    style: TextStyle(
+                      color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],

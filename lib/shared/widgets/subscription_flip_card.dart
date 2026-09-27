@@ -219,18 +219,20 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                           ],
                         ),
                         if (sub != null && sub.serviceName != null && sub.serviceName!.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            '${sub.serviceName} • ${sub.ownerName ?? "Для клієнта"}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                              shadows: [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))],
+                          const SizedBox(height: 4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              sub.serviceName!.replaceFirst(RegExp(r'^Абонемент\s+на\s+', caseSensitive: false), ''),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                                shadows: [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))],
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
 

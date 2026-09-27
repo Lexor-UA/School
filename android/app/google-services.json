@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "720928546774-tmtmimpn75up196jjmf58m64rg9snn6p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "city.swim.school",
+            "certificate_hash": "444b332d9d7e76685462583e8c19a6b36460c348"
+          }
+        },
+        {
           "client_id": "720928546774-fm9fipmt88b2uqp2n5cbogq6r0gg1l1u.apps.googleusercontent.com",
           "client_type": 3
         }

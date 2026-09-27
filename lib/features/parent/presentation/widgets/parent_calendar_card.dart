@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -81,57 +80,56 @@ class ParentCalendarCard extends ConsumerWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      const Color(0xFF0E3D64).withValues(alpha: 0.60),
-                      const Color(0xFF092842).withValues(alpha: 0.72),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.95),
-                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
-                  : const Color(0xFFBAE6FD),
-              width: 1.2,
-            ),
-            boxShadow: isDark
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF003B73).withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 2),
-                    ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const [
+                    Color(0xFF0B2238),
+                    Color(0xFF07192C),
+                    Color(0xFF04101D),
                   ]
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0284C7).withValues(alpha: 0.10),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
+                : const [
+                    Colors.white,
+                    Color(0xFFF0F9FF),
                   ],
           ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFF00E5FF).withValues(alpha: 0.32)
+                : const Color(0xFFBAE6FD),
+            width: 1.3,
+          ),
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.10),
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.40),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.10),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -190,7 +188,7 @@ class ParentCalendarCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
 
                 // Days of week header
                 Row(
@@ -213,7 +211,7 @@ class ParentCalendarCard extends ConsumerWidget {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
 
                 // Days Grid
                 GridView.builder(
@@ -222,7 +220,7 @@ class ParentCalendarCard extends ConsumerWidget {
                   itemCount: totalCells,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 7,
-                    childAspectRatio: 1.18,
+                    childAspectRatio: 1.34,
                   ),
                   itemBuilder: (context, index) {
                     if (index < firstDayOffset || index >= firstDayOffset + daysInMonth) {
@@ -282,8 +280,10 @@ class ParentCalendarCard extends ConsumerWidget {
                           margin: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             gradient: isSelected
-                                ? const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                ? LinearGradient(
+                                    colors: isDark
+                                        ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   )
@@ -298,19 +298,21 @@ class ParentCalendarCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isSelected
-                                  ? Colors.white.withValues(alpha: 0.8)
+                                  ? (isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.85)
+                                      : Colors.white.withValues(alpha: 0.85))
                                   : (isToday
                                       ? (isDark
                                           ? const Color(0xFF00E5FF).withValues(alpha: 0.75)
                                           : currentTheme.accentPrimary.withValues(alpha: 0.7))
                                       : Colors.transparent),
-                              width: (isSelected || isToday) ? 1.2 : 0,
+                              width: isSelected ? 1.4 : (isToday ? 1.2 : 0),
                             ),
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
-                                      blurRadius: 8,
+                                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.25),
+                                      blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),
                                   ]
@@ -406,7 +408,6 @@ class ParentCalendarCard extends ConsumerWidget {
               ],
             ),
           ),
-        ),
       );
   }
 
@@ -431,14 +432,14 @@ class ParentCalendarCard extends ConsumerWidget {
             height: 32,
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.10)
+                  ? const Color(0xFF0B2540)
                   : Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isDark
-                    ? const Color(0xFF00E5FF).withValues(alpha: isEnabled ? 0.25 : 0.10)
+                    ? const Color(0xFF00E5FF).withValues(alpha: isEnabled ? 0.35 : 0.15)
                     : const Color(0xFFBAE6FD).withValues(alpha: isEnabled ? 1.0 : 0.4),
-                width: 0.8,
+                width: 0.9,
               ),
             ),
             child: Center(

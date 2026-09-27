@@ -303,31 +303,45 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               decoration: BoxDecoration(
                                 gradient: _selectedBranchId == 'kyiv'
-                                    ? const LinearGradient(
-                                        colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                                    ? LinearGradient(
+                                        colors: isDark
+                                            ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
                                       )
                                     : null,
                                 borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: _selectedBranchId == 'kyiv'
+                                      ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40)
+                                      : Colors.transparent,
+                                  width: 1.2,
+                                ),
                                 boxShadow: _selectedBranchId == 'kyiv'
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15),
                                           blurRadius: 8,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ]
                                     : null,
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('🇺🇦', style: TextStyle(fontSize: 14)),
-                                  SizedBox(width: 6),
+                                  const Text('🇺🇦', style: TextStyle(fontSize: 14)),
+                                  const SizedBox(width: 6),
                                   Text(
                                     'Київ',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: _selectedBranchId == 'kyiv'
+                                          ? Colors.white
+                                          : (isDark ? Colors.white60 : Colors.black54),
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: _selectedBranchId == 'kyiv' ? FontWeight.w700 : FontWeight.w500,
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
                                 ],
@@ -347,31 +361,45 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               decoration: BoxDecoration(
                                 gradient: _selectedBranchId == 'vienna'
-                                    ? const LinearGradient(
-                                        colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                                    ? LinearGradient(
+                                        colors: isDark
+                                            ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
                                       )
                                     : null,
                                 borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: _selectedBranchId == 'vienna'
+                                      ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40)
+                                      : Colors.transparent,
+                                  width: 1.2,
+                                ),
                                 boxShadow: _selectedBranchId == 'vienna'
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15),
                                           blurRadius: 8,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ]
                                     : null,
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('🇦🇹', style: TextStyle(fontSize: 14)),
-                                  SizedBox(width: 6),
+                                  const Text('🇦🇹', style: TextStyle(fontSize: 14)),
+                                  const SizedBox(width: 6),
                                   Text(
                                     'Відень',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: _selectedBranchId == 'vienna'
+                                          ? Colors.white
+                                          : (isDark ? Colors.white60 : Colors.black54),
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: _selectedBranchId == 'vienna' ? FontWeight.w700 : FontWeight.w500,
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
                                 ],
@@ -550,7 +578,10 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          onPressed: () => _copyLink(details.registrationUrl),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _copyLink(details.registrationUrl);
+                          },
                           icon: Icon(
                             _isCopied ? LucideIcons.check : LucideIcons.copy,
                             size: 16,
@@ -562,23 +593,55 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Full Screen Button
+                      // Full Screen Button (Sapphire VIP CTA)
                       Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00E5FF),
-                            foregroundColor: const Color(0xFF0B192C),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isDark
+                                  ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            elevation: 4,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40),
+                              width: 1.4,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.20),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          onPressed: () => _openFullScreenQr(context, details),
-                          icon: const Icon(LucideIcons.maximize2, size: 16),
-                          label: const Text(
-                            'Повний екран',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              _openFullScreenQr(context, details);
+                            },
+                            icon: const Icon(LucideIcons.maximize2, size: 16, color: Color(0xFF00E5FF)),
+                            label: const Text(
+                              'Повний екран',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
                           ),
                         ),
                       ),

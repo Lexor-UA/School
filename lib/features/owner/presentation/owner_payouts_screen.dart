@@ -716,8 +716,16 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundImage: NetworkImage(avatarUrl),
+                      backgroundImage: (avatarUrl.isNotEmpty && !avatarUrl.contains('ui-avatars.com') && avatarUrl.startsWith('http'))
+                          ? NetworkImage(avatarUrl)
+                          : null,
                       backgroundColor: Colors.white10,
+                      child: (avatarUrl.isEmpty || avatarUrl.contains('ui-avatars.com') || !avatarUrl.startsWith('http'))
+                          ? Text(
+                              name.isNotEmpty ? name.characters.first.toUpperCase() : '?',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            )
+                          : null,
                     ),
                     const SizedBox(width: 14),
                     Expanded(

@@ -52,8 +52,12 @@ class _WaterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Base gradient canvas
     final Rect rect = Offset.zero & size;
+    final bool isDark = theme.isDark;
+    final bool isLight = !isDark;
+    final double phase = animationValue * 2 * math.pi;
+
+    // 1. Base deep oceanic canvas background
     final Paint backgroundPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -65,24 +69,38 @@ class _WaterPainter extends CustomPainter {
       ).createShader(rect);
     canvas.drawRect(rect, backgroundPaint);
 
+    // 2. Ambient caustic subsurface light beam (Sunbeams / Volumetric Depth)
+    final Paint sunlightPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.0, -0.65),
+        radius: 1.25,
+        colors: [
+          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.30 : 0.18),
+          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF0284C7)).withValues(alpha: isLight ? 0.15 : 0.08),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.42, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, sunlightPaint);
+
+
     final path1 = Path();
     final path2 = Path();
     final path3 = Path();
 
-    final crest1 = Path();
-    final crest2 = Path();
-    final crest3 = Path();
+    final crestPath1 = Path();
+    final crestPath2 = Path();
+    final crestPath3 = Path();
 
-    // Wave baseline heights — balanced for clear screen presence
-    final bool isLight = !theme.isDark;
-    final y1 = size.height * (isLight ? 0.38 : 0.45);
-    final y2 = size.height * (isLight ? 0.48 : 0.55);
-    final y3 = size.height * (isLight ? 0.58 : 0.70);
+    // Wave baseline heights — balanced for depth & screen presence
+    final y1 = size.height * (isLight ? 0.38 : 0.44);
+    final y2 = size.height * (isLight ? 0.50 : 0.56);
+    final y3 = size.height * (isLight ? 0.62 : 0.70);
 
-    // Amplitudes for expressive dynamic crests
-    final amp1 = isLight ? 42.0 : 32.0;
-    final amp2 = isLight ? 52.0 : 42.0;
-    final amp3 = isLight ? 60.0 : 50.0;
+    // Amplitudes for dual-harmonic hydrodynamics
+    final amp1 = isLight ? 36.0 : 30.0;
+    final amp2 = isLight ? 46.0 : 38.0;
+    final amp3 = isLight ? 54.0 : 44.0;
 
     path1.moveTo(0, size.height);
     path2.moveTo(0, size.height);
@@ -93,28 +111,36 @@ class _WaterPainter extends CustomPainter {
     path3.lineTo(0, y3);
 
     bool first = true;
-    for (double i = 0; i <= size.width; i += 2) {
-      // Wave 1: Slow, wide rolling swell
-      final double h1 = y1 + math.sin((i / size.width * 1.5 * math.pi) + (animationValue * 2 * math.pi)) * amp1;
-      path1.lineTo(i, h1);
+    for (double x = 0; x <= size.width; x += 2) {
+      final double nx = x / size.width;
 
-      // Wave 2: Medium harmonic flow
-      final double h2 = y2 + math.cos((i / size.width * 2.0 * math.pi) + (animationValue * 2 * math.pi)) * amp2;
-      path2.lineTo(i, h2);
+      // Wave 1: Slow, deep oceanic swell with subtle rolling counter-wave
+      final double h1 = y1 +
+          math.sin((nx * 1.6 * math.pi) + phase) * (amp1 * 0.78) +
+          math.cos((nx * 2.8 * math.pi) - (phase * 0.6)) * (amp1 * 0.22);
+      path1.lineTo(x, h1);
 
-      // Wave 3: Faster counter-current swell
-      final double h3 = y3 + math.sin((i / size.width * 2.5 * math.pi) - (animationValue * 2 * math.pi)) * amp3;
-      path3.lineTo(i, h3);
+      // Wave 2: Harmonic mid-depth tide
+      final double h2 = y2 +
+          math.cos((nx * 2.1 * math.pi) + phase) * (amp2 * 0.72) +
+          math.sin((nx * 3.5 * math.pi) + (phase * 1.4)) * (amp2 * 0.28);
+      path2.lineTo(x, h2);
+
+      // Wave 3: Expressive surface counter-current
+      final double h3 = y3 +
+          math.sin((nx * 2.4 * math.pi) - phase) * (amp3 * 0.74) +
+          math.cos((nx * 4.2 * math.pi) + (phase * 0.8)) * (amp3 * 0.26);
+      path3.lineTo(x, h3);
 
       if (first) {
-        crest1.moveTo(i, h1);
-        crest2.moveTo(i, h2);
-        crest3.moveTo(i, h3);
+        crestPath1.moveTo(x, h1);
+        crestPath2.moveTo(x, h2);
+        crestPath3.moveTo(x, h3);
         first = false;
       } else {
-        crest1.lineTo(i, h1);
-        crest2.lineTo(i, h2);
-        crest3.lineTo(i, h3);
+        crestPath1.lineTo(x, h1);
+        crestPath2.lineTo(x, h2);
+        crestPath3.lineTo(x, h3);
       }
     }
 
@@ -126,43 +152,163 @@ class _WaterPainter extends CustomPainter {
     path2.close();
     path3.close();
 
-    final paint1 = Paint()
-      ..color = theme.waterWave1
-      ..style = PaintingStyle.fill;
+    // 4. Wave Shaders
+    // Wave 1 (Deepest):
+    final Rect waveRect1 = Rect.fromLTWH(0, y1 - amp1, size.width, size.height - (y1 - amp1));
+    final Paint wavePaint1 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: isDark
+            ? [
+                const Color(0xFF0284C7).withValues(alpha: 0.32),
+                const Color(0xFF003B73).withValues(alpha: 0.50),
+                const Color(0xFF001B3A).withValues(alpha: 0.78),
+              ]
+            : [
+                const Color(0xFF7DD3FC).withValues(alpha: 0.45),
+                const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                const Color(0xFF0284C7).withValues(alpha: 0.28),
+              ],
+        stops: const [0.0, 0.40, 1.0],
+      ).createShader(waveRect1);
 
-    final paint2 = Paint()
-      ..color = theme.waterWave2
-      ..style = PaintingStyle.fill;
-      
-    final paint3 = Paint()
-      ..color = theme.waterWave3
-      ..style = PaintingStyle.fill;
+    // Wave 2 (Mid-depth):
+    final Rect waveRect2 = Rect.fromLTWH(0, y2 - amp2, size.width, size.height - (y2 - amp2));
+    final Paint wavePaint2 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: isDark
+            ? [
+                const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                const Color(0xFF0369A1).withValues(alpha: 0.55),
+                const Color(0xFF001F3F).withValues(alpha: 0.82),
+              ]
+            : [
+                const Color(0xFF38BDF8).withValues(alpha: 0.50),
+                const Color(0xFF0EA5E9).withValues(alpha: 0.38),
+                const Color(0xFF0369A1).withValues(alpha: 0.32),
+              ],
+        stops: const [0.0, 0.35, 1.0],
+      ).createShader(waveRect2);
 
-    // Specular wave crest highlight strokes for crisp visual definition
-    final crestPaint1 = Paint()
-      ..color = Colors.white.withValues(alpha: isLight ? 0.38 : 0.22)
+    // Wave 3 (Foreground swell):
+    final Rect waveRect3 = Rect.fromLTWH(0, y3 - amp3, size.width, size.height - (y3 - amp3));
+    final Paint wavePaint3 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: isDark
+            ? [
+                const Color(0xFF00B4D8).withValues(alpha: 0.38),
+                const Color(0xFF002E54).withValues(alpha: 0.58),
+                const Color(0xFF001428).withValues(alpha: 0.72),
+              ]
+            : [
+                const Color(0xFF0EA5E9).withValues(alpha: 0.50),
+                const Color(0xFF0284C7).withValues(alpha: 0.38),
+                const Color(0xFF003B73).withValues(alpha: 0.30),
+              ],
+        stops: const [0.0, 0.30, 1.0],
+      ).createShader(waveRect3);
+
+    // Draw Wave 1
+    canvas.drawPath(path1, wavePaint1);
+    final Paint softCrest1 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
+          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.32 : 0.22),
+          (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
+        ],
+      ).createShader(waveRect1)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isLight ? 1.5 : 1.0;
+      ..strokeWidth = 2.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+    canvas.drawPath(crestPath1, softCrest1);
 
-    final crestPaint2 = Paint()
-      ..color = Colors.white.withValues(alpha: isLight ? 0.48 : 0.28)
+    // Draw Wave 2
+    canvas.drawPath(path2, wavePaint2);
+    final Paint softCrest2 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
+          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF38BDF8)).withValues(alpha: isLight ? 0.42 : 0.30),
+          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
+        ],
+      ).createShader(waveRect2)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isLight ? 1.8 : 1.2;
+      ..strokeWidth = 2.4
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+    canvas.drawPath(crestPath2, softCrest2);
 
-    final crestPaint3 = Paint()
-      ..color = Colors.white.withValues(alpha: isLight ? 0.58 : 0.38)
+    // Draw Wave 3 (Foreground swell)
+    canvas.drawPath(path3, wavePaint3);
+    final Paint softCrest3 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
+          (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.50 : 0.38),
+          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
+        ],
+      ).createShader(waveRect3)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isLight ? 2.2 : 1.5;
+      ..strokeWidth = 2.8
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+    canvas.drawPath(crestPath3, softCrest3);
 
-    // Draw waves in back-to-front depth order
-    canvas.drawPath(path1, paint1);
-    canvas.drawPath(crest1, crestPaint1);
+    // 5. Diagonal Volumetric God Rays (Streaming through water depth with Screen blend over waves)
+    final double sunOriginX = size.width * 0.72;
+    final double sunOriginY = -size.height * 0.08;
 
-    canvas.drawPath(path2, paint2);
-    canvas.drawPath(crest2, crestPaint2);
+    final rayAngles = [-0.64, -0.42, -0.20, 0.04];
+    final rayWidths = [size.width * 0.28, size.width * 0.36, size.width * 0.32, size.width * 0.26];
 
-    canvas.drawPath(path3, paint3);
-    canvas.drawPath(crest3, crestPaint3);
+    for (int r = 0; r < rayAngles.length; r++) {
+      final double rPhase = phase * 0.7 + r * 1.5;
+      final double rAlpha = (isLight ? 0.16 : 0.11) + math.sin(rPhase) * (isLight ? 0.05 : 0.035);
+      final double angle = rayAngles[r] + math.sin(rPhase * 0.5) * 0.04;
+      final double length = size.height * 1.45;
+
+      final double rayCenterX = sunOriginX + math.sin(angle) * length;
+      final double rayCenterY = sunOriginY + math.cos(angle) * length;
+      final double halfWidth = rayWidths[r] * (0.85 + math.cos(rPhase * 0.6) * 0.15);
+
+      final rayPath = Path()
+        ..moveTo(sunOriginX - 25, sunOriginY)
+        ..lineTo(sunOriginX + 25, sunOriginY)
+        ..lineTo(rayCenterX + halfWidth, rayCenterY)
+        ..lineTo(rayCenterX - halfWidth, rayCenterY)
+        ..close();
+
+      final rayShaderRect = Rect.fromPoints(
+        Offset(sunOriginX, sunOriginY),
+        Offset(rayCenterX, rayCenterY),
+      );
+
+      final Paint rayPaint = Paint()
+        ..blendMode = BlendMode.screen
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: rAlpha * 1.8),
+            (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF0284C7)).withValues(alpha: rAlpha * 0.8),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.40, 1.0],
+        ).createShader(rayShaderRect)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14.0);
+
+      canvas.drawPath(rayPath, rayPaint);
+    }
   }
 
   @override

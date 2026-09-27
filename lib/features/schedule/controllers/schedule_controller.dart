@@ -241,8 +241,7 @@ class ScheduleController extends _$ScheduleController {
       query = query.where('branchId', isEqualTo: activeBranchId);
     }
 
-    final cutoff = DateTime.now().subtract(const Duration(days: 45)).toIso8601String();
-    query = query.where('startTime', isGreaterThanOrEqualTo: cutoff);
+    final cutoffDate = DateTime.now().subtract(const Duration(days: 45));
 
     return query.snapshots().map((snapshot) {
       final Map<String, GroupClass> uniqueClasses = {};
@@ -274,6 +273,10 @@ class ScheduleController extends _$ScheduleController {
           }
 
           final groupClass = GroupClass.fromJson(data);
+          // In-memory filter for historical classes (eliminates composite index requirement in Firestore)
+          if (groupClass.startTime.isBefore(cutoffDate)) {
+            continue;
+          }
           if (isAllLocations || groupClass.branchId == activeBranchId) {
             uniqueClasses[doc.id] = groupClass;
           }

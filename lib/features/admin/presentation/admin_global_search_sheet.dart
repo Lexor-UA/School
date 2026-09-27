@@ -1,5 +1,7 @@
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -298,18 +300,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           Center(
             child: Container(
               width: 44,
-              height: 4.5,
+              height: 5,
               decoration: BoxDecoration(
-                color: _isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.75) : const Color(0xFFCBD5E1),
-                borderRadius: BorderRadius.circular(3),
-                boxShadow: _isDark
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.55),
-                          blurRadius: 6,
-                        ),
-                      ]
-                    : null,
+                color: _isDark
+                    ? Colors.white.withValues(alpha: 0.35)
+                    : const Color(0xFF94A3B8),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
@@ -377,7 +373,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   icon: Icon(LucideIcons.x, color: _isDark ? Colors.white : _theme.textSecondary, size: 18),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                  },
                 ),
               ),
             ],
@@ -495,40 +494,46 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
       child: Row(
         children: List.generate(_categories.length, (idx) {
           final isSelected = _selectedCategoryIndex == idx;
-          final activeIconColor = Colors.white;
+          final activeIconColor = _isDark ? const Color(0xFF00E5FF) : Colors.white;
           final inactiveIconColor = _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () => setState(() => _selectedCategoryIndex = idx),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedCategoryIndex = idx);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7.5),
                 decoration: BoxDecoration(
                   gradient: isSelected
                       ? LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: _theme.accentGradient,
+                          colors: _isDark
+                              ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         )
                       : null,
                   color: isSelected
                       ? null
-                      : (_isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF1F5F9)),
-                  borderRadius: BorderRadius.circular(12),
+                      : (_isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
-                        ? Colors.white.withValues(alpha: 0.60)
-                        : (_isDark ? Colors.white.withValues(alpha: 0.20) : _theme.cardBorder),
+                        ? (_isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
+                        : (_isDark ? Colors.white.withValues(alpha: 0.16) : _theme.cardBorder),
+                    width: isSelected ? 1.3 : 1.0,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: _theme.accentPrimary.withValues(alpha: 0.45),
-                            blurRadius: 12,
+                            color: const Color(0xFF00E5FF).withValues(alpha: _isDark ? 0.30 : 0.20),
+                            blurRadius: 10,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -547,8 +552,9 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                         color: isSelected
                             ? Colors.white
                             : (_isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary),
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        fontSize: 12.5,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        letterSpacing: -0.1,
                       ),
                     ),
                   ],
@@ -568,9 +574,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     required List<QueryDocumentSnapshot> recentClients,
     required List<GroupClass> upcomingClasses,
   }) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      padding: EdgeInsets.fromLTRB(20, 10, 20, math.max(bottomInset, 16) + 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -865,9 +872,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
     final showChildren = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4) && matchingChildren.isNotEmpty;
     final showCoaches = (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5) && matchingCoaches.isNotEmpty;
 
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 6, 20, math.max(bottomInset, 16) + 16),
       children: [
         // Counter badge
         Padding(

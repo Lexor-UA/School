@@ -128,19 +128,19 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: effectiveIsDark
-            ? const Color(0xFF18385E).withValues(alpha: 0.65)
+            ? const Color(0xFF0F1E32).withValues(alpha: 0.85)
             : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: effectiveIsDark
-              ? const Color(0xFF38BDF8).withValues(alpha: 0.32)
-              : const Color(0xFF0EA5E9).withValues(alpha: 0.25),
+              ? Colors.white.withValues(alpha: 0.16)
+              : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
             color: effectiveIsDark
-                ? Colors.black.withValues(alpha: 0.20)
+                ? Colors.black.withValues(alpha: 0.25)
                 : const Color(0xFF0284C7).withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
@@ -180,25 +180,37 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                   ),
                 ],
               ),
-              // Luminous Time Badge
+              // Luminous Time Badge (Sapphire VIP)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
-                  ),
+                  gradient: effectiveIsDark
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                        )
+                      : const LinearGradient(
+                          colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        ),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: effectiveIsDark
+                        ? const Color(0xFF00E5FF)
+                        : const Color(0xFF38BDF8),
+                    width: 1.3,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                      color: const Color(0xFF00E5FF).withValues(alpha: effectiveIsDark ? 0.30 : 0.15),
                       blurRadius: 10,
                     ),
                   ],
                 ),
                 child: Text(
                   formattedTime,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: effectiveIsDark ? const Color(0xFF00E5FF) : Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.8,
@@ -234,14 +246,14 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                         color: isSelected
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
                             : (effectiveIsDark
-                                ? const Color(0xFF1E426D).withValues(alpha: 0.70)
+                                ? const Color(0xFF0A1625)
                                 : const Color(0xFFF0F9FF)),
                         borderRadius: BorderRadius.circular(9),
                         border: Border.all(
                           color: isSelected
                               ? const Color(0xFF00E5FF)
                               : (effectiveIsDark
-                                  ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
+                                  ? Colors.white.withValues(alpha: 0.16)
                                   : const Color(0xFFBAE6FD)),
                           width: isSelected ? 1.2 : 1.0,
                         ),

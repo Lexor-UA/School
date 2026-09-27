@@ -1,5 +1,6 @@
-import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -585,18 +586,19 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
             : 'Оберіть дітей, які братимуть участь у групі:');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
-              ? [
-                  const Color(0xFF00E5FF).withValues(alpha: 0.10),
-                  const Color(0xFF0284C7).withValues(alpha: 0.05),
+              ? const [
+                  Color(0xFF0B2238),
+                  Color(0xFF07192C),
+                  Color(0xFF04101D),
                 ]
-              : [
-                  const Color(0xFFF0F9FF),
-                  Colors.white.withValues(alpha: 0.9),
+              : const [
+                  Color(0xFFF0F9FF),
+                  Colors.white,
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -604,16 +606,18 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isReady
-              ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.4) : const Color(0xFF0284C7).withValues(alpha: 0.4))
-              : (isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
+              ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFF0284C7).withValues(alpha: 0.4))
+              : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD)),
           width: 1.2,
         ),
-        boxShadow: isReady && isDark
+        boxShadow: isDark
             ? [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: isReady
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
                 ),
               ]
             : null,
@@ -624,30 +628,35 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(7),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.15),
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.18),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                    width: 1.0,
+                  ),
                 ),
                 child: Icon(
                   LucideIcons.users,
-                  size: 16,
+                  size: 15,
                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 9),
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: currentTheme.textPrimary,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.1,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: isReady
                       ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.15)
@@ -655,9 +664,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isReady
-                        ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                        : (isDark ? Colors.orangeAccent.withValues(alpha: 0.5) : const Color(0xFFF59E0B)),
-                    width: 1,
+                        ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                        : (isDark ? Colors.orangeAccent.withValues(alpha: 0.6) : const Color(0xFFF59E0B)),
+                    width: 1.1,
                   ),
                 ),
                 child: Row(
@@ -665,17 +674,17 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   children: [
                     Icon(
                       isReady ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                      size: 13,
+                      size: 12.5,
                       color: isReady
                           ? const Color(0xFF10B981)
                           : (isDark ? Colors.orangeAccent : const Color(0xFFD97706)),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 4.5),
                     Text(
                       badgeText,
                       style: TextStyle(
                         fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                         color: isReady
                             ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
                             : (isDark ? Colors.orangeAccent : const Color(0xFFD97706)),
@@ -686,147 +695,180 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 12.5,
-              color: isDark ? Colors.white60 : currentTheme.textSecondary,
+              fontSize: 12,
+              color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: eligibleMembers.map((member) {
               final isSelected = _selectedParticipantIds.contains(member.id);
 
-              return InkWell(
-                onTap: () => _toggleParticipant(member.id),
-                borderRadius: BorderRadius.circular(14),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                  decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? LinearGradient(
-                            colors: isDark
-                                ? [
-                                    const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                                    const Color(0xFF0284C7).withValues(alpha: 0.15),
-                                  ]
-                                : [
-                                    const Color(0xFFE0F2FE),
-                                    const Color(0xFFBAE6FD).withValues(alpha: 0.6),
-                                  ],
-                          )
-                        : null,
-                    color: isSelected
-                        ? null
-                        : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.8)),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _toggleParticipant(member.id);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? LinearGradient(
+                              colors: isDark
+                                  ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                                  : const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
                       color: isSelected
-                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                          : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1)),
-                      width: isSelected ? 1.5 : 1.0,
+                          ? null
+                          : (isDark ? const Color(0xFF0B2540) : Colors.white),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.85) : const Color(0xFF0284C7))
+                            : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFCBD5E1)),
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: member.isAdult
+                                  ? (isDark ? const [Color(0xFF6366F1), Color(0xFF38BDF8)] : const [Color(0xFF4F46E5), Color(0xFF0284C7)])
+                                  : (isDark ? const [Color(0xFF10B981), Color(0xFF06B6D4)] : const [Color(0xFF059669), Color(0xFF0891B2)]),
                             ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: member.isAdult
-                                ? (isDark ? const [Color(0xFF6366F1), Color(0xFF38BDF8)] : const [Color(0xFF4F46E5), Color(0xFF0284C7)])
-                                : (isDark ? const [Color(0xFF10B981), Color(0xFF06B6D4)] : const [Color(0xFF059669), Color(0xFF0891B2)]),
+                            border: Border.all(
+                              color: isDark ? Colors.white.withValues(alpha: 0.40) : Colors.transparent,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              member.isAdult ? LucideIcons.user : LucideIcons.baby,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        child: Center(
-                          child: Icon(
-                            member.isAdult ? LucideIcons.user : LucideIcons.baby,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              member.name,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected
+                                    ? (isDark ? Colors.white : const Color(0xFF0369A1))
+                                    : (isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary),
+                              ),
+                            ),
+                            Text(
+                              member.isAdult ? 'Дорослий' : 'Дитина',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: member.isAdult
+                                    ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF6366F1))
+                                    : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF10B981)),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            member.name,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected
-                                  ? (isDark ? Colors.white : const Color(0xFF0369A1))
-                                  : currentTheme.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            member.isAdult ? 'Дорослий' : 'Дитина',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: member.isAdult
-                                  ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF6366F1))
-                                  : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF10B981)),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 10),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSelected
-                              ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                              : Colors.transparent,
-                          border: Border.all(
+                        const SizedBox(width: 10),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
                             color: isSelected
-                                ? Colors.transparent
-                                : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
-                            width: 1.5,
+                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.transparent
+                                  : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFF94A3B8)),
+                              width: 1.5,
+                            ),
+                            boxShadow: isSelected && isDark
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                      blurRadius: 6,
+                                    ),
+                                  ]
+                                : null,
                           ),
+                          child: isSelected
+                              ? Icon(Icons.check, size: 13, color: isDark ? const Color(0xFF081C32) : Colors.white)
+                              : null,
                         ),
-                        child: isSelected
-                            ? const Icon(Icons.check, size: 13, color: Colors.white)
-                            : null,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
             }).toList(),
           ),
           if (_isSplit && eligibleMembers.length < 2)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                'Увага: у сім\'ї додано лише 1 профіль. Для спліт-тренування додайте дитину або запросіть другого учасника.',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: isDark ? Colors.orangeAccent : const Color(0xFFD97706),
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A1C0A) : const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.50) : const Color(0xFFF59E0B),
+                  width: 1.1,
                 ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.triangleAlert, size: 16, color: Color(0xFFF59E0B)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Увага: для спліт-тренування додайте дитину або запросіть другого учасника.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -938,78 +980,119 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.90,
+        maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
       decoration: BoxDecoration(
-        gradient: isDark
-            ? LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withValues(alpha: 0.22),
-                  const Color(0xFF0284C7).withValues(alpha: 0.26),
-                  const Color(0xFF0A223D).withValues(alpha: 0.55),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? const [
+                  Color(0xFF0B2238),
+                  Color(0xFF07192C),
+                  Color(0xFF04101D),
+                ]
+              : const [
+                  Colors.white,
+                  Color(0xFFF0F9FF),
                 ],
-              )
-            : LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withValues(alpha: 0.96),
-                  const Color(0xFFF0F9FF).withValues(alpha: 0.92),
-                ],
-              ),
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.35) : currentTheme.cardBorder,
-          width: 1.2,
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : currentTheme.cardBorder,
+          width: 1.3,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
-            blurRadius: 32,
-            offset: const Offset(0, -8),
-          ),
-          if (isDark)
-            BoxShadow(
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
-              blurRadius: 36,
-            ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.10),
+                  blurRadius: 28,
+                  offset: const Offset(0, -6),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.50),
+                  blurRadius: 24,
+                  offset: const Offset(0, -4),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 32,
+                  offset: const Offset(0, -8),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Interactive Drag Handle Bar (Pull down or tap to dismiss)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragUpdate: (details) {
+                if (details.primaryDelta != null && details.primaryDelta! > 5) {
+                  Navigator.of(context).pop();
+                }
+              },
+              onTap: () => Navigator.of(context).pop(),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 4),
+                child: Center(
                   child: Container(
                     width: 44,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 20),
+                    height: 4.5,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.white.withValues(alpha: 0.35)
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
                           : Colors.black.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(10),
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 ),
-                Text(
+              ),
+            ),
+
+            // Pinned Header: Title
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 2, 22, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
                   'Запланувати заняття',
                   style: TextStyle(
-                    color: currentTheme.textPrimary,
-                    fontSize: 21,
+                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.2,
                   ),
                 ),
+              ),
+            ),
+
+              // Scrollable Body with Clamping physics so downward scroll at top dismisses
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 2,
+                    bottom: math.max(MediaQuery.of(context).padding.bottom, 18.0) + 14.0,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 if (isDateAfterSubscriptionExpiry) ...[
                   const SizedBox(height: 10),
                   Container(
@@ -1052,26 +1135,35 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                           : ((age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)');
                       return Container(
                         margin: const EdgeInsets.only(top: 8, bottom: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
-                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
+                          color: isDark ? const Color(0xFF0A243D) : const Color(0xFFF0F9FF),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                            width: 0.9,
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                            width: 1.2,
                           ),
+                          boxShadow: isDark
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.20),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(isUnder6 ? LucideIcons.sparkles : LucideIcons.baby, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                            const SizedBox(width: 6),
+                            Icon(isUnder6 ? LucideIcons.sparkles : LucideIcons.baby, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                            const SizedBox(width: 8),
                             Text(
                               '${currentChild.name}${age != null ? " ($age р.)" : ""} • $ageGroup',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                color: isDark ? Colors.white : const Color(0xFF0284C7),
                               ),
                             ),
                           ],
@@ -1079,57 +1171,101 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       );
                     },
                   ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 10),
                 
                 Text(
                   'Оберіть послугу',
                   style: TextStyle(
-                    color: isDark ? Colors.white70 : currentTheme.textSecondary,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFFCBD5E1) : currentTheme.textSecondary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: _availableServices.map((service) {
                     final isSelected = _selectedService == service;
-                    return ChoiceChip(
-                      label: Text(service),
-                      selected: isSelected,
-                      selectedColor: isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                          : const Color(0xFF0284C7).withValues(alpha: 0.15),
-                      backgroundColor: isDark
-                          ? Colors.white.withValues(alpha: 0.10)
-                          : Colors.white.withValues(alpha: 0.85),
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                            : (isDark ? Colors.white70 : currentTheme.textSecondary),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                      side: BorderSide(
-                        color: isSelected
-                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                            : (isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFBAE6FD)),
-                        width: isSelected ? 1.2 : 1.0,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
                           setState(() {
                             _selectedService = service;
                             _initParticipantsForService(service);
                           });
-                        }
-                      },
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? LinearGradient(
+                                    colors: isDark
+                                        ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            color: isSelected
+                                ? null
+                                : (isDark ? const Color(0xFF0B2540) : Colors.white.withValues(alpha: 0.90)),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? (isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.85)
+                                      : Colors.white.withValues(alpha: 0.85))
+                                  : (isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                                      : const Color(0xFFBAE6FD)),
+                              width: isSelected ? 1.4 : 1.0,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.22),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSelected) ...[
+                                Icon(
+                                  LucideIcons.check,
+                                  size: 15,
+                                  color: isDark ? const Color(0xFF00E5FF) : Colors.white,
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Text(
+                                service,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
+                                      : (isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary),
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 13.5,
+                                  letterSpacing: 0.1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   }).toList(),
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
                 // Dynamic Split or Group training participants selector
                 if (_isSplit || _isGroup) _buildParticipantSelector(isDark, currentTheme),
@@ -1137,12 +1273,12 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                 Text(
                   'Оберіть час',
                   style: TextStyle(
-                    color: isDark ? Colors.white70 : currentTheme.textSecondary,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFFCBD5E1) : currentTheme.textSecondary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Builder(
                   builder: (context) {
                     final now = DateTime.now();
@@ -1152,59 +1288,77 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     final isToday = selectedDateOnly.isAtSameMomentAs(todayDate);
 
                     return Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 7,
+                      runSpacing: 7,
                       children: _allHours.map((hour) {
                         final isPastHour = isPastDay || (isToday && hour <= now.hour);
                         final isOccupied = occupiedHours.contains(hour);
                         final isDisabled = isOccupied || isPastHour;
                         final isSelected = _selectedHour == hour;
                         
-                        return InkWell(
-                          onTap: isDisabled ? null : () => setState(() => _selectedHour = hour),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isOccupied 
-                                  ? (isDark ? Colors.redAccent.withValues(alpha: 0.12) : const Color(0xFFFEE2E2)) 
-                                  : isPastHour
-                                      ? (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04))
-                                      : (isSelected
-                                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                          : (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white.withValues(alpha: 0.85))),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.white
-                                    : isOccupied
-                                        ? (isDark ? Colors.redAccent.withValues(alpha: 0.3) : const Color(0xFFFECACA))
-                                        : isPastHour
-                                            ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08))
-                                            : (isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD)),
-                                width: isSelected ? 1.4 : 1.0,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              '${hour.toString().padLeft(2, '0')}:00',
-                              style: TextStyle(
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: isDisabled ? null : () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _selectedHour = hour);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
+                              decoration: BoxDecoration(
+                                gradient: isSelected
+                                    ? LinearGradient(
+                                        colors: isDark
+                                            ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
                                 color: isOccupied 
-                                    ? Colors.redAccent.withValues(alpha: 0.6) 
+                                    ? (isDark ? const Color(0xFF1E1418) : const Color(0xFFFEE2E2)) 
                                     : isPastHour
-                                        ? (isDark ? Colors.white30 : Colors.black38)
-                                        : (isSelected ? Colors.white : currentTheme.textPrimary),
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 13,
-                                decoration: isDisabled ? TextDecoration.lineThrough : null,
+                                        ? (isDark ? const Color(0xFF081522).withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.04))
+                                        : (isSelected
+                                            ? null
+                                            : (isDark ? const Color(0xFF0B2540) : Colors.white.withValues(alpha: 0.88))),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.90) : Colors.white.withValues(alpha: 0.90))
+                                      : isOccupied
+                                          ? (isDark ? Colors.redAccent.withValues(alpha: 0.35) : const Color(0xFFFECACA))
+                                          : isPastHour
+                                              ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08))
+                                              : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD)),
+                                  width: isSelected ? 1.4 : 1.0,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.22),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Text(
+                                '${hour.toString().padLeft(2, '0')}:00',
+                                style: TextStyle(
+                                  color: isOccupied 
+                                      ? (isDark ? const Color(0xFFF87171).withValues(alpha: 0.70) : Colors.redAccent.withValues(alpha: 0.6))
+                                      : isPastHour
+                                          ? (isDark ? Colors.white30 : Colors.black38)
+                                          : (isSelected
+                                              ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
+                                              : (isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary)),
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 13,
+                                  decoration: isDisabled ? TextDecoration.lineThrough : null,
+                                ),
                               ),
                             ),
                           ),
@@ -1214,57 +1368,92 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   },
                 ),
                 
-                const SizedBox(height: 26),
+                const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
-                  height: 52,
+                  height: 50,
                   decoration: BoxDecoration(
-                    gradient: !canSubmit
-                        ? null
-                        : LinearGradient(
+                    gradient: canSubmit
+                        ? LinearGradient(
                             colors: isDark
-                                ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                                ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
                                 : const [Color(0xFF0284C7), Color(0xFF0369A1)],
-                          ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: !canSubmit
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: canSubmit
                         ? null
-                        : [
+                        : (isDark ? const Color(0xFF0A2035) : const Color(0xFFE2E8F0)),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: canSubmit
+                          ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.40))
+                          : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.15) : const Color(0xFFCBD5E1)),
+                      width: canSubmit ? 1.4 : 1.0,
+                    ),
+                    boxShadow: canSubmit
+                        ? [
                             BoxShadow(
-                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                              blurRadius: 12,
-                              offset: const Offset(0, 3),
+                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.20),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
                             ),
-                          ],
+                          ]
+                        : null,
                   ),
                   child: ElevatedButton(
                     onPressed: !canSubmit ? null : _createBooking,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: !canSubmit
-                          ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black12)
-                          : Colors.transparent,
+                      backgroundColor: Colors.transparent,
+                      disabledBackgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     child: _isLoading
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
-                            _isSplit && _selectedParticipantIds.length != 2
-                                ? 'Оберіть 2 учасників (${_selectedParticipantIds.length}/2)'
-                                : (_isGroup && _selectedParticipantIds.length > 1
-                                    ? 'Записати (${_selectedParticipantIds.length} ос.)'
-                                    : 'Підтвердити'),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, height: 1.25),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (canSubmit) ...[
+                                Icon(
+                                  LucideIcons.calendarCheck,
+                                  size: 17,
+                                  color: isDark ? const Color(0xFF00E5FF) : Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  _isSplit && _selectedParticipantIds.length != 2
+                                      ? 'Оберіть 2 учасників (${_selectedParticipantIds.length}/2)'
+                                      : (_isGroup && _selectedParticipantIds.length > 1
+                                          ? 'Записати (${_selectedParticipantIds.length} ос.)'
+                                          : 'Підтвердити'),
+                                  style: TextStyle(
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: canSubmit
+                                        ? Colors.white
+                                        : (isDark ? const Color(0xFF64748B) : Colors.black38),
+                                    letterSpacing: 0.2,
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                   ),
                 ),
-                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
   }
 }

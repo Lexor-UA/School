@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/theme.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'dart:ui';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -19,14 +21,20 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _ChildEntry {
   final TextEditingController nameController;
   final TextEditingController ageController;
+  final FocusNode nameFocusNode;
+  final FocusNode ageFocusNode;
 
   _ChildEntry({String? name, String? age})
       : nameController = TextEditingController(text: name),
-        ageController = TextEditingController(text: age);
+        ageController = TextEditingController(text: age),
+        nameFocusNode = FocusNode(),
+        ageFocusNode = FocusNode();
 
   void dispose() {
     nameController.dispose();
     ageController.dispose();
+    nameFocusNode.dispose();
+    ageFocusNode.dispose();
   }
 }
 
@@ -35,8 +43,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   final _ageController = TextEditingController();
+  final _nameFocusNode = FocusNode();
+  final _phoneFocusNode = FocusNode();
+  final _ageFocusNode = FocusNode();
   final List<_ChildEntry> _children = [];
 
+  late String _selectedBranchId;
   bool _isAdultOnly = true;
   bool _isLoading = false;
 
@@ -44,7 +56,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     final user = ref.read(authControllerProvider);
-    _nameController = TextEditingController(text: user?.name == 'New User' ? '' : user?.name ?? '');
+    final effectiveBranch = ref.read(effectiveBranchProvider);
+    final fbUser = FirebaseAuth.instance.currentUser;
+
+    _selectedBranchId = (user?.branchId != null && user!.branchId.isNotEmpty)
+        ? user.branchId
+        : effectiveBranch.id;
+
+    final initialName = (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+        ? user.name.trim()
+        : (fbUser?.displayName?.trim().isNotEmpty == true
+            ? fbUser!.displayName!.trim()
+            : '');
+
+    _nameController = TextEditingController(text: initialName);
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _children.add(_ChildEntry());
   }
@@ -54,6 +79,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _ageController.dispose();
+    _nameFocusNode.dispose();
+    _phoneFocusNode.dispose();
+    _ageFocusNode.dispose();
     for (var child in _children) {
       child.dispose();
     }
@@ -94,6 +122,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(authControllerProvider.notifier).completeOnboarding(
         _nameController.text.trim(),
         _phoneController.text.trim(),
+        branchId: _selectedBranchId,
         age: clientAge,
         isAdultOnly: _isAdultOnly,
         children: childrenData != null && childrenData.isNotEmpty ? childrenData : null,
@@ -118,6 +147,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -196,7 +226,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 fontSize: 14.5,
                               ),
                             ).animate().fadeIn(delay: 150.ms, duration: 500.ms),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 22),
+
+                            // Branch Selector (VisionOS Glassmorphic Cards)
+                            _buildBranchSelector().animate().fadeIn(delay: 180.ms, duration: 400.ms),
+                            const SizedBox(height: 20),
                             
                             // Adult vs Children Segmented Switcher
                             Container(
@@ -288,39 +322,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                             _buildTextField(
                               controller: _nameController,
+                              focusNode: _nameFocusNode,
                               icon: LucideIcons.user,
                               hint: 'onboarding.name_hint'.tr(),
                               textInputAction: TextInputAction.next,
                               validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.name_error'.tr() : null,
-                            ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
+                            ),
                             
                             const SizedBox(height: 14),
                             
                             _buildTextField(
                               controller: _phoneController,
+                              focusNode: _phoneFocusNode,
                               icon: LucideIcons.phone,
                               hint: 'onboarding.phone_hint'.tr(),
                               keyboardType: TextInputType.phone,
                               textInputAction: TextInputAction.next,
                               validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.phone_error'.tr() : null,
-                            ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+                            ),
                             
                             const SizedBox(height: 14),
 
                             _buildTextField(
                               controller: _ageController,
+                              focusNode: _ageFocusNode,
                               icon: LucideIcons.calendar,
                               hint: 'onboarding.age_hint'.tr(),
                               keyboardType: TextInputType.number,
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                              suffixIcon: IconButton(
-                                tooltip: 'Готово',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                icon: const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18),
-                                onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
-                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(3),
+                              ],
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) return 'onboarding.age_error'.tr();
                                 final age = int.tryParse(v.trim());
@@ -331,7 +365,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 }
                                 return null;
                               },
-                            ).animate().fadeIn(delay: 350.ms, duration: 400.ms),
+                            ),
                             
                             const SizedBox(height: 22),
 
@@ -439,6 +473,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       const SizedBox(height: 10),
                                       _buildTextField(
                                         controller: child.nameController,
+                                        focusNode: child.nameFocusNode,
                                         icon: LucideIcons.baby,
                                         hint: 'onboarding.child_name_hint'.tr(),
                                         textInputAction: TextInputAction.next,
@@ -447,18 +482,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       const SizedBox(height: 10),
                                       _buildTextField(
                                         controller: child.ageController,
+                                        focusNode: child.ageFocusNode,
                                         icon: LucideIcons.calendarDays,
                                         hint: 'onboarding.child_age_hint'.tr(),
                                         keyboardType: TextInputType.number,
                                         textInputAction: TextInputAction.done,
                                         onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                                        suffixIcon: IconButton(
-                                          tooltip: 'Готово',
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                          icon: const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18),
-                                          onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
-                                        ),
                                         inputFormatters: [
                                           FilteringTextInputFormatter.digitsOnly,
                                           LengthLimitingTextInputFormatter(2),
@@ -587,10 +616,227 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ],
   ),
 );
+}
+
+  Widget _buildBranchSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.mapPin, size: 14, color: Color(0xFF00E5FF)),
+              const SizedBox(width: 6),
+              Text(
+                'Філія та басейн навчання:',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            // Kyiv
+            Expanded(
+              child: _buildBranchCard(
+                id: 'kyiv',
+                flag: '🇺🇦',
+                city: 'Київ',
+                pool: '',
+                address: 'вул. Спортивна, 1',
+                subAddress: 'Київ',
+                currencyBadge: '₴ UAH',
+                isSelected: _selectedBranchId == 'kyiv',
+                onTap: () => setState(() => _selectedBranchId = 'kyiv'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Vienna
+            Expanded(
+              child: _buildBranchCard(
+                id: 'vienna',
+                flag: '🇦🇹',
+                city: 'Відень',
+                pool: '',
+                address: 'In der Au 1',
+                subAddress: 'Klosterneuburg',
+                currencyBadge: '€ EUR',
+                isSelected: _selectedBranchId == 'vienna',
+                onTap: () => setState(() => _selectedBranchId = 'vienna'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBranchCard({
+    required String id,
+    required String flag,
+    required String city,
+    required String pool,
+    required String address,
+    String? subAddress,
+    required String currencyBadge,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [
+                    Color(0xFF0C3B6E),
+                    Color(0xFF042042),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.06),
+                    Colors.white.withValues(alpha: 0.02),
+                  ],
+                ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.15),
+            width: isSelected ? 1.6 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(flag, style: const TextStyle(fontSize: 19)),
+                    const SizedBox(width: 6),
+                    Text(
+                      city,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? const Color(0xFF00E5FF) : Colors.transparent,
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFF00E5FF) : Colors.white38,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(LucideIcons.check, size: 12, color: Color(0xFF001F3F))
+                      : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (pool.isNotEmpty) ...[
+              Text(
+                pool,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF00E5FF) : Colors.white70,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                address,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ] else ...[
+              Text(
+                address,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.90),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subAddress ?? city,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                currencyBadge,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF00E5FF) : Colors.white60,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildTextField({
     required TextEditingController controller,
+    FocusNode? focusNode,
     required IconData icon,
     required String hint,
     TextInputType? keyboardType,
@@ -602,10 +848,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
-      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       inputFormatters: inputFormatters,
       validator: validator,
       style: const TextStyle(color: Colors.white),

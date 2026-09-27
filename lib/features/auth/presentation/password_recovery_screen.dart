@@ -216,47 +216,53 @@ class _PasswordRecoveryScreenState
             style: IconButton.styleFrom(
               backgroundColor: Colors.white.withValues(alpha: 0.08),
               padding: const EdgeInsets.all(8),
-              minimumSize: const Size(38, 38),
+              minimumSize: const Size(40, 40),
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
 
           // Key badge & Title column
           Expanded(
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                        const Color(0xFF0288D1).withValues(alpha: 0.1),
+                        Color(0xFF00E5FF),
+                        Color(0xFF0288D1),
                       ],
                     ),
                     border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
-                        blurRadius: 8,
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: const Center(
                     child: Icon(
                       LucideIcons.keyRound,
-                      color: Color(0xFF00E5FF),
-                      size: 18,
+                      color: Color(0xFF04101D),
+                      size: 19,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +278,7 @@ class _PasswordRecoveryScreenState
                         ),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.2,
                         ),
@@ -283,20 +289,20 @@ class _PasswordRecoveryScreenState
                       Row(
                         children: [
                           Container(
-                            width: 6.5,
-                            height: 6.5,
+                            width: 7,
+                            height: 7,
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
                               color: Color(0xFF10B981),
                               boxShadow: [
                                 BoxShadow(
                                   color: Color(0xFF10B981),
-                                  blurRadius: 4,
+                                  blurRadius: 5,
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 6),
                           Flexible(
                             child: Text(
                               _t(
@@ -307,8 +313,8 @@ class _PasswordRecoveryScreenState
                                 ru: 'Чат с администратором',
                               ),
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.65),
-                                fontSize: 11.5,
+                                color: Colors.white.withValues(alpha: 0.70),
+                                fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
@@ -322,34 +328,6 @@ class _PasswordRecoveryScreenState
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-
-          // Action to return to login directly
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF00E5FF),
-              backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
-                ),
-              ),
-            ),
-            icon: const Icon(LucideIcons.logIn, size: 14),
-            label: Text(
-              _t(
-                'auth.back_to_login',
-                uk: 'До входу',
-                en: 'To Login',
-                de: 'Zum Login',
-                ru: 'Ко входу',
-              ),
-              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
-            ),
-            onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
@@ -407,6 +385,7 @@ class _PasswordRecoveryScreenState
                 _buildQuickChip(
                   label: '🔑 Забув пароль',
                   onTap: () {
+                    HapticFeedback.selectionClick();
                     _messageController.text =
                         'Я забув(-ла) свій пароль. Підкажіть, будь ласка, як увійти або скиньте тимчасовий пароль.';
                   },
@@ -415,6 +394,7 @@ class _PasswordRecoveryScreenState
                 _buildQuickChip(
                   label: '👤 Не пам\'ятаю логін',
                   onTap: () {
+                    HapticFeedback.selectionClick();
                     _messageController.text =
                         'Я не пам\'ятаю свій логін до акаунта. Мої контактні дані: ';
                   },
@@ -423,6 +403,7 @@ class _PasswordRecoveryScreenState
                 _buildQuickChip(
                   label: '📞 Вказати контакти',
                   onTap: () {
+                    HapticFeedback.selectionClick();
                     _messageController.text =
                         'Мій контактний номер телефону: ';
                   },
@@ -443,19 +424,20 @@ class _PasswordRecoveryScreenState
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+            width: 1.1,
           ),
         ),
         child: Text(
           label,
           style: const TextStyle(
             color: Color(0xFF00E5FF),
-            fontSize: 11,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
         ),

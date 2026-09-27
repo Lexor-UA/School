@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -580,180 +581,201 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [const Color(0xFF0F2644), const Color(0xFF0A192F)]
-                    : [Colors.white, const Color(0xFFF8FAFC)],
-              ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.15),
-                  blurRadius: 24,
-                  offset: const Offset(0, -4),
+        final bottomInset = MediaQuery.of(ctx).padding.bottom;
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(24, 16, 24, math.max(bottomInset, 16) + 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: isDark
+                      ? [
+                          const Color(0xFF0F1E32).withValues(alpha: 0.96),
+                          const Color(0xFF070E1A).withValues(alpha: 0.98),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.98),
+                          const Color(0xFFF0F9FF).withValues(alpha: 0.96),
+                        ],
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border.all(
+                  color: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.12 : 0.08),
+                    blurRadius: 28,
+                    offset: const Offset(0, -4),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 1. Draggable handle bar
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF0284C7).withValues(alpha: 0.35),
-                            blurRadius: 10,
-                          ),
-                        ],
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.35)
+                            : const Color(0xFF94A3B8),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Center(
-                        child: Text(
-                          _getInitials(name),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Контактні дані клієнта',
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : const Color(0xFF64748B),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
                     ),
                   ),
-                  child: Row(
+
+                  // 2. Header with Avatar, Details and Close 'X' Button
+                  Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 46,
+                        height: 46,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE0F2FE),
-                          borderRadius: BorderRadius.circular(10),
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                          ),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF38BDF8).withValues(alpha: 0.6)
+                                : Colors.white.withValues(alpha: 0.8),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+                              blurRadius: 10,
+                            ),
+                          ],
                         ),
-                        child: const Icon(LucideIcons.phone, size: 18, color: Color(0xFF0284C7)),
+                        child: Center(
+                          child: Text(
+                            _getInitials(name),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Телефон',
-                              style: TextStyle(
-                                color: isDark ? Colors.white54 : const Color(0xFF64748B),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              phone.isNotEmpty ? phone : 'Номер не вказано',
+                              name,
                               style: TextStyle(
                                 color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Контактні дані клієнта',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      if (phone.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(LucideIcons.copy, size: 18, color: Color(0xFF0284C7)),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: phone));
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Номер скопійовано в буфер!'),
-                                backgroundColor: Color(0xFF0284C7),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
+                      const SizedBox(width: 8),
+                      // Close button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.12)
+                              : Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.20)
+                                : const Color(0xFFBAE6FD),
+                          ),
+                          boxShadow: isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                         ),
+                        child: IconButton(
+                          icon: Icon(
+                            LucideIcons.x,
+                            color: isDark ? Colors.white : const Color(0xFF334155),
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pop(ctx);
+                          },
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                if (email.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
+
+                  // Phone Card
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                      color: isDark ? const Color(0xFF0D2137) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                            : const Color(0xFFBAE6FD),
+                        width: 1.1,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.12 : 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE0F2FE),
+                            color: isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                                : const Color(0xFFE0F2FE),
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                  : Colors.transparent,
+                              width: 0.8,
+                            ),
                           ),
-                          child: const Icon(LucideIcons.mail, size: 18, color: Color(0xFF0284C7)),
+                          child: Icon(
+                            LucideIcons.phone,
+                            size: 18,
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -761,59 +783,207 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Email',
+                                'Телефон',
                                 style: TextStyle(
-                                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
-                                email,
+                                phone.isNotEmpty ? phone : 'Номер не вказано',
                                 style: TextStyle(
                                   color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(LucideIcons.copy, size: 18, color: Color(0xFF0284C7)),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: email));
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Email скопійовано!'),
-                                backgroundColor: Color(0xFF0284C7),
-                                duration: Duration(seconds: 2),
+                        if (phone.isNotEmpty)
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Clipboard.setData(ClipboardData(text: phone));
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Номер скопійовано в буфер!'),
+                                    backgroundColor: Color(0xFF0284C7),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  LucideIcons.copy,
+                                  size: 18,
+                                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                ],
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0284C7),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
+
+                  // Email Card
+                  if (email.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0D2137) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
+                              : const Color(0xFFBAE6FD),
+                          width: 1.1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.12 : 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                                  : const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                    : Colors.transparent,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Icon(
+                              LucideIcons.mail,
+                              size: 18,
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Email',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  email,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Clipboard.setData(ClipboardData(text: email));
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Email скопійовано!'),
+                                    backgroundColor: Color(0xFF0284C7),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  LucideIcons.copy,
+                                  size: 18,
+                                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Закрити', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Sapphire VIP CTA Button (54px, gradient, neon border, glow, crisp white text)
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: double.infinity,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8),
+                            width: 1.4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Закрити',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -1307,7 +1477,10 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                     builder: (context, snapshot) {
                       final data = snapshot.data?.data() as Map<String, dynamic>?;
                       final avatarUrl = data?['avatarUrl'] as String?;
-                      if (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+                      if (avatarUrl != null &&
+                          avatarUrl.isNotEmpty &&
+                          avatarUrl.startsWith('http') &&
+                          !avatarUrl.contains('ui-avatars.com')) {
                         return CircleAvatar(
                           radius: 20,
                           backgroundImage: NetworkImage(avatarUrl),

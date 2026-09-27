@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,100 +32,129 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF061426).withValues(alpha: 0.94)
-                  : Colors.white.withValues(alpha: 0.96),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 1,
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: math.max(MediaQuery.of(ctx).padding.bottom, 16) + 16,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 30,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Grab Bar Handle
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4.5,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black12,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Філії CitySwim',
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Керування філією або перегляд всієї мережі',
-                          style: TextStyle(
-                            color: currentTheme.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: currentTheme.accentPrimary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: currentTheme.accentPrimary.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Text(
-                        'Owner Mode',
-                        style: TextStyle(
-                          color: currentTheme.accentPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.97),
+                    isDark ? const Color(0xFF070E1A).withValues(alpha: 0.98) : const Color(0xFFF1F5F9).withValues(alpha: 0.98),
                   ],
                 ),
-                const SizedBox(height: 18),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 30,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top Grab Bar Handle
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Філії CitySwim',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : currentTheme.textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Керування філією або перегляд всієї мережі',
+                              style: TextStyle(
+                                color: isDark ? Colors.white60 : currentTheme.textSecondary,
+                                fontSize: 12.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                        decoration: BoxDecoration(
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          'Owner Mode',
+                          style: TextStyle(
+                            color: currentTheme.accentPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: Icon(
+                          LucideIcons.x,
+                          color: isDark ? Colors.white54 : Colors.black45,
+                          size: 20,
+                        ),
+                        tooltip: 'Закрити',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
 
                 // Branch 1: Vienna
                 _buildBranchOption(
                   context: ctx,
                   branch: Branch.vienna,
                   title: 'CitySwim Vienna',
-                  subtitle: 'HappyLand Klosterneuburg • EUR (€) • Europe/Vienna',
+                  subtitle: 'In der Au 1, Klosterneuburg • EUR (€) • Europe/Vienna',
                   flag: '🇦🇹',
                   isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == 'vienna',
                   onTap: () {
@@ -169,9 +199,10 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   Widget _buildBranchOption({
@@ -432,26 +463,23 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
     final isDark = currentTheme.isDark;
     final user = ref.watch(authControllerProvider);
     final tenancyState = ref.watch(tenancyControllerProvider);
-    final isOwner = user?.role == UserRole.owner;
-
     // Підготовка даних активної філії
     final String flag;
     final String label;
-    final String badge;
 
     if (tenancyState.isAllLocations) {
       flag = '🌐';
       label = 'Всі філії';
-      badge = '₴ / €';
     } else {
       final b = tenancyState.effectiveBranch;
       flag = b.flagEmoji;
       label = b.id == 'vienna' ? 'CitySwim Vienna' : 'CitySwim Kyiv';
-      badge = b.currencySymbol;
     }
 
-    // Для звичайних співробітників (Admin, Coach) показуємо статичний бейдж
-    if (!isOwner) {
+    final canSwitchBranch = user?.role == UserRole.owner || user?.role == UserRole.admin;
+
+    // Для тренера показуємо статичний бейдж
+    if (!canSwitchBranch) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
@@ -472,15 +500,6 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                 color: currentTheme.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '($badge)',
-              style: TextStyle(
-                color: currentTheme.accentPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -552,28 +571,10 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                         letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(width: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        badge,
-                        style: TextStyle(
-                          color: tenancyState.isAllLocations
-                              ? const Color(0xFF8B5CF6)
-                              : currentTheme.accentPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Icon(
                       LucideIcons.chevronDown,
-                      color: currentTheme.textSecondary,
+                      color: currentTheme.isDark ? const Color(0xFF38BDF8) : currentTheme.textSecondary,
                       size: 14,
                     ),
                   ],

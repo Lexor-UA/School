@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -53,41 +52,32 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
       minChildSize: 0.45,
       maxChildSize: 0.94,
       builder: (context, scrollController) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: isLight
-                      ? [
-                          Colors.white.withValues(alpha: 0.98),
-                          const Color(0xFFF0F9FF).withValues(alpha: 0.95),
-                        ]
-                      : [
-                          const Color(0xFF0F2E52).withValues(alpha: 0.96),
-                          const Color(0xFF07192F).withValues(alpha: 0.98),
-                        ],
-                ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                border: Border.all(
-                  color: isLight
-                      ? Colors.white
-                      : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                        .withValues(alpha: 0.20),
-                    blurRadius: 30,
-                    offset: const Offset(0, -6),
-                  ),
-                ],
-              ),
+        return Container(
+          decoration: BoxDecoration(
+            color: isLight ? Colors.white : const Color(0xFF0A1B30),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isLight
+                  ? const Color(0xFFE2E8F0)
+                  : const Color(0xFF1E4570),
+              width: 1.0,
+            ),
+            boxShadow: isLight
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF0369A1).withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, -4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      blurRadius: 24,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+          ),
               child: Column(
                 children: [
                   // Drag Handle
@@ -99,7 +89,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       decoration: BoxDecoration(
                         color: isLight
                             ? const Color(0xFFCBD5E1)
-                            : Colors.white.withValues(alpha: 0.25),
+                            : const Color(0xFF1E4570),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -254,9 +244,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                   ),
                 ],
               ),
-            ),
-          ),
-        );
+            );
       },
     );
   }
@@ -278,12 +266,12 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
               : null,
           color: isSelected
               ? null
-              : (isLight ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0E2746)),
+              : (isLight ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF081628)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
                 ? Colors.white.withValues(alpha: 0.5)
-                : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.22)),
+                : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E3E66)),
             width: 1.0,
           ),
           boxShadow: isSelected
@@ -313,37 +301,32 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
   Widget _buildAdminChatTile(BuildContext context, bool isLight, AppThemeConfig themeConfig) {
     return Container(
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isLight
+              ? [Colors.white, const Color(0xFFF8FAFC)]
+              : [const Color(0xFF0F2744), const Color(0xFF0A1B30)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isLight
+              ? const Color(0xFFE2E8F0)
+              : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                .withValues(alpha: isLight ? 0.08 : 0.12),
+            color: isLight
+                ? const Color(0xFF0284C7).withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.35),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isLight
-                  ? [Colors.white, const Color(0xFFF8FAFC)]
-                  : [const Color(0xFF0F2E52), const Color(0xFF07192F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isLight
-                  ? const Color(0xFF0284C7).withValues(alpha: 0.30)
-                  : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-              width: 1.1,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
+      child: Material(
+        color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
               onTap: () {
@@ -433,9 +416,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildEmptyClientDialogsState(bool isLight, AppThemeConfig themeConfig) {
@@ -443,10 +424,10 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
       margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF081C33).withValues(alpha: 0.6),
+        color: isLight ? Colors.white : const Color(0xFF0F2744),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.15),
+          color: isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570),
         ),
       ),
       child: Column(
@@ -492,38 +473,32 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isLight
+              ? [Colors.white, const Color(0xFFF8FAFC)]
+              : [const Color(0xFF0F2744), const Color(0xFF0A1B30)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: hasUnread
+              ? const Color(0xFF00E5FF)
+              : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570)),
+          width: hasUnread ? 1.5 : 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: hasUnread
                 ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                : (isLight ? const Color(0xFF0284C7).withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.20)),
+                : (isLight ? const Color(0xFF0284C7).withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.25)),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isLight
-                  ? [Colors.white, const Color(0xFFF8FAFC)]
-                  : [const Color(0xFF0F2E52), const Color(0xFF07192F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: hasUnread
-                  ? const Color(0xFF00E5FF)
-                  : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.20)),
-              width: hasUnread ? 1.5 : 1.0,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
+      child: Material(
+        color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
               onTap: () {
@@ -561,7 +536,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                         gradient: LinearGradient(
                           colors: [
                             const Color(0xFF00E5FF),
-                            dialog.childName != null ? const Color(0xFF0284C7) : const Color(0xFFA855F7),
+                            dialog.childName != null ? const Color(0xFF0284C7) : const Color(0xFF0077B6),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -684,8 +659,6 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

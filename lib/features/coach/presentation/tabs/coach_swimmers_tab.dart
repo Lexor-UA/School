@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -84,7 +83,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 : null,
             color: isSelected
                 ? null
-                : (_isLight ? Colors.transparent : Colors.white.withValues(alpha: 0.04)),
+                : (_isLight ? Colors.transparent : Colors.transparent),
             borderRadius: BorderRadius.circular(14),
             border: isSelected
                 ? Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1.1)
@@ -150,13 +149,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
               : null,
           color: isSelected
               ? null
-              : (_isLight ? Colors.white.withValues(alpha: 0.82) : const Color(0xFF0E2746)),
+              : (_isLight ? Colors.white.withValues(alpha: 0.82) : const Color(0xFF081628)),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? Colors.white.withValues(alpha: 0.45)
-                : (_isLight ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF00E5FF).withValues(alpha: 0.22)),
-            width: 1.1,
+                : (_isLight ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1E3E66)),
+            width: 1.0,
           ),
           boxShadow: isSelected
               ? [
@@ -275,25 +274,20 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      gradient: _isLight
-                          ? null
-                          : const LinearGradient(
-                              colors: [Color(0xFF0F2E52), Color(0xFF07192F)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      color: _isLight ? Colors.white.withValues(alpha: 0.78) : null,
+                      color: _isLight ? Colors.white.withValues(alpha: 0.78) : const Color(0xFF0A1B30),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: _isLight
                             ? Colors.white.withValues(alpha: 0.95)
-                            : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                        width: 1.2,
+                            : const Color(0xFF1E4570),
+                        width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: _isLight ? 0.08 : 0.16),
-                          blurRadius: 16,
+                          color: _isLight
+                              ? const Color(0xFF0284C7).withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 14,
                           offset: const Offset(0, 3),
                         ),
                       ],
@@ -314,24 +308,19 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
-                      gradient: _isLight
-                          ? null
-                          : const LinearGradient(
-                              colors: [Color(0xFF0D2542), Color(0xFF07182B)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      color: _isLight ? Colors.white.withValues(alpha: 0.85) : null,
+                      color: _isLight ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF081628),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _isLight ? Colors.white : const Color(0xFF00E5FF).withValues(alpha: 0.28),
-                        width: 1.1,
+                        color: _isLight ? Colors.white : const Color(0xFF1E3E66),
+                        width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: _isLight ? 0.08 : 0.12),
-                          blurRadius: 14,
-                          offset: const Offset(0, 3),
+                          color: _isLight
+                              ? const Color(0xFF0284C7).withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -883,13 +872,31 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     final capacity = group.maxCapacity > 0 ? group.maxCapacity : 10;
     final fillRatio = (enrolledCount / capacity).clamp(0.0, 1.0);
     final accentColor = isAdult
-        ? (_isLight ? const Color(0xFF9333EA) : const Color(0xFFA855F7))
+        ? (_isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8))
         : (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _isLight
+              ? [
+                  Colors.white.withValues(alpha: 0.96),
+                  const Color(0xFFF8FAFC),
+                ]
+              : [
+                  const Color(0xFF0F2744),
+                  const Color(0xFF0A1B30),
+                ],
+        ),
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: _isLight ? Colors.white : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: _isLight
             ? [
                 BoxShadow(
@@ -905,44 +912,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
               ]
             : [
                 BoxShadow(
-                  color: accentColor.withValues(alpha: 0.16),
-                  blurRadius: 22,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _isLight
-                    ? [
-                        Colors.white.withValues(alpha: 0.90),
-                        Colors.white.withValues(alpha: 0.74),
-                      ]
-                    : [
-                        const Color(0xFF0F2D50),
-                        const Color(0xFF081C33),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: _isLight ? Colors.white : accentColor.withValues(alpha: 0.38),
-                width: _isLight ? 1.5 : 1.2,
-              ),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
+      child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Row 1: Title + Category Badge (ДІТИ / ДОРОСЛІ)
@@ -1034,12 +1010,12 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   decoration: BoxDecoration(
                     color: _isLight
                         ? const Color(0xFFF1F5F9).withValues(alpha: 0.85)
-                        : const Color(0xFF0B213B).withValues(alpha: 0.85),
+                        : const Color(0xFF081628),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: _isLight
                           ? const Color(0xFFE2E8F0)
-                          : const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                          : const Color(0xFF1E3E66),
                     ),
                   ),
                   child: Row(
@@ -1122,7 +1098,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     children: [
                       Container(
                         height: 8,
-                        color: _isLight ? const Color(0xFFE2E8F0) : Colors.white.withValues(alpha: 0.08),
+                        color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
                       ),
                       FractionallySizedBox(
                         widthFactor: fillRatio,
@@ -1197,9 +1173,6 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     ).animate().fadeIn(delay: (index * 40).ms);
   }
 
@@ -1358,12 +1331,30 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _isLight
+              ? [
+                  Colors.white.withValues(alpha: 0.96),
+                  const Color(0xFFF8FAFC),
+                ]
+              : [
+                  const Color(0xFF0F2744),
+                  const Color(0xFF0A1B30),
+                ],
+        ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _isLight ? Colors.white : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: _isLight
             ? [
                 BoxShadow(
-                  color: const Color(0xFF9333EA).withValues(alpha: 0.08),
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -1375,44 +1366,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
               ]
             : [
                 BoxShadow(
-                  color: const Color(0xFFA855F7).withValues(alpha: 0.16),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.40),
+                  color: Colors.black.withValues(alpha: 0.35),
                   blurRadius: 14,
-                  offset: const Offset(0, 6),
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _isLight
-                    ? [
-                        Colors.white.withValues(alpha: 0.90),
-                        Colors.white.withValues(alpha: 0.74),
-                      ]
-                    : [
-                        const Color(0xFF0F2D50),
-                        const Color(0xFF081C33),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _isLight ? Colors.white : const Color(0xFFA855F7).withValues(alpha: 0.38),
-                width: _isLight ? 1.5 : 1.2,
-              ),
-            ),
-            padding: const EdgeInsets.all(14),
-            child: Row(
+      child: Row(
               children: [
                 Container(
                   width: 44,
@@ -1420,7 +1380,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFA855F7), Color(0xFF6366F1)],
+                      colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1430,7 +1390,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFA855F7).withValues(alpha: 0.35),
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -1464,20 +1424,24 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFA855F7).withValues(alpha: _isLight ? 0.10 : 0.16),
+                              color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFA855F7).withValues(alpha: _isLight ? 0.30 : 0.45),
+                                color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF334155),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.user, size: 10, color: Color(0xFFA855F7)),
-                                SizedBox(width: 4),
+                                Icon(LucideIcons.user, size: 10, color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8)),
+                                const SizedBox(width: 4),
                                 Text(
                                   'ДОРОСЛИЙ ПЛАВЕЦЬ',
-                                  style: TextStyle(color: Color(0xFFA855F7), fontSize: 10, fontWeight: FontWeight.w800),
+                                  style: TextStyle(
+                                    color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1504,26 +1468,30 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFA855F7).withValues(alpha: _isLight ? 0.08 : 0.15),
+                                color: _isLight
+                                    ? const Color(0xFFE0F2FE)
+                                    : const Color(0xFF081628),
                                 borderRadius: BorderRadius.circular(7),
                                 border: Border.all(
-                                  color: const Color(0xFFA855F7).withValues(alpha: _isLight ? 0.25 : 0.40),
+                                  color: _isLight
+                                      ? const Color(0xFFBAE6FD)
+                                      : const Color(0xFF1E3E66),
                                   width: 0.9,
                                 ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     LucideIcons.waves,
                                     size: 10,
-                                    color: Color(0xFFA855F7),
+                                    color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     cls.title,
                                     style: TextStyle(
-                                      color: _isLight ? const Color(0xFF7C3AED) : const Color(0xFFC084FC),
+                                      color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -1547,13 +1515,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFA855F7).withValues(alpha: 0.35),
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -1566,9 +1534,6 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     ).animate().fadeIn(delay: (index * 40).ms);
   }
 
@@ -1580,7 +1545,24 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _isLight
+              ? [
+                  Colors.white.withValues(alpha: 0.96),
+                  const Color(0xFFF8FAFC),
+                ]
+              : [
+                  const Color(0xFF0F2744),
+                  const Color(0xFF0A1B30),
+                ],
+        ),
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: _isLight ? Colors.white : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: _isLight
             ? [
                 BoxShadow(
@@ -1596,53 +1578,23 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
               ]
             : [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                  blurRadius: 22,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
-      child: ClipRRect(
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _isLight
-                    ? [
-                        Colors.white.withValues(alpha: 0.90),
-                        Colors.white.withValues(alpha: 0.74),
-                      ]
-                    : [
-                        const Color(0xFF0F2D50),
-                        const Color(0xFF081C33),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: _isLight ? Colors.white : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                width: _isLight ? 1.5 : 1.2,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(22),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(22),
-                onTap: () => showSwimmerDetailsSheet(context, child),
-                splashColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                highlightColor: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => showSwimmerDetailsSheet(context, child),
+          splashColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+          highlightColor: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Row 1: Header (Avatar + Name & Level/XP + Chevron)
@@ -1704,19 +1656,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: _isLight
-                                              ? const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)]
-                                              : [
-                                                  const Color(0xFF00E5FF).withValues(alpha: 0.22),
-                                                  const Color(0xFF0284C7).withValues(alpha: 0.12),
-                                                ],
-                                        ),
+                                        color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: _isLight
-                                              ? const Color(0xFF7DD3FC)
-                                              : const Color(0xFF00E5FF).withValues(alpha: 0.50),
+                                          color: _isLight ? const Color(0xFF7DD3FC) : const Color(0xFF334155),
                                           width: 1.0,
                                         ),
                                       ),
@@ -1776,19 +1719,11 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             height: 34,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                              color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF081628),
                               border: Border.all(
-                                color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E3E66),
                                 width: 1.2,
                               ),
-                              boxShadow: _isLight
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                                        blurRadius: 10,
-                                      ),
-                                    ],
                             ),
                             child: Center(
                               child: Icon(
@@ -1810,13 +1745,11 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                                    .withValues(alpha: _isLight ? 0.08 : 0.15),
+                                color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                                      .withValues(alpha: _isLight ? 0.25 : 0.40),
-                                  width: 0.9,
+                                  color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF334155),
+                                  width: 1.0,
                                 ),
                               ),
                               child: Row(
@@ -1854,30 +1787,14 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                 decoration: BoxDecoration(
-                                  gradient: _isLight
-                                      ? const LinearGradient(
-                                          colors: [Color(0xFFF0F9FF), Color(0xFFE0F2FE)],
-                                        )
-                                      : const LinearGradient(
-                                          colors: [Color(0xFF0F2B48), Color(0xFF07192C)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
+                                  color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: _isLight
                                         ? const Color(0xFFBAE6FD)
-                                        : const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                        : const Color(0xFF1E3E66),
                                     width: 1.2,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                                          .withValues(alpha: _isLight ? 0.08 : 0.15),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1909,20 +1826,12 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                 decoration: BoxDecoration(
-                                  gradient: _isLight
-                                      ? const LinearGradient(
-                                          colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
-                                        )
-                                      : const LinearGradient(
-                                          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
+                                  color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF081628),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: _isLight
                                         ? const Color(0xFFE2E8F0)
-                                        : Colors.white.withValues(alpha: 0.18),
+                                        : const Color(0xFF1E3E66),
                                     width: 1.2,
                                   ),
                                 ),
@@ -1956,9 +1865,6 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 ),
               ),
             ),
-          ),
-        ),
-      ),
     ).animate().fadeIn(delay: (index * 50).ms);
   }
 }

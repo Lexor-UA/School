@@ -568,7 +568,6 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.pop(context);
-                    ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner('Всі (Спліт)');
                     ref.read(parentTabProvider.notifier).setTab(2);
                   },
                   child: const Text('Придбати абонемент', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),

@@ -21,6 +21,8 @@ import 'package:swimming_school_app/features/parent/presentation/widgets/parent_
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_class_cards.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
 
 class ParentCalendarTab extends ConsumerStatefulWidget {
   const ParentCalendarTab({super.key});
@@ -32,9 +34,15 @@ class ParentCalendarTab extends ConsumerStatefulWidget {
 class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
   String selectedChildId = 'all';
   DateTime selectedDate = DateTime.now();
+  bool _isDateInitialized = false;
 
   @override
   Widget build(BuildContext context) {
+    final activeBranch = ref.watch(effectiveBranchProvider);
+    if (!_isDateInitialized) {
+      selectedDate = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), activeBranch.id);
+      _isDateInitialized = true;
+    }
     final user = ref.watch(authControllerProvider);
     final currentTheme = ref.watch(appThemeControllerProvider);
     final scheduleAsync = ref.watch(scheduleControllerProvider);
@@ -58,14 +66,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final Map<String, GroupClass> uniqueDayClasses = {};
     for (final c in allClasses) {
-      if (c.startTime.year == selectedDate.year &&
-          c.startTime.month == selectedDate.month &&
-          c.startTime.day == selectedDate.day) {
+      final cStart = c.branchStartTime;
+      if (cStart.year == selectedDate.year &&
+          cStart.month == selectedDate.month &&
+          cStart.day == selectedDate.day) {
         uniqueDayClasses[c.id] = c;
       }
     }
     final dayClasses = uniqueDayClasses.values.toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      ..sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
     final fbUser = FirebaseAuth.instance.currentUser;
     final parentDisplayName = (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
@@ -73,6 +82,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         : (fbUser?.displayName?.trim().isNotEmpty == true
             ? fbUser!.displayName!.trim()
             : 'Мій розклад');
+
+    final hasPartner = partnerId != null && partnerName != null;
+    final hasMultipleMembers = children.isNotEmpty || hasPartner;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -104,15 +116,17 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           children: [
             const SizedBox(height: 2),
 
-            // 1. Sleek Frosted Glass Child / Parent Selector
-            _buildChildSelector(
-              currentTheme,
-              user?.id ?? fbUser?.uid ?? '',
-              parentDisplayName,
-              partnerId,
-              partnerName,
-            ),
-            const SizedBox(height: 8),
+            // 1. Sleek Frosted Glass Child / Parent Selector (Visible only when multiple members exist)
+            if (hasMultipleMembers) ...[
+              _buildChildSelector(
+                currentTheme,
+                user?.id ?? fbUser?.uid ?? '',
+                parentDisplayName,
+                partnerId,
+                partnerName,
+              ),
+              const SizedBox(height: 8),
+            ],
 
             // 2. VisionOS Frosted Glass Calendar Card
             Padding(
@@ -149,7 +163,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
   }
 
   void _showBookingSheet(BuildContext context) {
-    final now = DateTime.now();
+    final activeBranch = ref.read(effectiveBranchProvider);
+    final now = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), activeBranch.id);
     final todayDate = DateTime(now.year, now.month, now.day);
     final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     if (selectedDateOnly.isBefore(todayDate)) {
@@ -432,6 +447,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     String? partnerName,
   ]) {
     final childrenAsync = ref.watch(childrenControllerProvider);
+    final children = childrenAsync.value ?? [];
+    final hasPartner = partnerId != null && partnerName != null;
+    final totalMembers = 1 + (hasPartner ? 1 : 0) + children.length;
+
+    if (totalMembers <= 1) {
+      return const SizedBox.shrink();
+    }
 
     return Center(
       child: SingleChildScrollView(
@@ -664,7 +686,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     Family? family,
   ]) {
     final isDark = currentTheme.isDark;
-    final now = DateTime.now();
+    final activeBranch = ref.watch(effectiveBranchProvider);
+    final now = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), activeBranch.id);
     final todayDate = DateTime(now.year, now.month, now.day);
     final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final isPastDay = selectedDateOnly.isBefore(todayDate);
@@ -681,12 +704,12 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       availableClasses = dayClasses.where((c) {
         return !c.enrolledChildIds.any((id) => allFamilyIds.contains(id)) &&
             c.enrolledChildIds.length < c.maxCapacity &&
-            c.startTime.isAfter(now);
+            c.branchStartTime.isAfter(now);
       }).toList();
 
       pastUnenrolledClasses = dayClasses.where((c) {
         return !c.enrolledChildIds.any((id) => allFamilyIds.contains(id)) &&
-            c.startTime.isBefore(now);
+            c.branchStartTime.isBefore(now);
       }).toList();
     } else {
       enrolledClasses = dayClasses.where((c) {
@@ -696,12 +719,12 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       availableClasses = dayClasses.where((c) {
         return !c.enrolledChildIds.contains(targetChildId) &&
             c.enrolledChildIds.length < c.maxCapacity &&
-            c.startTime.isAfter(now);
+            c.branchStartTime.isAfter(now);
       }).toList();
 
       pastUnenrolledClasses = dayClasses.where((c) {
         return !c.enrolledChildIds.contains(targetChildId) &&
-            c.startTime.isBefore(now);
+            c.branchStartTime.isBefore(now);
       }).toList();
     }
 

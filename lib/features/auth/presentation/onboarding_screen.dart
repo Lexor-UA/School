@@ -56,12 +56,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     final user = ref.read(authControllerProvider);
-    final effectiveBranch = ref.read(effectiveBranchProvider);
     final fbUser = FirebaseAuth.instance.currentUser;
 
     _selectedBranchId = (user?.branchId != null && user!.branchId.isNotEmpty)
         ? user.branchId
-        : effectiveBranch.id;
+        : 'kyiv';
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && (user?.branchId == null || user!.branchId.isEmpty)) {
+        final currentEffective = ref.read(effectiveBranchProvider).id;
+        if (_selectedBranchId != currentEffective) {
+          setState(() {
+            _selectedBranchId = currentEffective;
+          });
+        }
+      }
+    });
 
     final initialName = (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
         ? user.name.trim()

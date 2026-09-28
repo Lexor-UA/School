@@ -15,6 +15,8 @@ import 'package:swimming_school_app/features/subscription/models/subscription.da
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
 import 'package:intl/intl.dart';
 
 class CreateIndividualClassSheet extends ConsumerStatefulWidget {
@@ -219,7 +221,6 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   onPressed: () {
                     Navigator.pop(context); // Close dialog
                     Navigator.pop(context); // Close bottom sheet
-                    ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner('Всі (Спліт)');
                     ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
                   },
                   child: Text(
@@ -444,6 +445,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
     setState(() => _isLoading = true);
 
+    final activeBranch = ref.read(effectiveBranchProvider);
+    final branchNow = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), activeBranch.id);
+
     final startTime = DateTime(
       widget.selectedDate.year,
       widget.selectedDate.month,
@@ -451,7 +455,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       _selectedHour!,
     );
 
-    if (startTime.isBefore(DateTime.now())) {
+    if (startTime.isBefore(branchNow)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Неможливо обрати минулий час для тренування'),
@@ -884,14 +888,15 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     // Determine occupied hours for the selected date
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final classesOnDate = scheduleAsync.value?.where((c) {
-      return c.startTime.year == widget.selectedDate.year &&
-             c.startTime.month == widget.selectedDate.month &&
-             c.startTime.day == widget.selectedDate.day;
+      final cStart = c.branchStartTime;
+      return cStart.year == widget.selectedDate.year &&
+             cStart.month == widget.selectedDate.month &&
+             cStart.day == widget.selectedDate.day;
     }).toList() ?? [];
 
     final occupiedHours = <int>{};
     for (final hour in _allHours) {
-      final classesAtHour = classesOnDate.where((c) => c.startTime.hour == hour).toList();
+      final classesAtHour = classesOnDate.where((c) => c.branchStartTime.hour == hour).toList();
       if (classesAtHour.isEmpty) continue;
 
       // 1. Participant conflict: Are any of the currently selected participants already busy at this hour?
@@ -1281,7 +1286,8 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                 const SizedBox(height: 8),
                 Builder(
                   builder: (context) {
-                    final now = DateTime.now();
+                    final activeBranch = ref.watch(effectiveBranchProvider);
+                    final now = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), activeBranch.id);
                     final todayDate = DateTime(now.year, now.month, now.day);
                     final selectedDateOnly = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day);
                     final isPastDay = selectedDateOnly.isBefore(todayDate);

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -142,7 +141,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 112),
                 child: Column(
                   children: [
                     // 1. Coach Identity Card (with integrated Theme Switcher)
@@ -248,47 +247,32 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _isLight
+              ? [Colors.white.withValues(alpha: 0.96), const Color(0xFFF8FAFC)]
+              : [const Color(0xFF0F2744), const Color(0xFF0A1B30)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isLight
+              ? const Color(0xFFE2E8F0)
+              : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: _isLight
-                ? const Color(0xFF0284C7).withValues(alpha: 0.08)
-                : const Color(0xFF00E5FF).withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
-          ),
-          BoxShadow(
-            color: _isLight
                 ? const Color(0xFF0F172A).withValues(alpha: 0.04)
-                : Colors.black.withValues(alpha: 0.30),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+                : Colors.black.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: _isLight
-                    ? [Colors.white.withValues(alpha: 0.96), Colors.white.withValues(alpha: 0.88)]
-                    : [const Color(0xFF0F2E52), const Color(0xFF07192F)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isLight
-                    ? const Color(0xFF0284C7).withValues(alpha: 0.25)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.30),
-                width: 1.0,
-              ),
-            ),
-            child: Column(
-              children: [
+      child: Column(
+        children: [
                 // Row 1: Admin Support Chat
                 Material(
                   color: Colors.transparent,
@@ -349,7 +333,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '• Онлайн',
+                                  'Онлайн',
                                   style: TextStyle(
                                     color: _isLight ? const Color(0xFF059669) : const Color(0xFF34D399),
                                     fontSize: 10.5,
@@ -378,7 +362,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   endIndent: 14,
                   color: _isLight
                       ? const Color(0xFFE2E8F0)
-                      : const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                      : const Color(0xFF1E4570),
                 ),
 
                 // Row 2: Client Dialogs Center
@@ -470,9 +454,6 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -481,39 +462,33 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _isLight
+              ? [Colors.white.withValues(alpha: 0.98), const Color(0xFFF8FAFC)]
+              : [const Color(0xFF0F2744), const Color(0xFF0A1B30)],
+        ),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _isLight
+              ? const Color(0xFFE2E8F0)
+              : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0284C7).withValues(alpha: _isLight ? 0.08 : 0.12),
-            blurRadius: 12,
+            color: _isLight
+                ? const Color(0xFF0F172A).withValues(alpha: 0.04)
+                : Colors.black.withValues(alpha: 0.35),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _isLight
-                    ? [Colors.white.withValues(alpha: 0.95), Colors.white.withValues(alpha: 0.85)]
-                    : [const Color(0xFF0F2E52), const Color(0xFF07192F)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _isLight
-                    ? const Color(0xFF0284C7).withValues(alpha: 0.25)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.30),
-                width: 1.0,
-              ),
-            ),
-            child: Row(
+      child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4.5),
@@ -616,9 +591,6 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -626,71 +598,53 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFE11D48),
+            Color(0xFFBE123C),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFDC2626).withValues(alpha: _isLight ? 0.08 : 0.16),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: const Color(0xFFE11D48).withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: _isLight
-                    ? [
-                        const Color(0xFFFFF1F2).withValues(alpha: 0.95),
-                        const Color(0xFFFFE4E6).withValues(alpha: 0.85),
-                      ]
-                    : [
-                        Colors.redAccent.withValues(alpha: 0.16),
-                        const Color(0xFF1E0A12),
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isLight
-                    ? const Color(0xFFFCA5A5)
-                    : Colors.redAccent.withValues(alpha: 0.40),
-                width: 1.0,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _confirmCoachLogout(context, ref),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.logOut,
-                        color: _isLight ? const Color(0xFFB91C1C) : Colors.redAccent,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'coach.end_shift_btn'.tr(),
-                        style: TextStyle(
-                          color: _isLight ? const Color(0xFFB91C1C) : Colors.redAccent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _confirmCoachLogout(context, ref),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  LucideIcons.logOut,
+                  color: Colors.white,
+                  size: 17,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'coach.end_shift_btn'.tr(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -701,10 +655,10 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   String _formatConductedClassesCount(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 14) return '$count проведених занять';
-    if (mod10 == 1) return '$count проведене заняття';
-    if (mod10 >= 2 && mod10 <= 4) return '$count проведені заняття';
-    return '$count проведених занять';
+    if (mod100 >= 11 && mod100 <= 14) return '$count занять';
+    if (mod10 == 1) return '$count заняття';
+    if (mod10 >= 2 && mod10 <= 4) return '$count заняття';
+    return '$count занять';
   }
 
   String _formatClassesCount(int count) {
@@ -723,16 +677,29 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _isLight
+              ? [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF8FAFC),
+                ]
+              : [
+                  const Color(0xFF0F2744),
+                  const Color(0xFF0A1B30),
+                ],
+        ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _isLight
+              ? const Color(0xFFCBD5E1)
+              : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: _isLight
-                ? const Color(0xFF0284C7).withValues(alpha: 0.10)
-                : const Color(0xFF00E5FF).withValues(alpha: 0.14),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
           BoxShadow(
             color: _isLight
                 ? const Color(0xFF0F172A).withValues(alpha: 0.05)
@@ -742,280 +709,150 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1. Concentric Glowing Avatar
+          Container(
+            padding: const EdgeInsets.all(2.5),
             decoration: BoxDecoration(
+              shape: BoxShape.circle,
               gradient: LinearGradient(
+                colors: _isLight
+                    ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
+                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: _isLight
-                    ? [
-                        Colors.white.withValues(alpha: 0.95),
-                        Colors.white.withValues(alpha: 0.85),
-                      ]
-                    : [
-                        const Color(0xFF0F2E52),
-                        const Color(0xFF07192F),
-                      ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _isLight
-                    ? const Color(0xFF0284C7).withValues(alpha: 0.35)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                width: 1.2,
+              boxShadow: [
+                BoxShadow(
+                  color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                      .withValues(alpha: _isLight ? 0.35 : 0.45),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _isLight ? Colors.white : const Color(0xFF05172A),
+              ),
+              child: const AvatarPicker(
+                heroTag: 'hero_avatar_Тренерам_profile',
+                radius: 28,
               ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+          ),
+          const SizedBox(width: 14),
+
+          // 2. Information Column (Harmonious 2-Row Hierarchy)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // 1. Concentric Glowing Avatar (Spanning full height gracefully)
-                Container(
-                  padding: const EdgeInsets.all(2.5),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: _isLight
-                          ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
-                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                            .withValues(alpha: _isLight ? 0.35 : 0.55),
-                        blurRadius: 12,
-                        spreadRadius: 1,
+                // Row 1: Coach Name & Online Status Beacon
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: TextStyle(
+                          color: _isLight ? const Color(0xFF0F172A) : Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isLight ? Colors.white : const Color(0xFF05172A),
                     ),
-                    child: const AvatarPicker(
-                      heroTag: 'hero_avatar_Тренерам_profile',
-                      radius: 33,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 13),
+                    const SizedBox(width: 8),
 
-                // 2. Information Column (3 Perfectly Balanced Rows)
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Row 1: Coach Name, Online Beacon Chip, Theme Switcher
-                      Row(
+                    // Clean Minimalist Online Status Chip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _isLight
+                            ? const Color(0xFFECFDF5)
+                            : const Color(0xFF10B981).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withValues(alpha: _isLight ? 0.35 : 0.40),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              style: TextStyle(
-                                color: _isLight ? const Color(0xFF0F172A) : Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-
-                          // Online Status Beacon Chip
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _isLight
-                                  ? const Color(0xFFECFDF5)
-                                  : const Color(0xFF10B981).withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(7),
-                              border: Border.all(
-                                color: _isLight
-                                    ? const Color(0xFF059669)
-                                    : const Color(0xFF10B981).withValues(alpha: 0.55),
-                                width: 0.9,
-                              ),
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF10B981).withValues(alpha: _isLight ? 0.15 : 0.25),
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 5.5,
-                                  height: 5.5,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF10B981),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Color(0xFF10B981),
-                                        blurRadius: 6,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 4.5),
-                                Text(
-                                  'Онлайн',
-                                  style: TextStyle(
-                                    color: _isLight ? const Color(0xFF047857) : const Color(0xFF34D399),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.3,
-                                  ),
+                                  color: Color(0xFF10B981),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
                                 ),
                               ],
                             ),
                           ),
-
-                          const Spacer(),
-
-                          // Dedicated Theme Switcher Button
-                          _buildThemeToggleBtn(),
+                          const SizedBox(width: 4.5),
+                          Text(
+                            'Онлайн',
+                            style: TextStyle(
+                              color: _isLight ? const Color(0xFF047857) : const Color(0xFF34D399),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
 
-                      const SizedBox(height: 5),
+                const SizedBox(height: 5),
 
-                      // Row 2: Certified Coach Pro Rank Badge
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _isLight
-                                  ? const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)]
-                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            ),
-                            borderRadius: BorderRadius.circular(7),
-                            border: Border.all(
-                              color: _isLight
-                                  ? const Color(0xFF0284C7)
-                                  : Colors.white.withValues(alpha: 0.9),
-                              width: 0.9,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                                    .withValues(alpha: _isLight ? 0.15 : 0.25),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.shieldCheck,
-                                color: _isLight ? const Color(0xFF0369A1) : Colors.white,
-                                size: 11,
-                              ),
-                              const SizedBox(width: 4.5),
-                              Text(
-                                'coach.pro_rank'.tr(),
-                                style: TextStyle(
-                                  color: _isLight ? const Color(0xFF0369A1) : Colors.white,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ],
-                          ),
+                // Row 2: Light Premium Pro Rank Title
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.shieldCheck,
+                      color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+                      size: 13,
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'coach.pro_rank'.tr(),
+                        style: TextStyle(
+                          color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-
-                      const SizedBox(height: 5.5),
-
-                      // Row 3: Credentials Micro-Capsule (Login & Phone)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF07192F),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _isLight
-                                ? const Color(0xFFCBD5E1)
-                                : const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                            width: 0.9,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              LucideIcons.user,
-                              size: 11,
-                              color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              user.loginId ?? 'coach',
-                              style: TextStyle(
-                                color: _isLight ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: Container(
-                                width: 3.5,
-                                height: 3.5,
-                                decoration: BoxDecoration(
-                                  color: _isLight ? const Color(0xFF94A3B8) : const Color(0xFF00E5FF).withValues(alpha: 0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              LucideIcons.phone,
-                              size: 11,
-                              color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                user.phone ?? '+380 (50) 123-45-67',
-                                style: TextStyle(
-                                  color: _isLight ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ),
+
+          const SizedBox(width: 10),
+
+          // 3. Dedicated Theme Switcher Button
+          _buildThemeToggleBtn(),
+        ],
       ),
     );
   }
@@ -1033,15 +870,17 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF0A223D),
+            color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF081628),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-              width: 0.9,
+              color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E3E66),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.15),
+                color: _isLight
+                    ? const Color(0xFF0F172A).withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.25),
                 blurRadius: 6,
               ),
             ],
@@ -1078,16 +917,29 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _isLight
+              ? [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF8FAFC),
+                ]
+              : [
+                  const Color(0xFF0F2744),
+                  const Color(0xFF0A1B30),
+                ],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isLight
+              ? const Color(0xFFCBD5E1)
+              : const Color(0xFF1E4570),
+          width: 1.0,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: _isLight
-                ? const Color(0xFF0284C7).withValues(alpha: 0.08)
-                : const Color(0xFF00E5FF).withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 3),
-          ),
           BoxShadow(
             color: _isLight
                 ? const Color(0xFF0F172A).withValues(alpha: 0.04)
@@ -1097,48 +949,20 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Period Switcher [ Цей місяць | Минулий | Всі ] (Segmented Control)
+          Container(
+            padding: const EdgeInsets.all(2.5),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _isLight
-                    ? [
-                        Colors.white.withValues(alpha: 0.95),
-                        Colors.white.withValues(alpha: 0.85),
-                      ]
-                    : [
-                        const Color(0xFF0F2E52),
-                        const Color(0xFF07192F),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(16),
+              color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF081628),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _isLight
-                    ? const Color(0xFF0284C7).withValues(alpha: 0.30)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                width: 1.1,
+                color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E3E66),
+                width: 1.0,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Row: Period Switcher [ Цей місяць | Минулий | Всі ] (Apple VisionOS Segmented Control)
-                Container(
-                  padding: const EdgeInsets.all(2.5),
-                  decoration: BoxDecoration(
-                    color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF07182B),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                      width: 1.0,
-                    ),
-                  ),
                   child: Row(
                     children: [
                       _buildPeriodPill(label: 'Цей місяць', index: 0),
@@ -1266,7 +1090,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               const Icon(LucideIcons.receipt, size: 11.5, color: Colors.white),
                               const SizedBox(width: 4),
                               Text(
-                                'Деталізація ($totalConducted)',
+                                'Деталі ($totalConducted)',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10.5,
@@ -1291,11 +1115,11 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
                     decoration: BoxDecoration(
-                      color: _isLight ? const Color(0xFFFEF3C7) : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                      color: _isLight ? const Color(0xFFFEF3C7) : const Color(0xFF1E171E),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _isLight ? const Color(0xFFFDE68A) : const Color(0xFFF59E0B).withValues(alpha: 0.40),
-                        width: 0.8,
+                        width: 1.0,
                       ),
                     ),
                     child: Row(
@@ -1323,7 +1147,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
                 const SizedBox(height: 9),
 
-                // 3 Category Triptych (VisionOS Glass Tri-Column)
+                // 3 Category Triptych (Solid Graphite Tri-Column)
                 _buildCategoryTriptych(
                   conductedGroup: conductedGroup,
                   conductedGroupSum: conductedGroupSum,
@@ -1338,9 +1162,6 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1402,12 +1223,14 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   String _getPeriodSubtitle() {
     final now = DateTime.now();
     if (_selectedPeriod == 0) {
-      return DateFormat('LLLL yyyy', 'uk_UA').format(now).toUpperCase();
+      final monthName = DateFormat('LLLL', 'uk_UA').format(now);
+      return '${monthName[0].toUpperCase()}${monthName.substring(1)}';
     } else if (_selectedPeriod == 1) {
       final prev = DateTime(now.year, now.month - 1, 1);
-      return DateFormat('LLLL yyyy', 'uk_UA').format(prev).toUpperCase();
+      final monthName = DateFormat('LLLL', 'uk_UA').format(prev);
+      return '${monthName[0].toUpperCase()}${monthName.substring(1)}';
     }
-    return 'ЗА ВЕСЬ ЧАС';
+    return 'За весь час';
   }
 
   Widget _buildCategoryTriptych({
@@ -1442,8 +1265,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
             icon: LucideIcons.user,
             count: conductedIndividual,
             sum: conductedIndividualSum,
-            accentColor: _isLight ? const Color(0xFF7E22CE) : const Color(0xFFA855F7),
-            secondaryColor: _isLight ? const Color(0xFF6B21A8) : const Color(0xFF7C3AED),
+            accentColor: _isLight ? const Color(0xFF2563EB) : const Color(0xFF38BDF8),
+            secondaryColor: _isLight ? const Color(0xFF1D4ED8) : const Color(0xFF0284C7),
             currencyFormat: currencyFormat,
           ),
         ),
@@ -1485,15 +1308,15 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   hasEarnings ? accentColor.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
                 ]
               : [
-                  hasEarnings ? accentColor.withValues(alpha: 0.16) : const Color(0xFF07192F),
-                  const Color(0xFF051324),
+                  const Color(0xFF11233B),
+                  const Color(0xFF081628),
                 ],
         ),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: hasEarnings
               ? (_isLight ? accentColor.withValues(alpha: 0.55) : accentColor.withValues(alpha: 0.60))
-              : (_isLight ? const Color(0xFFCBD5E1) : Colors.white.withValues(alpha: 0.10)),
+              : (_isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E4570)),
           width: 1.0,
         ),
         boxShadow: hasEarnings
@@ -1592,17 +1415,17 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         return Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           decoration: BoxDecoration(
-            color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF030D1B).withValues(alpha: 0.96),
+            color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0A1B30),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
-              color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.35),
-              width: 1.2,
+              color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isLight
                     ? const Color(0xFF0F172A).withValues(alpha: 0.12)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                    : Colors.black.withValues(alpha: 0.50),
                 blurRadius: 30,
               ),
             ],
@@ -1661,7 +1484,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               ),
 
               Divider(
-                color: _isLight ? const Color(0xFFE2E8F0) : Colors.white12,
+                color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570),
                 height: 1,
               ),
 
@@ -1699,7 +1522,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                           } else if (isIndividual) {
                             typeLabel = 'Індивідуальне';
                             earned = rateIndividual;
-                            typeColor = _isLight ? const Color(0xFF9333EA) : const Color(0xFFA855F7);
+                            typeColor = _isLight ? const Color(0xFF2563EB) : const Color(0xFF38BDF8);
                           } else {
                             typeLabel = 'Групове';
                             earned = rateGroup;
@@ -1714,8 +1537,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                 colors: _isLight
                                     ? [Colors.white, const Color(0xFFF8FAFC)]
                                     : [
-                                        Colors.white.withValues(alpha: 0.08),
-                                        Colors.white.withValues(alpha: 0.03),
+                                        const Color(0xFF0F2744),
+                                        const Color(0xFF11233B),
                                       ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -1723,9 +1546,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isConducted
-                                    ? typeColor.withValues(alpha: _isLight ? 0.35 : 0.35)
-                                    : (_isLight ? const Color(0xFFE2E8F0) : Colors.white12),
-                                width: 1.1,
+                                    ? typeColor.withValues(alpha: _isLight ? 0.35 : 0.40)
+                                    : (_isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570)),
+                                width: 1.0,
                               ),
                               boxShadow: _isLight
                                   ? [
@@ -1857,25 +1680,25 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 end: Alignment.bottomRight,
                 colors: [
                   Colors.white.withValues(alpha: 0.98),
-                  Colors.white.withValues(alpha: 0.90),
+                  const Color(0xFFF8FAFC),
                 ],
               )
-            : LinearGradient(
+            : const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  color.withValues(alpha: 0.16),
-                  const Color(0xFF081C33),
+                  Color(0xFF0F2744),
+                  Color(0xFF0A1B30),
                 ],
               ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: _isLight ? color.withValues(alpha: 0.40) : color.withValues(alpha: 0.40),
+          color: _isLight ? color.withValues(alpha: 0.40) : const Color(0xFF1E4570),
           width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: _isLight ? 0.10 : 0.15),
+            color: _isLight ? color.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.30),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1895,12 +1718,12 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               gradient: LinearGradient(
                 colors: _isLight
                     ? [color.withValues(alpha: 0.22), color.withValues(alpha: 0.12)]
-                    : [color.withValues(alpha: 0.35), color.withValues(alpha: 0.15)],
+                    : [color.withValues(alpha: 0.28), color.withValues(alpha: 0.14)],
               ),
               shape: BoxShape.circle,
               border: Border.all(
                 color: _isLight ? color.withValues(alpha: 0.45) : color.withValues(alpha: 0.55),
-                width: 0.9,
+                width: 1.0,
               ),
             ),
             child: Icon(icon, color: color, size: 15),

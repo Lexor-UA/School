@@ -43,7 +43,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
-    ref.watch(subscriptionControllerProvider);
     final notifState = ref.watch(parentNotificationsControllerProvider);
 
     final themeConfig = ref.watch(appThemeControllerProvider);
@@ -427,39 +426,46 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
-                                          : const Color(0xFFE0F2FE),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                      decoration: BoxDecoration(
                                         color: isDark
-                                            ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
-                                            : const Color(0xFFBAE6FD),
-                                        width: 0.8,
+                                            ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+                                            : const Color(0xFFE0F2FE),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                                              : const Color(0xFFBAE6FD),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(iconData, size: 11, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              personName.toUpperCase(),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(iconData, size: 11, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          personName.toUpperCase(),
-                                          style: TextStyle(
-                                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
-                                  const Spacer(),
+                                  const SizedBox(width: 8),
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -484,6 +490,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               const SizedBox(height: 7),
                               Text(
                                 nextClass.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: textColor,
                                   fontSize: 15.5,
@@ -499,14 +507,18 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                     color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                   ),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
-                                        ? 'HappyLand · ${nextClass.lane}'
-                                        : 'HappyLand',
-                                    style: TextStyle(
-                                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                  Flexible(
+                                    child: Text(
+                                      nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
+                                          ? 'HappyLand · ${nextClass.lane}'
+                                          : 'HappyLand',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                   if (nextClass.coachName.isNotEmpty) ...[
@@ -519,14 +531,18 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                       color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                     ),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
-                                          ? 'Тренер призначається'
-                                          : nextClass.coachName,
-                                      style: TextStyle(
-                                        color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                                    Flexible(
+                                      child: Text(
+                                        (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
+                                            ? 'Тренер призначається'
+                                            : nextClass.coachName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ],

@@ -208,7 +208,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       final existingSubSnap = await FirebaseFirestore.instance
           .collection('subscriptions')
           .where('userId', whereIn: queryUserIds)
-          .where('ownerName', isEqualTo: isSplit ? 'Всі (Спліт)' : owner)
+          .where('ownerName', isEqualTo: owner)
           .where('isActive', isEqualTo: true)
           .get();
 
@@ -245,7 +245,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         isActive: true,
         serviceName: selectedService,
         expiryDate: expiry,
-        ownerName: isSplit ? 'Всі (Спліт)' : owner,
+        ownerName: owner,
         organizationId: effectiveBranch.organizationId,
         branchId: effectiveBranch.id,
         currency: effectiveBranch.currencyCode,
@@ -1510,21 +1510,21 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       if (otherParentName != null && otherParentName.isNotEmpty)
         {'id': otherParentName, 'name': otherParentName, 'isParent': true, 'isPartner': true, 'targetUserId': otherParentId},
       ...children.map((c) => {'id': c.name, 'name': c.currentAge != null ? '${c.name} (${c.currentAge} р.)' : c.name, 'isParent': false}),
-      {'id': 'Всі (Спліт)', 'name': 'Спліт (2 ос.)', 'isParent': false, 'isSplit': true},
     ];
 
     String effectiveOwner = _selectedOwner;
-    if (effectiveOwner.isEmpty && filterOwners.isNotEmpty) {
-      effectiveOwner = filterOwners.first['id'] as String;
+    if (effectiveOwner.isEmpty || !filterOwners.any((o) => o['id'] == effectiveOwner)) {
+      if (filterOwners.isNotEmpty) {
+        effectiveOwner = filterOwners.first['id'] as String;
+      }
     }
+    _selectedOwner = effectiveOwner;
 
     final activeForMember = allSubs.where((s) {
-      if (effectiveOwner == 'Всі (Спліт)') {
-        return s.isSplitSubscription && s.isActive && s.remainingClasses > 0;
-      }
       final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? (user?.name ?? '') : s.ownerName!;
       final matchesDirect = owner.trim().toLowerCase() == effectiveOwner.trim().toLowerCase();
-      return matchesDirect && !s.isSplitSubscription && s.isActive && s.remainingClasses > 0;
+      final isSplitLegacyForParent = s.isSplitSubscription && s.ownerName == 'Всі (Спліт)' && (effectiveOwner == parentName);
+      return (matchesDirect || isSplitLegacyForParent) && s.isActive && s.remainingClasses > 0;
     }).toList();
 
     final currentSub = activeForMember.isNotEmpty ? activeForMember.first : null;
@@ -1572,100 +1572,100 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
           children: [
             const SizedBox(height: 12),
             
-            // Filters
-            Center(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: filterOwners.map((owner) {
-                    final isSelected = effectiveOwner == owner['id'];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedOwner = owner['id'] as String;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              gradient: isSelected
-                                  ? LinearGradient(
-                                      colors: [
-                                        (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9)).withValues(alpha: isDark ? 0.32 : 0.20),
-                                        const Color(0xFF0284C7).withValues(alpha: isDark ? 0.20 : 0.10),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
-                                  : null,
-                              color: isSelected
-                                  ? null
-                                  : (isDark
-                                      ? Colors.white.withValues(alpha: 0.08)
-                                      : Colors.white.withValues(alpha: 0.85)),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
+            // Filters (Visible only when multiple family members exist)
+            if (filterOwners.length > 1) ...[
+              Center(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: filterOwners.map((owner) {
+                      final isSelected = effectiveOwner == owner['id'];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedOwner = owner['id'] as String;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: isSelected
+                                    ? LinearGradient(
+                                        colors: [
+                                          (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0EA5E9)).withValues(alpha: isDark ? 0.32 : 0.20),
+                                          const Color(0xFF0284C7).withValues(alpha: isDark ? 0.20 : 0.10),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
                                 color: isSelected
-                                    ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7).withValues(alpha: 0.60))
+                                    ? null
                                     : (isDark
-                                        ? Colors.white.withValues(alpha: 0.15)
-                                        : const Color(0xFFBAE6FD)),
-                                width: isSelected ? 1.2 : 1.0,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.16),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  owner['isSplit'] == true
-                                      ? LucideIcons.users
-                                      : (owner['isPartner'] == true
-                                          ? LucideIcons.heartHandshake
-                                          : (owner['isParent'] == true ? LucideIcons.user : LucideIcons.baby)),
-                                  size: 15,
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : Colors.white.withValues(alpha: 0.85)),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
                                   color: isSelected
-                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                      : (isDark ? Colors.white70 : themeConfig.textSecondary),
+                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7).withValues(alpha: 0.60))
+                                      : (isDark
+                                          ? Colors.white.withValues(alpha: 0.15)
+                                          : const Color(0xFFBAE6FD)),
+                                  width: isSelected ? 1.2 : 1.0,
                                 ),
-                                const SizedBox(width: 7),
-                                Text(
-                                  owner['name'] as String,
-                                  style: TextStyle(
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.16),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    owner['isPartner'] == true
+                                        ? LucideIcons.heartHandshake
+                                        : (owner['isParent'] == true ? LucideIcons.user : LucideIcons.baby),
+                                    size: 15,
                                     color: isSelected
-                                        ? (isDark ? Colors.white : const Color(0xFF0369A1))
-                                        : (isDark ? Colors.white70 : themeConfig.textPrimary),
-                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                    fontSize: 13,
+                                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                        : (isDark ? Colors.white70 : themeConfig.textSecondary),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 7),
+                                  Text(
+                                    owner['name'] as String,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? (isDark ? Colors.white : const Color(0xFF0369A1))
+                                          : (isDark ? Colors.white70 : themeConfig.textPrimary),
+                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             
             if (matchingDiscountsForOwner.isNotEmpty) ...[
               _buildPersonalDiscountPromoBanner(
@@ -1944,13 +1944,17 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
-                                shape: BoxShape.circle,
+                            Transform.translate(
+                              offset: const Offset(0, 1.0),
+                              child: Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 5.5),
@@ -1961,6 +1965,8 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                 fontWeight: FontWeight.w800,
                                 fontSize: 12,
                                 letterSpacing: 0.3,
+                                height: 1.1,
+                                leadingDistribution: TextLeadingDistribution.even,
                               ),
                             ),
                           ],

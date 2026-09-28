@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,44 +89,40 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
       'admin.wd_sun'.tr(),
     ];
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: themeConfig.isDark
-                  ? [
-                      Colors.white.withValues(alpha: 0.12),
-                      Colors.white.withValues(alpha: 0.04),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.78),
-                      Colors.white.withValues(alpha: 0.62),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: themeConfig.isDark
-                  ? Colors.white.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.95),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: themeConfig.isDark
-                    ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
-                    : const Color(0xFF003B73).withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: themeConfig.isDark
+              ? [
+                  const Color(0xFF1E2638),
+                  const Color(0xFF111827),
+                ]
+              : [
+                  Colors.white,
+                  const Color(0xFFF8FAFC),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: themeConfig.isDark
+              ? const Color(0xFF334155).withValues(alpha: 0.70)
+              : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: themeConfig.isDark
+                ? Colors.black.withValues(alpha: 0.45)
+                : const Color(0xFF003B73).withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-          child: Column(
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Month Switcher
@@ -367,9 +362,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildMonthNavButton({
@@ -387,13 +380,13 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
           height: 34,
           decoration: BoxDecoration(
             color: themeConfig.isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.85),
+                ? const Color(0xFF0F172A)
+                : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: themeConfig.isDark
-                  ? Colors.white.withValues(alpha: 0.18)
-                  : const Color(0xFF0284C7).withValues(alpha: 0.30),
+                  ? const Color(0xFF334155)
+                  : const Color(0xFFE2E8F0),
               width: 1.0,
             ),
             boxShadow: [
@@ -424,44 +417,40 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
     final int totalCapInDay = dayClasses.fold<int>(0, (sum, c) => sum + (c.maxCapacity > 0 ? c.maxCapacity : 8));
     final int totalFreeInDay = (totalCapInDay - totalKidsInDay).clamp(0, 9999);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: themeConfig.isDark
-                  ? [
-                      Colors.white.withValues(alpha: 0.12),
-                      Colors.white.withValues(alpha: 0.04),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.78),
-                      Colors.white.withValues(alpha: 0.62),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: themeConfig.isDark
-                  ? Colors.white.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.95),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: themeConfig.isDark
-                    ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
-                    : const Color(0xFF003B73).withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: themeConfig.isDark
+              ? [
+                  const Color(0xFF1E2638),
+                  const Color(0xFF111827),
+                ]
+              : [
+                  Colors.white,
+                  const Color(0xFFF8FAFC),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: themeConfig.isDark
+              ? const Color(0xFF334155).withValues(alpha: 0.70)
+              : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: themeConfig.isDark
+                ? Colors.black.withValues(alpha: 0.45)
+                : const Color(0xFF003B73).withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Row
@@ -571,13 +560,13 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: themeConfig.isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.white.withValues(alpha: 0.85),
+                        ? const Color(0xFF0F172A)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: themeConfig.isDark
-                          ? Colors.white.withValues(alpha: 0.14)
-                          : const Color(0xFFBAE6FD).withValues(alpha: 0.70),
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
                   child: Row(
@@ -715,22 +704,22 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: themeConfig.isDark
-                                ? Colors.white.withValues(alpha: isMyClass ? 0.08 : 0.05)
-                                : Colors.white.withValues(alpha: 0.94),
+                                ? (isMyClass ? const Color(0xFF162032) : const Color(0xFF0F172A))
+                                : (isMyClass ? const Color(0xFFF0F9FF) : Colors.white),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: themeConfig.isDark
                                   ? (isMyClass
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                                      : Colors.white.withValues(alpha: 0.14))
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
+                                      : const Color(0xFF334155))
                                   : (isMyClass
-                                      ? const Color(0xFF0284C7).withValues(alpha: 0.40)
-                                      : const Color(0xFFBAE6FD).withValues(alpha: 0.70)),
-                              width: 1.1,
+                                      ? const Color(0xFF0284C7).withValues(alpha: 0.50)
+                                      : const Color(0xFFE2E8F0)),
+                              width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? (isMyClass ? 0.08 : 0.0) : 0.06),
+                                color: Colors.black.withValues(alpha: themeConfig.isDark ? 0.30 : 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -949,9 +938,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                     ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildClassFilterPill({
@@ -979,15 +966,15 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
             color: isSelected
                 ? null
                 : (themeConfig.isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white.withValues(alpha: 0.85)),
+                    ? const Color(0xFF0F172A)
+                    : Colors.white),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected
                   ? Colors.white.withValues(alpha: 0.40)
                   : (themeConfig.isDark
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : const Color(0xFF0284C7).withValues(alpha: 0.30)),
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0)),
               width: 1.0,
             ),
             boxShadow: isSelected

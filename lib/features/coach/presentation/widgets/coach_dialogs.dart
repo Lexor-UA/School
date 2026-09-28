@@ -1,10 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:go_router/go_router.dart';
+import 'package:swimming_school_app/core/router/app_router.dart';
+import 'package:swimming_school_app/features/coach/presentation/coach_dashboard.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 
@@ -47,10 +47,10 @@ void showCoachNoteDialog(BuildContext context, Child child) {
     builder: (ctx) => StatefulBuilder(
       builder: (dialogCtx, setDialogState) => AlertDialog(
         scrollable: true,
-        backgroundColor: const Color(0xFF09182B),
+        backgroundColor: const Color(0xFF111827),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+          side: const BorderSide(color: Color(0xFF334155), width: 1.0),
         ),
         title: Text(
           _coachTr('coach.note_for', 'Нотатка про плавця {0}', args: [child.name]),
@@ -64,10 +64,10 @@ void showCoachNoteDialog(BuildContext context, Child child) {
             hintText: _coachTr('coach.note_hint', 'Наприклад: Відпрацювати вдих під праву руку...'),
             hintStyle: const TextStyle(color: Colors.white38),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
+            fillColor: const Color(0xFF0F172A),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+              borderSide: const BorderSide(color: Color(0xFF334155)),
             ),
           ),
         ),
@@ -171,22 +171,18 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
 
           return Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF09182B).withValues(alpha: 0.96),
+              color: const Color(0xFF111827),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35), width: 1.2),
+              border: Border.all(color: const Color(0xFF334155), width: 1.0),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                  blurRadius: 30,
-                  spreadRadius: -4,
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 24,
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: ConstrainedBox(
+            child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxHeight: MediaQuery.sizeOf(ctx).height * 0.88,
                   ),
@@ -203,7 +199,7 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                             width: 44,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.white24,
+                              color: const Color(0xFF334155),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -236,16 +232,9 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                                const Color(0xFF0284C7).withValues(alpha: 0.05),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: const Color(0xFF1E2638),
                             borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
+                            border: Border.all(color: const Color(0xFF334155), width: 1.0),
                           ),
                           child: Row(
                             children: [
@@ -292,9 +281,9 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                                            color: const Color(0xFF0F172A),
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                                            border: Border.all(color: const Color(0xFF334155), width: 1.0),
                                           ),
                                           child: Text(
                                             '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
@@ -360,9 +349,9 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.1),
+                              color: const Color(0xFF0F172A),
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                              border: Border.all(color: const Color(0xFF334155), width: 1.0),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,9 +388,9 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.03),
+                              color: const Color(0xFF0F172A),
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                              border: Border.all(color: const Color(0xFF334155), width: 1.0),
                             ),
                             child: Column(
                               children: [
@@ -426,8 +415,6 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                     ),
                   ),
                 ),
-              ),
-            ),
           );
         },
       );
@@ -440,10 +427,10 @@ void _confirmCoachLogout(BuildContext context, WidgetRef ref) {
     context: context,
     builder: (ctx) => AlertDialog(
       scrollable: true,
-      backgroundColor: const Color(0xFF09182B),
+      backgroundColor: const Color(0xFF111827),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5), width: 1.2),
+        side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
       ),
       title: Text('coach.end_shift'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       content: Text(
@@ -462,10 +449,13 @@ void _confirmCoachLogout(BuildContext context, WidgetRef ref) {
           ),
           onPressed: () async {
             Navigator.pop(ctx);
-            await ref.read(authControllerProvider.notifier).logout();
-            if (context.mounted) {
-              context.go('/?skipSplash=true');
+            try {
+              await ref.read(authControllerProvider.notifier).logout();
+            } catch (e) {
+              debugPrint('Coach logout error: $e');
             }
+            ref.read(coachTabProvider.notifier).setTab(0);
+            ref.read(goRouterProvider).go('/?skipSplash=true');
           },
           child: Text('coach.btn_logout'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),

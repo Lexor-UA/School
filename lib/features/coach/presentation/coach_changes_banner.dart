@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -45,21 +44,17 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
         return Container(
           decoration: BoxDecoration(
             color: themeConfig.isDark
-                ? const Color(0xFF09182B).withValues(alpha: 0.96)
-                : const Color(0xFFF0F9FF).withValues(alpha: 0.98),
+                ? const Color(0xFF111827)
+                : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             border: Border.all(
               color: themeConfig.isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                  : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                  ? const Color(0xFF334155)
+                  : const Color(0xFFE2E8F0),
               width: 1.2,
             ),
           ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: ConstrainedBox(
+          child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.sizeOf(ctx).height * 0.85,
                 ),
@@ -154,9 +149,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                   ),
                 ),
               ),
-            ),
-          ),
-        );
+            );
       },
     );
   }
@@ -191,43 +184,38 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          child: ClipRRect(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: themeConfig.isDark
+                  ? [
+                      const Color(0xFF1E2638),
+                      const Color(0xFF111827),
+                    ]
+                  : [
+                      Colors.white,
+                      const Color(0xFFF8FAFC),
+                    ],
+            ),
             borderRadius: BorderRadius.circular(22),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: themeConfig.isDark
-                        ? [
-                            const Color(0xFF0F2D50),
-                            const Color(0xFF081C33),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.78),
-                            Colors.white.withValues(alpha: 0.62),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: themeConfig.isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
-                        : Colors.white.withValues(alpha: 0.95),
-                    width: 1.1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: themeConfig.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.14)
-                          : const Color(0xFF003B73).withValues(alpha: 0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(14),
+            border: Border.all(
+              color: themeConfig.isDark
+                  ? const Color(0xFF334155).withValues(alpha: 0.70)
+                  : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: themeConfig.isDark
+                    ? Colors.black.withValues(alpha: 0.40)
+                    : const Color(0xFF003B73).withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -381,13 +369,13 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                               decoration: BoxDecoration(
                                 color: themeConfig.isDark
-                                    ? Colors.white.withValues(alpha: 0.06)
-                                    : Colors.white.withValues(alpha: 0.85),
+                                    ? const Color(0xFF0F172A)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: themeConfig.isDark
-                                      ? Colors.white.withValues(alpha: 0.16)
-                                      : const Color(0xFF0284C7).withValues(alpha: 0.30),
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFE2E8F0),
                                   width: 1.0,
                                 ),
                                 boxShadow: [
@@ -474,10 +462,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ).animate().fadeIn(duration: 350.ms);
+              ).animate().fadeIn(duration: 350.ms);
       },
       loading: () => const SizedBox.shrink(),
       error: (e, st) => const SizedBox.shrink(),
@@ -532,13 +517,13 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: themeConfig.isDark
-            ? const Color(0xFF0B223D).withValues(alpha: 0.70)
-            : Colors.white.withValues(alpha: 0.94),
+            ? const Color(0xFF161F30)
+            : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: themeConfig.isDark
-              ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
-              : const Color(0xFFBAE6FD).withValues(alpha: 0.70),
+              ? const Color(0xFF334155).withValues(alpha: 0.80)
+              : const Color(0xFFE2E8F0),
           width: 1.1,
         ),
         boxShadow: [

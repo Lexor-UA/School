@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,6 +137,19 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
     if (confirm == true) {
       try {
+        // 0. Ensure current Firebase Auth user has admin privileges synced in Firestore
+        final currentFbUser = FirebaseAuth.instance.currentUser;
+        if (currentFbUser != null) {
+          await FirebaseFirestore.instance.collection('users').doc(currentFbUser.uid).set({
+            'id': currentFbUser.uid,
+            'role': 'admin',
+            'branchId': 'kyiv',
+            'name': 'Адміністратор',
+            'aliasOf': 'admin',
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true)).catchError((_) {});
+        }
+
         // 1. Check if client is part of any family
         final clientDoc = await FirebaseFirestore.instance.collection('users').doc(clientId).get();
         final clientData = clientDoc.data();

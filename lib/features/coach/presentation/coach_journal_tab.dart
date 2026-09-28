@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +45,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
     return '${date.day} ${months[date.month]}';
   }
 
-  Future<void> _fetchChildren(List<String> childIds) async {
+  Future<void> _fetchChildren(List<String> childIds, [String? classId]) async {
     if (childIds.isEmpty) {
       if (mounted) setState(() => _enrolledChildren = []);
       return;
@@ -85,6 +84,16 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
               colorHex: '0xFF00E5FF',
             ),
           );
+        }
+
+        // Self-heal: purge IDs that do not exist in children or users
+        final foundUserIds = userSnapshot.docs.map((d) => d.id).toSet();
+        final orphanedIds = missingIds.where((id) => !foundUserIds.contains(id)).toList();
+        if (orphanedIds.isNotEmpty && classId != null) {
+          FirebaseFirestore.instance.collection('classes').doc(classId).update({
+            'enrolledChildIds': FieldValue.arrayRemove(orphanedIds),
+          }).catchError((_) {});
+          ref.invalidate(scheduleControllerProvider);
         }
       }
 
@@ -254,11 +263,11 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
             if (selectedClassId != activeClass.id) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ref.read(selectedCoachClassIdProvider.notifier).setClassId(activeClass!.id);
-                _fetchChildren(activeClass.enrolledChildIds);
+                _fetchChildren(activeClass.enrolledChildIds, activeClass.id);
               });
             } else if (_enrolledChildren.isEmpty && activeClass.enrolledChildIds.isNotEmpty && !_isLoadingChildren) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                _fetchChildren(activeClass!.enrolledChildIds);
+                _fetchChildren(activeClass!.enrolledChildIds, activeClass.id);
               });
             }
           }
@@ -628,7 +637,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                               return GestureDetector(
                                 onTap: () {
                                   ref.read(selectedCoachClassIdProvider.notifier).setClassId(c.id);
-                                  _fetchChildren(c.enrolledChildIds);
+                                  _fetchChildren(c.enrolledChildIds, c.id);
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
@@ -863,7 +872,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                       .get();
                                   if (doc.exists && mounted) {
                                     final updatedClass = GroupClass.fromJson({'id': doc.id, ...doc.data()!});
-                                    _fetchChildren(updatedClass.enrolledChildIds);
+                                    _fetchChildren(updatedClass.enrolledChildIds, updatedClass.id);
                                   }
                                 }
                               },
@@ -1128,14 +1137,14 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isPresent
-            ? const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.08 : 0.10)
-            : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.88)),
+            ? (themeConfig.isDark ? const Color(0xFF064E3B).withValues(alpha: 0.4) : const Color(0xFFD1FAE5))
+            : (themeConfig.isDark ? const Color(0xFF1E2638) : Colors.white),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isPresent
-              ? const Color(0xFF10B981).withValues(alpha: 0.45)
-              : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFF0284C7).withValues(alpha: 0.18)),
-          width: 1.2,
+              ? const Color(0xFF10B981)
+              : (themeConfig.isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          width: 1.0,
         ),
         boxShadow: isPresent
             ? [
@@ -1154,12 +1163,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                   ),
               ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
             child: Row(
               children: [
                 // Glowing swimmer avatar
@@ -1255,13 +1260,13 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         decoration: BoxDecoration(
                           color: isPresent
                               ? const Color(0xFF10B981)
-                              : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
+                              : (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
                           shape: BoxShape.circle,
                           border: isPresent
                               ? null
                               : Border.all(
                                   color: themeConfig.isDark
-                                      ? Colors.white.withValues(alpha: 0.15)
+                                      ? const Color(0xFF334155)
                                       : const Color(0xFFCBD5E1),
                                 ),
                           boxShadow: isPresent
@@ -1288,8 +1293,6 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
               ],
             ),
           ),
-        ),
-      ),
     ).animate().fadeIn(delay: (index * 60).ms).slideX(begin: 0.05, end: 0);
   }
 }

@@ -212,16 +212,21 @@ class SubscriptionFrontCard extends StatelessWidget {
                       ],
                     ),
                     if (ownerName != null && ownerName.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          ownerName.toUpperCase(),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 11,
-                            letterSpacing: 1.4,
-                            fontWeight: FontWeight.w800,
-                            shadows: const [Shadow(color: Colors.black45, blurRadius: 8)],
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 2, left: 12),
+                          child: Text(
+                            ownerName.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 11,
+                              letterSpacing: 1.4,
+                              fontWeight: FontWeight.w800,
+                              shadows: const [Shadow(color: Colors.black45, blurRadius: 8)],
+                            ),
                           ),
                         ),
                       ),

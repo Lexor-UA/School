@@ -93,8 +93,21 @@ class TenancyNotifier extends Notifier<TenancyState> {
     final prefs = ref.watch(sharedPrefsProvider);
     final savedBranchId = prefs.getString(_prefBranchKey);
 
-    // Якщо користувач авторизований і не є Owner — він прив'язаний до своєї філії
-    final userBranchId = ref.watch(currentUserBranchIdProvider);
+    // Пряма перевірка філії користувача для уникнення каскадного invalidateSelf під час білду віджетів
+    String? userBranchId;
+    try {
+      final user = ref.watch(authControllerProvider);
+      if (user != null && user.role != UserRole.owner) {
+        userBranchId = user.branchId;
+      } else {
+        final cachedBranchId = prefs.getString('userBranchId');
+        final cachedRole = prefs.getString('userRole');
+        if (cachedBranchId != null && cachedRole != 'owner') {
+          userBranchId = cachedBranchId;
+        }
+      }
+    } catch (_) {}
+
     if (userBranchId != null) {
       final userBranch = Branch.defaultBranches.firstWhereOrNull((b) => b.id == userBranchId) ?? Branch.kyiv;
       return TenancyState(

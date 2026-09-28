@@ -10,6 +10,7 @@ import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/coach/models/qr_check_in_result.dart';
 import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
+import 'package:swimming_school_app/features/parent/models/family.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 part 'subscription_controller.g.dart';
@@ -20,28 +21,44 @@ class SubscriptionController extends _$SubscriptionController {
 
   @override
   List<Subscription> build() {
+    final user = ref.watch(authControllerProvider);
+    final isParent = user?.role == UserRole.parent;
+    final activeBranchId = isParent ? null : ref.watch(activeBranchProvider)?.id;
+    final isAllLocations = isParent ? false : ref.watch(isAllLocationsSelectedProvider);
+    final family = isParent ? ref.watch(familyStreamProvider).value : null;
+
     ref.onDispose(() {
       _subSubscription?.cancel();
       _subSubscription = null;
     });
 
-    _listenToSubscriptions();
-    return [];
+    _listenToSubscriptions(
+      user: user,
+      isParent: isParent,
+      activeBranchId: activeBranchId,
+      isAllLocations: isAllLocations,
+      family: family,
+    );
+    try {
+      return state;
+    } catch (_) {
+      return const <Subscription>[];
+    }
   }
 
-  void _listenToSubscriptions() {
+  void _listenToSubscriptions({
+    required AppUser? user,
+    required bool isParent,
+    required String? activeBranchId,
+    required bool isAllLocations,
+    required Family? family,
+  }) {
     _subSubscription?.cancel();
-
-    final user = ref.watch(authControllerProvider);
-    final tenancyState = ref.watch(tenancyControllerProvider);
-    final activeBranchId = tenancyState.activeBranchId;
-    final isAllLocations = tenancyState.isAllLocationsSelected;
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('subscriptions');
 
     if (user != null) {
-      if (user.role == UserRole.parent) {
-        final family = ref.watch(familyStreamProvider).value;
+      if (isParent) {
         final relevantUserIds = <String>[
           user.id,
           if (family != null) ...family.parentIds,
@@ -71,8 +88,10 @@ class SubscriptionController extends _$SubscriptionController {
         }
       }
       
-      _checkExpirations(subs);
-      state = subs;
+      Future.microtask(() {
+        _checkExpirations(subs);
+        state = subs;
+      });
     }, onError: (e) {
       debugPrint('Error listening to subscriptions: $e');
     });

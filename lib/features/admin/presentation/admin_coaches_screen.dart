@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +29,7 @@ class AdminCoachesScreen extends ConsumerStatefulWidget {
 class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _recentlyCopiedCoachId;
 
   String _getInitials(String name) {
     final trimmed = name.trim();
@@ -55,22 +57,15 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     super.dispose();
   }
 
-  void _copyCredentials(String loginId, String name) {
+  void _copyCredentials(String coachId, String loginId, String name) {
+    HapticFeedback.selectionClick();
     Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}1'));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
-            const SizedBox(width: 10),
-            Expanded(child: Text('admin.coaches_copied_msg'.tr(args: [name]))),
-          ],
-        ),
-        backgroundColor: const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    setState(() => _recentlyCopiedCoachId = coachId);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && _recentlyCopiedCoachId == coachId) {
+        setState(() => _recentlyCopiedCoachId = null);
+      }
+    });
   }
 
   void _deleteCoach(String coachId, String name, AppThemeConfig currentTheme) async {
@@ -121,6 +116,18 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
     if (confirm == true) {
       try {
+        final currentFbUser = FirebaseAuth.instance.currentUser;
+        if (currentFbUser != null) {
+          await FirebaseFirestore.instance.collection('users').doc(currentFbUser.uid).set({
+            'id': currentFbUser.uid,
+            'role': 'admin',
+            'branchId': 'kyiv',
+            'name': 'Адміністратор',
+            'aliasOf': 'admin',
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true)).catchError((_) {});
+        }
+
         await FirebaseFirestore.instance.collection('users').doc(coachId).delete();
 
         final admin = ref.read(authControllerProvider);
@@ -169,6 +176,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(24),
             onTap: () {
+              HapticFeedback.mediumImpact();
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -430,14 +438,20 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
     return Container(
       decoration: BoxDecoration(
-        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
-          width: 1.3,
+          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
         boxShadow: currentTheme.isDark
-            ? null
+            ? [
+                BoxShadow(
+                  color: currentTheme.accentPrimary.withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
+                ),
+              ]
             : [
                 BoxShadow(
                   color: const Color(0xFF003B73).withValues(alpha: 0.05),
@@ -463,13 +477,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
           ),
           prefixIcon: Icon(
             LucideIcons.search,
-            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
             size: 18,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(LucideIcons.x, color: currentTheme.textSecondary, size: 16),
                   onPressed: () {
+                    HapticFeedback.lightImpact();
                     _searchController.clear();
                     setState(() => _searchQuery = '');
                   },
@@ -493,6 +508,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     required int index,
     required AppThemeConfig currentTheme,
   }) {
+    final isCopied = _recentlyCopiedCoachId == coachId;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
@@ -592,19 +609,38 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           ],
                         ),
                         const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Icon(LucideIcons.phone, size: 12.5, color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textMuted),
-                            const SizedBox(width: 5),
-                            Text(
-                              phone,
-                              style: TextStyle(
-                                color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            Clipboard.setData(ClipboardData(text: phone));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Номер $phone скопійовано!'),
+                                duration: const Duration(seconds: 1),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 1),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.phone, size: 12.5, color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textMuted),
+                                const SizedBox(width: 5),
+                                Text(
+                                  phone,
+                                  style: TextStyle(
+                                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -652,6 +688,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
@@ -702,7 +739,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           tooltip: 'admin.delete'.tr(),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          onPressed: () => _deleteCoach(coachId, name, currentTheme),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _deleteCoach(coachId, name, currentTheme);
+                          },
                         ),
                       ),
                     ],
@@ -710,19 +750,81 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 ],
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
+
+              // Rates Row (Group, Individual, Split)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: currentTheme.isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: currentTheme.isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : const Color(0xFFE2E8F0),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildRateChip(
+                        label: 'Групові',
+                        amount: '$rateGroup ₴',
+                        icon: LucideIcons.users,
+                        color: const Color(0xFF00E5FF),
+                        currentTheme: currentTheme,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 22,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+                    ),
+                    Expanded(
+                      child: _buildRateChip(
+                        label: 'Індивід.',
+                        amount: '$rateIndividual ₴',
+                        icon: LucideIcons.user,
+                        color: const Color(0xFFA855F7),
+                        currentTheme: currentTheme,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 22,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+                    ),
+                    Expanded(
+                      child: _buildRateChip(
+                        label: 'Спліт',
+                        amount: '$rateSplit ₴',
+                        icon: LucideIcons.userCheck,
+                        color: const Color(0xFFF59E0B),
+                        currentTheme: currentTheme,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
 
               // Credentials Card with Instant Copy
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: currentTheme.isDark
-                      ? Colors.white.withValues(alpha: 0.10)
+                      ? Colors.black.withValues(alpha: 0.28)
                       : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: currentTheme.isDark
-                        ? Colors.white.withValues(alpha: 0.20)
+                        ? Colors.white.withValues(alpha: 0.18)
                         : const Color(0xFFCBD5E1),
                     width: 1.1,
                   ),
@@ -745,64 +847,106 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
+                      child: Row(
+                        children: [
+                          Text(
+                            'admin.clients_login_label'.tr(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          children: [
-                            TextSpan(text: 'admin.clients_login_label'.tr()),
-                            TextSpan(
-                              text: loginId,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: (currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7)).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              loginId,
                               style: TextStyle(
                                 color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
                                 fontWeight: FontWeight.w800,
+                                fontSize: 12,
                                 fontFamily: 'monospace',
                               ),
                             ),
-                            TextSpan(text: '   |   ${'admin.clients_password_label'.tr()}'),
-                            TextSpan(
-                              text: '1',
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(
+                              '|',
                               style: TextStyle(
-                                color: currentTheme.isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                                color: currentTheme.isDark ? Colors.white24 : Colors.black26,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'admin.clients_password_label'.tr(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFBBF24).withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              '1',
+                              style: TextStyle(
+                                color: Color(0xFFFBBF24),
                                 fontWeight: FontWeight.w800,
+                                fontSize: 12,
                                 fontFamily: 'monospace',
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => _copyCredentials(loginId, name),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      onTap: () => _copyCredentials(coachId, loginId, name),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: currentTheme.accentGradient,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(7),
+                          gradient: isCopied
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                )
+                              : LinearGradient(
+                                  colors: currentTheme.accentGradient,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                          borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: currentTheme.accentPrimary.withValues(alpha: 0.25),
-                              blurRadius: 5,
+                              color: (isCopied ? const Color(0xFF10B981) : currentTheme.accentPrimary).withValues(alpha: 0.35),
+                              blurRadius: 6,
                             ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(LucideIcons.copy, color: Colors.white, size: 11),
+                            Icon(
+                              isCopied ? LucideIcons.check : LucideIcons.copy,
+                              color: Colors.white,
+                              size: 11,
+                            ),
                             const SizedBox(width: 4),
                             Text(
-                              'admin.clients_copy'.tr(),
+                              isCopied ? 'Скопійовано' : 'admin.clients_copy'.tr(),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 10,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -823,6 +967,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -905,6 +1050,52 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         ),
       ),
     ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
+  }
+
+  Widget _buildRateChip({
+    required String label,
+    required String amount,
+    required IconData icon,
+    required Color color,
+    required AppThemeConfig currentTheme,
+  }) {
+    final isDark = currentTheme.isDark;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                amount,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState(AppThemeConfig currentTheme) {

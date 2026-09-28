@@ -8,6 +8,7 @@ import 'core/theme/app_theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/providers/shared_prefs_provider.dart';
 
@@ -18,18 +19,56 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Enable offline persistence and caching only on mobile.
-  // On Web, hot restarts can cause IndexedDB locks which hang Firestore requests indefinitely.
+  // Enable offline persistence, caching, and Crashlytics on mobile.
   if (!kIsWeb) {
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
+
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
+    // Pass all uncaught "fatal" errors from the framework to Crashlytics
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+
+    // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+
+    FirebaseCrashlytics.instance.log('CitySwim App initialized successfully');
   }
   
   await EasyLocalization.ensureInitialized();
   
   final prefs = await SharedPreferences.getInstance();
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    if (!kIsWeb) {
+      FirebaseCrashlytics.instance.recordError(
+        details.exception,
+        details.stack,
+        reason: 'ErrorWidget build failure: ${details.context?.toDescription()}',
+        fatal: false,
+      );
+    }
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            kDebugMode ? details.exceptionAsString() : '',
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  };
 
   runApp(
     EasyLocalization(

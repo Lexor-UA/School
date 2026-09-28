@@ -423,10 +423,22 @@ class ParentProfileTab extends ConsumerWidget {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final minContentHeight = constraints.maxHeight - 121;
+          final mediaQuery = MediaQuery.of(context);
+          final bottomInset = mediaQuery.padding.bottom;
+          // Floating nav bar dock geometry:
+          // bar height: ~50px, bottom margin: 10px, plus 10px breathing clearance above panel
+          const double navBarDockHeight = 50.0;
+          const double navBarBottomMargin = 10.0;
+          const double desiredClearanceAboveBar = 10.0;
+          final double effectiveBottomPadding =
+              bottomInset + navBarDockHeight + navBarBottomMargin + desiredClearanceAboveBar;
+          const double topPadding = 6.0;
+          final double minContentHeight =
+              constraints.maxHeight - topPadding - effectiveBottomPadding;
+
           return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 115),
+            padding: EdgeInsets.fromLTRB(16, topPadding, 16, effectiveBottomPadding),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: minContentHeight > 0 ? minContentHeight : 0,
@@ -472,13 +484,13 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
-
-                  // 5. Luminous Ruby Logout Button (Clean, no version text)
-                  _buildLogoutFooter(
-                    context,
-                    ref,
-                    isDark,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: _buildLogoutFooter(
+                      context,
+                      ref,
+                      isDark,
+                    ),
                   ),
                 ],
               ),

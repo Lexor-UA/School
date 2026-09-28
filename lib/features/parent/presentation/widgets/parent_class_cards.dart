@@ -2277,7 +2277,6 @@ void showSplitBookingSheet(
                                               label: 'Придбати',
                                               textColor: Colors.white,
                                               onPressed: () {
-                                                ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner('Всі (Спліт)');
                                                 ref.read(parentTabProvider.notifier).setTab(2);
                                               },
                                             )

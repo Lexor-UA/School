@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -71,6 +72,13 @@ class AuthController extends _$AuthController {
       if (user == null) {
         // Check if there is a saved session (client, admin, coach, owner)
         if (savedRoleString != null || clientId != null || mockUserId != null) {
+          if (FirebaseAuth.instance.currentUser == null) {
+            try {
+              await FirebaseAuth.instance.signInAnonymously();
+            } catch (authErr) {
+              debugPrint('Anonymous auth during session restoration: $authErr');
+            }
+          }
           if (mockUserId == 'mock_active_client') {
             try {
               final doc = await FirebaseFirestore.instance.collection('users').doc('mock_active_client').get();
@@ -198,6 +206,15 @@ class AuthController extends _$AuthController {
       } catch (e) {
         debugPrint('Error caching user json: $e');
       }
+      _syncAuthUserDoc(user);
+      if (!kIsWeb) {
+        try {
+          FirebaseCrashlytics.instance.setUserIdentifier(user.id);
+          FirebaseCrashlytics.instance.setCustomKey('role', user.role.name);
+          FirebaseCrashlytics.instance.setCustomKey('branchId', user.branchId);
+          FirebaseCrashlytics.instance.setCustomKey('userName', user.name);
+        } catch (_) {}
+      }
     } else {
       await prefs.remove('userRole');
       await prefs.remove('clientId');
@@ -205,6 +222,37 @@ class AuthController extends _$AuthController {
       await prefs.remove('userBranchId');
       await prefs.remove('userOrgId');
       await prefs.remove('cachedUserJson');
+      if (!kIsWeb) {
+        try {
+          FirebaseCrashlytics.instance.setUserIdentifier('guest');
+          FirebaseCrashlytics.instance.setCustomKey('role', 'none');
+          FirebaseCrashlytics.instance.setCustomKey('branchId', 'none');
+          FirebaseCrashlytics.instance.setCustomKey('userName', 'guest');
+        } catch (_) {}
+      }
+    }
+  }
+
+  Future<void> _syncAuthUserDoc(AppUser? user) async {
+    if (user == null) return;
+    try {
+      final fbUser = FirebaseAuth.instance.currentUser;
+      if (fbUser != null) {
+        final roleStr = user.role.name;
+        final branch = (user.branchId.isNotEmpty) ? user.branchId : 'kyiv';
+        await FirebaseFirestore.instance.collection('users').doc(fbUser.uid).set({
+          'id': fbUser.uid,
+          'role': roleStr,
+          'branchId': branch,
+          'name': user.name,
+          'aliasOf': user.id,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)).catchError((e) {
+          debugPrint('Error syncing auth user doc: $e');
+        });
+      }
+    } catch (e) {
+      debugPrint('Exception in _syncAuthUserDoc: $e');
     }
   }
 
@@ -406,6 +454,14 @@ class AuthController extends _$AuthController {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+        } catch (authErr) {
+          debugPrint('Anonymous auth before signInWithEmail: $authErr');
+        }
+      }
+
       // Hardcoded test credentials for testing different portals
       final login = email.trim().toLowerCase();
 
@@ -461,6 +517,7 @@ class AuthController extends _$AuthController {
           if (FirebaseAuth.instance.currentUser == null) {
             await FirebaseAuth.instance.signInAnonymously();
           }
+          await _syncAuthUserDoc(state);
         } catch (_) {}
         return;
       } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
@@ -482,6 +539,7 @@ class AuthController extends _$AuthController {
           if (FirebaseAuth.instance.currentUser == null) {
             await FirebaseAuth.instance.signInAnonymously();
           }
+          await _syncAuthUserDoc(state);
         } catch (_) {}
         return;
       } else if (login.startsWith('coach')) {
@@ -504,6 +562,7 @@ class AuthController extends _$AuthController {
             if (FirebaseAuth.instance.currentUser == null) {
               await FirebaseAuth.instance.signInAnonymously();
             }
+            await _syncAuthUserDoc(state);
           } catch (_) {}
           return;
         } else {

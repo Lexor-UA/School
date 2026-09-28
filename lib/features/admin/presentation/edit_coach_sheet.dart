@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,11 +137,25 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                 ],
               ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.30)
-              : const Color(0xFFBAE6FD),
-          width: 1.2,
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.25)
+                : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
+          left: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.16)
+                : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
+          right: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.16)
+                : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
         ),
         boxShadow: [
           BoxShadow(
@@ -262,7 +277,12 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            onPressed: _isLoading ? null : _submit,
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    HapticFeedback.mediumImpact();
+                                    _submit();
+                                  },
                             child: _isLoading 
                                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                 : Text('admin.add_coach_save_btn'.tr(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
@@ -351,7 +371,10 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop();
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -384,30 +407,44 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
+        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFCBD5E1),
+          color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
           width: 1.1,
         ),
       ),
-      child: TextField(
-        controller: controller,
-        keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-        style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.w600),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
-            fontSize: 13.5,
-          ),
-          prefixIcon: Icon(
-            icon,
-            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, child) {
+          return TextField(
+            controller: controller,
+            keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
+            style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
+                fontSize: 13.5,
+              ),
+              prefixIcon: Icon(
+                icon,
+                color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+              ),
+              suffixIcon: value.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(LucideIcons.x, color: currentTheme.textSecondary, size: 16),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        controller.clear();
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          );
+        },
       ),
     );
   }
@@ -422,21 +459,36 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+        color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withValues(alpha: isDark ? 0.28 : 0.45),
-          width: 1.1,
+          color: color.withValues(alpha: isDark ? 0.35 : 0.50),
+          width: 1.2,
         ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(7),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
+              color: color.withValues(alpha: isDark ? 0.18 : 0.14),
               borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: isDark ? 0.30 : 0.15),
+                  blurRadius: 8,
+                ),
+              ],
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -449,7 +501,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                 Text(
                   label,
                   style: TextStyle(
-                    color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF64748B),
+                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -458,7 +510,11 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                 TextField(
                   controller: controller,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(color: currentTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: currentTheme.textPrimary,
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                  ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     isDense: true,
@@ -471,11 +527,11 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
+              color: color.withValues(alpha: isDark ? 0.18 : 0.12),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color.withValues(alpha: 0.35)),
+              border: Border.all(color: color.withValues(alpha: isDark ? 0.45 : 0.35)),
             ),
             child: Text(
               '₴ / зан',

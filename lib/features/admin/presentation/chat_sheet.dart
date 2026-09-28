@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/features/chat/models/chat_dialog.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 class ChatSheet extends ConsumerStatefulWidget {
@@ -23,6 +24,18 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
   int _selectedCategoryIndex = 0; // 0: Всі, 1: Тренери, 2: Клієнти
   bool _onlyUnread = false; // Тільки непрочитані (перемикач по тапу на плашку)
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (FirebaseAuth.instance.currentUser == null) {
+      FirebaseAuth.instance.signInAnonymously().then((_) {
+        if (mounted) {
+          ref.invalidate(adminChatDialogsStreamProvider);
+        }
+      }).catchError((_) => null);
+    }
+  }
 
   String _getDialogRole(ChatDialog dialog, Map<String, String> userRoles) {
     if (dialog.type == 'coach_client') {
@@ -665,9 +678,62 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                   error: (err, stack) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32.0),
-                      child: Text(
-                        'Помилка завантаження: $err',
-                        style: const TextStyle(color: Colors.redAccent),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              LucideIcons.wifiOff,
+                              color: Color(0xFF38BDF8),
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Підключення до Центру Підтримки...',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Синхронізація сесії та перевірка прав доступу',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0284C7),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            ),
+                            onPressed: () async {
+                              HapticFeedback.lightImpact();
+                              if (FirebaseAuth.instance.currentUser == null) {
+                                try {
+                                  await FirebaseAuth.instance.signInAnonymously();
+                                } catch (_) {}
+                              }
+                              ref.invalidate(adminChatDialogsStreamProvider);
+                            },
+                            icon: const Icon(LucideIcons.refreshCw, size: 16),
+                            label: const Text('Спробувати знову', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
                       ),
                     ),
                   ),

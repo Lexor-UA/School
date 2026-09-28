@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/features/chat/models/chat_dialog.dart';
@@ -9,11 +10,16 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   return ChatRepository();
 });
 
-final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) {
+final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) async* {
+  if (FirebaseAuth.instance.currentUser == null) {
+    try {
+      await FirebaseAuth.instance.signInAnonymously();
+    } catch (_) {}
+  }
   final repo = ref.watch(chatRepositoryProvider);
   final tenancy = ref.watch(tenancyControllerProvider);
   final branchId = tenancy.isAllLocationsSelected ? null : tenancy.activeBranchId;
-  return repo.streamAdminDialogs(branchId: branchId);
+  yield* repo.streamAdminDialogs(branchId: branchId);
 });
 
 final clientChatDialogStreamProvider = StreamProvider.family<ChatDialog?, String>((ref, clientId) {

@@ -955,7 +955,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                       top: false,
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(22, 14, 22, 26),
+                        padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1606,7 +1606,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                       top: false,
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(22, 14, 22, 26),
+                        padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1848,7 +1848,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
     return Container(
       width: double.infinity,
-      height: 52,
+      height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
@@ -1872,6 +1872,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1896,6 +1899,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       letterSpacing: isStaff ? 1.0 : 0.6,
+                      height: 1.2,
                     ),
                   ),
                 ],

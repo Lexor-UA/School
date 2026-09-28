@@ -18,7 +18,7 @@ class _AnimatedWaterBackgroundState extends ConsumerState<AnimatedWaterBackgroun
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: const Duration(seconds: 8),
     )..repeat();
   }
 
@@ -97,10 +97,10 @@ class _WaterPainter extends CustomPainter {
     final y2 = size.height * (isLight ? 0.50 : 0.56);
     final y3 = size.height * (isLight ? 0.62 : 0.70);
 
-    // Amplitudes for dual-harmonic hydrodynamics
-    final amp1 = isLight ? 36.0 : 30.0;
-    final amp2 = isLight ? 46.0 : 38.0;
-    final amp3 = isLight ? 54.0 : 44.0;
+    // Amplitudes for dual-harmonic hydrodynamics (Calm & delicate oceanic presence)
+    final amp1 = isLight ? 22.0 : 18.0;
+    final amp2 = isLight ? 28.0 : 24.0;
+    final amp3 = isLight ? 34.0 : 28.0;
 
     path1.moveTo(0, size.height);
     path2.moveTo(0, size.height);
@@ -114,22 +114,22 @@ class _WaterPainter extends CustomPainter {
     for (double x = 0; x <= size.width; x += 2) {
       final double nx = x / size.width;
 
-      // Wave 1: Slow, deep oceanic swell with subtle rolling counter-wave
+      // Wave 1: Slow, deep oceanic swell with subtle rolling counter-wave (strictly integer 1x harmonics for seamless loop)
       final double h1 = y1 +
           math.sin((nx * 1.6 * math.pi) + phase) * (amp1 * 0.78) +
-          math.cos((nx * 2.8 * math.pi) - (phase * 0.6)) * (amp1 * 0.22);
+          math.cos((nx * 3.2 * math.pi) - phase) * (amp1 * 0.22);
       path1.lineTo(x, h1);
 
-      // Wave 2: Harmonic mid-depth tide
+      // Wave 2: Harmonic mid-depth tide (integer 1x and 2x harmonics)
       final double h2 = y2 +
-          math.cos((nx * 2.1 * math.pi) + phase) * (amp2 * 0.72) +
-          math.sin((nx * 3.5 * math.pi) + (phase * 1.4)) * (amp2 * 0.28);
+          math.cos((nx * 2.0 * math.pi) + phase) * (amp2 * 0.72) +
+          math.sin((nx * 4.0 * math.pi) + (phase * 2)) * (amp2 * 0.28);
       path2.lineTo(x, h2);
 
-      // Wave 3: Expressive surface counter-current
+      // Wave 3: Expressive surface counter-current (integer -1x and 2x harmonics)
       final double h3 = y3 +
           math.sin((nx * 2.4 * math.pi) - phase) * (amp3 * 0.74) +
-          math.cos((nx * 4.2 * math.pi) + (phase * 0.8)) * (amp3 * 0.26);
+          math.cos((nx * 4.8 * math.pi) + (phase * 2)) * (amp3 * 0.26);
       path3.lineTo(x, h3);
 
       if (first) {
@@ -272,14 +272,16 @@ class _WaterPainter extends CustomPainter {
     final rayWidths = [size.width * 0.28, size.width * 0.36, size.width * 0.32, size.width * 0.26];
 
     for (int r = 0; r < rayAngles.length; r++) {
-      final double rPhase = phase * 0.7 + r * 1.5;
-      final double rAlpha = (isLight ? 0.16 : 0.11) + math.sin(rPhase) * (isLight ? 0.05 : 0.035);
-      final double angle = rayAngles[r] + math.sin(rPhase * 0.5) * 0.04;
+      // Exact integer harmonic phase shift (smooth continuous 360 loop)
+      final double rayOffset = r * (math.pi / 2);
+      final double rAlpha = (isLight ? 0.15 : 0.10) +
+          math.sin(phase + rayOffset) * (isLight ? 0.04 : 0.028);
+      final double angle = rayAngles[r] + math.sin(phase + rayOffset) * 0.035;
       final double length = size.height * 1.45;
 
       final double rayCenterX = sunOriginX + math.sin(angle) * length;
       final double rayCenterY = sunOriginY + math.cos(angle) * length;
-      final double halfWidth = rayWidths[r] * (0.85 + math.cos(rPhase * 0.6) * 0.15);
+      final double halfWidth = rayWidths[r] * (0.85 + math.cos(phase * 2 + rayOffset) * 0.15);
 
       final rayPath = Path()
         ..moveTo(sunOriginX - 25, sunOriginY)

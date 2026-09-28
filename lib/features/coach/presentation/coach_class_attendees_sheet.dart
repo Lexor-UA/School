@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +66,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
     final now = DateTime.now();
 
     final List<CoachAttendeeInfo> resolved = [];
+    final List<String> orphanedIds = [];
 
     for (final id in enrolledIds) {
       try {
@@ -182,10 +182,28 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
               isPresent: isPresent,
               isChild: false,
             ));
+          } else {
+            // Neither child nor user exists - orphaned ID
+            orphanedIds.add(id);
           }
         }
       } catch (e) {
         debugPrint('Error resolving attendee $id: $e');
+      }
+    }
+
+    // Auto-heal orphaned enrollments in background
+    if (orphanedIds.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance.collection('classes').doc(_currentClass.id).update({
+          'enrolledChildIds': FieldValue.arrayRemove(orphanedIds),
+        });
+        final updatedEnrolled = List<String>.from(_currentClass.enrolledChildIds)
+          ..removeWhere((id) => orphanedIds.contains(id));
+        _currentClass = _currentClass.copyWith(enrolledChildIds: updatedEnrolled);
+        ref.invalidate(scheduleControllerProvider);
+      } catch (e) {
+        debugPrint('Failed to auto-heal orphaned attendees: $e');
       }
     }
 
@@ -318,26 +336,22 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF09182B).withValues(alpha: 0.96),
+        color: const Color(0xFF111827),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(color: const Color(0xFF334155), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+            color: Colors.black.withValues(alpha: 0.50),
             blurRadius: 32,
             spreadRadius: -4,
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.90,
-            ),
-            child: Column(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+        ),
+        child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Top drag bar & close button
@@ -607,9 +621,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildAttendeeCard(CoachAttendeeInfo attendee, int index) {
@@ -618,31 +630,25 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
     return Container(
       decoration: BoxDecoration(
         color: isPresent
-            ? const Color(0xFF10B981).withValues(alpha: 0.09)
-            : Colors.white.withValues(alpha: 0.05),
+            ? const Color(0xFF0F2922)
+            : const Color(0xFF1E2638),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isPresent
-              ? const Color(0xFF10B981).withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.12),
+              ? const Color(0xFF10B981).withValues(alpha: 0.60)
+              : const Color(0xFF334155).withValues(alpha: 0.70),
           width: 1.2,
         ),
-        boxShadow: isPresent
-            ? [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                  blurRadius: 14,
-                  spreadRadius: -1,
-                ),
-              ]
-            : [],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.30),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -787,9 +793,9 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: const Color(0xFF161F30),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(color: const Color(0xFF334155)),
                     ),
                     child: Row(
                       children: [
@@ -857,14 +863,14 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: const Color(0xFF161F30),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: attendee.isExpired
-                          ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+                          ? const Color(0xFFEF4444).withValues(alpha: 0.6)
                           : (attendee.isExhausted
-                              ? const Color(0xFFF59E0B).withValues(alpha: 0.4)
-                              : Colors.white.withValues(alpha: 0.08)),
+                              ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
+                              : const Color(0xFF334155)),
                     ),
                   ),
                   child: Column(
@@ -968,9 +974,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
               ],
             ),
           ),
-        ),
-      ),
-    ).animate().fadeIn(delay: (index * 40).ms).slideY(begin: 0.05, end: 0);
+        ).animate().fadeIn(delay: (index * 40).ms).slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildPill({

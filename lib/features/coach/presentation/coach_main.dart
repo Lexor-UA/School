@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,6 +6,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/core/router/app_router.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'coach_dashboard.dart';
 
 class CoachMain extends ConsumerStatefulWidget {
@@ -19,6 +21,13 @@ class CoachMain extends ConsumerStatefulWidget {
 class _CoachMainState extends ConsumerState<CoachMain> {
   @override
   Widget build(BuildContext context) {
+    ref.listen<AppUser?>(authControllerProvider, (previous, next) {
+      if (next == null && mounted) {
+        ref.read(coachTabProvider.notifier).setTab(0);
+        ref.read(goRouterProvider).go('/?skipSplash=true');
+      }
+    });
+
     final selectedTab = ref.watch(coachTabProvider);
     final themeConfig = ref.watch(appThemeControllerProvider);
 
@@ -68,26 +77,37 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         ),
       ),
 
-      // 5. Floating Apple VisionOS Frosted Dock (Luminous Liquid Glass)
+      // 5. Floating Bottom Dock (Solid Dark Graphite / Crisp Light)
       bottomNavigationBar: SafeArea(
         child: Container(
           margin: const EdgeInsets.only(left: 16, right: 16, bottom: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: themeConfig.isDark
+                  ? [
+                      const Color(0xFF0F2744),
+                      const Color(0xFF0A1B30),
+                    ]
+                  : [
+                      Colors.white,
+                      const Color(0xFFF8FAFC),
+                    ],
+            ),
+            border: Border.all(
+              color: themeConfig.isDark
+                  ? const Color(0xFF1E4570)
+                  : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
             boxShadow: themeConfig.isDark
                 ? [
-                    // Ambient ocean cyan aura dispelling any black look
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
-                      blurRadius: 32,
-                      spreadRadius: -1,
-                      offset: const Offset(0, 6),
-                    ),
-                    // Luminous royal ocean lift (rich deep sapphire depth)
-                    BoxShadow(
-                      color: const Color(0xFF001529).withValues(alpha: 0.70),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
+                      color: Colors.black.withValues(alpha: 0.50),
+                      blurRadius: 28,
+                      offset: const Offset(0, 8),
                     ),
                   ]
                 : [
@@ -103,69 +123,39 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     ),
                   ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(32),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: themeConfig.isDark
-                        ? [
-                            const Color(0xFF0F2E52).withValues(alpha: 0.88),
-                            const Color(0xFF07192F).withValues(alpha: 0.94),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.96),
-                            const Color(0xFFF8FAFC).withValues(alpha: 0.92),
-                          ],
-                  ),
-                  border: Border.all(
-                    color: themeConfig.isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
-                        : Colors.white.withValues(alpha: 0.95),
-                    width: 1.2,
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildDockItem(
-                      index: 0,
-                      icon: LucideIcons.calendarClock,
-                      label: 'coach.nav_schedule'.tr(),
-                      isSelected: selectedTab == 0,
-                      themeConfig: themeConfig,
-                    ),
-                    _buildDockItem(
-                      index: 1,
-                      icon: LucideIcons.calendarDays,
-                      label: 'coach.nav_calendar'.tr(),
-                      isSelected: selectedTab == 1,
-                      themeConfig: themeConfig,
-                    ),
-                    _buildDockItem(
-                      index: 2,
-                      icon: LucideIcons.users,
-                      label: 'Мої учні',
-                      isSelected: selectedTab == 2,
-                      themeConfig: themeConfig,
-                    ),
-                    _buildDockItem(
-                      index: 3,
-                      icon: LucideIcons.userCheck,
-                      label: 'coach.nav_cabinet'.tr(),
-                      isSelected: selectedTab == 3,
-                      themeConfig: themeConfig,
-                    ),
-                  ],
-                ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildDockItem(
+                index: 0,
+                icon: LucideIcons.calendarClock,
+                label: 'coach.nav_schedule'.tr(),
+                isSelected: selectedTab == 0,
+                themeConfig: themeConfig,
               ),
-            ),
+              _buildDockItem(
+                index: 1,
+                icon: LucideIcons.calendarDays,
+                label: 'coach.nav_calendar'.tr(),
+                isSelected: selectedTab == 1,
+                themeConfig: themeConfig,
+              ),
+              _buildDockItem(
+                index: 2,
+                icon: LucideIcons.users,
+                label: 'Мої учні',
+                isSelected: selectedTab == 2,
+                themeConfig: themeConfig,
+              ),
+              _buildDockItem(
+                index: 3,
+                icon: LucideIcons.userCheck,
+                label: 'coach.nav_cabinet'.tr(),
+                isSelected: selectedTab == 3,
+                themeConfig: themeConfig,
+              ),
+            ],
           ),
         ),
       ),

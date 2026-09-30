@@ -30,15 +30,13 @@ class ChatRepository {
 
   /// Stream all dialogs relevant to a specific Client (Support + Coach chats)
   Stream<List<ChatDialog>> streamClientDialogs(String clientId) {
-    return _chats.snapshots().map((snapshot) {
-      final dialogs = <ChatDialog>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final d = ChatDialog.fromJson(data);
-        if (d.clientId == clientId || d.id == clientId || d.participantIds.contains(clientId)) {
-          dialogs.add(d);
-        }
-      }
+    return _chats
+        .where('participantIds', arrayContains: clientId)
+        .snapshots()
+        .map((snapshot) {
+      final dialogs = snapshot.docs
+          .map((doc) => ChatDialog.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
       dialogs.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return dialogs;
     });
@@ -46,17 +44,13 @@ class ChatRepository {
 
   /// Stream all dialogs relevant to a specific Coach (Support + Client chats)
   Stream<List<ChatDialog>> streamCoachDialogs(String coachId) {
-    return _chats.snapshots().map((snapshot) {
-      final dialogs = <ChatDialog>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final d = ChatDialog.fromJson(data);
-        if (d.coachId == coachId ||
-            d.participantIds.contains(coachId) ||
-            (d.id == coachId && d.type == 'support')) {
-          dialogs.add(d);
-        }
-      }
+    return _chats
+        .where('participantIds', arrayContains: coachId)
+        .snapshots()
+        .map((snapshot) {
+      final dialogs = snapshot.docs
+          .map((doc) => ChatDialog.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
       dialogs.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return dialogs;
     });

@@ -107,13 +107,15 @@ class RecurringScheduleGenerator {
     final List<DateTime> skippedDates = [];
     final List<ClassConflict> conflicts = [];
 
-    // O(N) optimization: index existing classes by calendar day key to eliminate quadratic loop hangs
+    // O(N) optimization: index existing classes by calendar day key (in UTC) to eliminate quadratic loop hangs
     final Map<String, List<GroupClass>> dayBuckets = {};
     void addToBucket(GroupClass c) {
-      final key = '${c.startTime.year}-${c.startTime.month}-${c.startTime.day}';
+      final startUtc = c.startTime.toUtc();
+      final endUtc = c.endTime.toUtc();
+      final key = '${startUtc.year}-${startUtc.month}-${startUtc.day}';
       (dayBuckets[key] ??= []).add(c);
-      if (c.endTime.day != c.startTime.day) {
-        final endKey = '${c.endTime.year}-${c.endTime.month}-${c.endTime.day}';
+      if (endUtc.year != startUtc.year || endUtc.month != startUtc.month || endUtc.day != startUtc.day) {
+        final endKey = '${endUtc.year}-${endUtc.month}-${endUtc.day}';
         (dayBuckets[endKey] ??= []).add(c);
       }
     }
@@ -137,7 +139,8 @@ class RecurringScheduleGenerator {
         final utcEnd = utcStart.add(Duration(minutes: options.durationMinutes));
 
         // 3. Швидка оцінка конфліктів тільки проти занять у цей же день
-        final dayKey = '${utcStart.year}-${utcStart.month}-${utcStart.day}';
+        final startUtc = utcStart.toUtc();
+        final dayKey = '${startUtc.year}-${startUtc.month}-${startUtc.day}';
         final classesToCheck = dayBuckets[dayKey] ?? const <GroupClass>[];
 
         final conflict = evaluateConflict(

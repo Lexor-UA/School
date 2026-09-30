@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -303,15 +304,26 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           }
         }
 
-        // 5. Remove enrollments from scheduled classes
-        final classesSnap = await FirebaseFirestore.instance
-            .collection('classes')
-            .where('enrolledChildIds', arrayContainsAny: allRelatedIds)
-            .get();
-        for (var doc in classesSnap.docs) {
-          List<dynamic> enrolled = List.from(doc.data()['enrolledChildIds'] ?? []);
-          enrolled.removeWhere((id) => allRelatedIds.contains(id));
-          await doc.reference.update({'enrolledChildIds': enrolled});
+        // 5. Remove enrollments and booked subscriptions from scheduled classes
+        for (var i = 0; i < allRelatedIds.length; i += 30) {
+          final chunk = allRelatedIds.sublist(i, math.min(i + 30, allRelatedIds.length));
+          final classesSnap = await FirebaseFirestore.instance
+              .collection('classes')
+              .where('enrolledChildIds', arrayContainsAny: chunk)
+              .get();
+          for (var doc in classesSnap.docs) {
+            final data = doc.data();
+            List<dynamic> enrolled = List.from(data['enrolledChildIds'] ?? []);
+            enrolled.removeWhere((id) => allRelatedIds.contains(id));
+            final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map? ?? {});
+            for (final relId in allRelatedIds) {
+              bookedMap.remove(relId);
+            }
+            await doc.reference.update({
+              'enrolledChildIds': enrolled,
+              'bookedSubscriptions': bookedMap,
+            });
+          }
         }
 
         // 6. Purge any remaining orphaned families without active parents

@@ -544,7 +544,13 @@ class ScheduleController extends _$ScheduleController {
         }
         
         final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
-        final remainingClasses = subData['remainingClasses'] as int;
+        final remainingClasses = subData['remainingClasses'] as int? ?? 0;
+        final isSubActive = subData['isActive'] as bool? ?? false;
+
+        if (remainingClasses <= 0 || !isSubActive) {
+          result = BookingResult.noSubscription;
+          return;
+        }
 
         DateTime? subExpiry = effectiveSubscription.expiryDate;
         if (subData['expiryDate'] is Timestamp) {

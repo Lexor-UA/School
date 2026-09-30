@@ -572,58 +572,60 @@ class SubscriptionController extends _$SubscriptionController {
       );
     }
 
+    final sub = targetSub;
+
     // 2.5 Tenancy Branch Check (Cross-branch security guard & data integrity)
     final integrityResult = BranchDataIntegrityValidator.validateAttendanceDeduction(
-      subscription: targetSub,
+      subscription: sub,
       groupClass: targetClass,
     );
     if (!integrityResult.isValid) {
       return QrCheckInResult(
         status: QrCheckInStatus.wrongService,
-        studentName: targetSub.ownerName,
+        studentName: sub.ownerName,
         classTitle: targetClass.title,
-        subServiceName: targetSub.serviceName,
-        remainingClasses: targetSub.remainingClasses,
+        subServiceName: sub.serviceName,
+        remainingClasses: sub.remainingClasses,
         message: integrityResult.errorMessage ?? 'Перепустку заблоковано через міжфіліальну ізоляцію.',
       );
     }
 
     // 3. Service compatibility check
-    if (!canSubscriptionBeUsedForClass(targetSub, targetClass)) {
+    if (!canSubscriptionBeUsedForClass(sub, targetClass)) {
       return QrCheckInResult(
         status: QrCheckInStatus.wrongService,
-        studentName: targetSub.ownerName,
+        studentName: sub.ownerName,
         classTitle: targetClass.title,
-        subServiceName: targetSub.serviceName,
-        remainingClasses: targetSub.remainingClasses,
-        message: 'Абонемент "${targetSub.serviceName ?? 'Невідомий'}" не відповідає типу заняття "${targetClass.title}".',
+        subServiceName: sub.serviceName,
+        remainingClasses: sub.remainingClasses,
+        message: 'Абонемент "${sub.serviceName ?? 'Невідомий'}" не відповідає типу заняття "${targetClass.title}".',
       );
     }
 
     // 4. Remaining classes and active/expiry check
-    final isExpired = targetSub.expiryDate != null && targetSub.expiryDate!.isBefore(now);
-    if (!targetSub.isActive || targetSub.remainingClasses <= 0 || isExpired) {
+    final isExpired = sub.expiryDate != null && sub.expiryDate!.isBefore(now);
+    if (!sub.isActive || sub.remainingClasses <= 0 || isExpired) {
       return QrCheckInResult(
         status: QrCheckInStatus.expiredOrEmpty,
-        studentName: targetSub.ownerName,
+        studentName: sub.ownerName,
         classTitle: targetClass.title,
-        subServiceName: targetSub.serviceName,
-        remainingClasses: targetSub.remainingClasses,
+        subServiceName: sub.serviceName,
+        remainingClasses: sub.remainingClasses,
         message: isExpired
-            ? 'Термін дії абонемента закінчився (${DateFormat('dd.MM.yyyy').format(targetSub.expiryDate!)}).'
+            ? 'Термін дії абонемента закінчився (${DateFormat('dd.MM.yyyy').format(sub.expiryDate!)}).'
             : 'На абонементі вичерпано всі заняття (залишок 0).',
       );
     }
 
     // 5. Resolve Attendee ID and Student Name
-    String attendeeId = explicitUserId ?? targetSub.userId;
-    String studentName = (targetSub.ownerName ?? '').trim();
+    String attendeeId = explicitUserId ?? sub.userId;
+    String studentName = (sub.ownerName ?? '').trim();
 
     // Check if ownerName corresponds to a child of this user
     try {
       final childrenSnapshot = await FirebaseFirestore.instance
           .collection('children')
-          .where('parentId', isEqualTo: targetSub.userId)
+          .where('parentId', isEqualTo: sub.userId)
           .get();
 
       if (studentName.isNotEmpty) {
@@ -645,79 +647,167 @@ class SubscriptionController extends _$SubscriptionController {
 
     if (studentName.isEmpty) {
       try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(targetSub.userId).get();
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(sub.userId).get();
         studentName = (userDoc.data()?['name'] as String?)?.trim() ?? 'Клієнт';
       } catch (_) {
         studentName = 'Клієнт';
       }
     }
 
-    // 6. Anti-duplicate attendance check: Check live class document in Firestore
+    // 6. Atomic Transaction for Attendance Registration & Drop-in Deduction
     try {
-      final classDoc = await FirebaseFirestore.instance.collection('classes').doc(targetClass.id).get();
-      if (classDoc.exists) {
-        final liveAttended = List<String>.from(
-          (classDoc.data()?['attendedChildIds'] as List?) ?? targetClass.attendedChildIds,
-        );
-        if (liveAttended.contains(attendeeId) || liveAttended.contains(targetSub.userId)) {
-          return QrCheckInResult(
+      final classRef = FirebaseFirestore.instance.collection('classes').doc(targetClass.id);
+      final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(sub.id);
+
+      QrCheckInResult? transactionResult;
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final classSnapshot = await transaction.get(classRef);
+        final subSnapshot = await transaction.get(subRef);
+
+        if (!classSnapshot.exists) {
+          transactionResult = QrCheckInResult(
+            status: QrCheckInStatus.notFound,
+            studentName: studentName,
+            classTitle: targetClass.title,
+            message: 'Заняття не знайдено в системі.',
+          );
+          return;
+        }
+
+        final classData = Map<String, dynamic>.from(classSnapshot.data() ?? {});
+        final liveAttended = List<String>.from((classData['attendedChildIds'] as List?) ?? []);
+        final liveEnrolled = List<String>.from((classData['enrolledChildIds'] as List?) ?? []);
+
+        // Anti-duplicate attendance: check if already attended
+        if (liveAttended.contains(attendeeId) || liveAttended.contains(sub.userId)) {
+          final currentRem = subSnapshot.exists ? (subSnapshot.data()?['remainingClasses'] as int? ?? sub.remainingClasses) : sub.remainingClasses;
+          transactionResult = QrCheckInResult(
             status: QrCheckInStatus.alreadyAttended,
             studentName: studentName,
             classTitle: targetClass.title,
-            subServiceName: targetSub.serviceName,
-            remainingClasses: targetSub.remainingClasses,
+            subServiceName: sub.serviceName,
+            remainingClasses: currentRem,
             message: '$studentName вже відмічений(-а) на цьому занятті. Повторне списання заблоковано.',
           );
+          return;
         }
-      }
-    } catch (e) {
-      debugPrint('Error checking live attendance: $e');
-      if (targetClass.attendedChildIds.contains(attendeeId) || targetClass.attendedChildIds.contains(targetSub.userId)) {
-        return QrCheckInResult(
-          status: QrCheckInStatus.alreadyAttended,
-          studentName: studentName,
-          classTitle: targetClass.title,
-          subServiceName: targetSub.serviceName,
-          remainingClasses: targetSub.remainingClasses,
-          message: '$studentName вже відмічений(-а) на цьому занятті. Повторне списання заблоковано.',
-        );
-      }
-    }
 
-    // 7. Deduct 1 pass from subscription
-    final newRemaining = targetSub.remainingClasses - 1;
-    final newIsActive = newRemaining > 0;
+        final bool isPreBooked = liveEnrolled.contains(attendeeId) || liveEnrolled.contains(sub.userId);
 
-    try {
-      await FirebaseFirestore.instance.collection('subscriptions').doc(targetSub.id).update({
-        'remainingClasses': newRemaining,
-        'isActive': newIsActive,
+        if (isPreBooked) {
+          // --- CASE A: Student was pre-booked (1 pass was already deducted at booking) ---
+          // DO NOT deduct again! Only register attendance.
+          final currentRem = subSnapshot.exists ? (subSnapshot.data()?['remainingClasses'] as int? ?? sub.remainingClasses) : sub.remainingClasses;
+          final updatedAttended = List<String>.from(liveAttended)..add(attendeeId);
+
+          transaction.update(classRef, {
+            'attendedChildIds': updatedAttended,
+          });
+
+          transactionResult = QrCheckInResult(
+            status: QrCheckInStatus.success,
+            studentName: studentName,
+            classTitle: targetClass.title,
+            subServiceName: sub.serviceName,
+            remainingClasses: currentRem,
+            message: 'Присутність для $studentName підтверджено (за попереднім записом). Залишок: $currentRem',
+          );
+        } else {
+          // --- CASE B: Drop-in (Student was NOT pre-booked) ---
+          final maxCap = (classData['maxCapacity'] as int?) ?? targetClass.maxCapacity;
+          if (liveEnrolled.length >= maxCap) {
+            transactionResult = QrCheckInResult(
+              status: QrCheckInStatus.wrongService,
+              studentName: studentName,
+              classTitle: targetClass.title,
+              subServiceName: sub.serviceName,
+              remainingClasses: sub.remainingClasses,
+              message: 'Група заповнена ($maxCap/$maxCap). Вільних місць для додаткового запису немає.',
+            );
+            return;
+          }
+
+          if (!subSnapshot.exists) {
+            transactionResult = QrCheckInResult(
+              status: QrCheckInStatus.notFound,
+              studentName: studentName,
+              classTitle: targetClass.title,
+              message: 'Абонемент не знайдено у базі даних.',
+            );
+            return;
+          }
+
+          final subData = Map<String, dynamic>.from(subSnapshot.data() ?? {});
+          final currentRem = subData['remainingClasses'] as int? ?? 0;
+          final isActive = subData['isActive'] as bool? ?? false;
+
+          if (currentRem <= 0 || !isActive) {
+            transactionResult = QrCheckInResult(
+              status: QrCheckInStatus.expiredOrEmpty,
+              studentName: studentName,
+              classTitle: targetClass.title,
+              subServiceName: sub.serviceName,
+              remainingClasses: currentRem,
+              message: 'На абонементі вичерпано всі заняття (залишок: $currentRem).',
+            );
+            return;
+          }
+
+          final newRemaining = currentRem - 1;
+          final newIsActive = newRemaining > 0;
+
+          // 1. Deduct pass from subscription
+          transaction.update(subRef, {
+            'remainingClasses': newRemaining,
+            'isActive': newIsActive,
+          });
+
+          // 2. Enroll and mark attendance on class
+          final updatedEnrolled = List<String>.from(liveEnrolled)..add(attendeeId);
+          final updatedAttended = List<String>.from(liveAttended)..add(attendeeId);
+          final bookedMap = Map<String, dynamic>.from((classData['bookedSubscriptions'] as Map?) ?? {});
+          bookedMap[attendeeId] = sub.id;
+
+          transaction.update(classRef, {
+            'enrolledChildIds': updatedEnrolled,
+            'attendedChildIds': updatedAttended,
+            'bookedSubscriptions': bookedMap,
+          });
+
+          transactionResult = QrCheckInResult(
+            status: QrCheckInStatus.success,
+            studentName: studentName,
+            classTitle: targetClass.title,
+            subServiceName: sub.serviceName,
+            remainingClasses: newRemaining,
+            message: 'Заняття успішно списано для $studentName (Drop-in). Залишок: $newRemaining',
+          );
+        }
       });
 
-      // Update in-memory state
-      state = state.map((s) {
-        if (s.id == targetSub!.id) {
-          return s.copyWith(remainingClasses: newRemaining, isActive: newIsActive);
+      if (transactionResult != null) {
+        if (transactionResult!.status == QrCheckInStatus.success) {
+          // Sync in-memory state cleanly
+          state = state.map((s) {
+            if (s.id == sub.id) {
+              final newRem = transactionResult!.remainingClasses ?? 0;
+              return s.copyWith(remainingClasses: newRem, isActive: newRem > 0);
+            }
+            return s;
+          }).toList();
         }
-        return s;
-      }).toList();
-
-      // 8. Register attendance and enrollment in the class
-      await FirebaseFirestore.instance.collection('classes').doc(targetClass.id).update({
-        'attendedChildIds': FieldValue.arrayUnion([attendeeId]),
-        'enrolledChildIds': FieldValue.arrayUnion([attendeeId]),
-      });
+        return transactionResult!;
+      }
 
       return QrCheckInResult(
-        status: QrCheckInStatus.success,
+        status: QrCheckInStatus.notFound,
         studentName: studentName,
         classTitle: targetClass.title,
-        subServiceName: targetSub.serviceName,
-        remainingClasses: newRemaining,
-        message: 'Заняття успішно списано для $studentName. Залишок: $newRemaining',
+        message: 'Не вдалося виконати операцію чек-іну.',
       );
     } catch (e) {
-      debugPrint('Error finalizing QR check-in: $e');
+      debugPrint('Error in atomic QR check-in: $e');
       return QrCheckInResult(
         status: QrCheckInStatus.notFound,
         studentName: studentName,

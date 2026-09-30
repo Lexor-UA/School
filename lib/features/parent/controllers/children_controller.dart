@@ -100,7 +100,35 @@ class ChildrenController extends _$ChildrenController {
           'enrolledChildIds': enrolled,
         };
         if (data['bookedSubscriptions'] is Map) {
-          updates['bookedSubscriptions.$childId'] = FieldValue.delete();
+          final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map);
+          final bookedSubId = bookedMap[childId] as String?;
+          bookedMap.remove(childId);
+          updates['bookedSubscriptions'] = bookedMap;
+
+          // Refund class pass to subscription if class is in the future
+          if (bookedSubId != null) {
+            DateTime? startTime;
+            if (data['startTime'] is Timestamp) {
+              startTime = (data['startTime'] as Timestamp).toDate();
+            } else if (data['startTime'] is String) {
+              startTime = DateTime.tryParse(data['startTime'] as String);
+            }
+            if (startTime == null || startTime.isAfter(DateTime.now())) {
+              try {
+                final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(bookedSubId);
+                final subDoc = await subRef.get();
+                if (subDoc.exists) {
+                  final cur = subDoc.data()?['remainingClasses'] as int? ?? 0;
+                  await subRef.update({
+                    'remainingClasses': cur + 1,
+                    'isActive': true,
+                  });
+                }
+              } catch (subErr) {
+                debugPrint('Notice: refunding subscription on child delete: $subErr');
+              }
+            }
+          }
         }
         await doc.reference.update(updates);
       }

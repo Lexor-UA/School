@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -34,7 +35,9 @@ class AuthController extends _$AuthController {
   @override
   AppUser? build() {
     // Ensure default admin account exists in Firestore
-    ensureAdminInFirestore();
+    if (Firebase.apps.isNotEmpty) {
+      ensureAdminInFirestore();
+    }
 
     // Synchronously restore cached user from SharedPreferences for instant UI state
     AppUser? initialUser;
@@ -63,7 +66,7 @@ class AuthController extends _$AuthController {
     }
 
     FirebaseAuth.instance.authStateChanges().listen((user) async {
-      if (_isLoggingOut) return;
+      if (_isLoggingOut || _isLoggingIn) return;
       final prefs = await SharedPreferences.getInstance();
       final savedRoleString = prefs.getString('userRole');
       final mockUserId = prefs.getString('mockUserId');
@@ -266,6 +269,9 @@ class AuthController extends _$AuthController {
           
       if (doc.exists && doc.data() != null) {
         state = AppUser.fromJson(doc.data()!);
+        final isCompleted = (doc.data()!['onboardingCompleted'] as bool?) ?? (doc.data()!['phone'] != null);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('needsOnboarding', !isCompleted);
         await _syncRoleToPrefs(state);
       } else {
         // If the user is authenticated in Firebase Auth, never drop session!
@@ -1037,7 +1043,7 @@ class AuthController extends _$AuthController {
         await childRef.set(childData);
       }
 
-      await prefs.remove('needsOnboarding');
+      await prefs.setBool('needsOnboarding', false);
 
       await prefs.setString('selected_branch_id', assignedBranchId);
       await prefs.setString('userBranchId', assignedBranchId);
@@ -1068,11 +1074,52 @@ class AuthController extends _$AuthController {
       debugPrint('Error deleting avatar: $e');
     }
   }
+
+  /// Зміна активної філії для клієнта (Київ / Відень) зі збереженням суворої філіальної ізоляції
+  Future<void> updateClientBranch(String newBranchId) async {
+    if (state == null) return;
+    final user = state!;
+    final prefs = ref.read(sharedPrefsProvider);
+
+    final updatedBranchIds = user.branchIds.contains(newBranchId)
+        ? user.branchIds
+        : [...user.branchIds, newBranchId];
+
+    final updatedUser = user.copyWith(
+      branchId: newBranchId,
+      branchIds: updatedBranchIds,
+    );
+
+    // Оптимістичне локальне оновлення
+    state = updatedUser;
+    await prefs.setString('selected_branch_id', newBranchId);
+    await prefs.setString('userBranchId', newBranchId);
+    await _syncRoleToPrefs(updatedUser);
+
+    // Оновлення в Firestore для користувача та його дітей
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.id).set({
+        'branchId': newBranchId,
+        'branchIds': updatedBranchIds,
+      }, SetOptions(merge: true));
+
+      final childrenSnapshot = await FirebaseFirestore.instance
+          .collection('children')
+          .where('parentId', isEqualTo: user.id)
+          .get();
+      for (final doc in childrenSnapshot.docs) {
+        await doc.reference.update({'branchId': newBranchId});
+      }
+    } catch (e) {
+      debugPrint('Error updating branch in Firestore: $e');
+    }
+  }
 }
 
 /// Guarantees that the default Admin profile exists in Firestore `users` collection.
 Future<void> ensureAdminInFirestore() async {
   try {
+    if (Firebase.apps.isEmpty) return;
     final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
     final docSnap = await docRef.get();
     if (!docSnap.exists) {

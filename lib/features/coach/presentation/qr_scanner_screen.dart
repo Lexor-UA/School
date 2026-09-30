@@ -667,6 +667,53 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                                     }
                                   }
                                 },
+                                errorBuilder: (context, error) {
+                                  return Container(
+                                    color: const Color(0xFF091424),
+                                    padding: const EdgeInsets.all(24),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.amber.withValues(alpha: 0.15),
+                                              border: Border.all(
+                                                color: Colors.amber.withValues(alpha: 0.4),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              LucideIcons.cameraOff,
+                                              color: Colors.amber,
+                                              size: 36,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          const Text(
+                                            'Камера недоступна',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Надайте доступ до камери у системних налаштуваннях або скористайтеся полем введення коду нижче.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.65),
+                                              fontSize: 12.5,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
 

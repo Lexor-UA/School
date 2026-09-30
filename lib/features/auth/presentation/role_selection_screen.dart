@@ -149,9 +149,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
   void _navigateBasedOnRole(UserRole role, [AppUser? user]) {
     final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
-    final needsOnboarding = prefs.getBool('needsOnboarding') ?? false;
+    final needsOnboardingPref = prefs.getBool('needsOnboarding');
+    final needsOnboarding = needsOnboardingPref ?? (user != null && (user.phone == null || user.phone!.isEmpty));
 
-    if (role == UserRole.parent && (needsOnboarding || (user != null && user.phone == null))) {
+    if (role == UserRole.parent && needsOnboarding) {
       context.go('/onboarding');
       return;
     }
@@ -185,8 +186,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     ref.listen(authControllerProvider, (previous, next) {
       if (!_splashFinished) return;
 
-      // Only navigate from ref.listen if an active manual login occurred (e.g. from modal or Google Sign-In)
-      if (next != null && (previous == null || _isLoading)) {
+      // Only navigate from ref.listen if an external manual login occurred (e.g. from modal)
+      // Do not navigate while Google Sign-In is loading (_isLoading == true), as Google Sign-In handles its own navigation on completion.
+      if (next != null && !_isLoading && (previous == null || previous.id != next.id)) {
         final rootNav = Navigator.of(context, rootNavigator: true);
         if (rootNav.canPop()) {
           rootNav.pop();

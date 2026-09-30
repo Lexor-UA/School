@@ -1,17 +1,99 @@
-# swimming_school_app
+# 🏊 CitySwim — Multi-Tenancy Swimming School ERP & Mobile App
 
-A new Flutter project.
+**CitySwim** — це високотехнологічна кросплатформна екосистема для управління мережею шкіл плавання преміум-класу. Додаток підтримує повноцінну **мультитенантність (Multi-Tenancy)**, ізоляцію філій між країнами (Україна / Австрія) та конфігурацію **White-Label SaaS (Aquatix Lab)**.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🌟 Ключові можливості
 
-A few resources to get you started if this is your first Flutter project:
+### 1. Рольова модель (RBAC - 5 ролей)
+- **Батьки / Клієнти (`Parent`):** особистий кабінет, інтерактивна 3D-картка абонемента з QR-кодом, баланс занять, сімейний акаунт (партнерський доступ), розклад, запис на індивідуальні та групові тренування.
+- **Тренери (`Coach`):** інтерактивний журнал доріжок, швидкий QR-чекін учнів біля басейну, розклад змін, відмітки присутності, чат з учнями.
+- **Адміністратори (`Admin`):** оперативний календар занять, реєстрація нових учнів та тренерів, прийом оплат, конструктор занять, центр підтримки та моніторинг чатів.
+- **Власники бізнесу (`Owner`):** фінансова аналітика, прибутки/витрати, зарплатні відомості тренерів, звітність по окремих філіях або у режимі «Всі локації».
+- **Супер-адміністратор (`SuperAdmin`):** White-Label конфігуратор платформи Aquatix Lab (бренд-кольори, теми, логотипи, мультивалютні пакети).
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 2. Мультитенантність (Multi-Tenancy)
+- **CitySwim Kyiv 🇺🇦:** часовий пояс `Europe/Kyiv`, валюта `UAH (₴)`, платіжний провайдер LiqPay.
+- **CitySwim Vienna 🇦🇹:** часовий пояс `Europe/Vienna`, валюта `EUR (€)`, платіжний провайдер Stripe.
+- **Data Integrity & Isolation Guard:** вбудований валідатор `BranchDataIntegrityValidator` суворо блокує міжфіліальні списання абонементів та несанкціоноване перетинання учнів/тренерів між країнами.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 3. Преміальний візуальний дизайн (WOW-Effect)
+- Кастомний шейдерно-процедурний фон `AnimatedWaterBackground` на Flutter Canvas з `RepaintBoundary`.
+- Плаваючі 3D частинки та бульбашки води `WaterParticles`.
+- Дві дизайнерські теми: **Dark Ocean** (глибокий неоновий аквамарин) та **Light Azure** (м'яке світле скло).
+- Плавні мікроанімації `flutter_animate`, жест перевертання абонемента `SubscriptionFlipCard`, ергономічний `AppleTimeWheelPicker`.
+
+---
+
+## 🛠️ Стек технологій
+
+| Компонент | Технологія / Пакет |
+| :--- | :--- |
+| **Фреймворк** | Flutter 3.x (Dart 3.12+) |
+| **State Management** | Flutter Riverpod 3.x (`Notifier`, кодогенерація `riverpod_generator`) |
+| **Архітектура моделей** | `freezed` + `json_serializable` (Immuntable state) |
+| **Хмарна інфраструктура** | Firebase Core, Cloud Firestore, Firebase Auth, Firebase Storage, Crashlytics |
+| **Маршрутизація** | `go_router` (підтримка веб-історії, query params та глибоких посилань) |
+| **Локалізація** | `easy_localization` (4 мови: `uk`, `en`, `de`, `ru`) |
+| **Сканування & Апаратні API** | `mobile_scanner`, `qr_flutter`, `local_auth` (FaceID/TouchID) |
+| **CI / CD** | Codemagic (Web, Android APK, iOS Simulator, App Store TestFlight) |
+
+---
+
+## 📁 Структура проекту (`lib/`)
+
+```
+lib/
+├── core/
+│   ├── providers/          # Глобальні провайдери (SharedPreferences)
+│   ├── router/             # GoRouter конфігурація та навігаційні спостерігачі
+│   └── theme/              # AppThemeConfig, теми Dark Ocean / Light Azure
+├── features/
+│   ├── admin/              # Календар, клієнти, каси, журнал активностей
+│   ├── auth/               # Авторизація, відновлення пароля, сесії
+│   ├── chat/               # Realtime Firestore чати з моніторингом
+│   ├── coach/              # Журнал тренера, QR-сканер, розклад доріжок
+│   ├── notification/       # Мультиязичні шаблони сповіщень за таймзонами
+│   ├── owner/              # Аналітика, звіти, зарплати, персонал
+│   ├── parent/             # Домашня сторінка, картки занять, сімейний акаунт
+│   ├── payment/            # Білінг філій, інвойси, електронні квитанції
+│   ├── schedule/           # Генератор розкладу, колізійний детектор
+│   ├── subscription/       # Каталог абонементів (EUR/UAH), вікова сумісність
+│   └── tenancy/            # Організації, філії (Kyiv/Vienna), валідатор цілісності
+├── shared/
+│   ├── utils/              # Форматування валют, безпека паролів, снекбари
+│   └── widgets/            # Анімована вода, 3D-картки, пікери аватарів
+└── main.dart               # Точка входу, ініціалізація Firebase, Crashlytics, локалей
+```
+
+---
+
+## 🚀 Швидкий старт для розробників
+
+### 1. Встановлення залежностей
+```bash
+flutter pub get
+```
+
+### 2. Запуск генерації коду (Freezed & Riverpod)
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### 3. Запуск статичного аналізу коду
+```bash
+flutter analyze
+```
+
+### 4. Запуск повного тестового циклу (167 тестів)
+```bash
+flutter test
+```
+
+---
+
+## 📜 Правила та стандарти проекту
+1. **Візуальна досконалість:** найвищий пріоритет віддається дизайну та плавності інтерфейсу.
+2. **Незмінність версії:** номер версії та білду в `pubspec.yaml` оновлюється виключно за явною командою.
+3. **Безпека даних:** сувора ізоляція між філіями; перед деплоєм у продакшн обов'язково верифікувати правила `firestore.rules`.

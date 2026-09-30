@@ -27,6 +27,14 @@ class TestAssetLoader extends AssetLoader {
       'role_parent': 'Батьки',
       'role_admin': 'Адміністратор',
     },
+    'auth.staff_portal': 'Вхід для співробітників',
+    'auth.login_google': 'Увійти через Google',
+    'auth.or': 'або',
+    'auth.tab_login': 'Увійти',
+    'auth.tab_register': 'Реєстрація',
+    'auth.role_coach': 'Тренер',
+    'auth.role_parent': 'Батьки',
+    'auth.role_admin': 'Адміністратор',
   };
 }
 

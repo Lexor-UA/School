@@ -234,51 +234,32 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
       final classes = serviceDetails['classes'] as int;
       final validityDays = serviceDetails['validityDays'] as int;
-      final expiry = DateTime.now().add(Duration(days: validityDays));
       final effectiveBranch = ref.read(effectiveBranchProvider);
       
-      final newSub = Subscription(
-        id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${owner.hashCode}',
-        userId: targetUserId,
-        totalClasses: classes,
-        remainingClasses: classes,
-        isActive: true,
-        serviceName: selectedService,
-        expiryDate: expiry,
-        ownerName: owner,
-        organizationId: effectiveBranch.organizationId,
-        branchId: effectiveBranch.id,
-        currency: effectiveBranch.currencyCode,
-        currencySymbol: effectiveBranch.currencySymbol,
-      );
-      
-      await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
+      // Оформлення абонемента та логування платежу через BranchPaymentService (ТЗ п. 20, 21)
+      final pkg = SubscriptionPackageCatalog.getPackagesForBranch(effectiveBranch.id)
+          .firstWhereOrNull((p) => p.name == selectedService) ??
+          SubscriptionPackage(
+            id: 'pkg_${selectedService.hashCode}',
+            name: selectedService,
+            branchId: effectiveBranch.id,
+            price: (serviceDetails['priceNum'] as num?)?.toInt() ?? 0,
+            currency: effectiveBranch.currencyCode,
+            currencySymbol: effectiveBranch.currencySymbol,
+            classes: classes,
+            validityDays: validityDays,
+          );
 
-      // Логування платежу через BranchPaymentService (ТЗ п. 20)
-      try {
-        final pkg = SubscriptionPackageCatalog.getPackagesForBranch(effectiveBranch.id)
-            .firstWhereOrNull((p) => p.name == selectedService) ??
-            SubscriptionPackage(
-              id: 'pkg_${selectedService.hashCode}',
-              name: selectedService,
-              branchId: effectiveBranch.id,
-              price: (serviceDetails['priceNum'] as num?)?.toInt() ?? 0,
-              currency: effectiveBranch.currencyCode,
-              currencySymbol: effectiveBranch.currencySymbol,
-              classes: classes,
-              validityDays: validityDays,
-            );
-        await ref.read(branchPaymentServiceProvider).processMockPayment(
-          branchId: effectiveBranch.id,
-          clientId: targetUserId,
-          clientName: currentUser?.name ?? owner,
-          childName: isOwnerAdult ? null : owner,
-          package: pkg,
-          latency: Duration.zero,
-        );
-      } catch (e) {
-        debugPrint('Notice: BranchPaymentService logging: $e');
-      }
+      await ref.read(branchPaymentServiceProvider).processMockPayment(
+        branchId: effectiveBranch.id,
+        clientId: targetUserId,
+        clientName: currentUser?.name ?? owner,
+        childName: isOwnerAdult ? null : owner,
+        package: pkg,
+        latency: Duration.zero,
+      );
+
+      ref.invalidate(subscriptionControllerProvider);
       
       if (mounted) {
         final successMsg = isPartner

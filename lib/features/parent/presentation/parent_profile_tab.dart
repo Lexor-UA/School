@@ -1432,14 +1432,14 @@ class ParentProfileTab extends ConsumerWidget {
                           color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
                         ),
                         child: Icon(
-                          LucideIcons.lock,
+                          LucideIcons.repeat,
                           size: 10,
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         ),
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'Закріплено',
+                        'Змінити',
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
@@ -1458,7 +1458,7 @@ class ParentProfileTab extends ConsumerWidget {
                 ),
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  _showBranchInfoSheet(context, isDark, user?.branchId ?? 'kyiv');
+                  _showBranchInfoSheet(context, ref, isDark, user?.branchId ?? 'kyiv');
                 },
               ),
             ],
@@ -1468,134 +1468,390 @@ class ParentProfileTab extends ConsumerWidget {
     );
   }
 
-  void _showBranchInfoSheet(BuildContext context, bool isDark, String branchId) {
-    final isVienna = branchId == 'vienna';
-    final branchTitle = isVienna ? 'CitySwim Відень' : 'CitySwim Київ';
-    final flag = isVienna ? '🇦🇹' : '🇺🇦';
-
+  void _showBranchInfoSheet(BuildContext context, WidgetRef ref, bool isDark, String branchId) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            padding: EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 16,
-              bottom: math.max(MediaQuery.of(ctx).padding.bottom, 20) + 16,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.97),
-                  isDark ? const Color(0xFF070E1A).withValues(alpha: 0.98) : const Color(0xFFF1F5F9).withValues(alpha: 0.98),
-                ],
-              ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
-                width: 1.2,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top drag handle with close button row
-                Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final currentUser = ref.watch(authControllerProvider);
+          final activeBranchId = currentUser?.branchId ?? branchId;
+
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: math.max(MediaQuery.of(ctx).padding.bottom, 20) + 16,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.97) : Colors.white.withValues(alpha: 0.97),
+                      isDark ? const Color(0xFF070E1A).withValues(alpha: 0.99) : const Color(0xFFF1F5F9).withValues(alpha: 0.98),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(width: 34),
-                    Expanded(
-                      child: Center(
-                        child: Container(
-                          width: 44,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(2),
+                    // Top drag handle with close button row
+                    Row(
+                      children: [
+                        const SizedBox(width: 34),
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              width: 44,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
                           ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            LucideIcons.x,
+                            color: isDark ? Colors.white54 : Colors.black45,
+                            size: 20,
+                          ),
+                          tooltip: 'Закрити',
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Header Icon Badge
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                              : const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.65 : 0.45),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.15),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.mapPin,
+                          size: 26,
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        LucideIcons.x,
-                        color: isDark ? Colors.white54 : Colors.black45,
-                        size: 20,
+                    const SizedBox(height: 12),
+
+                    // Title
+                    Text(
+                      'Філія та локація',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
-                      tooltip: 'Закрити',
-                      padding: const EdgeInsets.all(6),
-                      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Оберіть філію школи для занять та абонементів',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Branch Options List
+                    _buildBranchOptionCard(
+                      context: context,
+                      ref: ref,
+                      sheetContext: ctx,
+                      branchId: 'kyiv',
+                      title: 'CitySwim Київ',
+                      countrySubtitle: 'Україна • Валюта: ₴ (UAH)',
+                      timezoneSubtitle: 'Europe/Kyiv',
+                      flag: '🇺🇦',
+                      isSelected: activeBranchId == 'kyiv',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildBranchOptionCard(
+                      context: context,
+                      ref: ref,
+                      sheetContext: ctx,
+                      branchId: 'vienna',
+                      title: 'CitySwim Відень',
+                      countrySubtitle: 'Австрія • Валюта: € (EUR)',
+                      timezoneSubtitle: 'Europe/Vienna',
+                      flag: '🇦🇹',
+                      isSelected: activeBranchId == 'vienna',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Info Card
+                    Container(
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0D2137).withValues(alpha: 0.65) : const Color(0xFFF0F9FF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                            ),
+                            child: Icon(
+                              LucideIcons.shieldCheck,
+                              size: 15,
+                              color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Між філіями Києва та Відня діє сувора ізоляція: розклад, абонементи та відвідування закріплені за обраною філією.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.4,
+                                color: isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Contact Admin Button
+                    OutlinedButton.icon(
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(ctx);
+                        showClientDialogsSheet(context);
                       },
+                      icon: Icon(
+                        LucideIcons.messageSquare,
+                        size: 16,
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      ),
+                      label: Text(
+                        'Написати адміністратору',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 46),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-                // Location Pin Icon Badge
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                          : const [Color(0xFFE0F2FE), Color(0xFFBAE6FD)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.65 : 0.45),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.15),
-                        blurRadius: 18,
-                        offset: const Offset(0, 4),
+  Widget _buildBranchOptionCard({
+    required BuildContext context,
+    required WidgetRef ref,
+    required BuildContext sheetContext,
+    required String branchId,
+    required String title,
+    required String countrySubtitle,
+    required String timezoneSubtitle,
+    required String flag,
+    required bool isSelected,
+    required bool isDark,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () async {
+          HapticFeedback.mediumImpact();
+          if (isSelected) return;
+
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (dialogCtx) => AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Row(
+                children: [
+                  Text(flag, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Зміна філії',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Icon(
-                      LucideIcons.mapPin,
-                      size: 28,
-                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                     ),
                   ),
+                ],
+              ),
+              content: Text(
+                'Бажаєте перемкнути вашу активну філію на $title?\n\nВаш персональний розклад та абонементи будуть адаптовані для цієї локації.',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF334155),
                 ),
-                const SizedBox(height: 14),
-
-                // Title
-                Text(
-                  '$flag $branchTitle',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx, false),
+                  child: Text(
+                    'Скасувати',
+                    style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                   ),
                 ),
-                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogCtx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0284C7),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Перемкнути'),
+                ),
+              ],
+            ),
+          );
 
-                // Badge
+          if (confirmed == true && context.mounted) {
+            await ref.read(authControllerProvider.notifier).updateClientBranch(branchId);
+            if (sheetContext.mounted) {
+              Navigator.pop(sheetContext);
+            }
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Філію успішно змінено на $title $flag'),
+                  backgroundColor: const Color(0xFF0284C7),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            }
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? const Color(0xFF0E3D64).withValues(alpha: 0.5) : const Color(0xFFE0F2FE).withValues(alpha: 0.7))
+                : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.02)),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.8)
+                  : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)),
+              width: isSelected ? 1.5 : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              Text(flag, style: const TextStyle(fontSize: 26)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$countrySubtitle • $timezoneSubtitle',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.12) : const Color(0xFFE0F2FE),
+                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFF7DD3FC),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                       width: 1.0,
                     ),
                   ),
@@ -1603,130 +1859,29 @@ class ParentProfileTab extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        LucideIcons.shieldCheck,
-                        size: 14,
+                        LucideIcons.check,
+                        size: 13,
                         color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
-                        'Основна закріплена філія',
+                        'Активна',
                         style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         ),
                       ),
                     ],
                   ),
+                )
+              else
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 18,
+                  color: isDark ? Colors.white38 : Colors.black38,
                 ),
-                const SizedBox(height: 16),
-
-                // Info Card
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0D2137).withValues(alpha: 0.65) : const Color(0xFFF0F9FF),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
-                      width: 1.1,
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                        ),
-                        child: Icon(
-                          LucideIcons.info,
-                          size: 16,
-                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Ця філія закріплена за вашим акаунтом для персонального розкладу та абонементів. Якщо ви бажаєте змінити філію, будь ласка, зверніться до адміністратора.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1.45,
-                            color: isDark ? Colors.white.withValues(alpha: 0.78) : const Color(0xFF334155),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-
-                // Button (Sapphire VIP CTA)
-                Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40),
-                      width: 1.4,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.20),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.pop(ctx);
-                      showClientDialogsSheet(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.messageSquare,
-                          size: 19,
-                          color: isDark ? const Color(0xFF00E5FF) : Colors.white,
-                        ),
-                        const SizedBox(width: 9),
-                        const Text(
-                          'Написати адміністратору',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                            height: 1.25,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

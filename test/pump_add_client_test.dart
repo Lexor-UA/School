@@ -2,8 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/features/admin/presentation/add_client_sheet.dart';
+
+class TestAdminAssetLoader extends AssetLoader {
+  const TestAdminAssetLoader();
+  @override
+  Future<Map<String, dynamic>> load(String path, Locale locale) async => {
+    'admin.add_client_title': 'Новий Клієнт',
+    'admin.add_client_subtitle': 'Швидка реєстрація батьків та учнів',
+    'admin.add_client_save_btn': 'Зберегти клієнта',
+    'admin': {
+      'add_client_title': 'Новий Клієнт',
+      'add_client_subtitle': 'Швидка реєстрація батьків та учнів',
+      'add_client_save_btn': 'Зберегти клієнта',
+    },
+  };
+}
 
 void main() {
   testWidgets('Test AddClientSheet full layout and rendering', (tester) async {
@@ -11,13 +27,22 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          sharedPrefsProvider.overrideWithValue(prefs),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: AddClientSheet(),
+      EasyLocalization(
+        supportedLocales: const [Locale('uk'), Locale('en')],
+        path: 'assets/translations',
+        assetLoader: const TestAdminAssetLoader(),
+        fallbackLocale: const Locale('uk'),
+        startLocale: const Locale('uk'),
+        saveLocale: false,
+        useOnlyLangCode: true,
+        child: ProviderScope(
+          overrides: [
+            sharedPrefsProvider.overrideWithValue(prefs),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: AddClientSheet(),
+            ),
           ),
         ),
       ),
@@ -25,25 +50,18 @@ void main() {
     await tester.pumpAndSettle();
 
     final err = tester.takeException();
-    if (err != null) {
-      print('FOUND EXCEPTION IN PUMP: $err');
-    }
     expect(err, isNull);
 
     final titleFinder = find.text('Новий Клієнт');
-    print('Title found: ${titleFinder.evaluate().length}');
+    expect(titleFinder, findsOneWidget);
     
     // Check render box sizes
     final sheetFinder = find.byType(AddClientSheet);
     final renderBox = tester.renderObject(sheetFinder) as RenderBox;
-    print('Sheet size: ${renderBox.size}');
+    expect(renderBox.size.width, greaterThan(0));
 
     final textFieldFinders = find.byType(TextField);
-    print('Found text fields: ${textFieldFinders.evaluate().length}');
-    for (final tf in textFieldFinders.evaluate()) {
-      final rb = tf.renderObject as RenderBox;
-      print('TextField size: ${rb.size}');
-    }
+    expect(textFieldFinders, findsWidgets);
 
     // Tap "+ Додати дитину (учня)" button
     final addChildBtn = find.text('+ Додати дитину (учня)');

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -309,87 +310,95 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.92,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF071426) : Colors.white,
-          gradient: isDark
-              ? const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF0C1F38),
-                    Color(0xFF050E1A),
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    Color(0xFFF8FAFC),
-                  ],
-                ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(
-            color: isDark
-                ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                : const Color(0xFFBAE6FD),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.92,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF071426) : Colors.white,
+            gradient: isDark
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF0C1F38),
+                      Color(0xFF050E1A),
+                    ],
+                  )
+                : const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white,
+                      Color(0xFFF8FAFC),
+                    ],
+                  ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.65)
-                  : const Color(0xFF0284C7).withValues(alpha: 0.12),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.38)
+                  : const Color(0xFFBAE6FD),
+              width: 1.2,
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // 1. Top Drag Handle & Title
-            _buildHeader(context, currentTheme),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.12),
+                blurRadius: 28,
+                offset: const Offset(0, -6),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.70 : 0.08),
+                blurRadius: 36,
+                offset: const Offset(0, -10),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // 1. Top Drag Handle & Title
+              _buildHeader(context, currentTheme),
 
-            // 2. Executive Telemetry Bar (Зведена аналітика)
-            _buildTelemetryKPIs(
-              totalCount: allSubs.length,
-              activeCount: activeSubs.length,
-              expiringCount: expiringSoonSubs.length,
-              unpaidCount: finalUnpaidList.length,
-              currentTheme: currentTheme,
-            ),
-
-            // 3. Segmented Tab Selector (2 Tabs)
-            _buildSegmentedTabs(
-              totalCount: allSubs.length,
-              activeCount: activeSubs.length,
-              expiringCount: expiringSoonSubs.length,
-              unpaidCount: finalUnpaidList.length,
-              currentTheme: currentTheme,
-            ),
-
-            const SizedBox(height: 10),
-
-            // 4. Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: _buildSearchBar(currentTheme),
-            ),
-
-            // 5. Active Tab View
-            Expanded(
-              child: _buildTabContent(
-                allSubs: allSubs,
-                activeSubs: activeSubs,
-                expiringSoonSubs: expiringSoonSubs,
-                unpaidList: finalUnpaidList,
-                clientsMap: clientsMap,
+              // 2. Executive Telemetry Bar (Зведена аналітика)
+              _buildTelemetryKPIs(
+                totalCount: allSubs.length,
+                activeCount: activeSubs.length,
+                expiringCount: expiringSoonSubs.length,
+                unpaidCount: finalUnpaidList.length,
                 currentTheme: currentTheme,
               ),
-            ),
-          ],
+
+              // 3. Segmented Tab Selector (2 Tabs)
+              _buildSegmentedTabs(
+                totalCount: allSubs.length,
+                activeCount: activeSubs.length,
+                expiringCount: expiringSoonSubs.length,
+                unpaidCount: finalUnpaidList.length,
+                currentTheme: currentTheme,
+              ),
+
+              const SizedBox(height: 10),
+
+              // 4. Search Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                child: _buildSearchBar(currentTheme),
+              ),
+
+              // 5. Active Tab View
+              Expanded(
+                child: _buildTabContent(
+                  allSubs: allSubs,
+                  activeSubs: activeSubs,
+                  expiringSoonSubs: expiringSoonSubs,
+                  unpaidList: finalUnpaidList,
+                  clientsMap: clientsMap,
+                  currentTheme: currentTheme,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -409,9 +418,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               height: 5,
               decoration: BoxDecoration(
                 color: currentTheme.isDark
-                    ? currentTheme.textSecondary.withValues(alpha: 0.35)
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
                     : const Color(0xFF94A3B8),
                 borderRadius: BorderRadius.circular(10),
+                boxShadow: currentTheme.isDark
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
               ),
             ),
           ),
@@ -423,20 +440,20 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 height: 46,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    width: 1.2,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00D2FF).withValues(alpha: 0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -452,18 +469,19 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     Text(
                       'admin.payment_title'.tr(),
                       style: TextStyle(
-                        color: currentTheme.isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
+                        color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'admin.payment_subtitle'.tr(),
                       style: TextStyle(
-                        color: currentTheme.isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
-                        fontSize: 11.5,
+                        color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                         height: 1.25,
                       ),
                       maxLines: 2,
@@ -471,32 +489,45 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   ],
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: currentTheme.isDark ? const Color(0xFF0F2642) : Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: currentTheme.isDark ? const Color(0xFF1E3D66) : const Color(0xFFBAE6FD),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: currentTheme.isDark
+                          ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                          : Colors.white.withValues(alpha: 0.90),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: currentTheme.isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                            : const Color(0xFFBAE6FD),
+                        width: 1.1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        LucideIcons.x,
+                        color: currentTheme.isDark ? Colors.white : const Color(0xFF334155),
+                        size: 18,
+                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(context);
+                      },
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
-                  boxShadow: currentTheme.isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    LucideIcons.x,
-                    color: currentTheme.isDark ? Colors.white : const Color(0xFF334155),
-                    size: 18,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                  padding: EdgeInsets.zero,
                 ),
               ),
             ],
@@ -611,18 +642,16 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   }) {
     final bool isDark = currentTheme.isDark;
 
-    // High-contrast, WCAG AAA compliant color mapping
     final Color effectiveColor = isDark
         ? color
         : (color == const Color(0xFF00E5FF)
-            ? const Color(0xFF0284C7) // Vivid deep ocean blue
+            ? const Color(0xFF0284C7)
             : (color == const Color(0xFF10B981)
-                ? const Color(0xFF059669) // Deep emerald
+                ? const Color(0xFF059669)
                 : (color == const Color(0xFFF59E0B)
-                    ? const Color(0xFFD97706) // Rich warm amber
-                    : const Color(0xFFE11D48)))); // Vivid crimson
+                    ? const Color(0xFFD97706)
+                    : const Color(0xFFE11D48))));
 
-    // Distinct soft tinted backgrounds & borders for each card in Light theme
     final Color lightBg = color == const Color(0xFF00E5FF)
         ? const Color(0xFFF0F9FF)
         : (color == const Color(0xFF10B981)
@@ -651,8 +680,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      effectiveColor.withValues(alpha: isDark ? 0.32 : 0.22),
-                      effectiveColor.withValues(alpha: isDark ? 0.10 : 0.06),
+                      effectiveColor.withValues(alpha: isDark ? 0.30 : 0.22),
+                      effectiveColor.withValues(alpha: isDark ? 0.08 : 0.04),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -661,16 +690,16 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             color: isSelected
                 ? null
                 : (isDark
-                    ? const Color(0xFF0E223D)
+                    ? const Color(0xFF0C2238).withValues(alpha: 0.70)
                     : lightBg),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected
-                  ? effectiveColor
+                  ? effectiveColor.withValues(alpha: isDark ? 0.90 : 1.0)
                   : (isDark
-                      ? const Color(0xFF1E3A5F)
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
                       : lightBorder),
-              width: isSelected ? 1.8 : 1.15,
+              width: isSelected ? 1.6 : 1.1,
             ),
             boxShadow: isSelected
                 ? [
@@ -701,18 +730,22 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: effectiveColor.withValues(alpha: isDark ? 0.22 : 0.15),
+                      color: effectiveColor.withValues(alpha: isDark ? 0.20 : 0.14),
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: effectiveColor.withValues(alpha: 0.30),
+                        width: 1,
+                      ),
                     ),
                     child: Center(
-                      child: Icon(icon, color: effectiveColor, size: 12.5),
+                      child: Icon(icon, color: effectiveColor, size: 12),
                     ),
                   ),
                   Text(
                     count,
                     style: TextStyle(
                       color: effectiveColor,
-                      fontSize: 17,
+                      fontSize: 17.5,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.3,
                     ),
@@ -762,14 +795,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: currentTheme.isDark
-              ? const Color(0xFF0A1C30)
+              ? const Color(0xFF08192E).withValues(alpha: 0.85)
               : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: currentTheme.isDark
-                ? const Color(0xFF1E3A5F)
+                ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
                 : const Color(0xFFBAE6FD),
-            width: 1.1,
+            width: 1.2,
           ),
         ),
         child: Row(
@@ -779,7 +812,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 index: 0,
                 title: 'admin.tab_subs'.tr(),
                 badge: '$currentSubsCount',
-                accentColor: const Color(0xFF10B981),
+                accentColor: const Color(0xFF00E5FF),
                 icon: LucideIcons.walletCards,
                 currentTheme: currentTheme,
               ),
@@ -822,7 +855,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ? LinearGradient(
                   colors: index == 0
                       ? (currentTheme.isDark
-                          ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
                           : const [Color(0xFF0284C7), Color(0xFF0369A1)])
                       : const [Color(0xFFF43F5E), Color(0xFFBE123C)],
                   begin: Alignment.topLeft,
@@ -834,9 +867,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (index == 0 ? const Color(0xFF10B981) : const Color(0xFFF43F5E))
+                    color: (index == 0 ? const Color(0xFF00E5FF) : const Color(0xFFF43F5E))
                         .withValues(alpha: 0.35),
-                    blurRadius: 8,
+                    blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
                 ]
@@ -860,7 +893,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     ? Colors.white
                     : (currentTheme.isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155)),
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
               ),
             ),
             if (badge != null) ...[
@@ -871,13 +904,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.25)
                       : (currentTheme.isDark
-                          ? const Color(0xFF162D4A)
+                          ? const Color(0xFF0C2238)
                           : Colors.white),
                   borderRadius: BorderRadius.circular(10),
                   border: isSelected
                       ? null
                       : (currentTheme.isDark
-                          ? null
+                          ? Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.20))
                           : Border.all(color: const Color(0xFFCBD5E1))),
                 ),
                 child: Text(
@@ -885,9 +918,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : (currentTheme.isDark ? Colors.white : const Color(0xFF334155)),
+                        : (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF334155)),
                     fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
@@ -900,54 +933,81 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
     final isDark = currentTheme.isDark;
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F2642) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF1E3D66) : const Color(0xFFBAE6FD),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.transparent : const Color(0xFF0284C7).withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF0C2238).withValues(alpha: 0.85),
+                      const Color(0xFF061424).withValues(alpha: 0.90),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.30) : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.08 : 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 3),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        style: TextStyle(
-          color: isDark ? Colors.white : const Color(0xFF0F172A),
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-        decoration: InputDecoration(
-          hintText: 'Пошук за ім\'ям або телефоном',
-          hintStyle: TextStyle(
-            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-            fontSize: 12.5,
-            fontWeight: FontWeight.w400,
+          child: TextField(
+            controller: _searchController,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+            ),
+            onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+            decoration: InputDecoration(
+              hintText: 'Пошук за ім\'ям або телефоном',
+              hintStyle: TextStyle(
+                color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                LucideIcons.search,
+                color: Color(0xFF00E5FF),
+                size: 18,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        LucideIcons.x,
+                        color: isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
+                        size: 16,
+                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              border: InputBorder.none,
+            ),
           ),
-          prefixIcon: Icon(
-            LucideIcons.search,
-            color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
-            size: 17,
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: Icon(LucideIcons.x, color: currentTheme.textMuted, size: 16),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-              : null,
-          contentPadding: const EdgeInsets.symmetric(vertical: 11),
-          border: InputBorder.none,
         ),
       ),
     );
@@ -1106,53 +1166,75 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     }
     final purchaseStr = purchaseDate != null ? DateFormat('dd.MM.yyyy').format(purchaseDate) : null;
 
-    // Jewel avatar gradient from app theme palette
     final avatarGradient = currentTheme.actionCardGradients[ownerName.hashCode.abs() % currentTheme.actionCardGradients.length];
 
     final accentColor = !isActive
         ? const Color(0xFF64748B)
-        : (isExpiringSoon ? const Color(0xFFF59E0B) : (isDark ? const Color(0xFF34D399) : const Color(0xFF10B981)));
+        : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF10B981));
     final secondaryAccent = !isActive
         ? const Color(0xFF475569)
-        : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00D2FF));
+        : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00E5FF));
 
     final bool isSubSending = _sendingReminderClientIds.contains(sub.userId);
     final bool isSubSent = _sentReminderClientIds.contains(sub.userId);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F2642) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isExpiringSoon
-              ? const Color(0xFFF59E0B).withValues(alpha: currentTheme.isDark ? 0.60 : 0.75)
-              : (isDark
-                  ? const Color(0xFF1E3D66)
-                  : const Color(0xFFBAE6FD)),
-          width: isExpiringSoon ? 1.3 : 1.15,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isExpiringSoon
-                ? const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.12)
-                : (isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF0284C7).withValues(alpha: 0.07)),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF0C2238).withValues(alpha: 0.92),
+                      const Color(0xFF061424).withValues(alpha: 0.96),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.94),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isExpiringSoon
+                  ? const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.65 : 0.75)
+                  : (isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                      : const Color(0xFFBAE6FD)),
+              width: isExpiringSoon ? 1.4 : 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isExpiringSoon
+                    ? const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.20 : 0.12)
+                    : (isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.08)
+                        : const Color(0xFF0284C7).withValues(alpha: 0.08)),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    // Squircle avatar with 2-letter monogram & jewel glow
+                    // 48x48 Jewel Avatar with specular ring
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
@@ -1163,14 +1245,18 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   ? [const Color(0xFFF59E0B), const Color(0xFFFB923C)]
                                   : avatarGradient),
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: isDark ? 0.45 : 0.8),
+                          width: 2,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: (!isActive
                                     ? const Color(0xFF64748B)
                                     : (isExpiringSoon ? const Color(0xFFF59E0B) : avatarGradient.first))
-                                .withValues(alpha: 0.35),
-                            blurRadius: 10,
+                                .withValues(alpha: 0.45),
+                            blurRadius: 12,
                             offset: const Offset(0, 3),
                           ),
                         ],
@@ -1182,7 +1268,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
-                            letterSpacing: 0.2,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -1198,10 +1284,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 child: Text(
                                   ownerName,
                                   style: TextStyle(
-                                    color: currentTheme.textPrimary,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15,
-                                    letterSpacing: 0.2,
+                                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                    letterSpacing: -0.2,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1243,12 +1329,12 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(LucideIcons.alertTriangle, size: 10, color: Color(0xFFD97706)),
+                                      Icon(LucideIcons.triangleAlert, size: 10, color: Color(0xFFF59E0B)),
                                       SizedBox(width: 4),
                                       Text(
                                         'ЗАКІНЧУЄТЬСЯ',
                                         style: TextStyle(
-                                          color: Color(0xFFD97706),
+                                          color: Color(0xFFF59E0B),
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 0.5,
@@ -1260,42 +1346,63 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             ],
                           ),
                           const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              Icon(
-                                isSameName ? LucideIcons.phone : LucideIcons.user,
-                                size: 11,
-                                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
-                              ),
-                              const SizedBox(width: 4.5),
-                              if (!isSameName) ...[
-                                Flexible(
-                                  child: Text(
-                                    'Батьки: $clientName',
-                                    style: TextStyle(
-                                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
+                          InkWell(
+                            onTap: (phone.isNotEmpty && phone != 'Немає номеру')
+                                ? () {
+                                    HapticFeedback.selectionClick();
+                                    Clipboard.setData(ClipboardData(text: phone));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Номер $phone скопійовано!'),
+                                        duration: const Duration(seconds: 1),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 1.5, horizontal: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isSameName ? LucideIcons.phone : LucideIcons.user,
+                                    size: 12,
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  ),
+                                  const SizedBox(width: 4.5),
+                                  if (!isSameName) ...[
+                                    Flexible(
+                                      child: Text(
+                                        'Батьки: $clientName',
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (phone.isNotEmpty && phone != 'Немає номеру')
-                                  Text(
-                                    ' • ',
-                                    style: TextStyle(color: isDark ? const Color(0xFFCBD5E1).withValues(alpha: 0.5) : const Color(0xFF94A3B8)),
-                                  ),
-                              ],
-                              if (phone.isNotEmpty && phone != 'Немає номеру')
-                                Text(
-                                  phone,
-                                  style: TextStyle(
-                                    color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                            ],
+                                    if (phone.isNotEmpty && phone != 'Немає номеру')
+                                      Text(
+                                        ' • ',
+                                        style: TextStyle(color: isDark ? const Color(0xFFCBD5E1).withValues(alpha: 0.5) : const Color(0xFF94A3B8)),
+                                      ),
+                                  ],
+                                  if (phone.isNotEmpty && phone != 'Немає номеру')
+                                    Text(
+                                      phone,
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -1305,14 +1412,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
                 const SizedBox(height: 14),
 
-                // Inset Progress telemetry container
+                // Inset Progress telemetry container in Obsidian Glass
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF081A2F) : const Color(0xFFF8FAFC),
+                    color: isDark ? const Color(0xFF040D18).withValues(alpha: 0.65) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF162D4A) : const Color(0xFFBAE6FD),
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
                       width: 1.1,
                     ),
                   ),
@@ -1327,14 +1434,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               style: TextStyle(
                                 color: isDark ? Colors.white : currentTheme.textPrimary,
                                 fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                                 height: 1.25,
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                             decoration: BoxDecoration(
                               color: isDark
                                   ? (remaining <= 0
@@ -1343,7 +1450,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   : (remaining <= 0
                                       ? const Color(0xFFF1F5F9)
                                       : (isExpiringSoon ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5))),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(9),
                               border: Border.all(
                                 color: isDark
                                     ? (remaining <= 0
@@ -1365,7 +1472,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                         ? const Color(0xFF64748B)
                                         : (isExpiringSoon ? const Color(0xFFD97706) : const Color(0xFF047857))),
                                 fontSize: 11.5,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
@@ -1415,13 +1522,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 Icon(
                                   LucideIcons.calendarPlus,
                                   size: 12,
-                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                                  color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
                                   'Придбано: $purchaseStr',
                                   style: TextStyle(
-                                    color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                                    color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1438,8 +1545,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   color: !isActive
                                       ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
                                       : (isExpiringSoon
-                                          ? const Color(0xFFD97706)
-                                          : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B))),
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFF00E5FF)),
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
@@ -1448,24 +1555,33 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                     color: !isActive
                                         ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
                                         : (isExpiringSoon
-                                            ? const Color(0xFFD97706)
-                                            : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B))),
+                                            ? const Color(0xFFF59E0B)
+                                            : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B))),
                                     fontSize: 11,
-                                    fontWeight: isExpiringSoon ? FontWeight.w700 : FontWeight.w500,
+                                    fontWeight: isExpiringSoon ? FontWeight.w800 : FontWeight.w500,
                                   ),
                                 ),
                                 if (daysLeftStr.isNotEmpty) ...[
                                   Text(' • ', style: TextStyle(color: isDark ? const Color(0xFFCBD5E1).withValues(alpha: 0.5) : const Color(0xFF94A3B8))),
-                                  Text(
-                                    daysLeftStr,
-                                    style: TextStyle(
-                                      color: !isActive
-                                          ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
-                                          : (isExpiringSoon
-                                              ? const Color(0xFFD97706)
-                                              : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: isExpiringSoon
+                                          ? const Color(0xFFF59E0B).withValues(alpha: 0.18)
+                                          : const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      daysLeftStr,
+                                      style: TextStyle(
+                                        color: !isActive
+                                            ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
+                                            : (isExpiringSoon
+                                                ? const Color(0xFFF59E0B)
+                                                : const Color(0xFF00E5FF)),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1479,7 +1595,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
                 const SizedBox(height: 12),
 
-                // Action button: Send Reminder
+                // Variant A: Compact Jewel Pill Reminder Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1494,84 +1610,83 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSubSent
-                              ? const Color(0xFF10B981).withValues(alpha: 0.18)
-                              : (isDark
-                                  ? (isExpiringSoon ? const Color(0xFFFBBF24) : const Color(0xFF00E5FF)).withValues(alpha: 0.15)
-                                  : (isExpiringSoon ? const Color(0xFFFEF3C7) : const Color(0xFFE0F2FE))),
+                          gradient: isSubSent
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                )
+                              : (isExpiringSoon
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                    )
+                                  : LinearGradient(
+                                      colors: currentTheme.isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                    )),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSubSent
-                                ? const Color(0xFF10B981).withValues(alpha: 0.45)
-                                : (isDark
-                                    ? (isExpiringSoon ? const Color(0xFFFBBF24) : const Color(0xFF00E5FF)).withValues(alpha: 0.40)
-                                    : (isExpiringSoon ? const Color(0xFFFDE68A) : const Color(0xFFBAE6FD))),
-                            width: 1.1,
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1,
                           ),
-                          boxShadow: isDark
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: (isSubSent
-                                            ? const Color(0xFF10B981)
-                                            : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF0284C7)))
-                                        .withValues(alpha: 0.08),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isSubSent
+                                      ? const Color(0xFF10B981)
+                                      : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF)))
+                                  .withValues(alpha: isDark ? 0.35 : 0.20),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (isSubSending) ...[
-                              SizedBox(
-                                width: 12,
-                                height: 12,
+                              const SizedBox(
+                                width: 13,
+                                height: 13,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 1.8,
-                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  strokeWidth: 2,
+                                  color: Colors.white,
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
+                              const SizedBox(width: 7),
+                              const Text(
                                 'Надсилаємо...',
                                 style: TextStyle(
-                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ] else if (isSubSent) ...[
-                              const Icon(LucideIcons.checkCheck, size: 13, color: Color(0xFF10B981)),
-                              const SizedBox(width: 6),
+                              const Icon(LucideIcons.checkCheck, size: 14, color: Colors.white),
+                              const SizedBox(width: 7),
                               const Text(
                                 'Надіслано ✓',
                                 style: TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ] else ...[
-                              Icon(
+                              const Icon(
                                 LucideIcons.bellRing,
-                                size: 13,
-                                color: isDark
-                                    ? (isExpiringSoon ? const Color(0xFFFBBF24) : const Color(0xFF00E5FF))
-                                    : (isExpiringSoon ? const Color(0xFFD97706) : const Color(0xFF0284C7)),
+                                size: 14,
+                                color: Colors.white,
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 7),
                               Text(
                                 isExpiringSoon ? 'Нагадати клієнту' : 'Повідомлення клієнту',
-                                style: TextStyle(
-                                  color: isExpiringSoon
-                                      ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B))
-                                      : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],
@@ -1584,8 +1699,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ],
             ),
           ),
-        );
-      }
+        ),
+      ),
+    );
+  }
 
   // ==========================================
   // TAB 1: НЕ ОПЛАТИЛИ / ЗАКІНЧИЛИСЬ
@@ -1628,37 +1745,56 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final bool isUnpaidSent = _sentReminderClientIds.contains(item.clientId);
     final bool isSameUnpaidName = item.ownerName.trim().toLowerCase() == item.clientName.trim().toLowerCase();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF131D2D) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? const Color(0xFFF43F5E).withValues(alpha: 0.45)
-              : const Color(0xFFFECDD3),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? const Color(0xFFF43F5E).withValues(alpha: 0.18)
-                : const Color(0xFFE11D48).withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 5),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF180A16).withValues(alpha: 0.94),
+                      const Color(0xFF0C050B).withValues(alpha: 0.98),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.94),
+                      const Color(0xFFFFF1F2).withValues(alpha: 0.90),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
+                  : const Color(0xFFFECDD3),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.18 : 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 5),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDark
@@ -1667,15 +1803,15 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: isDark ? 0.25 : 0.60),
-                          width: 1.1,
+                          color: Colors.white.withValues(alpha: isDark ? 0.45 : 0.8),
+                          width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.4 : 0.25),
-                            blurRadius: 10,
+                            color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.25),
+                            blurRadius: 12,
                             offset: const Offset(0, 3),
                           ),
                         ],
@@ -1687,7 +1823,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
-                            letterSpacing: -0.5,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -1700,10 +1836,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           Text(
                             item.ownerName,
                             style: TextStyle(
-                              color: isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15.5,
-                              letterSpacing: 0.2,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              letterSpacing: -0.2,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -1712,7 +1848,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               Icon(
                                 isSameUnpaidName ? LucideIcons.phone : LucideIcons.user,
                                 size: 12,
-                                color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                color: isDark ? const Color(0xFFF43F5E) : const Color(0xFFE11D48),
                               ),
                               const SizedBox(width: 5),
                               Flexible(
@@ -1738,17 +1874,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
                 const SizedBox(height: 12),
 
-                // Reason alert banner
+                // Reason alert banner in Deep Crimson Glass
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF26121C)
+                        ? const Color(0xFF261019).withValues(alpha: 0.75)
                         : const Color(0xFFFFF1F2),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDark
-                          ? const Color(0xFF5C1D2A)
+                          ? const Color(0xFFF43F5E).withValues(alpha: 0.35)
                           : const Color(0xFFFECDD3),
                       width: 1,
                     ),
@@ -1767,7 +1903,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           style: TextStyle(
                             color: isDark ? const Color(0xFFFF859B) : const Color(0xFF9F1239),
                             fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -1804,11 +1940,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isUnpaidSent
-                            ? Colors.white.withValues(alpha: 0.45)
-                            : (isDark
-                                ? const Color(0xFFFDA4AF).withValues(alpha: 0.40)
-                                : const Color(0xFFFB7185).withValues(alpha: 0.60)),
+                        color: Colors.white.withValues(alpha: 0.35),
                         width: 1.1,
                       ),
                       boxShadow: [
@@ -1856,7 +1988,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: 0.2,
                             ),
                           ),
@@ -1872,7 +2004,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: 0.2,
                             ),
                           ),
@@ -1884,8 +2016,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ],
             ),
           ),
-        );
-      }
+        ),
+      ),
+    );
+  }
 
   Widget _buildEmptyState({
     required IconData icon,
@@ -1894,91 +2028,91 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     required AppThemeConfig currentTheme,
   }) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-          decoration: BoxDecoration(
-            color: currentTheme.isDark ? const Color(0xFF0F2642) : Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: currentTheme.isDark ? const Color(0xFF1E3D66) : const Color(0xFFBAE6FD),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: currentTheme.isDark
+                    ? [
+                        const Color(0xFF0C2238).withValues(alpha: 0.90),
+                        const Color(0xFF061424).withValues(alpha: 0.95),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.92),
+                        const Color(0xFFF0F9FF).withValues(alpha: 0.88),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                    : const Color(0xFFBAE6FD),
+                width: 1.2,
+              ),
             ),
-            boxShadow: currentTheme.isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF00E5FF),
+                        Color(0xFF0284C7),
+                      ],
                     ),
-                  ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: currentTheme.isDark
-                        ? [
-                            const Color(0xFF00D2FF).withValues(alpha: 0.16),
-                            const Color(0xFF0072FF).withValues(alpha: 0.08),
-                          ]
-                        : [
-                            const Color(0xFFE0F2FE),
-                            const Color(0xFFBAE6FD).withValues(alpha: 0.5),
-                          ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF00D2FF).withValues(alpha: 0.25)
-                        : const Color(0xFFBAE6FD),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: currentTheme.isDark
-                          ? const Color(0xFF00D2FF).withValues(alpha: 0.12)
-                          : const Color(0xFF0284C7).withValues(alpha: 0.12),
-                      blurRadius: 16,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      width: 1.5,
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    icon,
-                    size: 26,
-                    color: currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                        blurRadius: 16,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      icon,
+                      size: 26,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: currentTheme.isDark ? currentTheme.textPrimary : const Color(0xFF0F172A),
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: currentTheme.isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
-                  fontSize: 12.5,
-                  height: 1.4,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

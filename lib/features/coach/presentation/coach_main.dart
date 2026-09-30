@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -77,37 +78,26 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         ),
       ),
 
-      // 5. Floating Bottom Dock (Solid Dark Graphite / Crisp Light)
+      // 5. Floating Bottom Dock (VisionOS Deep Ocean Sapphire Glass)
       bottomNavigationBar: SafeArea(
         child: Container(
           margin: const EdgeInsets.only(left: 16, right: 16, bottom: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: themeConfig.isDark
-                  ? [
-                      const Color(0xFF0F2744),
-                      const Color(0xFF0A1B30),
-                    ]
-                  : [
-                      Colors.white,
-                      const Color(0xFFF8FAFC),
-                    ],
-            ),
-            border: Border.all(
-              color: themeConfig.isDark
-                  ? const Color(0xFF1E4570)
-                  : const Color(0xFFE2E8F0),
-              width: 1.2,
-            ),
             boxShadow: themeConfig.isDark
                 ? [
+                    // Ambient ocean cyan aura
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.50),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
                       blurRadius: 28,
-                      offset: const Offset(0, 8),
+                      spreadRadius: -1,
+                      offset: const Offset(0, 6),
+                    ),
+                    // Deep solid ocean lift
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
                     ),
                   ]
                 : [
@@ -117,45 +107,72 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                       offset: const Offset(0, 8),
                     ),
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
                   ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildDockItem(
-                index: 0,
-                icon: LucideIcons.calendarClock,
-                label: 'coach.nav_schedule'.tr(),
-                isSelected: selectedTab == 0,
-                themeConfig: themeConfig,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: themeConfig.isDark
+                      ? const [
+                          Color(0xFF0E2C4D),
+                          Color(0xFF07192C),
+                        ]
+                      : const [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFF8FAFC),
+                        ],
+                ),
+                border: Border.all(
+                  color: themeConfig.isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                      : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
               ),
-              _buildDockItem(
-                index: 1,
-                icon: LucideIcons.calendarDays,
-                label: 'coach.nav_calendar'.tr(),
-                isSelected: selectedTab == 1,
-                themeConfig: themeConfig,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildDockItem(
+                    index: 0,
+                    icon: LucideIcons.calendarClock,
+                    label: 'coach.nav_schedule'.tr(),
+                    isSelected: selectedTab == 0,
+                    themeConfig: themeConfig,
+                  ),
+                  _buildDockItem(
+                    index: 1,
+                    icon: LucideIcons.calendarDays,
+                    label: 'coach.nav_calendar'.tr(),
+                    isSelected: selectedTab == 1,
+                    themeConfig: themeConfig,
+                  ),
+                  _buildDockItem(
+                    index: 2,
+                    icon: LucideIcons.users,
+                    label: 'Мої учні',
+                    isSelected: selectedTab == 2,
+                    themeConfig: themeConfig,
+                  ),
+                  _buildDockItem(
+                    index: 3,
+                    icon: LucideIcons.userCheck,
+                    label: 'coach.nav_cabinet'.tr(),
+                    isSelected: selectedTab == 3,
+                    themeConfig: themeConfig,
+                  ),
+                ],
               ),
-              _buildDockItem(
-                index: 2,
-                icon: LucideIcons.users,
-                label: 'Мої учні',
-                isSelected: selectedTab == 2,
-                themeConfig: themeConfig,
-              ),
-              _buildDockItem(
-                index: 3,
-                icon: LucideIcons.userCheck,
-                label: 'coach.nav_cabinet'.tr(),
-                isSelected: selectedTab == 3,
-                themeConfig: themeConfig,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -171,6 +188,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
   }) {
     return GestureDetector(
       onTap: () {
+        HapticFeedback.selectionClick();
         ref.read(coachTabProvider.notifier).setTab(index);
       },
       behavior: HitTestBehavior.opaque,
@@ -178,8 +196,8 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 10,
+          horizontal: isSelected ? 15 : 12,
+          vertical: 9,
         ),
         decoration: BoxDecoration(
           gradient: isSelected
@@ -198,22 +216,22 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                 )
               : null,
           color: isSelected ? null : Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? (themeConfig.isDark
                     ? Colors.white.withValues(alpha: 0.50)
-                    : Colors.white.withValues(alpha: 0.55))
+                    : Colors.white.withValues(alpha: 0.60))
                 : Colors.transparent,
-            width: 1.2,
+            width: 1.0,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
                     color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                        .withValues(alpha: themeConfig.isDark ? 0.50 : 0.30),
-                    blurRadius: 18,
-                    spreadRadius: themeConfig.isDark ? 1 : 0,
+                        .withValues(alpha: themeConfig.isDark ? 0.45 : 0.28),
+                    blurRadius: 16,
+                    spreadRadius: themeConfig.isDark ? 0.5 : 0,
                     offset: const Offset(0, 3),
                   ),
                 ]
@@ -227,10 +245,10 @@ class _CoachMainState extends ConsumerState<CoachMain> {
               size: 20,
               color: isSelected
                   ? Colors.white
-                  : (themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569)),
+                  : (themeConfig.isDark ? const Color(0xFF7DD3FC).withValues(alpha: 0.75) : const Color(0xFF64748B)),
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 7),
               Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -239,8 +257,8 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
-                      fontSize: 13,
-                      letterSpacing: 0.3,
+                      fontSize: 12.5,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),

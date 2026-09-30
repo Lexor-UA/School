@@ -156,25 +156,35 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     return Scaffold(
       backgroundColor: currentTheme.scaffoldBg,
       floatingActionButton: Container(
+        height: 52,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: currentTheme.accentGradient,
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.35),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: currentTheme.accentPrimary.withValues(alpha: 0.45),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.30),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             onTap: () {
               HapticFeedback.mediumImpact();
               showModalBottomSheet(
@@ -185,19 +195,19 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(LucideIcons.userPlus, color: Colors.white, size: 19),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 9),
                   Text(
                     'admin.add_coach_title'.tr(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14.5,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],
@@ -343,6 +353,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           final rateIndividual = (data['rateIndividual'] as num?)?.toInt() ?? 450;
                           final rateSplit = (data['rateSplit'] as num?)?.toInt() ?? 600;
 
+                          final branchId = data['branchId'] as String? ?? 'kyiv';
+                          final branchIds = data['branchIds'] as List<dynamic>?;
+
                           return _buildCoachCard(
                             coachId: coachId,
                             name: name,
@@ -351,6 +364,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                             rateGroup: rateGroup,
                             rateIndividual: rateIndividual,
                             rateSplit: rateSplit,
+                            branchId: branchId,
+                            branchIds: branchIds,
                             index: index,
                             currentTheme: currentTheme,
                           );
@@ -372,59 +387,105 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: currentTheme.glassCardBg,
-              shape: BoxShape.circle,
-              border: Border.all(color: currentTheme.cardBorder),
-            ),
-            child: IconButton(
-              icon: Icon(LucideIcons.arrowLeft, color: currentTheme.textPrimary, size: 20),
-              onPressed: () => Navigator.pop(context),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: currentTheme.isDark
+                      ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.90),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: currentTheme.isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                        : const Color(0xFFBAE6FD),
+                    width: 1.1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    LucideIcons.arrowLeft,
+                    color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     Text(
                       'admin.coaches_title'.tr(),
                       style: TextStyle(
-                        color: currentTheme.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.2,
+                        color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: currentTheme.accentPrimary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: currentTheme.accentPrimary.withValues(alpha: 0.3)),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                            const Color(0xFF0284C7).withValues(alpha: 0.12),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                          width: 1.1,
+                        ),
                       ),
                       child: Text(
-                        'admin.coaches_team_badge'.tr(),
-                        style: TextStyle(
-                          color: currentTheme.accentPrimary,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.bold,
+                        'admin.coaches_team_badge'.tr().toUpperCase(),
+                        style: const TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   'admin.coaches_subtitle'.tr(),
                   style: TextStyle(
                     color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                     fontSize: 12,
+                    height: 1.25,
+                    fontWeight: FontWeight.w500,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -436,62 +497,123 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
-          width: 1.2,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: currentTheme.isDark
+                  ? [
+                      const Color(0xFF0C2238).withValues(alpha: 0.85),
+                      const Color(0xFF061424).withValues(alpha: 0.90),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: currentTheme.isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                  : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 3),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.25 : 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: _searchController,
+            style: TextStyle(
+              color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+            ),
+            onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+            decoration: InputDecoration(
+              hintText: 'admin.coaches_search_hint'.tr(),
+              hintStyle: TextStyle(
+                color: currentTheme.isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                LucideIcons.search,
+                color: Color(0xFF00E5FF),
+                size: 18,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        LucideIcons.x,
+                        color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
+                        size: 16,
+                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              border: InputBorder.none,
+            ),
+          ),
         ),
-        boxShadow: currentTheme.isDark
-            ? [
-                BoxShadow(
-                  color: currentTheme.accentPrimary.withValues(alpha: 0.08),
-                  blurRadius: 14,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: const Color(0xFF003B73).withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
       ),
-      child: TextField(
-        controller: _searchController,
-        style: TextStyle(
-          color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
-          fontSize: 13.5,
-          fontWeight: FontWeight.w600,
+    );
+  }
+
+  Widget _buildBranchBadge(String? branchId, List<dynamic>? branchIds, AppThemeConfig currentTheme) {
+    String label = '🇺🇦 Київ';
+    Color accentColor = const Color(0xFF00E5FF);
+
+    final ids = branchIds?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+    final bId = branchId?.toLowerCase() ?? 'kyiv';
+
+    if (ids.contains('vienna') && ids.contains('kyiv')) {
+      label = '🌐 Всі філії';
+      accentColor = const Color(0xFF38BDF8);
+    } else if (bId == 'vienna' || ids.contains('vienna')) {
+      label = '🇦🇹 Відень';
+      accentColor = const Color(0xFFF43F5E);
+    } else if (bId == 'all') {
+      label = '🌐 Всі філії';
+      accentColor = const Color(0xFF38BDF8);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.35),
+          width: 1,
         ),
-        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-        decoration: InputDecoration(
-          hintText: 'admin.coaches_search_hint'.tr(),
-          hintStyle: TextStyle(
-            color: currentTheme.isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-          prefixIcon: Icon(
-            LucideIcons.search,
-            color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
-            size: 18,
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: Icon(LucideIcons.x, color: currentTheme.textSecondary, size: 16),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-              : null,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          border: InputBorder.none,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: accentColor,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -507,26 +629,27 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     required int rateSplit,
     required int index,
     required AppThemeConfig currentTheme,
+    String? branchId,
+    List<dynamic>? branchIds,
   }) {
     final isCopied = _recentlyCopiedCoachId == coachId;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: currentTheme.isDark
                   ? [
-                      Colors.white.withValues(alpha: 0.18),
-                      const Color(0xFF0284C7).withValues(alpha: 0.18),
-                      const Color(0xFF0D2542).withValues(alpha: 0.45),
+                      const Color(0xFF0C2238).withValues(alpha: 0.92),
+                      const Color(0xFF061424).withValues(alpha: 0.96),
                     ]
                   : [
-                      Colors.white.withValues(alpha: 0.92),
-                      const Color(0xFFF0F9FF).withValues(alpha: 0.88),
+                      Colors.white.withValues(alpha: 0.94),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
                     ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -534,14 +657,21 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: currentTheme.isDark
-                  ? Colors.white.withValues(alpha: 0.30)
-                  : currentTheme.cardBorder,
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                  : const Color(0xFFBAE6FD),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: currentTheme.cardShadow,
-                blurRadius: 16,
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.08)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.35 : 0.04),
+                blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -551,10 +681,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
             children: [
               Row(
                 children: [
-                  // Avatar
+                  // 50x50 Jewel Avatar
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length],
@@ -563,13 +693,13 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       ),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.35) : Colors.white,
+                        color: Colors.white.withValues(alpha: currentTheme.isDark ? 0.45 : 0.8),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length].first.withValues(alpha: currentTheme.isDark ? 0.35 : 0.30),
-                          blurRadius: 10,
+                          color: currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length].first.withValues(alpha: 0.45),
+                          blurRadius: 12,
                           offset: const Offset(0, 3),
                         ),
                       ],
@@ -579,36 +709,40 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         _getInitials(name),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 14),
 
-                  // Info
+                  // Info with Variant A Smart Branch Badge
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 name,
                                 style: TextStyle(
-                                  color: currentTheme.textPrimary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
+                                  color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.2,
                                 ),
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            _buildBranchBadge(branchId, branchIds, currentTheme),
                           ],
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         InkWell(
                           onTap: () {
                             HapticFeedback.selectionClick();
@@ -624,18 +758,22 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           },
                           borderRadius: BorderRadius.circular(6),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 1),
+                            padding: const EdgeInsets.symmetric(vertical: 1.5, horizontal: 2),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.phone, size: 12.5, color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textMuted),
+                                const Icon(
+                                  LucideIcons.phone,
+                                  size: 13,
+                                  color: Color(0xFF00E5FF),
+                                ),
                                 const SizedBox(width: 5),
                                 Text(
                                   phone,
                                   style: TextStyle(
                                     color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                                     fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -646,103 +784,126 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                   ),
 
-                  // Action Buttons
+                  // Action Buttons (Jewel Edit & Delete)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          gradient: currentTheme.isDark
-                              ? null
-                              : const LinearGradient(
-                                  colors: [Color(0xFFE0F2FE), Color(0xFFF0F9FF)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                          color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.10) : null,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: currentTheme.isDark
-                                ? Colors.white.withValues(alpha: 0.20)
-                                : const Color(0xFFBAE6FD),
-                            width: 1.1,
-                          ),
-                          boxShadow: currentTheme.isDark
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1.5),
-                                  ),
-                                ],
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            LucideIcons.pencil,
-                            color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
-                            size: 16,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => EditCoachSheet(
-                                coachId: coachId,
-                                initialName: name,
-                                initialPhone: phone,
-                                initialRateGroup: rateGroup,
-                                initialRateIndividual: rateIndividual,
-                                initialRateSplit: rateSplit,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: currentTheme.isDark
+                                    ? [
+                                        const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                                        const Color(0xFF0284C7).withValues(alpha: 0.10),
+                                      ]
+                                    : [
+                                        const Color(0xFFE0F2FE),
+                                        const Color(0xFFF0F9FF),
+                                      ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            );
-                          },
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: currentTheme.isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                    : const Color(0xFFBAE6FD),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                LucideIcons.pencil,
+                                color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                size: 16.5,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => EditCoachSheet(
+                                    coachId: coachId,
+                                    initialName: name,
+                                    initialPhone: phone,
+                                    initialRateGroup: rateGroup,
+                                    initialRateIndividual: rateIndividual,
+                                    initialRateSplit: rateSplit,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: currentTheme.isDark
-                              ? const Color(0xFFF43F5E).withValues(alpha: 0.15)
-                              : const Color(0xFFFFF1F2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: currentTheme.isDark
-                                ? const Color(0xFFF43F5E).withValues(alpha: 0.35)
-                                : const Color(0xFFFECDD3),
-                            width: 1.1,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: currentTheme.isDark
+                                    ? [
+                                        const Color(0xFFF43F5E).withValues(alpha: 0.18),
+                                        const Color(0xFF881337).withValues(alpha: 0.12),
+                                      ]
+                                    : [
+                                        const Color(0xFFFFF1F2),
+                                        const Color(0xFFFFE4E6),
+                                      ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: currentTheme.isDark
+                                    ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
+                                    : const Color(0xFFFECDD3),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFF43F5E).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                LucideIcons.trash2,
+                                color: currentTheme.isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
+                                size: 16.5,
+                              ),
+                              tooltip: 'admin.delete'.tr(),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _deleteCoach(coachId, name, currentTheme);
+                              },
+                            ),
                           ),
-                          boxShadow: currentTheme.isDark
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: const Color(0xFFE11D48).withValues(alpha: 0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1.5),
-                                  ),
-                                ],
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            LucideIcons.trash2,
-                            color: currentTheme.isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
-                            size: 16,
-                          ),
-                          tooltip: 'admin.delete'.tr(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            _deleteCoach(coachId, name, currentTheme);
-                          },
                         ),
                       ),
                     ],
@@ -750,19 +911,19 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-              // Rates Row (Group, Individual, Split)
+              // Rates Row (Group, Individual, Split) in Obsidian Glass Pod
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 decoration: BoxDecoration(
                   color: currentTheme.isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
+                      ? const Color(0xFF040D18).withValues(alpha: 0.60)
+                      : const Color(0xFFF1F5F9).withValues(alpha: 0.90),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: currentTheme.isDark
-                        ? Colors.white.withValues(alpha: 0.12)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
                         : const Color(0xFFE2E8F0),
                     width: 1,
                   ),
@@ -771,7 +932,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                   children: [
                     Expanded(
                       child: _buildRateChip(
-                        label: 'Групові',
+                        label: 'ГРУПОВІ',
                         amount: '$rateGroup ₴',
                         icon: LucideIcons.users,
                         color: const Color(0xFF00E5FF),
@@ -780,13 +941,15 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                     Container(
                       width: 1,
-                      height: 22,
+                      height: 26,
                       margin: const EdgeInsets.symmetric(horizontal: 6),
-                      color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+                      color: currentTheme.isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                          : const Color(0xFFCBD5E1),
                     ),
                     Expanded(
                       child: _buildRateChip(
-                        label: 'Індивід.',
+                        label: 'ІНДИВІД.',
                         amount: '$rateIndividual ₴',
                         icon: LucideIcons.user,
                         color: const Color(0xFFA855F7),
@@ -795,13 +958,15 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                     Container(
                       width: 1,
-                      height: 22,
+                      height: 26,
                       margin: const EdgeInsets.symmetric(horizontal: 6),
-                      color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+                      color: currentTheme.isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                          : const Color(0xFFCBD5E1),
                     ),
                     Expanded(
                       child: _buildRateChip(
-                        label: 'Спліт',
+                        label: 'СПЛІТ',
                         amount: '$rateSplit ₴',
                         icon: LucideIcons.userCheck,
                         color: const Color(0xFFF59E0B),
@@ -814,143 +979,178 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
               const SizedBox(height: 10),
 
-              // Credentials Card with Instant Copy
+              // Credentials Pod with Instant Copy
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: currentTheme.isDark
-                      ? Colors.black.withValues(alpha: 0.28)
+                      ? const Color(0xFF040D18).withValues(alpha: 0.70)
                       : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: currentTheme.isDark
-                        ? Colors.white.withValues(alpha: 0.18)
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
                         : const Color(0xFFCBD5E1),
                     width: 1.1,
                   ),
-                  boxShadow: currentTheme.isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: const Color(0xFF003B73).withValues(alpha: 0.03),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1.5),
-                          ),
-                        ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.20 : 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      LucideIcons.keyRound,
-                      color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
-                      size: 14,
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        LucideIcons.keyRound,
+                        color: Color(0xFF00E5FF),
+                        size: 13,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Row(
-                        children: [
-                          Text(
-                            'admin.clients_login_label'.tr(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: (currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7)).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              loginId,
-                              style: TextStyle(
-                                color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Text(
-                              '|',
-                              style: TextStyle(
-                                color: currentTheme.isDark ? Colors.white24 : Colors.black26,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'admin.clients_password_label'.tr(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFBBF24).withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              '1',
-                              style: TextStyle(
-                                color: Color(0xFFFBBF24),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => _copyCredentials(coachId, loginId, name),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          gradient: isCopied
-                              ? const LinearGradient(
-                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                )
-                              : LinearGradient(
-                                  colors: currentTheme.accentGradient,
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isCopied ? const Color(0xFF10B981) : currentTheme.accentPrimary).withValues(alpha: 0.35),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              isCopied ? LucideIcons.check : LucideIcons.copy,
-                              color: Colors.white,
-                              size: 11,
+                            Text(
+                              'admin.clients_login_label'.tr(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                                  width: 0.9,
+                                ),
+                              ),
+                              child: Text(
+                                loginId,
+                                style: const TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: Text(
+                                '|',
+                                style: TextStyle(
+                                  color: currentTheme.isDark ? Colors.white24 : Colors.black26,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                             Text(
-                              isCopied ? 'Скопійовано' : 'admin.clients_copy'.tr(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
+                              'admin.clients_password_label'.tr(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFBBF24).withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0xFFFBBF24).withValues(alpha: 0.35),
+                                  width: 0.9,
+                                ),
+                              ),
+                              child: const Text(
+                                '1',
+                                style: TextStyle(
+                                  color: Color(0xFFFBBF24),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                  fontFamily: 'monospace',
+                                ),
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _copyCredentials(coachId, loginId, name),
+                        borderRadius: BorderRadius.circular(9),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: isCopied
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                  )
+                                : const LinearGradient(
+                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.30),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isCopied ? const Color(0xFF10B981) : const Color(0xFF00E5FF)).withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isCopied ? LucideIcons.check : LucideIcons.copy,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isCopied ? 'Скопійовано' : 'admin.clients_copy'.tr(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -960,7 +1160,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
               const SizedBox(height: 12),
 
-              // Action: Manage Coach Schedule
+              // Action: Manage Coach Schedule (VisionOS Action Banner)
               SizedBox(
                 width: double.infinity,
                 child: Material(
@@ -978,66 +1178,72 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         ),
                       );
                     },
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
                       decoration: BoxDecoration(
-                        gradient: currentTheme.isDark
-                            ? LinearGradient(
-                                colors: [
-                                  currentTheme.accentPrimary.withValues(alpha: 0.20),
-                                  currentTheme.accentSecondary.withValues(alpha: 0.10),
+                        gradient: LinearGradient(
+                          colors: currentTheme.isDark
+                              ? [
+                                  const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                                  const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                ]
+                              : [
+                                  const Color(0xFFE0F2FE),
+                                  const Color(0xFFF0F9FF),
                                 ],
-                              )
-                            : const LinearGradient(
-                                colors: [Color(0xFFE0F2FE), Color(0xFFF0F9FF)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                        borderRadius: BorderRadius.circular(12),
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: currentTheme.isDark
-                              ? currentTheme.accentPrimary.withValues(alpha: 0.35)
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.38)
                               : const Color(0xFFBAE6FD),
                           width: 1.2,
                         ),
-                        boxShadow: currentTheme.isDark
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.10 : 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            LucideIcons.calendarClock,
-                            size: 15,
-                            color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              LucideIcons.calendarClock,
+                              size: 15,
+                              color: Color(0xFF00E5FF),
+                            ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 9),
                           Expanded(
                             child: Text(
                               'admin.manage_schedule'.tr(),
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: currentTheme.isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
+                                color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
                           Icon(
                             LucideIcons.chevronRight,
-                            size: 16,
+                            size: 17,
                             color: currentTheme.isDark
-                                ? currentTheme.accentPrimary.withValues(alpha: 0.7)
-                                : const Color(0xFF0284C7).withValues(alpha: 0.7),
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.8)
+                                : const Color(0xFF0284C7).withValues(alpha: 0.8),
                           ),
                         ],
                       ),
@@ -1064,8 +1270,19 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
+        Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withValues(alpha: 0.30),
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, size: 12, color: color),
+        ),
+        const SizedBox(width: 7),
         Flexible(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1076,17 +1293,20 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 style: TextStyle(
                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   fontSize: 9.5,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              const SizedBox(height: 1),
               Text(
                 amount,
                 style: TextStyle(
                   color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1100,30 +1320,142 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
   Widget _buildEmptyState(AppThemeConfig currentTheme) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(LucideIcons.users, size: 50, color: currentTheme.textMuted),
-          const SizedBox(height: 16),
-          Text('admin.coaches_empty_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text('admin.coaches_empty_desc'.tr(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 13)),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            margin: const EdgeInsets.all(32),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: currentTheme.isDark
+                    ? [
+                        const Color(0xFF0C2238).withValues(alpha: 0.90),
+                        const Color(0xFF061424).withValues(alpha: 0.95),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.92),
+                        const Color(0xFFF0F9FF).withValues(alpha: 0.88),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                    : const Color(0xFFBAE6FD),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: const Icon(LucideIcons.users, size: 40, color: Color(0xFF00E5FF)),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'admin.coaches_empty_title'.tr(),
+                  style: TextStyle(
+                    color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'admin.coaches_empty_desc'.tr(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildNoSearchResults(AppThemeConfig currentTheme) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(LucideIcons.userX, size: 44, color: currentTheme.textMuted),
-          const SizedBox(height: 14),
-          Text('admin.coaches_not_found'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('admin.coaches_not_found_desc'.tr(), style: TextStyle(color: currentTheme.textSecondary, fontSize: 12.5)),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            margin: const EdgeInsets.all(32),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: currentTheme.isDark
+                    ? [
+                        const Color(0xFF0C2238).withValues(alpha: 0.90),
+                        const Color(0xFF061424).withValues(alpha: 0.95),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.92),
+                        const Color(0xFFF0F9FF).withValues(alpha: 0.88),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                    : const Color(0xFFBAE6FD),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: const Icon(LucideIcons.userX, size: 40, color: Color(0xFF00E5FF)),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'admin.coaches_not_found'.tr(),
+                  style: TextStyle(
+                    color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'admin.coaches_not_found_desc'.tr(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

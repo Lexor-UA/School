@@ -16,6 +16,7 @@ class OwnerEditSalarySheet extends ConsumerStatefulWidget {
   final int initialRateIndividual;
   final int initialRateSplit;
   final int initialAdminSalary;
+  final String currencySymbol;
 
   const OwnerEditSalarySheet({
     super.key,
@@ -28,6 +29,7 @@ class OwnerEditSalarySheet extends ConsumerStatefulWidget {
     this.initialRateIndividual = 450,
     this.initialRateSplit = 600,
     this.initialAdminSalary = 20000,
+    this.currencySymbol = '₴',
   });
 
   @override
@@ -203,24 +205,27 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                         ),
                         const SizedBox(height: 14),
                         _buildRateField(
-                          label: 'Групове тренування (грн / зан)',
+                          label: 'Групове тренування (${widget.currencySymbol} / зан)',
                           icon: LucideIcons.users,
                           controller: _rateGroupController,
                           color: const Color(0xFF00E5FF),
+                          unit: '${widget.currencySymbol} / зан',
                         ),
                         const SizedBox(height: 12),
                         _buildRateField(
-                          label: 'Індивідуальне тренування (грн / зан)',
+                          label: 'Індивідуальне тренування (${widget.currencySymbol} / зан)',
                           icon: LucideIcons.user,
                           controller: _rateIndividualController,
                           color: const Color(0xFFA855F7),
+                          unit: '${widget.currencySymbol} / зан',
                         ),
                         const SizedBox(height: 12),
                         _buildRateField(
-                          label: 'Спліт-тренування (2 учні) (грн / зан)',
+                          label: 'Спліт-тренування (2 учні) (${widget.currencySymbol} / зан)',
                           icon: LucideIcons.userCheck,
                           controller: _rateSplitController,
                           color: const Color(0xFFF59E0B),
+                          unit: '${widget.currencySymbol} / зан',
                         ),
                       ] else ...[
                         // Admin Salary Section
@@ -232,11 +237,11 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                         ),
                         const SizedBox(height: 14),
                         _buildRateField(
-                          label: 'Фіксований оклад (грн / місяць)',
+                          label: 'Фіксований оклад (${widget.currencySymbol} / місяць)',
                           icon: LucideIcons.wallet,
                           controller: _adminSalaryController,
                           color: const Color(0xFF10B981),
-                          unit: '₴ / міс',
+                          unit: '${widget.currencySymbol} / міс',
                         ),
                       ],
 

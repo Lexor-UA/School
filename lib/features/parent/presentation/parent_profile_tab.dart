@@ -425,14 +425,16 @@ class ParentProfileTab extends ConsumerWidget {
         builder: (context, constraints) {
           final mediaQuery = MediaQuery.of(context);
           final bottomInset = mediaQuery.padding.bottom;
-          // Floating nav bar dock geometry:
-          // bar height: ~50px, bottom margin: 10px, plus 10px breathing clearance above panel
-          const double navBarDockHeight = 50.0;
-          const double navBarBottomMargin = 10.0;
-          const double desiredClearanceAboveBar = 10.0;
+          // Determine if viewport is compact (like iPhone with height < 800)
+          final bool isCompact = constraints.maxHeight < 800;
+          // Floating nav bar dock geometry (matches parent_main.dart):
+          // bar height: ~56px, bottom margin: 12px, plus 16px breathing clearance above dock
+          const double navBarDockHeight = 56.0;
+          const double navBarBottomMargin = 12.0;
+          const double desiredClearanceAboveBar = 16.0;
           final double effectiveBottomPadding =
               bottomInset + navBarDockHeight + navBarBottomMargin + desiredClearanceAboveBar;
-          const double topPadding = 6.0;
+          final double topPadding = isCompact ? 4.0 : 6.0;
           final double minContentHeight =
               constraints.maxHeight - topPadding - effectiveBottomPadding;
 
@@ -458,8 +460,9 @@ class ParentProfileTab extends ConsumerWidget {
                         textColor,
                         textSubColor,
                         accentColor,
+                        isCompact: isCompact,
                       ),
-                      const SizedBox(height: 13),
+                      SizedBox(height: isCompact ? 9 : 13),
 
                       // 2. Family & Children Section
                       _buildFamilySection(
@@ -470,8 +473,9 @@ class ParentProfileTab extends ConsumerWidget {
                         textColor,
                         textSubColor,
                         accentColor,
+                        isCompact: isCompact,
                       ),
-                      const SizedBox(height: 13),
+                      SizedBox(height: isCompact ? 9 : 13),
 
                       // 3. VisionOS Grouped Settings Card
                       _buildGroupedSettingsCard(
@@ -481,15 +485,17 @@ class ParentProfileTab extends ConsumerWidget {
                         isDark,
                         textColor,
                         textSubColor,
+                        isCompact: isCompact,
                       ),
                     ],
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(top: 20),
+                    padding: EdgeInsets.only(top: isCompact ? 10 : 20),
                     child: _buildLogoutFooter(
                       context,
                       ref,
                       isDark,
+                      isCompact: isCompact,
                     ),
                   ),
                 ],
@@ -509,8 +515,9 @@ class ParentProfileTab extends ConsumerWidget {
     bool isDark,
     Color textColor,
     Color subColor,
-    Color accentColor,
-  ) {
+    Color accentColor, {
+    bool isCompact = false,
+  }) {
     final fbUser = FirebaseAuth.instance.currentUser;
     final contactInfo = (user?.phone != null && user!.phone!.isNotEmpty)
         ? user.phone!
@@ -526,7 +533,7 @@ class ParentProfileTab extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 18, vertical: isCompact ? 12 : 16),
           decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -536,7 +543,7 @@ class ParentProfileTab extends ConsumerWidget {
                 children: [
                   // Avatar with glowing halo
                   Container(
-                    padding: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.all(2.5),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
@@ -558,38 +565,41 @@ class ParentProfileTab extends ConsumerWidget {
                         color: isDark ? const Color(0xFF0F1E32) : Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: const AvatarPicker(heroTag: 'hero_avatar_profile', radius: 29.5),
+                      child: AvatarPicker(heroTag: 'hero_avatar_profile', radius: isCompact ? 27.0 : 29.5),
                     ),
                   ),
-                  const SizedBox(width: 13),
+                  SizedBox(width: isCompact ? 11 : 13),
                   // Name & Contact Info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
-                              ? user.name
-                              : (fbUser?.displayName?.trim().isNotEmpty == true
-                                  ? fbUser!.displayName!.trim()
-                                  : 'Олександр'),
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 18.5,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.3,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+                                ? user.name
+                                : (fbUser?.displayName?.trim().isNotEmpty == true
+                                    ? fbUser!.displayName!.trim()
+                                    : 'Олександр'),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: isCompact ? 17.5 : 18.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         if (contactInfo != null) ...[
-                          const SizedBox(height: 2.5),
+                          const SizedBox(height: 2.0),
                           Text(
                             contactInfo,
                             style: TextStyle(
                               color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
-                              fontSize: 13,
+                              fontSize: isCompact ? 12.0 : 13.0,
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
@@ -599,27 +609,30 @@ class ParentProfileTab extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   // Status Badge
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 9 : 11,
+                        vertical: isCompact ? 4.5 : 6,
+                      ),
                       decoration: _ProfileStyleConfig.statusBadgeDecoration(isDark, accentColor),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             LucideIcons.shieldCheck,
-                            size: 13.5,
+                            size: isCompact ? 12.5 : 13.5,
                             color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 4.5),
                           Text(
                             hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
                             style: TextStyle(
                               color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
-                              fontSize: 12,
+                              fontSize: isCompact ? 11.0 : 12.0,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.1,
                             ),
@@ -631,10 +644,10 @@ class ParentProfileTab extends ConsumerWidget {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              SizedBox(height: isCompact ? 8 : 12),
               // Subtle Divider
               Container(
-                margin: const EdgeInsets.symmetric(vertical: 2),
+                margin: EdgeInsets.symmetric(vertical: isCompact ? 1 : 2),
                 height: 1,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -652,7 +665,7 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 11),
+              SizedBox(height: isCompact ? 8 : 11),
 
               // Swimming Quick Stats Counters
               Row(
@@ -666,11 +679,12 @@ class ParentProfileTab extends ConsumerWidget {
                       isDark: isDark,
                       textColor: textColor,
                       subColor: subColor,
+                      isCompact: isCompact,
                     ),
                   ),
                   Container(
                     width: 1,
-                    height: 28,
+                    height: isCompact ? 24 : 28,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -699,6 +713,7 @@ class ParentProfileTab extends ConsumerWidget {
                       isDark: isDark,
                       textColor: textColor,
                       subColor: subColor,
+                      isCompact: isCompact,
                     ),
                   ),
                 ],
@@ -719,6 +734,7 @@ class ParentProfileTab extends ConsumerWidget {
     required bool isDark,
     required Color textColor,
     required Color subColor,
+    bool isCompact = false,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -728,36 +744,36 @@ class ParentProfileTab extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Icon(icon, size: 16.5, color: color),
-            const SizedBox(width: 5),
+            Icon(icon, size: isCompact ? 15.0 : 16.5, color: color),
+            const SizedBox(width: 4.5),
             Text(
               value,
               style: TextStyle(
                 color: textColor,
-                fontSize: 18.5,
+                fontSize: isCompact ? 17.0 : 18.5,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.4,
               ),
             ),
             if (unit != null) ...[
-              const SizedBox(width: 2.5),
+              const SizedBox(width: 2.0),
               Text(
                 unit,
                 style: TextStyle(
                   color: _ProfileStyleConfig.statsUnitColor(isDark, color),
-                  fontSize: 12.5,
+                  fontSize: isCompact ? 11.5 : 12.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ],
         ),
-        const SizedBox(height: 3),
+        SizedBox(height: isCompact ? 2 : 3),
         Text(
           label,
           style: TextStyle(
             color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
-            fontSize: 12.5,
+            fontSize: isCompact ? 11.5 : 12.5,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
           ),
@@ -774,8 +790,9 @@ class ParentProfileTab extends ConsumerWidget {
     bool isDark,
     Color textColor,
     Color subColor,
-    Color accentColor,
-  ) {
+    Color accentColor, {
+    bool isCompact = false,
+  }) {
     final familyAsync = ref.watch(familyStreamProvider);
     final family = familyAsync.value;
     final user = ref.watch(authControllerProvider);
@@ -793,7 +810,7 @@ class ParentProfileTab extends ConsumerWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 11 : 14),
           decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -805,26 +822,26 @@ class ParentProfileTab extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        width: 32,
-                        height: 32,
+                        width: isCompact ? 29 : 32,
+                        height: isCompact ? 29 : 32,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF10B981), Color(0xFF059669)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(9),
+                          borderRadius: BorderRadius.circular(isCompact ? 8 : 9),
                         ),
-                        child: const Center(
-                          child: Icon(LucideIcons.users, color: Colors.white, size: 16),
+                        child: Center(
+                          child: Icon(LucideIcons.users, color: Colors.white, size: isCompact ? 15 : 16),
                         ),
                       ),
-                      const SizedBox(width: 9),
+                      SizedBox(width: isCompact ? 8 : 9),
                       Text(
                         'Родина та діти',
                         style: TextStyle(
                           color: textColor,
-                          fontSize: 15,
+                          fontSize: isCompact ? 14.5 : 15.0,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -835,7 +852,10 @@ class ParentProfileTab extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(10),
                       onTap: () => FamilyManagementSheet.show(context),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompact ? 8.5 : 10,
+                          vertical: isCompact ? 4.5 : 5.5,
+                        ),
                         decoration: BoxDecoration(
                           color: isPaired
                               ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.22 : 0.12)
@@ -853,7 +873,7 @@ class ParentProfileTab extends ConsumerWidget {
                           children: [
                             Icon(
                               isPaired ? LucideIcons.heartHandshake : LucideIcons.userPlus,
-                              size: 13.5,
+                              size: isCompact ? 12.5 : 13.5,
                               color: isPaired
                                   ? const Color(0xFF10B981)
                                   : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
@@ -868,7 +888,7 @@ class ParentProfileTab extends ConsumerWidget {
                                   color: isPaired
                                       ? (isDark ? const Color(0xFF34D399) : const Color(0xFF047857))
                                       : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                                  fontSize: 11.5,
+                                  fontSize: isCompact ? 11.0 : 11.5,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -876,7 +896,7 @@ class ParentProfileTab extends ConsumerWidget {
                             const SizedBox(width: 3.5),
                             Icon(
                               LucideIcons.chevronRight,
-                              size: 13,
+                              size: isCompact ? 12 : 13,
                               color: isPaired
                                   ? const Color(0xFF10B981)
                                   : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
@@ -888,7 +908,7 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isCompact ? 8 : 12),
 
               // Prominent Partner Tile (when paired)
               if (isPaired) ...[
@@ -896,8 +916,8 @@ class ParentProfileTab extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(14),
                   onTap: () => FamilyManagementSheet.show(context),
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 11),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                    margin: EdgeInsets.only(bottom: isCompact ? 8 : 11),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: isCompact ? 8 : 10),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isDark
@@ -921,8 +941,8 @@ class ParentProfileTab extends ConsumerWidget {
                     child: Row(
                       children: [
                         Container(
-                          width: 34,
-                          height: 34,
+                          width: isCompact ? 30 : 34,
+                          height: isCompact ? 30 : 34,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: const LinearGradient(
@@ -1201,7 +1221,7 @@ class ParentProfileTab extends ConsumerWidget {
                         'Додайте дитину для тренувань',
                         style: TextStyle(
                           color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
-                          fontSize: 13,
+                          fontSize: isCompact ? 12.0 : 13.0,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -1209,20 +1229,23 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(width: 9),
+                  SizedBox(width: isCompact ? 7 : 9),
                   // Add child button
                   InkWell(
                     borderRadius: BorderRadius.circular(11),
                     onTap: () => _showAddChildDialog(context, ref, isDark),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 10 : 12,
+                        vertical: isCompact ? 5.5 : 7,
+                      ),
                       decoration: _ProfileStyleConfig.addChildButtonDecoration(isDark),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             LucideIcons.plus,
-                            size: 14,
+                            size: isCompact ? 13 : 14,
                             color: _ProfileStyleConfig.addChildTextColor(isDark),
                           ),
                           const SizedBox(width: 4.5),
@@ -1230,7 +1253,7 @@ class ParentProfileTab extends ConsumerWidget {
                             'Додати',
                             style: TextStyle(
                               color: _ProfileStyleConfig.addChildTextColor(isDark),
-                              fontSize: 12.5,
+                              fontSize: isCompact ? 11.5 : 12.5,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1254,8 +1277,9 @@ class ParentProfileTab extends ConsumerWidget {
     AppUser? user,
     bool isDark,
     Color textColor,
-    Color subColor,
-  ) {
+    Color subColor, {
+    bool isCompact = false,
+  }) {
     final clientUnread = user != null ? ref.watch(clientUnreadBadgeProvider(user.id)) : 0;
 
     return ClipRRect(
@@ -1274,6 +1298,7 @@ class ParentProfileTab extends ConsumerWidget {
                 isDark: isDark,
                 textColor: textColor,
                 subColor: subColor,
+                isCompact: isCompact,
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 64, right: 16),
@@ -1305,6 +1330,7 @@ class ParentProfileTab extends ConsumerWidget {
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
+                isCompact: isCompact,
                 onTap: () => FamilyManagementSheet.show(context),
               ),
               Padding(
@@ -1335,6 +1361,7 @@ class ParentProfileTab extends ConsumerWidget {
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
+                isCompact: isCompact,
                 trailingWidget: clientUnread > 0
                     ? Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1392,9 +1419,10 @@ class ParentProfileTab extends ConsumerWidget {
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
+                isCompact: isCompact,
                 showChevron: false,
                 trailingWidget: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: EdgeInsets.symmetric(horizontal: isCompact ? 8.5 : 10, vertical: isCompact ? 4 : 5),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isDark
@@ -1432,16 +1460,16 @@ class ParentProfileTab extends ConsumerWidget {
                           color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
                         ),
                         child: Icon(
-                          LucideIcons.repeat,
-                          size: 10,
+                          LucideIcons.lock,
+                          size: isCompact ? 9 : 10,
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4.5),
                       Text(
-                        'Змінити',
+                        'Закріплено',
                         style: TextStyle(
-                          fontSize: 11.5,
+                          fontSize: isCompact ? 11.0 : 11.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
                           color: _ProfileStyleConfig.statusBadgeTextColor(isDark, const Color(0xFF00E5FF)),
@@ -1449,8 +1477,8 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                       const SizedBox(width: 3),
                       Icon(
-                        LucideIcons.chevronRight,
-                        size: 12,
+                        LucideIcons.info,
+                        size: isCompact ? 11 : 12,
                         color: (isDark ? (currentProfileVariant == ProfileStyleVariant.originalClassic ? const Color(0xFF00E5FF) : Colors.white) : const Color(0xFF0284C7)).withValues(alpha: 0.7),
                       ),
                     ],
@@ -1589,7 +1617,7 @@ class ParentProfileTab extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Оберіть філію школи для занять та абонементів',
+                      'Закріплена філія школи CitySwim',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -1598,31 +1626,85 @@ class ParentProfileTab extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
 
-                    // Branch Options List
-                    _buildBranchOptionCard(
-                      context: context,
-                      ref: ref,
-                      sheetContext: ctx,
-                      branchId: 'kyiv',
-                      title: 'CitySwim Київ',
-                      countrySubtitle: 'Україна • Валюта: ₴ (UAH)',
-                      timezoneSubtitle: 'Europe/Kyiv',
-                      flag: '🇺🇦',
-                      isSelected: activeBranchId == 'kyiv',
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 10),
-                    _buildBranchOptionCard(
-                      context: context,
-                      ref: ref,
-                      sheetContext: ctx,
-                      branchId: 'vienna',
-                      title: 'CitySwim Відень',
-                      countrySubtitle: 'Австрія • Валюта: € (EUR)',
-                      timezoneSubtitle: 'Europe/Vienna',
-                      flag: '🇦🇹',
-                      isSelected: activeBranchId == 'vienna',
-                      isDark: isDark,
+                    // Current Branch Card (Informational only)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0E3D64).withValues(alpha: 0.5) : const Color(0xFFE0F2FE).withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.1),
+                            blurRadius: 12,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Text(activeBranchId == 'vienna' ? '🇦🇹' : '🇺🇦', style: const TextStyle(fontSize: 28)),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activeBranchId == 'vienna' ? 'CitySwim Відень' : 'CitySwim Київ',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  activeBranchId == 'vienna'
+                                      ? 'Австрія • Валюта: € (EUR) • Europe/Vienna'
+                                      : 'Україна • Валюта: ₴ (UAH) • Europe/Kyiv',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.lock,
+                                  size: 12,
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Закріплено',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -1647,15 +1729,15 @@ class ParentProfileTab extends ConsumerWidget {
                               color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
                             ),
                             child: Icon(
-                              LucideIcons.shieldCheck,
-                              size: 15,
+                              LucideIcons.shieldAlert,
+                              size: 16,
                               color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Між філіями Києва та Відня діє сувора ізоляція: розклад, абонементи та відвідування закріплені за обраною філією.',
+                              'Між філіями Києва та Відня діє сувора ізоляція розкладу та абонементів. Зміна філії здійснюється виключно адміністрацією школи за запитом клієнта.',
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.4,
@@ -1669,30 +1751,28 @@ class ParentProfileTab extends ConsumerWidget {
                     const SizedBox(height: 16),
 
                     // Contact Admin Button
-                    OutlinedButton.icon(
+                    ElevatedButton.icon(
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(ctx);
                         showClientDialogsSheet(context);
                       },
-                      icon: Icon(
+                      icon: const Icon(
                         LucideIcons.messageSquare,
                         size: 16,
-                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                        color: Colors.white,
                       ),
-                      label: Text(
-                        'Написати адміністратору',
+                      label: const Text(
+                        'Звернутися до адміністратора',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 46),
-                        side: BorderSide(
-                          color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
-                        ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0284C7),
+                        minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
@@ -1702,188 +1782,6 @@ class ParentProfileTab extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildBranchOptionCard({
-    required BuildContext context,
-    required WidgetRef ref,
-    required BuildContext sheetContext,
-    required String branchId,
-    required String title,
-    required String countrySubtitle,
-    required String timezoneSubtitle,
-    required String flag,
-    required bool isSelected,
-    required bool isDark,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () async {
-          HapticFeedback.mediumImpact();
-          if (isSelected) return;
-
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (dialogCtx) => AlertDialog(
-              backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: Row(
-                children: [
-                  Text(flag, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Зміна філії',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: Text(
-                'Бажаєте перемкнути вашу активну філію на $title?\n\nВаш персональний розклад та абонементи будуть адаптовані для цієї локації.',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.45,
-                  color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF334155),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogCtx, false),
-                  child: Text(
-                    'Скасувати',
-                    style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(dialogCtx, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0284C7),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Перемкнути'),
-                ),
-              ],
-            ),
-          );
-
-          if (confirmed == true && context.mounted) {
-            await ref.read(authControllerProvider.notifier).updateClientBranch(branchId);
-            if (sheetContext.mounted) {
-              Navigator.pop(sheetContext);
-            }
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Філію успішно змінено на $title $flag'),
-                  backgroundColor: const Color(0xFF0284C7),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              );
-            }
-          }
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? const Color(0xFF0E3D64).withValues(alpha: 0.5) : const Color(0xFFE0F2FE).withValues(alpha: 0.7))
-                : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.02)),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.8)
-                  : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)),
-              width: isSelected ? 1.5 : 1.0,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Text(flag, style: const TextStyle(fontSize: 26)),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$countrySubtitle • $timezoneSubtitle',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.check,
-                        size: 13,
-                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Активна',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Icon(
-                  LucideIcons.chevronRight,
-                  size: 18,
-                  color: isDark ? Colors.white38 : Colors.black38,
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1898,6 +1796,7 @@ class ParentProfileTab extends ConsumerWidget {
     required bool isDark,
     Widget? trailingWidget,
     bool showChevron = true,
+    bool isCompact = false,
     required VoidCallback onTap,
   }) {
     return Material(
@@ -1905,32 +1804,32 @@ class ParentProfileTab extends ConsumerWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12.5),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 9.0 : 12.5),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: isCompact ? 33 : 36,
+                height: isCompact ? 33 : 36,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: gradientColors,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(isCompact ? 9 : 10),
                   boxShadow: [
                     BoxShadow(
                       color: gradientColors.first.withValues(alpha: 0.35),
-                      blurRadius: 8,
+                      blurRadius: isCompact ? 6 : 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Center(
-                  child: Icon(icon, color: Colors.white, size: 18),
+                  child: Icon(icon, color: Colors.white, size: isCompact ? 16.5 : 18),
                 ),
               ),
-              const SizedBox(width: 13),
+              SizedBox(width: isCompact ? 11 : 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1943,7 +1842,7 @@ class ParentProfileTab extends ConsumerWidget {
                         title,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 15.5,
+                          fontSize: isCompact ? 14.5 : 15.5,
                           color: textColor,
                           letterSpacing: -0.1,
                         ),
@@ -1956,7 +1855,7 @@ class ParentProfileTab extends ConsumerWidget {
                       child: Text(
                         subtitle,
                         style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: isCompact ? 11.8 : 12.5,
                           color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
                           fontWeight: FontWeight.w500,
                         ),
@@ -1967,12 +1866,12 @@ class ParentProfileTab extends ConsumerWidget {
               ),
               if (trailingWidget != null) ...[
                 trailingWidget,
-                if (showChevron) const SizedBox(width: 6),
+                if (showChevron) SizedBox(width: isCompact ? 4 : 6),
               ],
               if (showChevron)
                 Icon(
                   LucideIcons.chevronRight,
-                  size: 16,
+                  size: isCompact ? 15 : 16,
                   color: isDark
                       ? (currentProfileVariant == ProfileStyleVariant.originalClassic
                           ? const Color(0xFFB0D4EC).withValues(alpha: 0.7)
@@ -1987,10 +1886,10 @@ class ParentProfileTab extends ConsumerWidget {
   }
 
   // 5. Luminous Velvet Ruby Logout Button (High-contrast, vibrant ruby gradient with crisp white text)
-  Widget _buildLogoutFooter(BuildContext context, WidgetRef ref, bool isDark) {
+  Widget _buildLogoutFooter(BuildContext context, WidgetRef ref, bool isDark, {bool isCompact = false}) {
     return Container(
       width: double.infinity,
-      height: 52,
+      height: isCompact ? 46 : 52,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
@@ -2005,7 +1904,7 @@ class ParentProfileTab extends ConsumerWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
         border: Border.all(
           color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.40),
           width: 1.2,
@@ -2013,13 +1912,13 @@ class ParentProfileTab extends ConsumerWidget {
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFFF2A55).withValues(alpha: isDark ? 0.42 : 0.28),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            blurRadius: isCompact ? 16 : 20,
+            offset: Offset(0, isCompact ? 4 : 6),
           ),
           if (isDark)
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 10,
+              blurRadius: isCompact ? 8 : 10,
               offset: const Offset(0, 3),
             ),
         ],
@@ -2027,7 +1926,7 @@ class ParentProfileTab extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
           onTap: () {
             HapticFeedback.mediumImpact();
             _confirmLogout(context, ref, isDark);
@@ -2035,16 +1934,16 @@ class ParentProfileTab extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(LucideIcons.logOut, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
+              Icon(LucideIcons.logOut, color: Colors.white, size: isCompact ? 18 : 20),
+              SizedBox(width: isCompact ? 8 : 10),
               Text(
                 'parent.logout_short'.tr(),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: isCompact ? 15.0 : 16.0,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
-                  shadows: [
+                  shadows: const [
                     Shadow(
                       color: Colors.black26,
                       blurRadius: 4,
@@ -2119,36 +2018,37 @@ class ParentProfileTab extends ConsumerWidget {
     required bool isDark,
     required Color textColor,
     required Color subColor,
+    bool isCompact = false,
   }) {
     final pushEnabled = ref.watch(pushNotificationsEnabledProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 8.5 : 12),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: isCompact ? 33 : 36,
+            height: isCompact ? 33 : 36,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF10B981), Color(0xFF059669)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(isCompact ? 9 : 10),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF10B981).withValues(alpha: 0.30),
-                  blurRadius: 5,
+                  blurRadius: isCompact ? 4 : 5,
                   offset: const Offset(0, 1.5),
                 ),
               ],
             ),
-            child: const Center(
-              child: Icon(LucideIcons.bell, color: Colors.white, size: 18),
+            child: Center(
+              child: Icon(LucideIcons.bell, color: Colors.white, size: isCompact ? 16.5 : 18),
             ),
           ),
-          const SizedBox(width: 13),
+          SizedBox(width: isCompact ? 11 : 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2161,7 +2061,7 @@ class ParentProfileTab extends ConsumerWidget {
                     'Push-сповіщення',
                     style: TextStyle(
                       color: textColor,
-                      fontSize: 15.5,
+                      fontSize: isCompact ? 14.5 : 15.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.2,
                     ),
@@ -2175,7 +2075,7 @@ class ParentProfileTab extends ConsumerWidget {
                     'Нагадування про тренування',
                     style: TextStyle(
                       color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
-                      fontSize: 12.5,
+                      fontSize: isCompact ? 11.8 : 12.5,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -2184,7 +2084,7 @@ class ParentProfileTab extends ConsumerWidget {
             ),
           ),
           Transform.scale(
-            scale: 0.90,
+            scale: isCompact ? 0.85 : 0.90,
             child: Switch(
               value: pushEnabled,
               onChanged: (v) {

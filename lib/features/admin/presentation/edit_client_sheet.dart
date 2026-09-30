@@ -31,6 +31,7 @@ class EditClientSheet extends ConsumerStatefulWidget {
   final int? initialAge;
   final String initialLoginId;
   final String? initialPassword;
+  final String? initialBranchId;
 
   const EditClientSheet({
     super.key,
@@ -40,6 +41,7 @@ class EditClientSheet extends ConsumerStatefulWidget {
     this.initialAge,
     required this.initialLoginId,
     this.initialPassword,
+    this.initialBranchId,
   });
 
   @override
@@ -52,6 +54,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   late TextEditingController _ageController;
   late TextEditingController _loginIdController;
   late TextEditingController _passwordController;
+  late String _selectedBranchId;
   bool _obscurePassword = false;
   bool _isLoading = false;
   String? _errorMessage;
@@ -72,6 +75,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     _loginIdController = TextEditingController(text: widget.initialLoginId);
     _passwordController = TextEditingController(text: widget.initialPassword ?? '1');
     _selectedSubOwner = widget.initialName;
+    _selectedBranchId = widget.initialBranchId ?? 'kyiv';
   }
 
   @override
@@ -171,6 +175,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         'phone': _phoneController.text.trim(),
         'loginId': _loginIdController.text.trim(),
         'password': _passwordController.text.trim(),
+        'branchId': _selectedBranchId,
+        'branchIds': [_selectedBranchId],
       };
       if (age != null) {
         updateData['age'] = age;
@@ -185,7 +191,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Оновлено дані та пароль клієнта "${_nameController.text.trim()}"', admin.id);
+          final branchChanged = widget.initialBranchId != null && widget.initialBranchId != _selectedBranchId;
+          final branchNote = branchChanged
+              ? ' (філію змінено на ${_selectedBranchId == 'vienna' ? 'Відень 🇦🇹' : 'Київ 🇺🇦'})'
+              : '';
+          await logAdminAction('Оновлено дані та пароль клієнта "${_nameController.text.trim()}"$branchNote', admin.id);
         }
         
         setState(() {
@@ -621,14 +631,63 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     if (confirm != true) return;
 
     try {
-      await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).delete();
+      HapticFeedback.mediumImpact();
+      // 1. Ensure staff auth doc is synced in Firestore
+      await ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
+
+      // 2. Perform deletion via controller (optimistic + Firestore)
+      await ref.read(subscriptionControllerProvider.notifier).deleteSubscription(sub.id);
       
       final admin = ref.read(authControllerProvider);
       if (admin != null) {
         await logAdminAction('Видалено абонемент клієнта "${widget.initialName}"', admin.id);
       }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.trash2, color: Colors.white, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Абонемент "${sub.serviceName ?? 'Абонемент'}" видалено',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: Color(0xFF10B981), width: 1),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
       debugPrint('Error deleting subscription: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Помилка видалення: $e',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFFF43F5E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: Color(0xFFF43F5E), width: 1),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -2204,6 +2263,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
 
             // Password & Access Management Section
             _buildPasswordSection(isDark: isDark).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
+            const SizedBox(height: 24),
+
+            // Branch Assignment Section
+            _buildBranchSection(isDark: isDark).animate().fadeIn(delay: 355.ms).slideX(begin: -0.1),
             const SizedBox(height: 32),
 
             // FAMILY ACCOUNT SECTION
@@ -3151,6 +3214,252 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBranchSection({required bool isDark}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
+          width: 1.2,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.25 : 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
+                    width: 0.9,
+                  ),
+                ),
+                child: const Icon(LucideIcons.building2, size: 16, color: Color(0xFF38BDF8)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Закріплена філія клієнта',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Клієнт не може змінювати філію самостійно',
+                      style: TextStyle(
+                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.45),
+                    width: 0.8,
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.lock, size: 11, color: Color(0xFF10B981)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Адмін-доступ',
+                      style: TextStyle(
+                        color: Color(0xFF10B981),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBranchOption(
+                  branchId: 'kyiv',
+                  title: 'CitySwim Київ',
+                  flag: '🇺🇦',
+                  subtitle: 'UAH ₴ • Україна',
+                  isSelected: _selectedBranchId == 'kyiv',
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildBranchOption(
+                  branchId: 'vienna',
+                  title: 'CitySwim Відень',
+                  flag: '🇦🇹',
+                  subtitle: 'EUR € • Австрія',
+                  isSelected: _selectedBranchId == 'vienna',
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+          if (widget.initialBranchId != null && widget.initialBranchId != _selectedBranchId) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.16 : 0.10),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.triangleAlert, size: 13, color: Color(0xFFF59E0B)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Філію буде змінено після натискання кнопки «Зберегти зміни»',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBranchOption({
+    required String branchId,
+    required String title,
+    required String flag,
+    required String subtitle,
+    required bool isSelected,
+    required bool isDark,
+  }) {
+    final isVienna = branchId == 'vienna';
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() {
+          _selectedBranchId = branchId;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: isVienna
+                      ? [const Color(0xFFEF4444), const Color(0xFFB91C1C)]
+                      : [const Color(0xFF00E5FF), const Color(0xFF0284C7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? (isVienna ? const Color(0xFFFCA5A5) : const Color(0xFFBAE6FD))
+                : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE2E8F0)),
+            width: isSelected ? 1.6 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isVienna ? const Color(0xFFEF4444) : const Color(0xFF00E5FF))
+                        .withValues(alpha: isDark ? 0.35 : 0.20),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.white : const Color(0xFF1E293B)),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : (isDark ? Colors.white60 : const Color(0xFF64748B)),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 4),
+              const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 16),
+            ],
+          ],
         ),
       ),
     );

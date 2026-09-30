@@ -557,67 +557,43 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Primary Client Hub Login Button (Sapphire CTA)
-        Container(
-          width: double.infinity,
-          height: 56,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0E3D64),
-                Color(0xFF082038),
-              ],
+        // Primary Client Hub Login Button (Styled identical to Google sign-in button)
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: BorderSide(
+              color: Colors.blue.withValues(alpha: 0.5),
+              width: 1.5,
             ),
-            border: Border.all(
-              color: const Color(0xFF00E5FF).withValues(alpha: 0.65),
-              width: 1.4,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+          ),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _showClientAuthModal(context, ref, initialTab: 0);
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                LucideIcons.logIn,
+                size: 20,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'auth.tab_login'.tr().isNotEmpty &&
+                        !'auth.tab_login'.tr().startsWith('auth.')
+                    ? 'auth.tab_login'.tr()
+                    : 'Увійти',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
-          ),
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              _showClientAuthModal(context, ref, initialTab: 0);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  LucideIcons.logIn,
-                  size: 20,
-                  color: Color(0xFF00E5FF),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'auth.tab_login'.tr().isNotEmpty &&
-                          !'auth.tab_login'.tr().startsWith('auth.')
-                      ? 'auth.tab_login'.tr()
-                      : 'Увійти',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ],

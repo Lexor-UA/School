@@ -191,9 +191,14 @@ class AuthController extends _$AuthController {
         }
 
         await _fetchUserFromFirestore(effectiveId, hasCachedState: hasCachedState);
+        _syncAuthUserDoc(state);
       }
     });
     return initialUser;
+  }
+
+  Future<void> syncCurrentAuthUserDoc() async {
+    await _syncAuthUserDoc(state);
   }
 
   Future<void> _syncRoleToPrefs(AppUser? user) async {
@@ -474,38 +479,54 @@ class AuthController extends _$AuthController {
       // Check role/login-based accounts
       if (login == 'admin' || login == 'admin@cityswim.com' || login == 'admin@gmail.com') {
         final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
-        final docSnap = await docRef.get();
-        final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-        if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
-          throw Exception('Невірний пароль');
-        }
-        if (!PasswordSecurityHelper.isHashed(storedPassword)) {
-          docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
-        }
+        try {
+          final docSnap = await docRef.get();
+          final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
+          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+            throw Exception('Невірний пароль');
+          }
+          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+            docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+          }
 
-        if (docSnap.exists) {
-          final data = docSnap.data()!;
-          state = AppUser(
-            id: 'admin',
-            name: (data['name'] as String?) ?? 'Адміністратор',
-            role: UserRole.admin,
-            phone: data['phone'] as String?,
-            loginId: (data['loginId'] as String?) ?? 'Admin',
-            avatarUrl: (data['avatarUrl'] as String?) ?? 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
-          );
-        } else {
-          final adminData = {
-            'id': 'admin',
-            'name': 'Адміністратор',
-            'role': 'admin',
-            'loginId': 'Admin',
-            'password': '1',
-            'phone': '+380 (99) 000-00-01',
-            'adminSalary': 20000,
-            'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
-            'createdAt': FieldValue.serverTimestamp(),
-          };
-          await docRef.set(adminData);
+          if (docSnap.exists) {
+            final data = docSnap.data()!;
+            state = AppUser(
+              id: 'admin',
+              name: (data['name'] as String?) ?? 'Адміністратор',
+              role: UserRole.admin,
+              phone: data['phone'] as String?,
+              loginId: (data['loginId'] as String?) ?? 'Admin',
+              avatarUrl: (data['avatarUrl'] as String?) ?? 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+            );
+          } else {
+            final adminData = {
+              'id': 'admin',
+              'name': 'Адміністратор',
+              'role': 'admin',
+              'loginId': 'Admin',
+              'password': '1',
+              'phone': '+380 (99) 000-00-01',
+              'adminSalary': 20000,
+              'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+              'createdAt': FieldValue.serverTimestamp(),
+            };
+            await docRef.set(adminData).catchError((_) {});
+            state = const AppUser(
+              id: 'admin',
+              name: 'Адміністратор',
+              role: UserRole.admin,
+              phone: '+380 (99) 000-00-01',
+              loginId: 'Admin',
+              avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+            );
+          }
+        } catch (e) {
+          if (e.toString().contains('Невірний пароль')) rethrow;
+          debugPrint('Firestore admin check error, using local fallback: $e');
+          if (password != '1') {
+            throw Exception('Невірний пароль');
+          }
           state = const AppUser(
             id: 'admin',
             name: 'Адміністратор',
@@ -528,13 +549,21 @@ class AuthController extends _$AuthController {
         return;
       } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
         final docRef = FirebaseFirestore.instance.collection('users').doc('mock_owner');
-        final docSnap = await docRef.get();
-        final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-        if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
-          throw Exception('Невірний пароль');
-        }
-        if (!PasswordSecurityHelper.isHashed(storedPassword)) {
-          docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+        try {
+          final docSnap = await docRef.get();
+          final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
+          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+            throw Exception('Невірний пароль');
+          }
+          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+            docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+          }
+        } catch (e) {
+          if (e.toString().contains('Невірний пароль')) rethrow;
+          debugPrint('Firestore owner check error, using local fallback: $e');
+          if (password != '1') {
+            throw Exception('Невірний пароль');
+          }
         }
         state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
         await _syncRoleToPrefs(state);

@@ -58,6 +58,7 @@ class BranchInvitationQrButton extends ConsumerWidget {
             ],
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(

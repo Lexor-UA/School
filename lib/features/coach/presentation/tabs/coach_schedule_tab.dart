@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -54,12 +56,15 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF10B981)],
+                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                              blurRadius: 16,
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                              blurRadius: 18,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
@@ -90,16 +95,22 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                                   decoration: BoxDecoration(
                                     color: themeConfig.isDark
-                                        ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                                        : Colors.white.withValues(alpha: 0.70),
+                                        ? const Color(0xFF10B981).withValues(alpha: 0.16)
+                                        : const Color(0xFFD1FAE5).withValues(alpha: 0.80),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.35 : 0.45),
+                                      color: const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.45 : 0.60),
                                       width: 1.0,
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.20 : 0.10),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -114,16 +125,16 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                             BoxShadow(
                                               color: Color(0xFF10B981),
                                               blurRadius: 6,
-                                              spreadRadius: 1,
+                                              spreadRadius: 1.2,
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(width: 5),
+                                      const SizedBox(width: 5.5),
                                       Text(
                                         'coach.on_shift'.tr(),
                                         style: TextStyle(
-                                          color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                          color: themeConfig.isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 0.6,
@@ -140,14 +151,17 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       // Theme Switcher Button
                       const ThemeHeaderButton(size: 42),
                       const SizedBox(width: 8),
-                      // Quick QR Scanner Action Button (Sleek circular cyber-glass badge)
+                      // Quick QR Scanner Action Button (VisionOS cyan cyber-lens)
                       Tooltip(
                         message: _coachTr('coach.scan_qr_pass', 'Сканувати перепустку'),
                         child: GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-                          ),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+                            );
+                          },
                           child: Container(
                             width: 42,
                             height: 42,
@@ -168,15 +182,13 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                       end: Alignment.bottomRight,
                                     ),
                               border: Border.all(
-                                color: themeConfig.isDark
-                                    ? Colors.white.withValues(alpha: 0.45)
-                                    : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                                color: Colors.white.withValues(alpha: themeConfig.isDark ? 0.45 : 0.70),
                                 width: 1.2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.45 : 0.12),
-                                  blurRadius: themeConfig.isDark ? 14 : 10,
+                                  color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.45 : 0.18),
+                                  blurRadius: 14,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
@@ -196,7 +208,10 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       Tooltip(
                         message: 'Вийти з кабінету',
                         child: GestureDetector(
-                          onTap: () => _confirmCoachLogout(context, ref),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _confirmCoachLogout(context, ref);
+                          },
                           child: Container(
                             width: 42,
                             height: 42,
@@ -205,8 +220,8 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                               gradient: themeConfig.isDark
                                   ? LinearGradient(
                                       colors: [
-                                        const Color(0xFF7F1D1D).withValues(alpha: 0.60),
-                                        const Color(0xFF450A0A).withValues(alpha: 0.80),
+                                        const Color(0xFFE11D48).withValues(alpha: 0.75),
+                                        const Color(0xFF881337).withValues(alpha: 0.90),
                                       ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
@@ -220,13 +235,13 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                       end: Alignment.bottomRight,
                                     ),
                               border: Border.all(
-                                color: const Color(0xFFEF4444).withValues(alpha: themeConfig.isDark ? 0.55 : 0.35),
+                                color: const Color(0xFFFDA4AF).withValues(alpha: themeConfig.isDark ? 0.60 : 0.45),
                                 width: 1.2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFEF4444).withValues(alpha: themeConfig.isDark ? 0.30 : 0.10),
-                                  blurRadius: themeConfig.isDark ? 14 : 10,
+                                  color: const Color(0xFFE11D48).withValues(alpha: themeConfig.isDark ? 0.40 : 0.15),
+                                  blurRadius: 14,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
@@ -234,7 +249,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                             child: Center(
                               child: Icon(
                                 LucideIcons.logOut,
-                                color: themeConfig.isDark ? const Color(0xFFFCA5A5) : const Color(0xFFEF4444),
+                                color: themeConfig.isDark ? Colors.white : const Color(0xFFE11D48),
                                 size: 18,
                               ),
                             ),
@@ -287,55 +302,67 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       ),
                       Tooltip(
                         message: 'Відкрити календар на місяць / рік',
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => ref.read(coachTabProvider.notifier).setTab(1),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: themeConfig.isDark
-                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
-                                    : Colors.white.withValues(alpha: 0.85),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  ref.read(coachTabProvider.notifier).setTab(1);
+                                },
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: themeConfig.isDark
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                                      : const Color(0xFF0284C7).withValues(alpha: 0.35),
-                                  width: 1.1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF003B73)).withValues(alpha: 0.10),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    LucideIcons.calendar,
-                                    size: 13,
-                                    color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    DateFormat('d MMMM', context.locale.languageCode).format(DateTime.now()),
-                                    style: TextStyle(
-                                      color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
+                                  decoration: BoxDecoration(
+                                    color: themeConfig.isDark
+                                        ? const Color(0xFF0B2138).withValues(alpha: 0.85)
+                                        : Colors.white.withValues(alpha: 0.90),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: themeConfig.isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                          : const Color(0xFFBAE6FD),
+                                      width: 1.1,
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                            .withValues(alpha: themeConfig.isDark ? 0.15 : 0.08),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    LucideIcons.chevronRight,
-                                    size: 12,
-                                    color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.calendar,
+                                        size: 13,
+                                        color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        DateFormat('d MMMM', context.locale.languageCode).format(DateTime.now()),
+                                        style: TextStyle(
+                                          color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        LucideIcons.chevronRight,
+                                        size: 13,
+                                        color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -379,46 +406,56 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 return SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: themeConfig.isDark
-                              ? [
-                                  const Color(0xFF1E2638),
-                                  const Color(0xFF111827),
-                                ]
-                              : [
-                                  Colors.white,
-                                  const Color(0xFFF8FAFC),
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: themeConfig.isDark
-                              ? const Color(0xFF334155).withValues(alpha: 0.65)
-                              : const Color(0xFFE2E8F0),
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: themeConfig.isDark
-                                ? Colors.black.withValues(alpha: 0.45)
-                                : const Color(0xFF003B73).withValues(alpha: 0.08),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: themeConfig.isDark
+                                  ? [
+                                      const Color(0xFF0C2238).withValues(alpha: 0.90),
+                                      const Color(0xFF061424).withValues(alpha: 0.95),
+                                    ]
+                                  : [
+                                      Colors.white.withValues(alpha: 0.95),
+                                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: themeConfig.isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.22),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: themeConfig.isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                                    : const Color(0xFF003B73).withValues(alpha: 0.08),
+                                blurRadius: 26,
+                                offset: const Offset(0, 8),
+                              ),
+                              if (themeConfig.isDark)
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                            ],
                           ),
-                        ],
-                      ),
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  width: 76,
-                                  height: 76,
+                                  width: 80,
+                                  height: 80,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: themeConfig.isDark
@@ -432,27 +469,27 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.30 : 0.12),
-                                        blurRadius: 22,
+                                        color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.32 : 0.12),
+                                        blurRadius: 24,
                                         spreadRadius: 2,
                                       ),
                                     ],
                                   ),
                                   child: Center(
                                     child: Container(
-                                      width: 58,
-                                      height: 58,
+                                      width: 60,
+                                      height: 60,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         gradient: RadialGradient(
                                           colors: themeConfig.isDark
                                               ? [
                                                   const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                                  const Color(0xFF082B4A).withValues(alpha: 0.92),
+                                                  const Color(0xFF082B4A).withValues(alpha: 0.95),
                                                 ]
                                               : [
-                                                  const Color(0xFFBAE6FD).withValues(alpha: 0.65),
-                                                  const Color(0xFFE0F2FE).withValues(alpha: 0.30),
+                                                  const Color(0xFFBAE6FD).withValues(alpha: 0.70),
+                                                  const Color(0xFFE0F2FE).withValues(alpha: 0.35),
                                                 ],
                                         ),
                                         border: Border.all(
@@ -465,7 +502,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                             ? [
                                                 BoxShadow(
                                                   color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                                  blurRadius: 14,
+                                                  blurRadius: 16,
                                                 ),
                                               ]
                                             : null,
@@ -505,6 +542,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () {
+                                      HapticFeedback.lightImpact();
                                       ref.read(coachTabProvider.notifier).setTab(1);
                                     },
                                     borderRadius: BorderRadius.circular(18),
@@ -553,7 +591,9 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                           ),
                         ),
                       ),
-                    );
+                    ),
+                  ),
+                );
               }
 
               return SliverPadding(
@@ -599,141 +639,154 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   const SizedBox(height: 14),
 
                   // Quick Attendance Journal Action Button ("Потім журнал відвідування")
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: themeConfig.isDark
-                            ? [
-                                const Color(0xFF1E2638),
-                                const Color(0xFF111827),
-                              ]
-                            : [
-                                Colors.white,
-                                const Color(0xFFF8FAFC),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: themeConfig.isDark
-                            ? const Color(0xFF334155).withValues(alpha: 0.65)
-                            : const Color(0xFFE2E8F0),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeConfig.isDark
-                              ? Colors.black.withValues(alpha: 0.40)
-                              : const Color(0xFF003B73).withValues(alpha: 0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: themeConfig.isDark
+                                ? [
+                                    const Color(0xFF0C2238).withValues(alpha: 0.90),
+                                    const Color(0xFF061424).withValues(alpha: 0.95),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.95),
+                                    const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: themeConfig.isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                : const Color(0xFF0284C7).withValues(alpha: 0.22),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeConfig.isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                                  : const Color(0xFF003B73).withValues(alpha: 0.08),
+                              blurRadius: 22,
+                              offset: const Offset(0, 6),
+                            ),
+                            if (themeConfig.isDark)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.40),
+                                blurRadius: 18,
+                                offset: const Offset(0, 4),
+                              ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                          child: Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.50),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.45 : 0.28),
-                                        blurRadius: 14,
-                                        offset: const Offset(0, 3),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(22),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 46,
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
                                       ),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: Icon(LucideIcons.clipboardCheck, color: Colors.white, size: 21),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'coach.quick_attendance'.tr(),
-                                        style: TextStyle(
-                                          color: themeConfig.textPrimary,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 15,
-                                          letterSpacing: 0.2,
+                                      borderRadius: BorderRadius.circular(15),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.55),
+                                        width: 1.2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.48 : 0.30),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 3),
                                         ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        'coach.quick_attendance_sub'.tr(),
-                                        style: TextStyle(
-                                          color: themeConfig.textSecondary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Icon(LucideIcons.clipboardCheck, color: Colors.white, size: 22),
+                                    ),
                                   ),
-                                ),
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: themeConfig.isDark
-                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
-                                        : const Color(0xFFE0F2FE).withValues(alpha: 0.85),
-                                    border: Border.all(
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'coach.quick_attendance'.tr(),
+                                          style: TextStyle(
+                                            color: themeConfig.textPrimary,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 15.5,
+                                            letterSpacing: 0.2,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          'coach.quick_attendance_sub'.tr(),
+                                          style: TextStyle(
+                                            color: themeConfig.textSecondary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
                                       color: themeConfig.isDark
-                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
-                                          : const Color(0xFF38BDF8).withValues(alpha: 0.50),
-                                      width: 1.2,
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+                                          : const Color(0xFFE0F2FE).withValues(alpha: 0.85),
+                                      border: Border.all(
+                                        color: themeConfig.isDark
+                                            ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
+                                            : const Color(0xFF38BDF8).withValues(alpha: 0.50),
+                                        width: 1.2,
+                                      ),
+                                      boxShadow: themeConfig.isDark
+                                          ? [
+                                              BoxShadow(
+                                                color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                                                blurRadius: 12,
+                                              ),
+                                            ]
+                                          : null,
                                     ),
-                                    boxShadow: themeConfig.isDark
-                                        ? [
-                                            BoxShadow(
-                                              color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                                              blurRadius: 10,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      LucideIcons.chevronRight,
-                                      color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                      size: 16,
+                                    child: Center(
+                                      child: Icon(
+                                        LucideIcons.chevronRight,
+                                        color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
+                  ),
                   ],
               ),
             ),
@@ -744,39 +797,49 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
   }
 
   Widget _buildShiftTelemetryCard(AppThemeConfig themeConfig) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: themeConfig.isDark
-              ? [
-                  const Color(0xFF1E2638),
-                  const Color(0xFF111827),
-                ]
-              : [
-                  Colors.white,
-                  const Color(0xFFF8FAFC),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: themeConfig.isDark
-              ? const Color(0xFF334155).withValues(alpha: 0.65)
-              : const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: themeConfig.isDark
-                ? Colors.black.withValues(alpha: 0.40)
-                : const Color(0xFF003B73).withValues(alpha: 0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 6),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: themeConfig.isDark
+                  ? [
+                      const Color(0xFF0C2238).withValues(alpha: 0.90),
+                      const Color(0xFF061424).withValues(alpha: 0.95),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: themeConfig.isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                  : const Color(0xFF0284C7).withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: themeConfig.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.08),
+                blurRadius: 26,
+                offset: const Offset(0, 8),
+              ),
+              if (themeConfig.isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.40),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+            ],
           ),
-        ],
-      ),
           child: Row(
             children: [
               _buildTelemetryMetric(
@@ -791,14 +854,14 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
               Container(
                 width: 1.2,
-                height: 42,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
                       themeConfig.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                          : const Color(0xFF0284C7).withValues(alpha: 0.22),
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.25),
                       Colors.transparent,
                     ],
                     begin: Alignment.topCenter,
@@ -818,14 +881,14 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
               Container(
                 width: 1.2,
-                height: 42,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
                       themeConfig.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
-                          : const Color(0xFF0284C7).withValues(alpha: 0.22),
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.25),
                       Colors.transparent,
                     ],
                     begin: Alignment.topCenter,
@@ -847,7 +910,9 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
             ],
           ),
-        );
+        ),
+      ),
+    );
   }
 
   Widget _buildTelemetryMetric({
@@ -876,8 +941,8 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -887,15 +952,15 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
               border: Border.all(
                 color: themeConfig.isDark
-                    ? iconColor.withValues(alpha: 0.55)
-                    : Colors.white.withValues(alpha: 0.80),
+                    ? iconColor.withValues(alpha: 0.60)
+                    : Colors.white.withValues(alpha: 0.85),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
                   color: (themeConfig.isDark ? iconColor : colors.last)
-                      .withValues(alpha: themeConfig.isDark ? 0.35 : 0.28),
-                  blurRadius: themeConfig.isDark ? 12 : 10,
+                      .withValues(alpha: themeConfig.isDark ? 0.38 : 0.25),
+                  blurRadius: themeConfig.isDark ? 14 : 10,
                   offset: themeConfig.isDark ? Offset.zero : const Offset(0, 3),
                 ),
               ],
@@ -909,7 +974,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                     ? [
                         Shadow(
                           color: iconColor,
-                          blurRadius: 8,
+                          blurRadius: 10,
                         ),
                       ]
                     : [
@@ -930,17 +995,17 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               children: [
                 if (isLiveBeacon) ...[
                   Container(
-                    width: 6,
-                    height: 6,
+                    width: 7,
+                    height: 7,
                     margin: const EdgeInsets.only(right: 5),
                     decoration: BoxDecoration(
                       color: valueColor ?? const Color(0xFF10B981),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: valueColor ?? const Color(0xFF10B981),
-                          blurRadius: 6,
-                          spreadRadius: 1,
+                          color: (valueColor ?? const Color(0xFF10B981)).withValues(alpha: 0.8),
+                          blurRadius: 8,
+                          spreadRadius: 1.5,
                         ),
                       ],
                     ),
@@ -984,306 +1049,385 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
     final freeSlots = (maxCap - enrolledCount).clamp(0, maxCap);
     final fillFraction = (enrolledCount / maxCap).clamp(0.0, 1.0);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: themeConfig.isDark
-              ? [
-                  const Color(0xFF1E2638),
-                  const Color(0xFF111827),
-                ]
-              : [
-                  Colors.white,
-                  const Color(0xFFF8FAFC),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: themeConfig.isDark
-              ? const Color(0xFF334155).withValues(alpha: 0.70)
-              : const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: themeConfig.isDark
-                ? Colors.black.withValues(alpha: 0.45)
-                : const Color(0xFF003B73).withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: themeConfig.isDark
+                  ? [
+                      const Color(0xFF0C2238).withValues(alpha: 0.90),
+                      const Color(0xFF061424).withValues(alpha: 0.95),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF8FAFC).withValues(alpha: 0.90),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: themeConfig.isDark
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.32)
+                  : const Color(0xFF0284C7).withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: themeConfig.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                    : const Color(0xFF003B73).withValues(alpha: 0.08),
+                blurRadius: 26,
+                offset: const Offset(0, 8),
+              ),
+              if (themeConfig.isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 22,
+                  offset: const Offset(0, 4),
+                ),
+            ],
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Row: Category pill, Lane Badge & Free Spots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Row: Category pill, Lane Badge & Free Spots & Time
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 5,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: themeConfig.isDark
+                                ? const Color(0xFF0B2138)
+                                : const Color(0xFF0284C7).withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
                               color: themeConfig.isDark
-                                  ? const Color(0xFF0B1929)
-                                  : const Color(0xFF0284C7).withValues(alpha: 0.10),
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                              width: 1.1,
+                            ),
+                          ),
+                          child: Text(
+                            gClass.category.isNotEmpty ? gClass.category : 'parent.swimming'.tr(),
+                            style: TextStyle(
+                              color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                        if (gClass.lane.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: themeConfig.isDark ? const Color(0xFF0A1828) : Colors.white.withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: themeConfig.isDark
-                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
-                                    : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                                color: themeConfig.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFE2E8F0),
+                                width: 1.1,
                               ),
                             ),
                             child: Text(
-                              gClass.category.isNotEmpty ? gClass.category : 'parent.swimming'.tr(),
+                              gClass.lane,
                               style: TextStyle(
-                                color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                color: themeConfig.isDark ? const Color(0xFFBAE6FD) : themeConfig.textSecondary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          if (gClass.lane.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: themeConfig.isDark ? const Color(0xFF0F172A) : Colors.white.withValues(alpha: 0.8),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: themeConfig.isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Text(
-                                gClass.lane,
-                                style: TextStyle(
-                                  color: themeConfig.isDark ? const Color(0xFFCBD5E1) : themeConfig.textSecondary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          // Free slots indicator
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9.5, vertical: 5),
-                            decoration: BoxDecoration(
-                              gradient: freeSlots == 0
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFFF43F5E), Color(0xFFBE123C)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
+                        // Free slots indicator
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: freeSlots == 0
+                                ? const LinearGradient(
+                                    colors: [Color(0xFFF43F5E), Color(0xFFBE123C)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : (freeSlots <= 2
+                                    ? const LinearGradient(
+                                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : const LinearGradient(
+                                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: freeSlots == 0
+                                  ? const Color(0xFFFDA4AF).withValues(alpha: 0.75)
                                   : (freeSlots <= 2
-                                      ? const LinearGradient(
-                                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        )
-                                      : const LinearGradient(
-                                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        )),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
+                                      ? const Color(0xFFFDE68A).withValues(alpha: 0.75)
+                                      : const Color(0xFFA7F3D0).withValues(alpha: 0.75)),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
                                 color: freeSlots == 0
-                                    ? const Color(0xFFFDA4AF).withValues(alpha: 0.65)
+                                    ? const Color(0xFFE11D48).withValues(alpha: 0.45)
                                     : (freeSlots <= 2
-                                        ? const Color(0xFFFDE68A).withValues(alpha: 0.65)
-                                        : const Color(0xFFA7F3D0).withValues(alpha: 0.65)),
-                                width: 1.0,
+                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.40)
+                                        : const Color(0xFF10B981).withValues(alpha: 0.35)),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: freeSlots == 0
-                                      ? const Color(0xFFE11D48).withValues(alpha: 0.40)
-                                      : (freeSlots <= 2
-                                          ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
-                                          : const Color(0xFF10B981).withValues(alpha: 0.30)),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  freeSlots == 0 ? LucideIcons.alertCircle : LucideIcons.checkCircle2,
-                                  size: 11.5,
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                freeSlots == 0 ? LucideIcons.alertCircle : LucideIcons.checkCircle2,
+                                size: 11.5,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4.5),
+                              Text(
+                                freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
+                                style: const TextStyle(
                                   color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
                                 ),
-                                const SizedBox(width: 4.5),
-                                Text(
-                                  freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Time indicator (Solid badge)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: themeConfig.isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.clock, color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7), size: 12.5),
-                          const SizedBox(width: 5),
-                          Text(
-                            '$startTimeStr – $endTimeStr',
-                            style: TextStyle(
-                              color: themeConfig.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                // Class Title & Coach
-                Text(
-                  gClass.title,
-                  style: TextStyle(
-                    color: themeConfig.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.2,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(LucideIcons.user, color: themeConfig.textMuted, size: 13),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'coach.assigned_coach'.tr(args: [gClass.coachName.isNotEmpty ? gClass.coachName : 'coach.title'.tr()]),
-                        style: TextStyle(color: themeConfig.textMuted, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 8),
+                  // Time indicator (Solid badge)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: themeConfig.isDark ? const Color(0xFF0A1828) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: themeConfig.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFE2E8F0),
+                        width: 1.1,
                       ),
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Capacity & Attendance Progress Bar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Записано: $enrolledCount з $maxCap учнів (присутні: $attendedCount)',
-                        style: TextStyle(color: themeConfig.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LucideIcons.clock,
+                          color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          size: 12.5,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '$startTimeStr – $endTimeStr',
+                          style: TextStyle(
+                            color: themeConfig.textPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Class Title & Coach
+              Text(
+                gClass.title,
+                style: TextStyle(
+                  color: themeConfig.textPrimary,
+                  fontSize: 18.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    LucideIcons.user,
+                    color: themeConfig.isDark ? const Color(0xFF38BDF8) : themeConfig.textMuted,
+                    size: 13,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'coach.assigned_coach'.tr(args: [gClass.coachName.isNotEmpty ? gClass.coachName : 'coach.title'.tr()]),
+                      style: TextStyle(color: themeConfig.textMuted, fontSize: 12, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Capacity & Attendance Progress Bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Записано: $enrolledCount з $maxCap учнів (присутні: $attendedCount)',
+                      style: TextStyle(color: themeConfig.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (fillFraction > 0.85
+                              ? const Color(0xFFF59E0B)
+                              : (themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF059669)))
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
                       '${(fillFraction * 100).toInt()}%',
                       style: TextStyle(
                         color: fillFraction > 0.85
                             ? const Color(0xFFF59E0B)
-                            : (themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                            : (themeConfig.isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: fillFraction,
-                    minHeight: 6,
-                    backgroundColor: themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      fillFraction > 0.85
-                          ? const Color(0xFFF59E0B)
-                          : (themeConfig.isDark ? const Color(0xFF00E5FF) : themeConfig.accentPrimary),
                     ),
                   ),
-                ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Custom gradient progress bar with glow
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth;
+                  final fillWidth = totalWidth * fillFraction;
+                  final isNearFull = fillFraction > 0.85;
 
-                const SizedBox(height: 14),
-
-                // Action Button: Attendee Roster (Option A)
-                GestureDetector(
-                  onTap: () => showCoachClassAttendeesSheet(context, gClass),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.users, color: Colors.white, size: 17),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Склад групи ($enrolledCount)',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
+                  return Stack(
+                    children: [
+                      Container(
+                        width: totalWidth,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: themeConfig.isDark ? const Color(0xFF081827) : const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                            color: themeConfig.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.15) : Colors.transparent,
+                            width: 0.8,
                           ),
                         ),
-                      ],
+                      ),
+                      if (fillWidth > 0)
+                        Container(
+                          width: fillWidth,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isNearFull
+                                  ? const [Color(0xFFF59E0B), Color(0xFFEF4444)]
+                                  : (themeConfig.isDark
+                                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                      : const [Color(0xFF06B6D4), Color(0xFF0284C7)]),
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(7),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isNearFull
+                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
+                                    : const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Action Button: Attendee Roster
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  showCoachClassAttendeesSheet(context, gClass);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      width: 1.1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.38),
+                        blurRadius: 14,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.users, color: Colors.white, size: 17),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Склад групи ($enrolledCount)',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.1, end: 0);
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.1, end: 0);
   }
 }
 

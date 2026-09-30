@@ -388,6 +388,25 @@ class SubscriptionController extends _$SubscriptionController {
     }
   }
 
+  Future<void> deleteSubscription(String subId) async {
+    final cleanId = subId.trim();
+    if (cleanId.isEmpty) return;
+
+    // 1. Optimistic removal from in-memory state
+    final previousState = state;
+    state = state.where((s) => s.id != cleanId).toList();
+
+    try {
+      // 2. Perform Firestore delete
+      await FirebaseFirestore.instance.collection('subscriptions').doc(cleanId).delete();
+    } catch (e) {
+      debugPrint('Error deleting subscription $cleanId: $e');
+      // Rollback optimistic removal on failure
+      state = previousState;
+      rethrow;
+    }
+  }
+
   bool canSubscriptionBeUsedForClass(Subscription sub, GroupClass gClass, {String? clientBranchId}) {
     // 0. Branch isolation & data integrity check (TZ Point 29)
     final integrityResult = BranchDataIntegrityValidator.validateAttendanceDeduction(

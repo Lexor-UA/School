@@ -520,22 +520,24 @@ class _AquatixLabSuperAdminScreenState
                                 child: Icon(LucideIcons.palette, color: Color(_selectedColorValue), size: 20),
                               ),
                               const SizedBox(width: 12),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'White Label Branding Studio',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'White Label Branding Studio',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'Налаштування бренду школи та теми оформлення',
-                                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                                  ),
-                                ],
+                                    Text(
+                                      'Налаштування бренду школи та теми оформлення',
+                                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -545,7 +547,9 @@ class _AquatixLabSuperAdminScreenState
                             style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 10),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               _ColorOption(
                                 color: const Color(0xFF00E5FF),
@@ -553,21 +557,18 @@ class _AquatixLabSuperAdminScreenState
                                 isSelected: _selectedColorValue == 0xFF00E5FF,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF00E5FF),
                               ),
-                              const SizedBox(width: 8),
                               _ColorOption(
                                 color: const Color(0xFF10B981),
                                 label: 'Emerald',
                                 isSelected: _selectedColorValue == 0xFF10B981,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF10B981),
                               ),
-                              const SizedBox(width: 8),
                               _ColorOption(
                                 color: const Color(0xFF3B82F6),
                                 label: 'Royal Blue',
                                 isSelected: _selectedColorValue == 0xFF3B82F6,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF3B82F6),
                               ),
-                              const SizedBox(width: 8),
                               _ColorOption(
                                 color: const Color(0xFF8B5CF6),
                                 label: 'Purple Wave',

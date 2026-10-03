@@ -34,9 +34,10 @@ class AuthController extends _$AuthController {
 
   @override
   AppUser? build() {
-    // Ensure default admin account exists in Firestore
+    // Ensure default admin and coach accounts exist in Firestore
     if (Firebase.apps.isNotEmpty) {
       ensureAdminInFirestore();
+      ensureDefaultCoachInFirestore();
     }
 
     // Synchronously restore cached user from SharedPreferences for instant UI state
@@ -577,18 +578,155 @@ class AuthController extends _$AuthController {
           await _syncAuthUserDoc(state);
         } catch (_) {}
         return;
-      } else if (login.startsWith('coach')) {
-        final usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
-        if (usersSnap.docs.isNotEmpty) {
-          final userData = usersSnap.docs.first.data();
-          final storedPassword = (userData['password'] as String?) ?? '1';
-          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+      } else if (login == 'coach' || login == 'coach1' || login == 'тренер' || login == 'coach@cityswim.com' || login == 'coach@gmail.com' || login.startsWith('coach') || login.contains('coach') || login.endsWith('@cityswim.at') || login.contains('maria') || login.contains('stefan')) {
+        try {
+          var usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
+          if (usersSnap.docs.isEmpty) {
+            if (login == 'maria' || login == 'coach_maria' || login.contains('maria')) {
+              final mDoc = await FirebaseFirestore.instance.collection('users').doc('coach_maria').get();
+              if (mDoc.exists) {
+                usersSnap = await FirebaseFirestore.instance.collection('users').where('id', isEqualTo: 'coach_maria').get();
+              }
+            } else if (login == 'stefan' || login == 'coach_stefan' || login.contains('stefan')) {
+              final sDoc = await FirebaseFirestore.instance.collection('users').doc('coach_stefan').get();
+              if (sDoc.exists) {
+                usersSnap = await FirebaseFirestore.instance.collection('users').where('id', isEqualTo: 'coach_stefan').get();
+              }
+            }
+          }
+          if (usersSnap.docs.isEmpty && (login == 'coach' || login == 'coach1' || login == 'тренер' || login.startsWith('coach'))) {
+            final fallbackDoc = await FirebaseFirestore.instance.collection('users').doc('default_coach').get();
+            if (fallbackDoc.exists) {
+              final userData = fallbackDoc.data()!;
+              final storedPassword = (userData['password'] as String?) ?? '1';
+              if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+                throw Exception('Невірний пароль');
+              }
+              state = AppUser.fromJson(userData);
+              await _syncRoleToPrefs(state);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('clientId', state!.id);
+              await prefs.setString('mockUserId', state!.id);
+              try {
+                if (FirebaseAuth.instance.currentUser == null) {
+                  await FirebaseAuth.instance.signInAnonymously();
+                }
+                await _syncAuthUserDoc(state);
+              } catch (_) {}
+              return;
+            } else {
+              final defaultCoachData = {
+                'id': 'default_coach',
+                'name': 'Олена Коваль',
+                'role': 'coach',
+                'loginId': 'coach',
+                'password': '1',
+                'phone': '+380 (99) 000-00-02',
+                'branchId': 'kyiv',
+                'branchIds': ['kyiv'],
+                'organizationId': 'cityswim',
+                'rateGroup': 400,
+                'rateIndividual': 450,
+                'rateSplit': 600,
+                'avatarUrl': 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
+                'createdAt': FieldValue.serverTimestamp(),
+              };
+              await FirebaseFirestore.instance.collection('users').doc('default_coach').set(defaultCoachData, SetOptions(merge: true));
+              if (password != '1') {
+                throw Exception('Невірний пароль');
+              }
+              state = const AppUser(
+                id: 'default_coach',
+                name: 'Олена Коваль',
+                role: UserRole.coach,
+                phone: '+380 (99) 000-00-02',
+                loginId: 'coach',
+                branchId: 'kyiv',
+                branchIds: ['kyiv'],
+                organizationId: 'cityswim',
+                avatarUrl: 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
+              );
+              await _syncRoleToPrefs(state);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('clientId', state!.id);
+              await prefs.setString('mockUserId', state!.id);
+              try {
+                if (FirebaseAuth.instance.currentUser == null) {
+                  await FirebaseAuth.instance.signInAnonymously();
+                }
+                await _syncAuthUserDoc(state);
+              } catch (_) {}
+              return;
+            }
+          }
+
+          if (usersSnap.docs.isNotEmpty) {
+            final userData = usersSnap.docs.first.data();
+            final storedPassword = (userData['password'] as String?) ?? '1';
+            if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+              throw Exception('Невірний пароль');
+            }
+            if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+              usersSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+            }
+            state = AppUser.fromJson(userData);
+            await _syncRoleToPrefs(state);
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('clientId', state!.id);
+            await prefs.setString('mockUserId', state!.id);
+            try {
+              if (FirebaseAuth.instance.currentUser == null) {
+                await FirebaseAuth.instance.signInAnonymously();
+              }
+              await _syncAuthUserDoc(state);
+            } catch (_) {}
+            return;
+          } else {
+            throw Exception('Тренера з логіном $login не знайдено');
+          }
+        } catch (e) {
+          if (e.toString().contains('Невірний пароль')) rethrow;
+          debugPrint('Firestore coach check error, using local fallback: $e');
+          if (password != '1') {
             throw Exception('Невірний пароль');
           }
-          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
-            usersSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+          if (login.contains('maria')) {
+            state = const AppUser(
+              id: 'coach_maria',
+              name: 'Coach Maria Huber',
+              role: UserRole.coach,
+              phone: '+43 676 1234567',
+              loginId: 'maria.huber@cityswim.at',
+              branchId: 'vienna',
+              branchIds: ['vienna'],
+              organizationId: 'cityswim',
+              avatarUrl: 'https://ui-avatars.com/api/?name=Maria+Huber&background=00e5ff&color=000000',
+            );
+          } else if (login.contains('stefan')) {
+            state = const AppUser(
+              id: 'coach_stefan',
+              name: 'Coach Stefan Gruber',
+              role: UserRole.coach,
+              phone: '+43 676 7654321',
+              loginId: 'stefan.gruber@cityswim.at',
+              branchId: 'vienna',
+              branchIds: ['vienna'],
+              organizationId: 'cityswim',
+              avatarUrl: 'https://ui-avatars.com/api/?name=Stefan+Gruber&background=0284c7&color=ffffff',
+            );
+          } else {
+            state = const AppUser(
+              id: 'default_coach',
+              name: 'Олена Коваль',
+              role: UserRole.coach,
+              phone: '+380 (99) 000-00-02',
+              loginId: 'coach',
+              branchId: 'kyiv',
+              branchIds: ['kyiv'],
+              organizationId: 'cityswim',
+              avatarUrl: 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
+            );
           }
-          state = AppUser.fromJson(userData);
           await _syncRoleToPrefs(state);
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('clientId', state!.id);
@@ -600,8 +738,6 @@ class AuthController extends _$AuthController {
             await _syncAuthUserDoc(state);
           } catch (_) {}
           return;
-        } else {
-          throw Exception('Тренера з логіном $login не знайдено');
         }
       } else if (login == 'client' || login == 'client1' || login == 'parent' || login.startsWith('client') || !login.contains('@')) {
         final normalizedPhone = _normalizePhone(email);
@@ -1149,7 +1285,10 @@ class AuthController extends _$AuthController {
 Future<void> ensureAdminInFirestore() async {
   try {
     if (Firebase.apps.isEmpty) return;
-    final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
+    final firestore = FirebaseFirestore.instance;
+
+    // 1. Адміністратор Києва
+    final docRef = firestore.collection('users').doc('admin');
     final docSnap = await docRef.get();
     if (!docSnap.exists) {
       await docRef.set({
@@ -1159,18 +1298,298 @@ Future<void> ensureAdminInFirestore() async {
         'loginId': 'Admin',
         'password': '1',
         'phone': '+380 (99) 000-00-01',
+        'branchId': 'kyiv',
+        'branchIds': ['kyiv'],
+        'currency': '₴',
         'adminSalary': 20000,
+        'salaryType': 'monthly',
+        'rateGroup': 400,
+        'rateIndividual': 450,
+        'rateSplit': 600,
         'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
         'createdAt': FieldValue.serverTimestamp(),
       });
     } else {
       final data = docSnap.data() ?? {};
       final role = (data['role'] as String?)?.toLowerCase();
-      if (role != 'admin') {
-        await docRef.update({'role': 'admin'});
+      final updates = <String, dynamic>{};
+      if (role != 'admin') updates['role'] = 'admin';
+      if (data['branchId'] == null) updates['branchId'] = 'kyiv';
+      if (data['currency'] == null) updates['currency'] = '₴';
+      if (data['adminSalary'] == null) updates['adminSalary'] = 20000;
+      if (updates.isNotEmpty) {
+        await docRef.set(updates, SetOptions(merge: true));
+      }
+    }
+
+    // 2. Адміністратор Відня
+    final viennaRef = firestore.collection('users').doc('admin_vienna');
+    final viennaSnap = await viennaRef.get();
+    if (!viennaSnap.exists) {
+      await viennaRef.set({
+        'id': 'admin_vienna',
+        'name': 'Admin Vienna',
+        'role': 'admin',
+        'loginId': 'vienna.admin@cityswim.at',
+        'password': '1',
+        'phone': '+43 1 234 5678',
+        'branchId': 'vienna',
+        'branchIds': ['vienna'],
+        'currency': '€',
+        'adminSalary': 1900,
+        'salaryType': 'monthly',
+        'rateGroup': 25,
+        'rateIndividual': 35,
+        'rateSplit': 45,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Admin+Vienna&background=8b5cf6&color=ffffff',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      final vData = viennaSnap.data() ?? {};
+      final vRole = (vData['role'] as String?)?.toLowerCase();
+      final vUpdates = <String, dynamic>{};
+      if (vRole != 'admin') vUpdates['role'] = 'admin';
+      if (vData['branchId'] == null) vUpdates['branchId'] = 'vienna';
+      if (vData['currency'] == null) vUpdates['currency'] = '€';
+      if (vData['adminSalary'] == null) vUpdates['adminSalary'] = 1900;
+      if (vUpdates.isNotEmpty) {
+        await viennaRef.set(vUpdates, SetOptions(merge: true));
       }
     }
   } catch (e) {
     debugPrint('Error in ensureAdminInFirestore: $e');
+  }
+}
+
+/// Guarantees that the default Coach profile exists in Firestore `users` collection.
+Future<void> ensureDefaultCoachInFirestore() async {
+  try {
+    if (Firebase.apps.isEmpty) return;
+    final docRef = FirebaseFirestore.instance.collection('users').doc('default_coach');
+    final docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      await docRef.set({
+        'id': 'default_coach',
+        'name': 'Олена Коваль',
+        'role': 'coach',
+        'loginId': 'coach',
+        'password': '1',
+        'phone': '+380 (99) 000-00-02',
+        'branchId': 'kyiv',
+        'branchIds': ['kyiv'],
+        'organizationId': 'cityswim',
+        'rateGroup': 400,
+        'rateIndividual': 450,
+        'rateSplit': 600,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      final d = docSnap.data() ?? {};
+      if (d['role'] != 'coach' || d['branchId'] == null) {
+        await docRef.set({
+          'role': 'coach',
+          'branchId': 'kyiv',
+          'branchIds': ['kyiv'],
+        }, SetOptions(merge: true));
+      }
+    }
+
+    // Ensure Vienna coaches exist in Firestore
+    final mariaRef = FirebaseFirestore.instance.collection('users').doc('coach_maria');
+    final mariaSnap = await mariaRef.get();
+    if (!mariaSnap.exists) {
+      await mariaRef.set({
+        'id': 'coach_maria',
+        'name': 'Coach Maria Huber',
+        'role': 'coach',
+        'loginId': 'maria.huber@cityswim.at',
+        'password': '1',
+        'phone': '+43 676 1234567',
+        'branchId': 'vienna',
+        'branchIds': ['vienna'],
+        'organizationId': 'cityswim',
+        'rateGroup': 45,
+        'rateIndividual': 55,
+        'rateSplit': 70,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Maria+Huber&background=00e5ff&color=000000',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      final d = mariaSnap.data() ?? {};
+      if (d['role'] != 'coach' || d['branchId'] != 'vienna') {
+        await mariaRef.set({
+          'role': 'coach',
+          'branchId': 'vienna',
+          'branchIds': ['vienna'],
+        }, SetOptions(merge: true));
+      }
+    }
+
+    final stefanRef = FirebaseFirestore.instance.collection('users').doc('coach_stefan');
+    final stefanSnap = await stefanRef.get();
+    if (!stefanSnap.exists) {
+      await stefanRef.set({
+        'id': 'coach_stefan',
+        'name': 'Coach Stefan Gruber',
+        'role': 'coach',
+        'loginId': 'stefan.gruber@cityswim.at',
+        'password': '1',
+        'phone': '+43 676 7654321',
+        'branchId': 'vienna',
+        'branchIds': ['vienna'],
+        'organizationId': 'cityswim',
+        'rateGroup': 45,
+        'rateIndividual': 55,
+        'rateSplit': 70,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Stefan+Gruber&background=0284c7&color=ffffff',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      final d = stefanSnap.data() ?? {};
+      if (d['role'] != 'coach' || d['branchId'] != 'vienna') {
+        await stefanRef.set({
+          'role': 'coach',
+          'branchId': 'vienna',
+          'branchIds': ['vienna'],
+        }, SetOptions(merge: true));
+      }
+    }
+
+    await ensureDefaultClassesForCoachInFirestore();
+  } catch (e) {
+    debugPrint('Error in ensureDefaultCoachInFirestore: $e');
+  }
+}
+
+Future<void> ensureDefaultClassesForCoachInFirestore() async {
+  try {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final firestore = FirebaseFirestore.instance;
+
+    // Check if there are already classes for today for Coach Olena Koval
+    final existingTodaySnap = await firestore
+        .collection('classes')
+        .where('coachId', isEqualTo: 'default_coach')
+        .limit(10)
+        .get();
+
+    bool hasTodayClass = false;
+    for (final doc in existingTodaySnap.docs) {
+      final data = doc.data();
+      DateTime? startTime;
+      if (data['startTime'] is Timestamp) {
+        startTime = (data['startTime'] as Timestamp).toDate();
+      } else if (data['startTime'] is String) {
+        startTime = DateTime.tryParse(data['startTime']);
+      }
+      if (startTime != null &&
+          startTime.year == today.year &&
+          startTime.month == today.month &&
+          startTime.day == today.day) {
+        hasTodayClass = true;
+        break;
+      }
+    }
+    if (hasTodayClass) return;
+
+    // Ensure sample children exist for attendees list
+    await firestore.collection('children').doc('demo_child_1').set({
+      'id': 'demo_child_1',
+      'name': 'Максим Бондаренко',
+      'age': 8,
+      'birthDate': DateTime(now.year - 8, 5, 12).toIso8601String(),
+      'parentId': 'mock_active_client',
+      'branchId': 'kyiv',
+      'skillLevel': 'Початківець',
+      'medicalCertificate': true,
+    }, SetOptions(merge: true));
+
+    await firestore.collection('children').doc('demo_child_2').set({
+      'id': 'demo_child_2',
+      'name': 'Софія Мельник',
+      'age': 9,
+      'birthDate': DateTime(now.year - 9, 8, 20).toIso8601String(),
+      'parentId': 'mock_active_client',
+      'branchId': 'kyiv',
+      'skillLevel': 'Середній',
+      'medicalCertificate': true,
+    }, SetOptions(merge: true));
+
+    await firestore.collection('children').doc('demo_child_3').set({
+      'id': 'demo_child_3',
+      'name': 'Артем Шевченко',
+      'age': 7,
+      'birthDate': DateTime(now.year - 7, 3, 15).toIso8601String(),
+      'parentId': 'mock_active_client',
+      'branchId': 'kyiv',
+      'skillLevel': 'Початківець',
+      'medicalCertificate': true,
+    }, SetOptions(merge: true));
+
+    // Ensure sample subscription exists
+    await firestore.collection('subscriptions').doc('demo_sub_1').set({
+      'id': 'demo_sub_1',
+      'userId': 'mock_active_client',
+      'childId': 'demo_child_1',
+      'clientName': 'Андрій',
+      'type': 'Стандарт (8 занять)',
+      'totalClasses': 8,
+      'remainingClasses': 7,
+      'isActive': true,
+      'branchId': 'kyiv',
+      'expiryDate': now.add(const Duration(days: 30)).toIso8601String(),
+      'purchaseDate': now.subtract(const Duration(days: 2)).toIso8601String(),
+    }, SetOptions(merge: true));
+
+    // Seed 2 classes for today:
+    // 1. Group class at 10:00 - 11:00
+    final class1Time = DateTime(today.year, today.month, today.day, 10, 0);
+    final class1Id = 'class_olena_${class1Time.millisecondsSinceEpoch}';
+    await firestore.collection('classes').doc(class1Id).set({
+      'id': class1Id,
+      'title': 'Групове плавання: Дельфіни',
+      'category': 'Групове',
+      'startTime': class1Time.toIso8601String(),
+      'endTime': class1Time.add(const Duration(hours: 1)).toIso8601String(),
+      'coachId': 'default_coach',
+      'coachName': 'Олена Коваль',
+      'lane': 'Доріжка 2',
+      'maxCapacity': 8,
+      'enrolledChildIds': ['demo_child_1', 'demo_child_2', 'demo_child_3'],
+      'attendedChildIds': ['demo_child_1'],
+      'branchId': 'kyiv',
+      'organizationId': 'cityswim',
+      'timezone': 'Europe/Kyiv',
+      'locationId': 'kyiv_main',
+      'poolId': 'pool_25m',
+    }, SetOptions(merge: true));
+
+    // 2. Individual training at 16:00 - 17:00
+    final class2Time = DateTime(today.year, today.month, today.day, 16, 0);
+    final class2Id = 'class_olena_${class2Time.millisecondsSinceEpoch}';
+    await firestore.collection('classes').doc(class2Id).set({
+      'id': class2Id,
+      'title': 'Індивідуальне тренування: Техніка брасу',
+      'category': 'Індивідуальне',
+      'startTime': class2Time.toIso8601String(),
+      'endTime': class2Time.add(const Duration(hours: 1)).toIso8601String(),
+      'coachId': 'default_coach',
+      'coachName': 'Олена Коваль',
+      'lane': 'Доріжка 1',
+      'maxCapacity': 1,
+      'enrolledChildIds': ['demo_child_2'],
+      'attendedChildIds': [],
+      'branchId': 'kyiv',
+      'organizationId': 'cityswim',
+      'timezone': 'Europe/Kyiv',
+      'locationId': 'kyiv_main',
+      'poolId': 'pool_25m',
+    }, SetOptions(merge: true));
+
+    debugPrint('Successfully seeded demo today classes for Coach Olena Koval');
+  } catch (e) {
+    debugPrint('Error in ensureDefaultClassesForCoachInFirestore: $e');
   }
 }

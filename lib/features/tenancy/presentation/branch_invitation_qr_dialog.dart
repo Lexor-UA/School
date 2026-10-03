@@ -262,13 +262,40 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: Icon(
-                          LucideIcons.x,
-                          color: isDark ? Colors.white70 : Colors.black54,
-                          size: 20,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                              : const Color(0xFFF0F9FF),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                : const Color(0xFFBAE6FD),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.15 : 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
+                        child: IconButton(
+                          icon: Icon(
+                            LucideIcons.x,
+                            color: isDark ? Colors.white70 : const Color(0xFF0284C7),
+                            size: 17,
+                          ),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.of(context).pop();
+                          },
+                          padding: EdgeInsets.zero,
+                        ),
                       ),
                     ],
                   ),
@@ -281,12 +308,13 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                     decoration: BoxDecoration(
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.06)
-                          : const Color(0xFFE2E8F0),
+                          : const Color(0xFFF0F9FF),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.06),
+                            : const Color(0xFFBAE6FD),
+                        width: 1.2,
                       ),
                     ),
                     child: Row(
@@ -306,7 +334,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                     ? LinearGradient(
                                         colors: isDark
                                             ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       )
@@ -314,14 +342,16 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                 borderRadius: BorderRadius.circular(13),
                                 border: Border.all(
                                   color: _selectedBranchId == 'kyiv'
-                                      ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40)
+                                      ? (isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.70)
+                                          : Colors.white.withValues(alpha: 0.45))
                                       : Colors.transparent,
                                   width: 1.2,
                                 ),
                                 boxShadow: _selectedBranchId == 'kyiv'
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15),
+                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.25),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -338,9 +368,9 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                     style: TextStyle(
                                       color: _selectedBranchId == 'kyiv'
                                           ? Colors.white
-                                          : (isDark ? Colors.white60 : Colors.black54),
+                                          : (isDark ? Colors.white60 : const Color(0xFF475569)),
                                       fontSize: 13,
-                                      fontWeight: _selectedBranchId == 'kyiv' ? FontWeight.w700 : FontWeight.w500,
+                                      fontWeight: _selectedBranchId == 'kyiv' ? FontWeight.w900 : FontWeight.w700,
                                       letterSpacing: 0.2,
                                     ),
                                   ),
@@ -364,7 +394,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                     ? LinearGradient(
                                         colors: isDark
                                             ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       )
@@ -372,14 +402,16 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                 borderRadius: BorderRadius.circular(13),
                                 border: Border.all(
                                   color: _selectedBranchId == 'vienna'
-                                      ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40)
+                                      ? (isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.70)
+                                          : Colors.white.withValues(alpha: 0.45))
                                       : Colors.transparent,
                                   width: 1.2,
                                 ),
                                 boxShadow: _selectedBranchId == 'vienna'
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15),
+                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.25),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -396,9 +428,9 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                     style: TextStyle(
                                       color: _selectedBranchId == 'vienna'
                                           ? Colors.white
-                                          : (isDark ? Colors.white60 : Colors.black54),
+                                          : (isDark ? Colors.white60 : const Color(0xFF475569)),
                                       fontSize: 13,
-                                      fontWeight: _selectedBranchId == 'vienna' ? FontWeight.w700 : FontWeight.w500,
+                                      fontWeight: _selectedBranchId == 'vienna' ? FontWeight.w900 : FontWeight.w700,
                                       letterSpacing: 0.2,
                                     ),
                                   ),
@@ -422,12 +454,14 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                           : Colors.white,
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.40),
+                        color: isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                            : const Color(0xFFBAE6FD),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.12 : 0.08),
                           blurRadius: 18,
                         ),
                       ],
@@ -456,10 +490,10 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                         const SizedBox(height: 3),
                         Text(
                           details.locationName,
-                          style: const TextStyle(
-                            color: Color(0xFF00E5FF),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -514,9 +548,9 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                         Text(
                           'Торкніться для відкриття на весь екран',
                           style: TextStyle(
-                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF64748B),
                             fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
 
@@ -528,12 +562,12 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                           decoration: BoxDecoration(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.05)
-                                : const Color(0xFFF1F5F9),
+                                : const Color(0xFFF0F9FF),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isDark
                                   ? Colors.white.withValues(alpha: 0.10)
-                                  : const Color(0xFFCBD5E1),
+                                  : const Color(0xFFBAE6FD),
                             ),
                           ),
                           child: Row(
@@ -544,7 +578,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                 child: Text(
                                   details.registrationUrl,
                                   style: TextStyle(
-                                    color: currentTheme.textPrimary,
+                                    color: isDark ? currentTheme.textPrimary : const Color(0xFF0369A1),
                                     fontSize: 11.5,
                                     fontFamily: 'monospace',
                                     fontWeight: FontWeight.w600,
@@ -568,9 +602,18 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF00E5FF),
+                            backgroundColor: isDark
+                                ? Colors.transparent
+                                : const Color(0xFFF0F9FF),
+                            foregroundColor: _isCopied
+                                ? const Color(0xFF10B981)
+                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                             side: BorderSide(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                              color: _isCopied
+                                  ? const Color(0xFF10B981)
+                                  : (isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.6)
+                                      : const Color(0xFFBAE6FD)),
                               width: 1.2,
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -600,18 +643,20 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                             gradient: LinearGradient(
                               colors: isDark
                                   ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40),
-                              width: 1.4,
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.70)
+                                  : Colors.white.withValues(alpha: 0.45),
+                              width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.20),
+                                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.35),
                                 blurRadius: 12,
                                 offset: const Offset(0, 3),
                               ),
@@ -632,7 +677,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                               HapticFeedback.lightImpact();
                               _openFullScreenQr(context, details);
                             },
-                            icon: const Icon(LucideIcons.maximize2, size: 16, color: Color(0xFF00E5FF)),
+                            icon: const Icon(LucideIcons.maximize2, size: 16, color: Colors.white),
                             label: const Text(
                               'Повний екран',
                               style: TextStyle(

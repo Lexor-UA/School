@@ -283,7 +283,7 @@ class ParentCalendarCard extends ConsumerWidget {
                                 ? LinearGradient(
                                     colors: isDark
                                         ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
-                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   )
@@ -311,7 +311,7 @@ class ParentCalendarCard extends ConsumerWidget {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.25),
+                                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.35),
                                       blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),
@@ -426,7 +426,7 @@ class ParentCalendarCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(10),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
-          opacity: isEnabled ? 1.0 : 0.35,
+          opacity: isEnabled ? 1.0 : (isDark ? 0.35 : 0.45),
           child: Container(
             width: 32,
             height: 32,
@@ -438,7 +438,7 @@ class ParentCalendarCard extends ConsumerWidget {
               border: Border.all(
                 color: isDark
                     ? const Color(0xFF00E5FF).withValues(alpha: isEnabled ? 0.35 : 0.15)
-                    : const Color(0xFFBAE6FD).withValues(alpha: isEnabled ? 1.0 : 0.4),
+                    : const Color(0xFFBAE6FD).withValues(alpha: isEnabled ? 1.0 : 0.5),
                 width: 0.9,
               ),
             ),
@@ -448,7 +448,7 @@ class ParentCalendarCard extends ConsumerWidget {
                 size: 16,
                 color: isEnabled
                     ? (isDark ? const Color(0xFF00E5FF) : currentTheme.textPrimary)
-                    : (isDark ? Colors.white38 : Colors.grey),
+                    : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
               ),
             ),
           ),

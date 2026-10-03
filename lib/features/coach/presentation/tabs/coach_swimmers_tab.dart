@@ -393,6 +393,15 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     );
   }
 
+  String _formatClassesCount(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 14) return '$count занять';
+    if (mod10 == 1) return '$count заняття';
+    if (mod10 >= 2 && mod10 <= 4) return '$count заняття';
+    return '$count занять';
+  }
+
   // ==========================================
   // TAB 0: MY SWIMMERS (COACH'S ASSIGNED STUDENTS)
   // ==========================================
@@ -442,7 +451,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         icon: LucideIcons.calendarX,
         title: 'У вас наразі немає призначених занять',
         description:
-            'Вам ще не призначено груп або занять у розкладі клубу CitySwim. Як тільки адміністратор закріпить за вами заняття, тут автоматично з\'являться ваші учні.',
+            'Вам ще не призначено груп або занять у розкладі школи плавання CitySwim. Як тільки адміністратор закріпить за вами заняття, тут автоматично з\'являться ваші учні.',
         showScheduleButton: true,
       );
     }
@@ -453,7 +462,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         icon: LucideIcons.userX,
         title: 'У ваших групах поки немає зареєстрованих учнів',
         description:
-            'За вами закріплено ${coachClasses.length} занять у розкладі, але на них ще не записався жоден плавець або очікується формування списків.',
+            'За вами закріплено ${_formatClassesCount(coachClasses.length)} у розкладі, але на них ще не записався жоден плавець або очікується формування списків.',
         showScheduleButton: true,
       );
     }
@@ -506,12 +515,34 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 final data = Map<String, dynamic>.from(d.data() as Map);
                 final name = (data['name'] as String? ?? '').trim();
                 if (name.isNotEmpty) {
+                  int? age;
+                  if (data['birthDate'] != null) {
+                    try {
+                      DateTime birth;
+                      if (data['birthDate'] is Timestamp) {
+                        birth = (data['birthDate'] as Timestamp).toDate();
+                      } else {
+                        birth = DateTime.parse(data['birthDate'].toString());
+                      }
+                      final now = DateTime.now();
+                      int a = now.year - birth.year;
+                      if (now.month < birth.month || (now.month == birth.month && now.day < birth.day)) {
+                        a--;
+                      }
+                      age = a;
+                    } catch (_) {}
+                  }
+                  if (age == null && data['age'] != null) {
+                    age = int.tryParse(data['age'].toString());
+                  }
+
                   mySwimmers.add({
                     'id': d.id,
                     'name': name,
                     'isAdult': true,
                     'child': null,
-                    'age': data['age'] as int?,
+                    'age': age,
+                    'branchId': data['branchId']?.toString() ?? '',
                     'classes': studentClassesMap[d.id] ?? [],
                   });
                 }
@@ -540,7 +571,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 hasScrollBody: false,
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.fromLTRB(32, 24, 32, MediaQuery.of(context).padding.bottom + 120),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -566,7 +597,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             }
 
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 220),
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 260),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -586,6 +617,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         index,
                         userId: item['id'] as String,
                         assignedClasses: classes,
+                        branchId: item['branchId'] as String?,
                       );
                     }
                   },
@@ -605,157 +637,172 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     required String description,
     required bool showScheduleButton,
   }) {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.padding.bottom;
+    final dockClearance = bottomInset + 120.0;
+
     return SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(24, 0, 24, dockClearance),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Glowing Icon Badge
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.50),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                      blurRadius: 22,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(icon, color: Colors.white, size: 34),
-                ),
-              ),
-              const SizedBox(height: 20),
 
-              // Title
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _themeConfig.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Description
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _themeConfig.textSecondary,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w500,
-                  height: 1.5,
-                ),
-              ),
-
-              if (showScheduleButton) ...[
-                const SizedBox(height: 22),
-                InkWell(
-                  onTap: () => ref.read(coachTabProvider.notifier).setTab(0),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.50),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                          blurRadius: 16,
-                          offset: const Offset(0, 3),
+                    // Glowing Icon Badge
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.50),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                            blurRadius: 22,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(icon, color: Colors.white, size: 32),
+                      ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(LucideIcons.calendarDays, color: Colors.white, size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          'Переглянути мій розклад',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
+                    const SizedBox(height: 16),
+
+                    // Title
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: _themeConfig.textPrimary,
+                        fontSize: 17.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Description
+                    Text(
+                      description,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: _themeConfig.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.45,
+                      ),
+                    ),
+
+                    if (showScheduleButton) ...[
+                      const SizedBox(height: 18),
+                      InkWell(
+                        onTap: () => ref.read(coachTabProvider.notifier).setTab(0),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.50),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                blurRadius: 16,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.calendarDays, color: Colors.white, size: 16),
+                              SizedBox(width: 8),
+                              Text(
+                                'Переглянути мій розклад',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                      ),
+                    ],
 
-              const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-              // Helpful context tip
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _isLight
-                      ? const Color(0xFFF0F9FF)
-                      : const Color(0xFF0C243E).withValues(alpha: 0.70),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _isLight
-                        ? const Color(0xFFBAE6FD)
-                        : const Color(0xFF00E5FF).withValues(alpha: 0.28),
-                    width: 1.0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      LucideIcons.info,
-                      size: 16,
-                      color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Ви можете переглянути повний перелік груп школи або базу всіх плавців у вкладках вгорі.',
-                        style: TextStyle(
-                          color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF7DD3FC),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
+                    // Helpful context tip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _isLight
+                            ? Colors.white.withValues(alpha: 0.94)
+                            : const Color(0xFF0C243E).withValues(alpha: 0.70),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _isLight
+                              ? const Color(0xFFBAE6FD)
+                              : const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                          width: 1.1,
                         ),
+                        boxShadow: _isLight
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.info,
+                            size: 15,
+                            color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Ви можете переглянути повний перелік груп школи або базу всіх плавців у вкладках вгорі.',
+                              style: TextStyle(
+                                color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF7DD3FC),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
@@ -825,7 +872,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         hasScrollBody: false,
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.fromLTRB(32, 24, 32, MediaQuery.of(context).padding.bottom + 120),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -852,7 +899,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 220),
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 260),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -894,8 +941,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: _isLight ? Colors.white : const Color(0xFF1E4570),
-          width: 1.0,
+          color: _isLight
+              ? const Color(0xFFBAE6FD).withValues(alpha: 0.85)
+              : const Color(0xFF1E4570),
+          width: 1.1,
         ),
         boxShadow: _isLight
             ? [
@@ -1009,12 +1058,12 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                   decoration: BoxDecoration(
                     color: _isLight
-                        ? const Color(0xFFF1F5F9).withValues(alpha: 0.85)
+                        ? const Color(0xFFF0F9FF)
                         : const Color(0xFF081628),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: _isLight
-                          ? const Color(0xFFE2E8F0)
+                          ? const Color(0xFFBAE6FD)
                           : const Color(0xFF1E3E66),
                     ),
                   ),
@@ -1026,12 +1075,12 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             Icon(
                               LucideIcons.userCheck,
                               size: 13,
-                              color: _isLight ? const Color(0xFF64748B) : Colors.white70,
+                              color: _isLight ? const Color(0xFF0284C7) : Colors.white70,
                             ),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                group.coachName.isNotEmpty ? group.coachName : 'Тренер клубу',
+                                group.coachName.isNotEmpty ? group.coachName : 'Тренер школи',
                                 style: TextStyle(
                                   color: _themeConfig.textPrimary,
                                   fontSize: 12,
@@ -1098,7 +1147,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     children: [
                       Container(
                         height: 8,
-                        color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
+                        color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
                       ),
                       FractionallySizedBox(
                         widthFactor: fillRatio,
@@ -1125,7 +1174,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
 
                 const SizedBox(height: 14),
 
-                // Row 4: Action button - Open Group Attendees Sheet (Option A: Royal Sapphire Azure Gradient)
+                // Row 4: Action button - Open Group Attendees Sheet
                 InkWell(
                   onTap: () => showCoachClassAttendeesSheet(context, group),
                   borderRadius: BorderRadius.circular(14),
@@ -1133,10 +1182,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: _isLight
-                            ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
-                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -1147,7 +1194,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: _isLight ? 0.32 : 0.45),
+                          color: const Color(0xFF00E5FF).withValues(alpha: _isLight ? 0.35 : 0.45),
                           blurRadius: 14,
                           offset: const Offset(0, 3),
                         ),
@@ -1241,12 +1288,34 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
               final data = Map<String, dynamic>.from(d.data() as Map);
               final name = (data['name'] as String? ?? '').trim();
               if (name.isNotEmpty) {
+                int? age;
+                if (data['birthDate'] != null) {
+                  try {
+                    DateTime birth;
+                    if (data['birthDate'] is Timestamp) {
+                      birth = (data['birthDate'] as Timestamp).toDate();
+                    } else {
+                      birth = DateTime.parse(data['birthDate'].toString());
+                    }
+                    final now = DateTime.now();
+                    int a = now.year - birth.year;
+                    if (now.month < birth.month || (now.month == birth.month && now.day < birth.day)) {
+                      a--;
+                    }
+                    age = a;
+                  } catch (_) {}
+                }
+                if (age == null && data['age'] != null) {
+                  age = int.tryParse(data['age'].toString());
+                }
+
                 allSwimmers.add({
                   'id': d.id,
                   'name': name,
                   'isAdult': true,
                   'child': null,
-                  'age': data['age'] as int?,
+                  'age': age,
+                  'branchId': data['branchId']?.toString() ?? '',
                 });
               }
             }
@@ -1269,7 +1338,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 hasScrollBody: false,
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.fromLTRB(32, 24, 32, MediaQuery.of(context).padding.bottom + 120),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1295,7 +1364,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             }
 
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 220),
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 260),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -1309,6 +1378,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         item['age'] as int?,
                         index,
                         userId: item['id'] as String,
+                        branchId: item['branchId'] as String?,
                       );
                     }
                   },
@@ -1328,10 +1398,19 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     int index, {
     required String userId,
     List<GroupClass>? assignedClasses,
+    String? branchId,
   }) {
+    final adultChild = Child(
+      id: userId,
+      name: name,
+      age: age ?? 0,
+      level: 0,
+      parentId: 'adult_swimmer',
+      branchId: branchId ?? '',
+    );
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1346,17 +1425,19 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   const Color(0xFF0A1B30),
                 ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: _isLight ? Colors.white : const Color(0xFF1E4570),
-          width: 1.0,
+          color: _isLight
+              ? const Color(0xFFBAE6FD).withValues(alpha: 0.85)
+              : const Color(0xFF1E4570),
+          width: 1.1,
         ),
         boxShadow: _isLight
             ? [
                 BoxShadow(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFF0369A1).withValues(alpha: 0.09),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
                 BoxShadow(
                   color: Colors.white.withValues(alpha: 0.80),
@@ -1372,169 +1453,309 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 ),
               ],
       ),
-      child: Row(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => showSwimmerDetailsSheet(context, adultChild),
+          splashColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+          highlightColor: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      width: 1.1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          color: _themeConfig.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                // Row 1: Header (Avatar + Name & "ДОРОСЛИЙ ПЛАВЕЦЬ" Badge + Chat Button + Chevron)
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0284C7).withValues(alpha: 0.40),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                      child: Center(
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 19,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF334155),
-                              ),
+                          Text(
+                            name,
+                            style: TextStyle(
+                              color: _themeConfig.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.user, size: 10, color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8)),
-                                const SizedBox(width: 4),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: _isLight ? const Color(0xFF7DD3FC) : const Color(0xFF334155),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      LucideIcons.user,
+                                      size: 11,
+                                      color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'ДОРОСЛИЙ ПЛАВЕЦЬ',
+                                      style: TextStyle(
+                                        color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (age != null && age > 0) ...[
+                                const SizedBox(width: 8),
                                 Text(
-                                  'ДОРОСЛИЙ ПЛАВЕЦЬ',
+                                  '$age р.',
                                   style: TextStyle(
-                                    color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
+                                    color: _themeConfig.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (userId.isNotEmpty) ...[
+                      GestureDetector(
+                        onTap: () => _openCoachChatWithClient(
+                          targetClientId: userId,
+                          targetClientName: name,
+                        ),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              LucideIcons.messageCircle,
+                              color: Colors.white,
+                              size: 16,
                             ),
                           ),
-                          if (age != null) ...[
-                            const SizedBox(width: 8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
+                        border: Border.all(
+                          color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E3E66),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.chevronRight,
+                          color: _isLight ? const Color(0xFF0284C7) : Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (assignedClasses != null && assignedClasses.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: assignedClasses.take(3).map((cls) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF334155),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.waves,
+                              size: 11,
+                              color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+                            ),
+                            const SizedBox(width: 4),
                             Text(
-                              '$age р.',
+                              cls.title,
                               style: TextStyle(
-                                color: _themeConfig.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                                color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
-                        ],
-                      ),
-                      if (assignedClasses != null && assignedClasses.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: assignedClasses.take(3).map((cls) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                              decoration: BoxDecoration(
-                                color: _isLight
-                                    ? const Color(0xFFE0F2FE)
-                                    : const Color(0xFF081628),
-                                borderRadius: BorderRadius.circular(7),
-                                border: Border.all(
-                                  color: _isLight
-                                      ? const Color(0xFFBAE6FD)
-                                      : const Color(0xFF1E3E66),
-                                  width: 0.9,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+
+                const SizedBox(height: 14),
+
+                // Row 2: Actions (Note + Profile Card)
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => showCoachNoteDialog(context, adultChild),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                          decoration: BoxDecoration(
+                            color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _isLight
+                                  ? const Color(0xFFBAE6FD)
+                                  : const Color(0xFF1E3E66),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.fileText,
+                                color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _coachTr('coach.note_btn', 'Нотатка'),
+                                style: TextStyle(
+                                  color: _isLight ? const Color(0xFF0284C7) : Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    LucideIcons.waves,
-                                    size: 10,
-                                    color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    cls.title,
-                                    style: TextStyle(
-                                      color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                            ],
+                          ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Message button to chat with adult client
-                GestureDetector(
-                  onTap: () => _openCoachChatWithClient(targetClientId: userId, targetClientName: name),
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => showSwimmerDetailsSheet(context, adultChild),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                          decoration: BoxDecoration(
+                            color: _isLight ? Colors.white : const Color(0xFF081628),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _isLight
+                                  ? const Color(0xFFBAE6FD).withValues(alpha: 0.70)
+                                  : const Color(0xFF1E3E66),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.user,
+                                color: _isLight ? const Color(0xFF0284C7) : Colors.white70,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _coachTr('coach.details_btn', 'Картка плавця'),
+                                style: TextStyle(
+                                  color: _isLight ? const Color(0xFF334155) : Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                    child: const Center(
-                      child: Icon(LucideIcons.messageCircle, color: Colors.white, size: 18),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
-    ).animate().fadeIn(delay: (index * 40).ms);
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: (index * 50).ms);
   }
 
   Widget _buildSwimmerDirectoryCard(
@@ -1560,8 +1781,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: _isLight ? Colors.white : const Color(0xFF1E4570),
-          width: 1.0,
+          color: _isLight
+              ? const Color(0xFFBAE6FD).withValues(alpha: 0.85)
+              : const Color(0xFF1E4570),
+          width: 1.1,
         ),
         boxShadow: _isLight
             ? [
@@ -1719,9 +1942,9 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             height: 34,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF081628),
+                              color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
                               border: Border.all(
-                                color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E3E66),
+                                color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E3E66),
                                 width: 1.2,
                               ),
                             ),
@@ -1808,7 +2031,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                     Text(
                                       _coachTr('coach.note_btn', 'Нотатка'),
                                       style: TextStyle(
-                                        color: _isLight ? const Color(0xFF0369A1) : Colors.white,
+                                        color: _isLight ? const Color(0xFF0284C7) : Colors.white,
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w800,
                                         letterSpacing: 0.2,
@@ -1826,11 +2049,11 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                 decoration: BoxDecoration(
-                                  color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF081628),
+                                  color: _isLight ? Colors.white : const Color(0xFF081628),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: _isLight
-                                        ? const Color(0xFFE2E8F0)
+                                        ? const Color(0xFFBAE6FD).withValues(alpha: 0.70)
                                         : const Color(0xFF1E3E66),
                                     width: 1.2,
                                   ),
@@ -1840,7 +2063,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                   children: [
                                     Icon(
                                       LucideIcons.user,
-                                      color: _isLight ? const Color(0xFF64748B) : Colors.white70,
+                                      color: _isLight ? const Color(0xFF0284C7) : Colors.white70,
                                       size: 16,
                                     ),
                                     const SizedBox(width: 8),

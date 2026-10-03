@@ -729,8 +729,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     }
     final raw = 'admin.live_beacon_idle'.tr();
     final upper = raw.toUpperCase();
-    if (upper.contains('ПУЛЬС КЛУБУ')) {
-      return 'ПУЛЬС КЛУБУ';
+    if (upper.contains('ПУЛЬС ШКОЛИ') || upper.contains('ПУЛЬС КЛУБУ')) {
+      return 'ПУЛЬС ШКОЛИ';
     }
     if (upper.contains('ПУЛЬС КЛУБА')) {
       return 'ПУЛЬС КЛУБА';
@@ -774,20 +774,20 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   const Color(0xFF031933).withValues(alpha: 0.40),
                 ],
               )
-            : LinearGradient(
+            : const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.65),
-                  Colors.white.withValues(alpha: 0.45),
+                  Colors.white,
+                  Color(0xFFF0F9FF),
                 ],
               ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.30)
-              : currentTheme.cardBorder,
-          width: isDark ? 1.2 : 0.8,
+              : const Color(0xFFBAE6FD),
+          width: isDark ? 1.2 : 1.0,
         ),
         boxShadow: [
           if (isDark) ...[
@@ -803,11 +803,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               spreadRadius: -2,
             ),
           ] else ...[
-            // Minimalist iOS style soft shadow
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
+              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ]
         ],
@@ -899,12 +903,12 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.10)
-                            : const Color(0xFFF1F5F9),
+                            : const Color(0xFFE0F2FE),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.18)
-                              : currentTheme.cardBorder,
+                              : const Color(0xFFBAE6FD),
                           width: 0.8,
                         ),
                       ),
@@ -916,7 +920,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           Text(
                             'admin.realtime'.tr(),
                             style: TextStyle(
-                              color: isDark ? Colors.white70 : currentTheme.textSecondary,
+                              color: isDark ? Colors.white70 : const Color(0xFF0284C7),
                               fontSize: 9.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.4,
@@ -944,8 +948,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             ]
                           : [
                               Colors.transparent,
-                              currentTheme.cardBorder,
-                              currentTheme.cardBorder,
+                              const Color(0xFFBAE6FD),
+                              const Color(0xFFBAE6FD),
                               Colors.transparent,
                             ],
                     ),
@@ -989,7 +993,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                   ]
                                 : [
                                     Colors.transparent,
-                                    currentTheme.cardBorder,
+                                    const Color(0xFFBAE6FD),
                                     Colors.transparent,
                                   ],
                           ),
@@ -1028,7 +1032,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                   ]
                                 : [
                                     Colors.transparent,
-                                    currentTheme.cardBorder,
+                                    const Color(0xFFBAE6FD),
                                     Colors.transparent,
                                   ],
                           ),
@@ -1062,12 +1066,12 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   decoration: BoxDecoration(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.08)
-                        : const Color(0xFFF8FAFC),
+                        : const Color(0xFFE0F2FE).withValues(alpha: 0.70),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.14)
-                          : currentTheme.cardBorder,
+                          : const Color(0xFFBAE6FD),
                       width: 0.8,
                     ),
                   ),
@@ -1313,20 +1317,20 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           Colors.white.withValues(alpha: hasUnread ? 0.12 : 0.06),
                         ],
                       )
-                    : LinearGradient(
+                    : const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withValues(alpha: hasUnread ? 0.85 : 0.65),
-                          Colors.white.withValues(alpha: hasUnread ? 0.60 : 0.45),
+                          Colors.white,
+                          Color(0xFFF0F9FF),
                         ],
                       ),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: hasUnread
-                      ? (isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.85) : currentTheme.accentPrimary.withValues(alpha: 0.5))
-                      : (isDark ? Colors.white.withValues(alpha: 0.28) : currentTheme.cardBorder),
-                  width: isDark ? 1.2 : 1.0,
+                      ? (isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.85) : const Color(0xFF38BDF8))
+                      : (isDark ? Colors.white.withValues(alpha: 0.28) : const Color(0xFFBAE6FD)),
+                  width: isDark ? 1.2 : 1.1,
                 ),
                 boxShadow: [
                   if (isDark) ...[
@@ -1343,11 +1347,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         offset: const Offset(0, 2),
                       ),
                   ] else ...[
-                    // Minimalist iOS style soft shadow
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
                       blurRadius: 16,
-                      offset: const Offset(0, 5),
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ]
                 ],
@@ -1470,12 +1478,12 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.85),
+                            : const Color(0xFFE0F2FE),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.20)
-                              : Colors.white,
+                              : const Color(0xFFBAE6FD),
                         ),
                         boxShadow: isDark
                             ? null
@@ -1848,20 +1856,20 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
-            : LinearGradient(
+            : const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.88),
-                  Colors.white.withValues(alpha: 0.72),
+                  Colors.white,
+                  Color(0xFFF0F9FF),
                 ],
               ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.95),
-          width: isDark ? 1.2 : 1.0,
+              : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
         boxShadow: [
           if (isDark) ...[
@@ -1872,16 +1880,15 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               offset: const Offset(0, 7),
             ),
           ] else ...[
-            // Minimalist iOS style soft shadow
             BoxShadow(
-              color: currentTheme.cardShadow,
-              blurRadius: 16,
+              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+              blurRadius: 18,
               offset: const Offset(0, 4),
             ),
             BoxShadow(
-              color: currentTheme.accentPrimary.withValues(alpha: 0.05),
-              blurRadius: 12,
-              spreadRadius: -2,
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ]
         ],
@@ -1904,12 +1911,12 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.20)
-                            : currentTheme.accentPrimary.withValues(alpha: 0.10),
+                            : const Color(0xFFE0F2FE),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.35)
-                              : currentTheme.accentPrimary.withValues(alpha: 0.25),
+                              : const Color(0xFFBAE6FD),
                           width: 0.8,
                         ),
                       ),
@@ -1936,13 +1943,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         decoration: BoxDecoration(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.25)
-                              : Colors.white.withValues(alpha: 0.85),
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.40)
-                                : currentTheme.cardBorder,
-                            width: 0.8,
+                                : const Color(0xFFBAE6FD),
+                            width: 0.9,
                           ),
                           boxShadow: isDark
                               ? null
@@ -1982,19 +1989,19 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.14)
-                            : Colors.white.withValues(alpha: 0.85),
+                            : const Color(0xFFE0F2FE).withValues(alpha: 0.60),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.25)
-                              : currentTheme.cardBorder,
+                              : const Color(0xFFBAE6FD),
                           width: 0.8,
                         ),
                         boxShadow: isDark
                             ? null
                             : [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.04),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -2025,19 +2032,19 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.14)
-                            : Colors.white.withValues(alpha: 0.85),
+                            : const Color(0xFFE0F2FE).withValues(alpha: 0.60),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.25)
-                              : currentTheme.cardBorder,
+                              : const Color(0xFFBAE6FD),
                           width: 0.8,
                         ),
                         boxShadow: isDark
                             ? null
                             : [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.04),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -2096,7 +2103,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0),
+                      color: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE0F2FE),
                       borderRadius: BorderRadius.circular(7),
                     ),
                     child: FractionallySizedBox(
@@ -2104,10 +2111,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       widthFactor: percent,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDark
-                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                : currentTheme.accentGradient,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           ),
                           borderRadius: BorderRadius.circular(7),
                           boxShadow: [
@@ -2155,20 +2160,22 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         end: Alignment.bottomRight,
                         colors: isDark
                             ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isDark
                             ? const Color(0xFF00E5FF)
-                            : Colors.white.withValues(alpha: 0.6),
+                            : Colors.white.withValues(alpha: 0.80),
                         width: 1.4,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.20),
+                          color: isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                              : const Color(0xFF0284C7).withValues(alpha: 0.35),
                           blurRadius: 14,
-                          offset: const Offset(0, 3),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),

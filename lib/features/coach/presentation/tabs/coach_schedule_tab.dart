@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +28,14 @@ class CoachScheduleTab extends ConsumerStatefulWidget {
 
 class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
   final bool _showAllPoolClassesFallback = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ensureDefaultClassesForCoachInFirestore();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -302,67 +309,61 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       ),
                       Tooltip(
                         message: 'Відкрити календар на місяць / рік',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  ref.read(coachTabProvider.notifier).setTab(1);
-                                },
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              ref.read(coachTabProvider.notifier).setTab(1);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
+                              decoration: BoxDecoration(
+                                color: themeConfig.isDark
+                                    ? const Color(0xFF0B2138).withValues(alpha: 0.85)
+                                    : Colors.white.withValues(alpha: 0.90),
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
-                                  decoration: BoxDecoration(
-                                    color: themeConfig.isDark
-                                        ? const Color(0xFF0B2138).withValues(alpha: 0.85)
-                                        : Colors.white.withValues(alpha: 0.90),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: themeConfig.isDark
-                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
-                                          : const Color(0xFFBAE6FD),
-                                      width: 1.1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                            .withValues(alpha: themeConfig.isDark ? 0.15 : 0.08),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        LucideIcons.calendar,
-                                        size: 13,
-                                        color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        DateFormat('d MMMM', context.locale.languageCode).format(DateTime.now()),
-                                        style: TextStyle(
-                                          color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        LucideIcons.chevronRight,
-                                        size: 13,
-                                        color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                      ),
-                                    ],
-                                  ),
+                                border: Border.all(
+                                  color: themeConfig.isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                      : const Color(0xFFBAE6FD),
+                                  width: 1.1,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                        .withValues(alpha: themeConfig.isDark ? 0.15 : 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.calendar,
+                                    size: 13,
+                                    color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    DateFormat('d MMMM', context.locale.languageCode).format(DateTime.now()),
+                                    style: TextStyle(
+                                      color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    LucideIcons.chevronRight,
+                                    size: 13,
+                                    color: themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -406,11 +407,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 return SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: Container(
+                    child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -591,8 +588,6 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                           ),
                         ),
                       ),
-                    ),
-                  ),
                 );
               }
 
@@ -639,11 +634,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   const SizedBox(height: 14),
 
                   // Quick Attendance Journal Action Button ("Потім журнал відвідування")
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                      child: Container(
+                  Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -785,25 +776,19 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
   }
 
   Widget _buildShiftTelemetryCard(AppThemeConfig themeConfig) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: BoxDecoration(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -910,9 +895,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildTelemetryMetric({
@@ -1049,12 +1032,9 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
     final freeSlots = (maxCap - enrolledCount).clamp(0, maxCap);
     final fillFraction = (enrolledCount / maxCap).clamp(0.0, 1.0);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 14),
+    return RepaintBoundary(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -1426,8 +1406,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
             ],
           ),
         ),
-      ),
-    ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.1, end: 0);
+      );
   }
 }
 

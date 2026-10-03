@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/shared/widgets/interactive_3d_card.dart';
 
 /// Premium 3D Interactive Subscription Front Card
-class SubscriptionFrontCard extends StatelessWidget {
+class SubscriptionFrontCard extends ConsumerWidget {
   final Subscription? currentSub;
   final VoidCallback? onTap;
   final bool isInteractive;
@@ -19,8 +21,10 @@ class SubscriptionFrontCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final cardContent = _buildCardBody(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeConfig = ref.watch(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
+    final cardContent = _buildCardBody(context, isDark);
 
     if (isInteractive) {
       return Center(
@@ -32,6 +36,8 @@ class SubscriptionFrontCard extends StatelessWidget {
               onTap: onTap,
               enableHologram: false,
               borderRadius: BorderRadius.circular(24),
+              shadowColor: isDark ? null : const Color(0xFF0284C7).withValues(alpha: 0.28),
+              glowColor: isDark ? null : const Color(0xFF00E5FF).withValues(alpha: 0.16),
               child: cardContent,
             ),
           ),
@@ -50,7 +56,7 @@ class SubscriptionFrontCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCardBody(BuildContext context) {
+  Widget _buildCardBody(BuildContext context, bool isDark) {
     final expiryFormatted = currentSub?.expiryDate != null
         ? DateFormat('dd.MM.yyyy').format(currentSub!.expiryDate!)
         : '00.00.0000';
@@ -65,12 +71,17 @@ class SubscriptionFrontCard extends StatelessWidget {
           colorFilter: ColorFilter.mode(Colors.black12, BlendMode.darken),
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.28), width: 1.2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFF00E5FF).withValues(alpha: 0.55),
+          width: isDark ? 1.2 : 1.4,
+        ),
         boxShadow: isInteractive
             ? null
             : [
                 BoxShadow(
-                  color: const Color(0xFF003B73).withValues(alpha: 0.35),
+                  color: isDark
+                      ? const Color(0xFF003B73).withValues(alpha: 0.35)
+                      : const Color(0xFF0284C7).withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),

@@ -869,7 +869,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   colors: isMe
                       ? (isDark
                           ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                          : const [Color(0xFF0284C7), Color(0xFF0369A1)])
+                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)])
                       : (isDark
                           ? [
                               const Color(0xFF0E3D64).withValues(alpha: 0.75),
@@ -899,8 +899,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                 boxShadow: isMe
                     ? [
                         BoxShadow(
-                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                              .withValues(alpha: 0.35),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00E5FF))
+                              .withValues(alpha: isDark ? 0.35 : 0.30),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
@@ -1146,18 +1146,15 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               const SizedBox(width: 10),
               Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                          .withValues(alpha: 0.40),
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),

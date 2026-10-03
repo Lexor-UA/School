@@ -52,6 +52,12 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    ensureDefaultCoachInFirestore();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -301,13 +307,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         return Center(child: CircularProgressIndicator(color: currentTheme.accentPrimary));
                       }
 
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return _buildEmptyState(currentTheme);
-                      }
-
                       final tenancyState = ref.watch(tenancyControllerProvider);
                       final activeBranchId = tenancyState.activeBranchId;
                       final isAllLocations = tenancyState.isAllLocationsSelected;
+                      final branchName = isAllLocations ? 'Всі локації' : tenancyState.effectiveBranch.name;
+
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return _buildEmptyState(currentTheme, activeBranchId: activeBranchId, branchName: branchName);
+                      }
 
                       final rawCoaches = snapshot.data!.docs;
                       var coaches = isAllLocations
@@ -334,7 +341,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       if (coaches.isEmpty) {
                         return _searchQuery.isNotEmpty
                             ? _buildNoSearchResults(currentTheme)
-                            : _buildEmptyState(currentTheme);
+                            : _buildEmptyState(currentTheme, activeBranchId: activeBranchId, branchName: branchName);
                       }
 
                       return ListView.separated(
@@ -383,6 +390,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   Widget _buildHeader(BuildContext context, AppThemeConfig currentTheme) {
+    final tenancyState = ref.watch(tenancyControllerProvider);
+    final effectiveBranch = tenancyState.effectiveBranch;
+    final isAllLocations = tenancyState.isAllLocationsSelected;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
@@ -434,22 +445,24 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
                   children: [
                     Text(
                       'admin.coaches_title'.tr(),
                       style: TextStyle(
                         color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
-                        fontSize: 21,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -467,10 +480,45 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         'admin.coaches_team_badge'.tr().toUpperCase(),
                         style: const TextStyle(
                           color: Color(0xFF00E5FF),
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.6,
                         ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: currentTheme.isDark
+                            ? const Color(0xFF0284C7).withValues(alpha: 0.18)
+                            : const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: currentTheme.isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                              : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                          width: 1.1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isAllLocations ? LucideIcons.globe : LucideIcons.mapPin,
+                            size: 9.5,
+                            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          ),
+                          const SizedBox(width: 3.5),
+                          Text(
+                            isAllLocations ? 'Всі локації' : effectiveBranch.name,
+                            style: TextStyle(
+                              color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -919,13 +967,13 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 decoration: BoxDecoration(
                   color: currentTheme.isDark
                       ? const Color(0xFF040D18).withValues(alpha: 0.60)
-                      : const Color(0xFFF1F5F9).withValues(alpha: 0.90),
+                      : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: currentTheme.isDark
                         ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
-                        : const Color(0xFFE2E8F0),
-                    width: 1,
+                        : const Color(0xFFBAE6FD),
+                    width: 1.1,
                   ),
                 ),
                 child: Row(
@@ -985,12 +1033,12 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 decoration: BoxDecoration(
                   color: currentTheme.isDark
                       ? const Color(0xFF040D18).withValues(alpha: 0.70)
-                      : const Color(0xFFF8FAFC),
+                      : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: currentTheme.isDark
                         ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                        : const Color(0xFFCBD5E1),
+                        : const Color(0xFFBAE6FD),
                     width: 1.1,
                   ),
                   boxShadow: [
@@ -1318,7 +1366,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     );
   }
 
-  Widget _buildEmptyState(AppThemeConfig currentTheme) {
+  Widget _buildEmptyState(AppThemeConfig currentTheme, {String? activeBranchId, String? branchName}) {
+    final effectiveBranchName = branchName ?? 'поточної філії';
+    final isVienna = activeBranchId == 'vienna';
+
     return Center(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -1373,12 +1424,60 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'admin.coaches_empty_desc'.tr(),
+                  isVienna
+                      ? 'У філії CitySwim Vienna ще немає створених тренерів.\nВи можете завантажити тренерів Maria Huber та Stefan Gruber автоматично або додати нового тренера вручну.'
+                      : (activeBranchId != null && activeBranchId != 'all'
+                          ? 'У філії $effectiveBranchName ще немає зареєстрованих тренерів.'
+                          : 'admin.coaches_empty_desc'.tr()),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                     fontSize: 13,
+                    height: 1.4,
                     fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                InkWell(
+                  onTap: () async {
+                    HapticFeedback.mediumImpact();
+                    await _seedBranchCoaches(activeBranchId);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: currentTheme.accentGradient,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          isVienna
+                              ? 'Завантажити тренерів Відня (Maria & Stefan)'
+                              : 'Завантажити тренерів за замовчуванням',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -1387,6 +1486,29 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _seedBranchCoaches(String? branchId) async {
+    try {
+      await ensureDefaultCoachInFirestore();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(branchId == 'vienna' ? 'Тренери Відня успішно завантажені!' : 'Тренери успішно завантажені!'),
+            backgroundColor: const Color(0xFF00E5FF),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Помилка: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildNoSearchResults(AppThemeConfig currentTheme) {

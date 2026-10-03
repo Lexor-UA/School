@@ -607,7 +607,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.award,
-                  title: 'Тренери клубу',
+                  title: 'Тренери школи',
                   subtitle: 'Команда та контакти',
                   color: const Color(0xFFA855F7),
                   gradientColors: const [Color(0xFFA855F7), Color(0xFF7C3AED)],
@@ -959,7 +959,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
         // 5. Тренери
         if (showCoaches) ...[
-          _buildResultSectionHeader('Тренери клубу', LucideIcons.award, const Color(0xFF8B5CF6), matchingCoaches.length),
+          _buildResultSectionHeader('Тренери школи', LucideIcons.award, const Color(0xFF8B5CF6), matchingCoaches.length),
           ...matchingCoaches.map((co) {
             final d = co.data() as Map<String, dynamic>;
             return _buildCoachResultRow(

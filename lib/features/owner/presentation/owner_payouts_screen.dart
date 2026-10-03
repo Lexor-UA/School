@@ -183,36 +183,53 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
     required String periodName,
   }) async {
     HapticFeedback.selectionClick();
+    final themeConfig = ref.read(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0C182B),
+        backgroundColor: isDark ? const Color(0xFF0C182B) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+          side: BorderSide(color: isDark ? const Color(0xFFF43F5E).withValues(alpha: 0.35) : const Color(0xFFFECDD3)),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.15 : 0.10),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(LucideIcons.undo2, color: Color(0xFFF43F5E), size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('Скасувати виплату', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Скасувати виплату',
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: Text(
           'Ви бажаєте скасувати реєстрацію виплати ${_formatMoney(amount, currencySymbol)} для $name за $periodName і повернути працівника до списку неоплачених?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+          style: TextStyle(
+            color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569),
+            fontSize: 14,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ні, залишити', style: TextStyle(color: Colors.white54)),
+            child: Text(
+              'Ні, залишити',
+              style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -286,29 +303,38 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         ? '${_formatMoney(remainingFundUah, '₴')}  •  ${_formatMoney(remainingFundEur, '€')}'
         : _formatMoney(currencySymbol == '€' ? remainingFundEur : remainingFundUah, currencySymbol);
 
+    final themeConfig = ref.read(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0C182B),
+        backgroundColor: isDark ? const Color(0xFF0C182B) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: const Color(0xFFF43F5E).withValues(alpha: 0.4)),
+          side: BorderSide(
+            color: isDark ? const Color(0xFFF43F5E).withValues(alpha: 0.4) : const Color(0xFFFECDD3),
+          ),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.15 : 0.10),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(LucideIcons.checkCheck, color: Color(0xFFF43F5E), size: 20),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Відзначити всім: Виплачено',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -319,44 +345,86 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           children: [
             Text(
               'Ви збираєтесь зареєструвати виплату для всіх неоплачених працівників ($count осіб):',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
+              style: TextStyle(
+                color: isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF475569),
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Невиплачено:', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
-                      Text('$count осіб', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(
+                        'Невиплачено:',
+                        style: TextStyle(
+                          color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B),
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        '$count осіб',
+                        style: TextStyle(
+                          color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Період:', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
-                      Text(periodName, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                      Text(
+                        'Період:',
+                        style: TextStyle(
+                          color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B),
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        periodName,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF1E293B),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Divider(color: Colors.white10),
+                  Divider(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Сума до відзначення:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(
+                        'Сума до відзначення:',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                       Flexible(
                         child: Text(
                           totalDisplay,
-                          style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w900, fontSize: 15),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                          ),
                           textAlign: TextAlign.right,
                         ),
                       ),
@@ -370,7 +438,10 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+            child: Text(
+              'Скасувати',
+              style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -703,7 +774,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                             final adminSalary = (data['adminSalary'] as num?)?.toInt() ?? (isViennaStaff ? 1800 : 20000);
 
                             if (role == 'admin') {
-                              if (isViennaStaff) {
+                              if (isViennaStaff || staffCurrency == '€') {
                                 totalPayoutFundEur += adminSalary;
                               } else {
                                 totalPayoutFundUah += adminSalary;
@@ -749,18 +820,18 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                 final isIndividual = !isSplit && (cLower.contains('індивідуал') || tLower.contains('індивідуал') || c.maxCapacity == 1);
 
                                 if (isSplit) {
-                                   conductedS++;
+                                  conductedS++;
                                 } else if (isIndividual) {
-                                   conductedI++;
+                                  conductedI++;
                                 } else {
-                                   conductedG++;
+                                  conductedG++;
                                 }
                               }
 
                               final conductedTotal = conductedG + conductedI + conductedS;
                               final earnedSum = (conductedG * rateGroup) + (conductedI * rateIndividual) + (conductedS * rateSplit);
 
-                              if (isViennaStaff) {
+                              if (isViennaStaff || staffCurrency == '€') {
                                 totalPayoutFundEur += earnedSum;
                               } else {
                                 totalPayoutFundUah += earnedSum;
@@ -786,56 +857,6 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                 'conductedS': conductedS,
                               });
                             }
-                          }
-
-                          // Guarantee Administrator appears in payouts according to active branch
-                          final hasKyivAdmin = staffPayouts.any((s) => s['role'] == 'admin' && (s['branchId'] ?? 'kyiv') == 'kyiv');
-                          final hasViennaAdmin = staffPayouts.any((s) => s['role'] == 'admin' && s['branchId'] == 'vienna');
-
-                          if (!hasKyivAdmin && (isAllLocations || activeBranchId == 'kyiv')) {
-                            totalPayoutFundUah += 20000;
-                            staffPayouts.add({
-                              'id': 'admin',
-                              'name': 'Адміністратор',
-                              'role': 'admin',
-                              'phone': '+380 (99) 000-00-01',
-                              'loginId': 'Admin',
-                              'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=db2777&color=ffffff',
-                              'branchId': 'kyiv',
-                              'currency': '₴',
-                              'rateGroup': 400,
-                              'rateIndividual': 450,
-                              'rateSplit': 600,
-                              'adminSalary': 20000,
-                              'earnedSum': 20000,
-                              'conductedTotal': 0,
-                              'conductedG': 0,
-                              'conductedI': 0,
-                              'conductedS': 0,
-                            });
-                          }
-
-                          if (!hasViennaAdmin && (isAllLocations || activeBranchId == 'vienna')) {
-                            totalPayoutFundEur += 1800;
-                            staffPayouts.add({
-                              'id': 'admin_vienna',
-                              'name': 'Admin Vienna',
-                              'role': 'admin',
-                              'phone': '+43 (1) 000-00-01',
-                              'loginId': 'Admin_Vienna',
-                              'avatarUrl': 'https://ui-avatars.com/api/?name=Vienna+Admin&background=8b5cf6&color=ffffff',
-                              'branchId': 'vienna',
-                              'currency': '€',
-                              'rateGroup': 25,
-                              'rateIndividual': 35,
-                              'rateSplit': 45,
-                              'adminSalary': 1800,
-                              'earnedSum': 1800,
-                              'conductedTotal': 0,
-                              'conductedG': 0,
-                              'conductedI': 0,
-                              'conductedS': 0,
-                            });
                           }
 
                           return StreamBuilder<QuerySnapshot>(
@@ -933,10 +954,19 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                       Text(
                                         'РОЗРАХУНОК ДО ВИПЛАТИ',
                                         style: TextStyle(
-                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                                           fontSize: 11,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 1.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.2,
+                                          shadows: isDark
+                                              ? null
+                                              : [
+                                                  Shadow(
+                                                    color: Colors.white.withValues(alpha: 0.9),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 1),
+                                                  ),
+                                                ],
                                         ),
                                       ),
                                       Text(
@@ -967,17 +997,26 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                     children: [
                                       Icon(
                                         LucideIcons.history,
-                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                                         size: 14,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'ОСТАННІ ВИПЛАТИ (ІСТОРІЯ)',
                                         style: TextStyle(
-                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                                           fontSize: 11,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 1.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.2,
+                                          shadows: isDark
+                                              ? null
+                                              : [
+                                                  Shadow(
+                                                    color: Colors.white.withValues(alpha: 0.9),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 1),
+                                                  ),
+                                                ],
                                         ),
                                       ),
                                     ],
@@ -1006,7 +1045,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                       );
                                     }),
 
-                                  SizedBox(height: widget.isEmbedded ? 100 : 48),
+                                  SizedBox(height: widget.isEmbedded ? 180 : 48),
                                 ],
                               );
                             },
@@ -1402,7 +1441,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                           child: Text(
                             _formatMoney(remainingFundEur, '€'),
                             style: TextStyle(
-                              color: isDark ? const Color(0xFFC084FC) : const Color(0xFF7C3AED),
+                              color: isDark ? const Color(0xFFC084FC) : themeConfig.textPrimary,
                               fontSize: 28,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -1,
@@ -1537,7 +1576,9 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         border: Border.all(
           color: isPaid
               ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.45 : 0.6)
-              : (isDark ? accentColor.withValues(alpha: 0.25) : accentColor.withValues(alpha: 0.30)),
+              : (isDark
+                  ? accentColor.withValues(alpha: 0.25)
+                  : (isCoach ? const Color(0xFFBAE6FD) : const Color(0xFFE9D5FF))),
           width: 1.1,
         ),
         boxShadow: [
@@ -1787,9 +1828,9 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
+                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
                           side: BorderSide(
-                            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+                            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFBAE6FD),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -1873,7 +1914,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                 ),
                                 icon: const Icon(LucideIcons.check, size: 15, color: Colors.white),
                                 label: Text(
-                                  'Виплатив ${_formatMoney(earnedSum, effectiveCurrency)}',
+                                  'Виплатити ${_formatMoney(earnedSum, effectiveCurrency)}',
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

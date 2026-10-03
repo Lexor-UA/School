@@ -207,7 +207,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         border: Border.all(
           color: isDark
               ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
-              : const Color(0xFF38BDF8).withValues(alpha: 0.55),
+              : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
         boxShadow: [
@@ -348,7 +348,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             ),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.45) : const Color(0xFF7DD3FC),
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.45) : const Color(0xFFBAE6FD),
               width: 1.4,
             ),
             boxShadow: [
@@ -526,11 +526,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF071728).withValues(alpha: 0.85)
-                      : const Color(0xFFF1F5F9),
+                      : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
-                    width: 1,
+                    color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+                    width: 1.2,
                   ),
                 ),
                 child: Row(
@@ -690,13 +690,13 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         decoration: BoxDecoration(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.08)
-                              : const Color(0xFFF1F5F9),
+                              : const Color(0xFFF0F9FF),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.20)
-                                : const Color(0xFFCBD5E1),
-                            width: 1,
+                                : const Color(0xFFBAE6FD),
+                            width: 1.2,
                           ),
                         ),
                         child: Row(
@@ -704,14 +704,14 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                           children: [
                             Icon(
                               LucideIcons.copy,
-                              color: isDark ? Colors.white70 : const Color(0xFF475569),
+                              color: isDark ? Colors.white70 : const Color(0xFF0284C7),
                               size: 14,
                             ),
                             const SizedBox(width: 5),
                             Text(
                               'Копіювати',
                               style: TextStyle(
-                                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                                color: isDark ? Colors.white70 : const Color(0xFF0284C7),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -737,7 +737,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             gradient: LinearGradient(
               colors: isDark
                   ? const [Color(0xFF00E5FF), Color(0xFF0088CC)]
-                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -748,7 +748,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.40),
+                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.45),
                 blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
@@ -806,7 +806,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                       )
                     : null,
-                color: isDark ? null : const Color(0xFFCBD5E1),
+                color: isDark ? null : const Color(0xFFBAE6FD),
                 borderRadius: BorderRadius.circular(3),
                 boxShadow: isDark
                     ? [
@@ -889,16 +889,25 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
-                        width: 1,
+                        color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+                        width: 1.2,
                       ),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                     ),
                     child: Icon(
                       LucideIcons.x,
-                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                      color: isDark ? Colors.white70 : const Color(0xFF0284C7),
                       size: 18,
                     ),
                   ),
@@ -957,8 +966,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   border: Border.all(
                     color: isDark
                         ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
-                        : const Color(0xFF38BDF8).withValues(alpha: 0.50),
-                    width: 1.3,
+                        : const Color(0xFFBAE6FD),
+                    width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1001,7 +1010,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                           Text(
                             '+ Додати дитину (учня)',
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0369A1),
+                              color: isDark ? Colors.white : const Color(0xFF0284C7),
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.1,
@@ -1024,7 +1033,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-                            : Colors.white.withValues(alpha: 0.85),
+                            : Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
@@ -1032,6 +1041,15 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                               : const Color(0xFFBAE6FD),
                           width: 1.2,
                         ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                       ),
                       child: Icon(
                         LucideIcons.plus,
@@ -1095,7 +1113,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                       border: Border.all(
                         color: isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.50)
-                            : const Color(0xFF38BDF8),
+                            : const Color(0xFFBAE6FD),
                         width: 1.2,
                       ),
                       boxShadow: [
@@ -1134,7 +1152,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               decoration: BoxDecoration(
                 color: isDark
                     ? const Color(0xFF091C30).withValues(alpha: 0.70)
-                    : const Color(0xFFF8FAFC),
+                    : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isDark
@@ -1296,7 +1314,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               end: Alignment.bottomRight,
               colors: isDark
                   ? const [Color(0xFF00E5FF), Color(0xFF0088CC)]
-                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
             ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
@@ -1305,7 +1323,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.40),
+                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.45),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               ),
@@ -1416,8 +1434,8 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               ),
               decoration: InputDecoration(
                 hintText: displayHint,
-                hintStyle: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                hintStyle: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                 ),
@@ -1465,10 +1483,10 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF081829).withValues(alpha: 0.70) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF081829).withValues(alpha: 0.70) : const Color(0xFFF0F9FF),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
       ),
@@ -1564,7 +1582,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : (isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF334155)),
+                        : (isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0F172A)),
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.2,

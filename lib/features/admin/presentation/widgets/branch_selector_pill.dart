@@ -48,18 +48,18 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.97),
-                    isDark ? const Color(0xFF070E1A).withValues(alpha: 0.98) : const Color(0xFFF1F5F9).withValues(alpha: 0.98),
+                    isDark ? const Color(0xFF0F1E32).withValues(alpha: 0.96) : Colors.white,
+                    isDark ? const Color(0xFF070E1A).withValues(alpha: 0.98) : const Color(0xFFF0F9FF),
                   ],
                 ),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.6),
+                  color: isDark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: isDark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.08),
                     blurRadius: 30,
                     spreadRadius: 2,
                   ),
@@ -75,7 +75,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                       width: 44,
                       height: 4.5,
                       decoration: BoxDecoration(
-                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                        color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFBAE6FD),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -89,14 +89,42 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Філії CitySwim',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : currentTheme.textPrimary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.3,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Філії CitySwim',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : currentTheme.textPrimary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? currentTheme.accentPrimary.withValues(alpha: 0.15)
+                                        : const Color(0xFFE0F2FE),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? currentTheme.accentPrimary.withValues(alpha: 0.35)
+                                          : const Color(0xFFBAE6FD),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Owner Mode',
+                                    style: TextStyle(
+                                      color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 3),
                             Text(
@@ -112,38 +140,34 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                        decoration: BoxDecoration(
-                          color: currentTheme.accentPrimary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.of(ctx).pop();
+                          },
+                          borderRadius: BorderRadius.circular(18),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
+                              border: Border.all(
+                                color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                LucideIcons.x,
+                                color: isDark ? Colors.white70 : const Color(0xFF0284C7),
+                                size: 18,
+                              ),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          'Owner Mode',
-                          style: TextStyle(
-                            color: currentTheme.accentPrimary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: Icon(
-                          LucideIcons.x,
-                          color: isDark ? Colors.white54 : Colors.black45,
-                          size: 20,
-                        ),
-                        tooltip: 'Закрити',
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.of(ctx).pop();
-                        },
                       ),
                     ],
                   ),
@@ -154,7 +178,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                   context: ctx,
                   branch: Branch.vienna,
                   title: 'CitySwim Vienna',
-                  subtitle: 'In der Au 1, Klosterneuburg • EUR (€) • Europe/Vienna',
+                  subtitle: 'In der Au 1, Klosterneuburg • EUR (€)',
                   flag: '🇦🇹',
                   isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == 'vienna',
                   onTap: () {
@@ -169,7 +193,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                   context: ctx,
                   branch: Branch.kyiv,
                   title: 'CitySwim Kyiv',
-                  subtitle: 'CitySwim Kyiv Center • UAH (₴) • Europe/Kyiv',
+                  subtitle: 'CitySwim Kyiv Center • UAH (₴)',
                   flag: '🇺🇦',
                   isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == 'kyiv',
                   onTap: () {
@@ -181,7 +205,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
 
                 // Divider
                 Divider(
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
+                  color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
                   height: 1,
                 ),
                 const SizedBox(height: 14),
@@ -230,28 +254,33 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: BoxDecoration(
             color: isSelected
-                ? currentTheme.accentPrimary.withValues(alpha: isDark ? 0.18 : 0.12)
-                : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                ? (isDark ? currentTheme.accentPrimary.withValues(alpha: 0.18) : const Color(0xFFF0F9FF))
+                : (isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
-                  ? currentTheme.accentPrimary.withValues(alpha: 0.6)
-                  : (isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.05)),
-              width: isSelected ? 1.5 : 1,
+                  ? (isDark ? currentTheme.accentPrimary.withValues(alpha: 0.6) : const Color(0xFF0284C7))
+                  : (isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFE2E8F0)),
+              width: isSelected ? 1.5 : 1.1,
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F2640) : const Color(0xFFE8F4FD),
+                  color: isDark
+                      ? const Color(0xFF0F2640)
+                      : (isSelected ? const Color(0xFFE0F2FE) : const Color(0xFFF0F9FF)),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected
-                        ? currentTheme.accentPrimary.withValues(alpha: 0.4)
-                        : Colors.transparent,
+                    color: isDark
+                        ? (isSelected
+                            ? currentTheme.accentPrimary.withValues(alpha: 0.4)
+                            : Colors.transparent)
+                        : const Color(0xFFBAE6FD),
+                    width: 1,
                   ),
                 ),
                 child: Center(
@@ -278,15 +307,19 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2.5),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                            color: isDark ? Colors.white10 : const Color(0xFFE0F2FE),
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isDark ? Colors.transparent : const Color(0xFFBAE6FD),
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             branch.currencySymbol,
                             style: TextStyle(
-                              color: currentTheme.accentPrimary,
+                              color: isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -298,7 +331,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: currentTheme.textSecondary,
+                        color: isDark ? currentTheme.textSecondary : const Color(0xFF64748B),
                         fontSize: 12,
                       ),
                       maxLines: 1,
@@ -318,8 +351,11 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: currentTheme.accentPrimary.withValues(alpha: 0.4),
+                        color: isDark
+                            ? currentTheme.accentPrimary.withValues(alpha: 0.4)
+                            : const Color(0xFF0284C7).withValues(alpha: 0.35),
                         blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -355,21 +391,21 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: BoxDecoration(
             color: isSelected
-                ? currentTheme.accentPrimary.withValues(alpha: isDark ? 0.18 : 0.12)
-                : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                ? (isDark ? currentTheme.accentPrimary.withValues(alpha: 0.18) : const Color(0xFFF5F3FF))
+                : (isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFFAF5FF)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
-                  ? currentTheme.accentPrimary.withValues(alpha: 0.6)
-                  : (isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.05)),
-              width: isSelected ? 1.5 : 1,
+                  ? (isDark ? currentTheme.accentPrimary.withValues(alpha: 0.6) : const Color(0xFF8B5CF6))
+                  : (isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFE9D5FF)),
+              width: isSelected ? 1.5 : 1.1,
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
@@ -403,15 +439,19 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2.5),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                            color: isDark ? Colors.white10 : const Color(0xFFF3E8FF),
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isDark ? Colors.transparent : const Color(0xFFDDD6FE),
+                              width: 1,
+                            ),
                           ),
-                          child: const Text(
+                          child: Text(
                             '₴ / €',
                             style: TextStyle(
-                              color: Color(0xFF8B5CF6),
+                              color: isDark ? const Color(0xFF8B5CF6) : const Color(0xFF7C3AED),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -423,7 +463,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     Text(
                       'Зведена аналітика та загальні показники мережі',
                       style: TextStyle(
-                        color: currentTheme.textSecondary,
+                        color: isDark ? currentTheme.textSecondary : const Color(0xFF64748B),
                         fontSize: 12,
                       ),
                     ),
@@ -441,8 +481,11 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: currentTheme.accentPrimary.withValues(alpha: 0.4),
+                        color: isDark
+                            ? currentTheme.accentPrimary.withValues(alpha: 0.4)
+                            : const Color(0xFF8B5CF6).withValues(alpha: 0.35),
                         blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -483,10 +526,10 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F9FF),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+            color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFBAE6FD),
           ),
         ),
         child: Row(
@@ -535,20 +578,25 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                       ? (tenancyState.isAllLocations
                           ? const Color(0xFF6366F1).withValues(alpha: 0.20)
                           : currentTheme.accentPrimary.withValues(alpha: 0.16))
-                      : Colors.white.withValues(alpha: 0.90),
+                      : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: tenancyState.isAllLocations
-                        ? const Color(0xFF8B5CF6).withValues(alpha: 0.5)
-                        : currentTheme.accentPrimary.withValues(alpha: isDark ? 0.45 : 0.35),
+                        ? const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.5 : 0.7)
+                        : (isDark
+                            ? currentTheme.accentPrimary.withValues(alpha: 0.45)
+                            : const Color(0xFFBAE6FD)),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (tenancyState.isAllLocations
-                              ? const Color(0xFF6366F1)
-                              : currentTheme.accentPrimary)
-                          .withValues(alpha: _isHovered ? 0.35 : 0.18),
+                      color: isDark
+                          ? (tenancyState.isAllLocations
+                                  ? const Color(0xFF6366F1)
+                                  : currentTheme.accentPrimary)
+                              .withValues(alpha: _isHovered ? 0.35 : 0.18)
+                          : const Color(0xFF0284C7)
+                              .withValues(alpha: _isHovered ? 0.20 : 0.08),
                       blurRadius: _isHovered ? 14 : 8,
                       offset: const Offset(0, 2),
                     ),
@@ -574,7 +622,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     const SizedBox(width: 6),
                     Icon(
                       LucideIcons.chevronDown,
-                      color: currentTheme.isDark ? const Color(0xFF38BDF8) : currentTheme.textSecondary,
+                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       size: 14,
                     ),
                   ],

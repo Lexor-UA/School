@@ -5,6 +5,7 @@ import '../../auth/controllers/auth_controller.dart';
 import '../../auth/models/app_user.dart';
 import '../models/organization.dart';
 import '../models/branch.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Провайдер філії поточного авторизованого користувача (якщо не Owner)
 final currentUserBranchIdProvider = Provider<String?>((ref) {
@@ -178,6 +179,130 @@ class TenancyNotifier extends Notifier<TenancyState> {
     if (state.availableBranches.any((b) => b.id == branch.id)) return;
     final updatedList = [...state.availableBranches, branch];
     state = state.copyWith(availableBranches: updatedList);
+  }
+
+  /// Створення нової філії та автоматичне створення її адміністратора у Firestore
+  Future<void> createBranch(
+    Branch branch, {
+    int? adminSalary,
+    String? adminName,
+  }) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // 1. Запис філії у Firestore
+      await firestore
+          .collection('branches')
+          .doc(branch.id)
+          .set(branch.toJson());
+
+      // 2. Автоматичне створення адміністратора нової філії у колекції 'users'
+      final adminDocId = 'admin_${branch.id}';
+      final isEuro = branch.currency == 'EUR';
+      final defaultSalary = branch.currency == 'UAH' ? 20000 : 1800;
+
+      await firestore.collection('users').doc(adminDocId).set({
+        'id': adminDocId,
+        'name': (adminName != null && adminName.trim().isNotEmpty)
+            ? adminName.trim()
+            : 'Адміністратор ${branch.name}',
+        'role': 'admin',
+        'branchId': branch.id,
+        'branchIds': [branch.id],
+        'phone': '',
+        'loginId': 'admin.${branch.id}@cityswim.at',
+        'currency': branch.currencySymbol,
+        'adminSalary': adminSalary ?? defaultSalary,
+        'salaryType': 'monthly',
+        'rateGroup': isEuro ? 25 : 400,
+        'rateIndividual': isEuro ? 35 : 450,
+        'rateSplit': isEuro ? 45 : 600,
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Admin+${Uri.encodeComponent(branch.name)}&background=8b5cf6&color=ffffff',
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 3. Оновлення локального стану
+      registerBranch(branch);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Гарантує наявність адміністраторів для дефолтних філій (Київ та Відень) у Firestore
+  Future<void> ensureDefaultBranchAdminsExist() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // 1. Адміністратор Києва
+      final kyivAdminRef = firestore.collection('users').doc('admin');
+      final kyivSnap = await kyivAdminRef.get();
+      if (!kyivSnap.exists) {
+        await kyivAdminRef.set({
+          'id': 'admin',
+          'name': 'Адміністратор',
+          'role': 'admin',
+          'branchId': 'kyiv',
+          'branchIds': ['kyiv'],
+          'phone': '+380 (99) 000-00-01',
+          'loginId': 'Admin',
+          'currency': '₴',
+          'adminSalary': 20000,
+          'salaryType': 'monthly',
+          'rateGroup': 400,
+          'rateIndividual': 450,
+          'rateSplit': 600,
+          'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=db2777&color=ffffff',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        final data = kyivSnap.data() ?? {};
+        final role = (data['role'] as String?)?.toLowerCase();
+        final updates = <String, dynamic>{};
+        if (role != 'admin') updates['role'] = 'admin';
+        if (data['branchId'] == null) updates['branchId'] = 'kyiv';
+        if (data['currency'] == null) updates['currency'] = '₴';
+        if (data['adminSalary'] == null) updates['adminSalary'] = 20000;
+        if (updates.isNotEmpty) {
+          await kyivAdminRef.set(updates, SetOptions(merge: true));
+        }
+      }
+
+      // 2. Адміністратор Відня
+      final viennaAdminRef = firestore.collection('users').doc('admin_vienna');
+      final viennaSnap = await viennaAdminRef.get();
+      if (!viennaSnap.exists) {
+        await viennaAdminRef.set({
+          'id': 'admin_vienna',
+          'name': 'Admin Vienna',
+          'role': 'admin',
+          'branchId': 'vienna',
+          'branchIds': ['vienna'],
+          'phone': '+43 1 234 5678',
+          'loginId': 'vienna.admin@cityswim.at',
+          'currency': '€',
+          'adminSalary': 1900,
+          'salaryType': 'monthly',
+          'rateGroup': 25,
+          'rateIndividual': 35,
+          'rateSplit': 45,
+          'avatarUrl': 'https://ui-avatars.com/api/?name=Vienna+Admin&background=8b5cf6&color=ffffff',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        final data = viennaSnap.data() ?? {};
+        final role = (data['role'] as String?)?.toLowerCase();
+        final updates = <String, dynamic>{};
+        if (role != 'admin') updates['role'] = 'admin';
+        if (data['branchId'] == null) updates['branchId'] = 'vienna';
+        if (data['currency'] == null) updates['currency'] = '€';
+        if (data['adminSalary'] == null) updates['adminSalary'] = 1900;
+        if (updates.isNotEmpty) {
+          await viennaAdminRef.set(updates, SetOptions(merge: true));
+        }
+      }
+    } catch (_) {
+      // Безпечно ігноруємо при відсутності мережі або в тестах
+    }
   }
 }
 

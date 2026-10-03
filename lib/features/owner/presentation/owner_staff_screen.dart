@@ -317,7 +317,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                             }
 
                             final isViennaStaff = staffBranchId == 'vienna';
-                            final staffCurrency = isViennaStaff ? '€' : '₴';
+                            final staffCurrency = (data['currency'] as String?)?.isNotEmpty == true
+                                ? (data['currency'] as String)
+                                : (isViennaStaff ? '€' : '₴');
 
                             final roleRaw = (data['role'] as String?)?.toLowerCase() ?? '';
                             final loginId = (data['loginId'] as String?) ?? '';
@@ -342,7 +344,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
 
                             if (role == 'admin') {
                               adminCount++;
-                              if (isViennaStaff) {
+                              if (isViennaStaff || staffCurrency == '€') {
                                 totalPayrollFundEur += adminSalary;
                               } else {
                                 totalPayrollFundUah += adminSalary;
@@ -410,7 +412,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                               final scheduledSum = (scheduledG * rateGroup) + (scheduledI * rateIndividual) + (scheduledS * rateSplit);
 
                               totalConductedClasses += conductedTotal;
-                              if (isViennaStaff) {
+                              if (isViennaStaff || staffCurrency == '€') {
                                 totalPayrollFundEur += earnedSum;
                                 totalScheduledCoachFundEur += scheduledSum;
                               } else {
@@ -438,52 +440,6 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 'conductedG': conductedG,
                                 'conductedI': conductedI,
                                 'conductedS': conductedS,
-                              });
-                            }
-                          }
-
-                          // Guarantee Administrator appears if none exists
-                          final hasAdmin = staffList.any((s) => s['role'] == 'admin');
-                          if (!hasAdmin) {
-                            if (isAllLocations || activeBranchId == 'kyiv') {
-                              adminCount++;
-                              totalPayrollFundUah += 20000;
-                              staffList.add({
-                                'id': 'admin',
-                                'name': 'Адміністратор',
-                                'role': 'admin',
-                                'phone': '+380 (99) 000-00-01',
-                                'loginId': 'Admin',
-                                'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
-                                'branchId': 'kyiv',
-                                'currency': '₴',
-                                'adminSalary': 20000,
-                                'earnedSum': 20000,
-                                'scheduledSum': 0,
-                                'conductedTotal': 0,
-                                'rateGroup': 400,
-                                'rateIndividual': 450,
-                                'rateSplit': 600,
-                              });
-                            } else if (activeBranchId == 'vienna') {
-                              adminCount++;
-                              totalPayrollFundEur += 1800;
-                              staffList.add({
-                                'id': 'admin_vienna',
-                                'name': 'Admin Vienna',
-                                'role': 'admin',
-                                'phone': '+43 1 234 5678',
-                                'loginId': 'vienna.admin@cityswim.at',
-                                'avatarUrl': 'https://ui-avatars.com/api/?name=Admin+Vienna&background=8b5cf6&color=ffffff',
-                                'branchId': 'vienna',
-                                'currency': '€',
-                                'adminSalary': 1800,
-                                'earnedSum': 1800,
-                                'scheduledSum': 0,
-                                'conductedTotal': 0,
-                                'rateGroup': 25,
-                                'rateIndividual': 35,
-                                'rateSplit': 45,
                               });
                             }
                           }
@@ -540,7 +496,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                   return _buildStaffItemCard(staff, staffCur, index, themeConfig);
                                 }),
 
-                              SizedBox(height: widget.isEmbedded ? 100 : 48),
+                              SizedBox(height: widget.isEmbedded ? 180 : 48),
                             ],
                           );
                         },
@@ -660,7 +616,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     border: Border.all(
                       color: _isSearchVisible
                           ? const Color(0xFF00E5FF)
-                          : (isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFE2E8F0)),
+                          : (isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -880,7 +836,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         Text(
                           _formatMoney(totalPayrollFundEur, '€'),
                           style: TextStyle(
-                            color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                            color: isDark ? const Color(0xFF38BDF8) : themeConfig.textPrimary,
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.5,
@@ -891,12 +847,12 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.12),
+                        color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: isDark ? 0.20 : 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
+                      child: Text(
                         'факт',
-                        style: TextStyle(color: Color(0xFF10B981), fontSize: 10.5, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857), fontSize: 10.5, fontWeight: FontWeight.w800),
                       ),
                     ),
                   ],
@@ -926,12 +882,12 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.12),
+                        color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: isDark ? 0.20 : 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
+                      child: Text(
                         'фактично',
-                        style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857), fontSize: 11, fontWeight: FontWeight.w800),
                       ),
                     ),
                   ],
@@ -948,10 +904,10 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.04),
+                  color: isDark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: Row(
@@ -966,7 +922,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         themeConfig: themeConfig,
                       ),
                     ),
-                    Container(width: 1, height: 32, color: isDark ? Colors.white12 : Colors.black12),
+                    Container(width: 1, height: 32, color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
                     Expanded(
                       child: _buildTelemetryStatItem(
                         icon: LucideIcons.shieldCheck,
@@ -977,7 +933,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         themeConfig: themeConfig,
                       ),
                     ),
-                    Container(width: 1, height: 32, color: isDark ? Colors.white12 : Colors.black12),
+                    Container(width: 1, height: 32, color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
                     Expanded(
                       child: _buildTelemetryStatItem(
                         icon: LucideIcons.users,
@@ -1183,7 +1139,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
         color: isDark ? const Color(0xFF081C30).withValues(alpha: 0.85) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? accentColor.withValues(alpha: 0.25) : accentColor.withValues(alpha: 0.30),
+          color: isDark
+              ? accentColor.withValues(alpha: 0.25)
+              : (isCoach ? const Color(0xFFBAE6FD) : const Color(0xFFE9D5FF)),
           width: 1.1,
         ),
         boxShadow: [
@@ -1358,10 +1316,10 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFF1F5F9),
+                          color: isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+                            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFBAE6FD),
                           ),
                         ),
                         child: Icon(LucideIcons.slidersHorizontal, color: accentColor, size: 18),
@@ -1600,8 +1558,8 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         borderRadius: BorderRadius.circular(14),
                         side: BorderSide(
                           color: isCoach
-                              ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.35)
-                              : const Color(0xFFA855F7).withValues(alpha: isDark ? 0.35 : 0.35),
+                              ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD))
+                              : (isDark ? const Color(0xFFA855F7).withValues(alpha: 0.35) : const Color(0xFFDDD6FE)),
                         ),
                       ),
                     ),

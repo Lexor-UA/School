@@ -19,6 +19,7 @@ import 'package:swimming_school_app/features/owner/controllers/owner_analytics_c
 import 'package:swimming_school_app/features/owner/presentation/owner_staff_screen.dart';
 import 'package:swimming_school_app/features/owner/presentation/owner_payouts_screen.dart';
 import 'package:swimming_school_app/features/admin/presentation/payment_sheet.dart';
+import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 
 /// Головний екран Власника (CitySwim CEO)
 /// Виконано за стандартом Apple VisionOS Deep Sapphire Glass:
@@ -37,6 +38,36 @@ class OwnerMain extends ConsumerStatefulWidget {
 class _OwnerMainState extends ConsumerState<OwnerMain> {
   int _selectedTabIndex = 0;
   String _selectedTimeframe = 'Місяць';
+
+  String _formatClientsCount(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 19) {
+      return '$count клієнтів';
+    }
+    if (mod10 == 1) {
+      return '$count клієнт';
+    }
+    if (mod10 >= 2 && mod10 <= 4) {
+      return '$count клієнти';
+    }
+    return '$count клієнтів';
+  }
+
+  String _formatCoachesCount(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 19) {
+      return '$count тренерів';
+    }
+    if (mod10 == 1) {
+      return '$count тренер';
+    }
+    if (mod10 >= 2 && mod10 <= 4) {
+      return '$count тренери';
+    }
+    return '$count тренерів';
+  }
 
   void _showOwnerDevSnackbar(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -63,6 +94,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     final themeConfig = ref.watch(appThemeControllerProvider);
     final tenancyState = ref.watch(tenancyControllerProvider);
     final analytics = ref.watch(ownerAnalyticsControllerProvider);
+    final adminDashboard = ref.watch(adminDashboardProvider);
     final isDark = themeConfig.isDark;
 
     return Scaffold(
@@ -75,7 +107,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           IndexedStack(
             index: _selectedTabIndex,
             children: [
-              _buildPulseTab(context, ref, themeConfig, tenancyState, analytics),
+              _buildPulseTab(context, ref, themeConfig, tenancyState, analytics, adminDashboard),
               _buildFinanceTab(context, ref, themeConfig, tenancyState, analytics),
               const OwnerStaffScreen(isEmbedded: true),
               const OwnerPayoutsScreen(isEmbedded: true),
@@ -96,6 +128,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     AppThemeConfig themeConfig,
     TenancyState tenancyState,
     OwnerAnalyticsState analytics,
+    AdminDashboardState adminDashboard,
   ) {
     final isDark = themeConfig.isDark;
 
@@ -157,12 +190,22 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.16 : 0.12),
+                        color: isDark
+                            ? const Color(0xFF10B981).withValues(alpha: 0.16)
+                            : Colors.white.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.30),
+                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.45),
                           width: 1,
                         ),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -170,16 +213,24 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           Container(
                             width: 7,
                             height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                if (!isDark)
+                                  BoxShadow(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.45),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Text(
+                          Text(
                             'LIVE PULSE',
                             style: TextStyle(
-                              color: Color(0xFF10B981),
+                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
@@ -202,12 +253,12 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 const SizedBox(height: 22),
 
                 // Operational Pulse Grid (4 KPI Cards)
-                _buildOperationalPulseGrid(themeConfig, tenancyState, analytics)
+                _buildOperationalPulseGrid(themeConfig, tenancyState, analytics, adminDashboard)
                     .animate()
                     .fadeIn(delay: 200.ms)
                     .slideY(begin: 0.08),
 
-                const SizedBox(height: 110),
+                const SizedBox(height: 180),
               ]),
             ),
           ),
@@ -278,7 +329,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     .animate()
                     .fadeIn(delay: 400.ms),
 
-                const SizedBox(height: 110),
+                const SizedBox(height: 180),
               ]),
             ),
           ),
@@ -446,13 +497,21 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     HapticFeedback.lightImpact();
                     context.push('/superadmin');
                   },
-                  icon: const Icon(LucideIcons.shieldCheck, color: Color(0xFF00E5FF), size: 19),
+                  icon: Icon(
+                    LucideIcons.shieldCheck,
+                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    size: 19,
+                  ),
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.15 : 0.10),
+                    backgroundColor: isDark
+                        ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                        : const Color(0xFFE0F2FE),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.all(8),
                     side: BorderSide(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.25),
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                          : const Color(0xFFBAE6FD),
                       width: 1,
                     ),
                   ),
@@ -467,10 +526,23 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 IconButton(
                   icon: Icon(
                     LucideIcons.logOut,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                    size: 20,
+                    color: isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
+                    size: 18,
                   ),
                   tooltip: 'Вийти з акаунту',
+                  style: IconButton.styleFrom(
+                    backgroundColor: isDark
+                        ? const Color(0xFFF43F5E).withValues(alpha: 0.16)
+                        : const Color(0xFFFFF1F2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.all(8),
+                    side: BorderSide(
+                      color: isDark
+                          ? const Color(0xFFF43F5E).withValues(alpha: 0.35)
+                          : const Color(0xFFFECDD3),
+                      width: 1,
+                    ),
+                  ),
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
                     await ref.read(authControllerProvider.notifier).logout();
@@ -634,14 +706,14 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         // Kyiv Card
         _buildBranchPulseCard(
           themeConfig: themeConfig,
-          flag: '🇺🇦',
-          branchName: 'CitySwim Kyiv',
-          currencyCode: 'UAH (₴)',
-          revenueText: '124 500 ₴',
-          profitText: '84 200 ₴',
-          expensesText: '40 300 ₴',
-          growthText: '+12.5%',
-          statusText: '🟢 Стабільна робота • 412 клієнтів • 8 тренерів',
+          flag: analytics.kyiv.flagEmoji,
+          branchName: analytics.kyiv.branchName,
+          currencyCode: '${analytics.kyiv.currencyCode} (${analytics.kyiv.currencySymbol})',
+          revenueText: analytics.kyiv.formatRevenue(),
+          profitText: analytics.kyiv.formatNetProfit(),
+          expensesText: analytics.kyiv.formatExpenses(),
+          growthText: '+${analytics.kyiv.revenueGrowth}%',
+          statusText: '🟢 Стабільна робота • ${_formatClientsCount(analytics.kyiv.clientCount)} • ${_formatCoachesCount(analytics.kyiv.coachCount)}',
           primaryGradient: isDark
               ? [const Color(0xFF0C2442), const Color(0xFF051222)]
               : [Colors.white, const Color(0xFFF0F9FF)],
@@ -657,14 +729,14 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         // Vienna Card
         _buildBranchPulseCard(
           themeConfig: themeConfig,
-          flag: '🇦🇹',
-          branchName: 'CitySwim Vienna',
-          currencyCode: 'EUR (€)',
-          revenueText: '€ 14 850',
-          profitText: '€ 9 650',
-          expensesText: '€ 5 200',
-          growthText: '+18.2%',
-          statusText: '🟢 Активне зростання • 68 клієнтів • 3 тренери',
+          flag: analytics.vienna.flagEmoji,
+          branchName: analytics.vienna.branchName,
+          currencyCode: '${analytics.vienna.currencyCode} (${analytics.vienna.currencySymbol})',
+          revenueText: analytics.vienna.formatRevenue(),
+          profitText: analytics.vienna.formatNetProfit(),
+          expensesText: analytics.vienna.formatExpenses(),
+          growthText: '+${analytics.vienna.revenueGrowth}%',
+          statusText: '🟢 Активне зростання • ${_formatClientsCount(analytics.vienna.clientCount)} • ${_formatCoachesCount(analytics.vienna.coachCount)}',
           primaryGradient: isDark
               ? [const Color(0xFF1E1742), const Color(0xFF0A0C22)]
               : [Colors.white, const Color(0xFFFAF5FF)],
@@ -681,11 +753,24 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0C1F38).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.7),
+            color: isDark ? const Color(0xFF0C1F38).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.90),
+            gradient: isDark
+                ? null
+                : const LinearGradient(
+                    colors: [Colors.white, Color(0xFFF0F9FF)],
+                  ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD),
             ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
           child: Row(
             children: [
@@ -699,9 +784,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 child: Text(
                   'Мультивалютний контроль: кожна філія має ізольований баланс (₴ та €)',
                   style: TextStyle(
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                   ),
                 ),
               ),
@@ -791,7 +876,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                               Text(
                                 currencyCode,
                                 style: TextStyle(
-                                  color: accentColor,
+                                  color: isDark
+                                      ? accentColor
+                                      : (accentColor == const Color(0xFF00E5FF)
+                                          ? const Color(0xFF0284C7)
+                                          : const Color(0xFF7C3AED)),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -804,21 +893,27 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.20 : 0.14),
+                          color: isDark
+                              ? const Color(0xFF10B981).withValues(alpha: 0.20)
+                              : const Color(0xFFECFDF5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.40),
+                            color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.40 : 0.45),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(LucideIcons.trendingUp, size: 13, color: Color(0xFF10B981)),
+                            Icon(
+                              LucideIcons.trendingUp,
+                              size: 13,
+                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               growthText,
-                              style: const TextStyle(
-                                color: Color(0xFF10B981),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -858,10 +953,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.04),
+                      color: isDark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFFF0F9FF),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD),
                       ),
                     ),
                     child: Row(
@@ -869,12 +964,16 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       children: [
                         Row(
                           children: [
-                            const Icon(LucideIcons.arrowUpRight, size: 14, color: Color(0xFF10B981)),
+                            Icon(
+                              LucideIcons.arrowUpRight,
+                              size: 14,
+                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'Прибуток: $profitText',
-                              style: const TextStyle(
-                                color: Color(0xFF10B981),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -884,9 +983,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         Text(
                           'Витрати: $expensesText',
                           style: TextStyle(
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                           ),
                         ),
                       ],
@@ -899,9 +998,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   Text(
                     statusText,
                     style: TextStyle(
-                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
+                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155),
                       fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                     ),
                   ),
                 ],
@@ -920,6 +1019,13 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     final isDark = themeConfig.isDark;
 
     final primaryAccent = isVienna ? const Color(0xFFA855F7) : const Color(0xFF00E5FF);
+
+    final marginRatio = summary.totalRevenue > 0
+        ? (summary.netProfit / summary.totalRevenue)
+        : 0.0;
+    final marginPercentStr = summary.totalRevenue > 0
+        ? '${(marginRatio * 100).toStringAsFixed(1)}%'
+        : '0.0%';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
@@ -1004,12 +1110,12 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
               // Large Revenue
               Text(
-                'owner.total_revenue'.tr(),
+                'owner.total_revenue'.tr().toUpperCase(),
                 style: TextStyle(
                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1038,7 +1144,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     ),
                   ),
                   Text(
-                    '${((summary.netProfit / summary.totalRevenue) * 100).toStringAsFixed(1)}% чистий прибуток',
+                    '$marginPercentStr чистий прибуток',
                     style: const TextStyle(
                       color: Color(0xFF10B981),
                       fontSize: 12,
@@ -1053,8 +1159,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 child: SizedBox(
                   height: 7,
                   child: LinearProgressIndicator(
-                    value: (summary.netProfit / summary.totalRevenue).clamp(0.0, 1.0),
-                    backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                    value: marginRatio.clamp(0.0, 1.0),
+                    backgroundColor: isDark ? Colors.white10 : const Color(0xFFE0F2FE),
                     valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
                   ),
                 ),
@@ -1066,10 +1172,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.04),
+                  color: isDark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD),
                   ),
                 ),
                 child: Row(
@@ -1081,10 +1187,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Чистий прибуток',
                               style: TextStyle(
-                                color: Color(0xFF10B981),
+                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1092,8 +1198,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                             const SizedBox(height: 2),
                             Text(
                               summary.formatNetProfit(),
-                              style: const TextStyle(
-                                color: Color(0xFF10B981),
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1106,7 +1212,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       width: 1,
                       height: 28,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: isDark ? Colors.white12 : Colors.black12,
+                      color: isDark ? Colors.white12 : const Color(0xFFBAE6FD),
                     ),
                     Expanded(
                       child: FittedBox(
@@ -1116,9 +1222,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Витрати клубу',
+                              'Витрати школи',
                               style: TextStyle(
-                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1140,7 +1246,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       width: 1,
                       height: 28,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: isDark ? Colors.white12 : Colors.black12,
+                      color: isDark ? Colors.white12 : const Color(0xFFBAE6FD),
                     ),
                     Expanded(
                       child: FittedBox(
@@ -1152,7 +1258,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                             Text(
                               'LTV Клієнта',
                               style: TextStyle(
-                                color: primaryAccent,
+                                color: isDark
+                                    ? primaryAccent
+                                    : (primaryAccent == const Color(0xFF00E5FF)
+                                        ? const Color(0xFF0284C7)
+                                        : const Color(0xFF7C3AED)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1161,7 +1271,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                             Text(
                               summary.formatLtv(),
                               style: TextStyle(
-                                color: primaryAccent,
+                                color: isDark
+                                    ? primaryAccent
+                                    : (primaryAccent == const Color(0xFF00E5FF)
+                                        ? const Color(0xFF0284C7)
+                                        : const Color(0xFF7C3AED)),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1187,9 +1301,22 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     AppThemeConfig themeConfig,
     TenancyState tenancyState,
     OwnerAnalyticsState analytics,
+    AdminDashboardState adminDashboard,
   ) {
     final isAll = tenancyState.isAllLocations;
     final isVienna = analytics.isViennaSelected;
+    final activeBranchId = tenancyState.activeBranchId;
+
+    final branchMetrics = adminDashboard.branchMetrics;
+    final int clientsValue = isAll
+        ? adminDashboard.activeClientsCount
+        : (branchMetrics[activeBranchId]?.activeClientsCount ?? 0);
+    final int coachesValue = isAll
+        ? adminDashboard.totalCoachesCount
+        : (branchMetrics[activeBranchId]?.totalCoachesCount ?? 0);
+    final int unpaidValue = isAll
+        ? adminDashboard.unpaidSubscriptions
+        : (branchMetrics[activeBranchId]?.unpaidSubscriptions ?? 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1199,10 +1326,19 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           child: Text(
             'ОПЕРАЦІЙНА СИТУАЦІЯ',
             style: TextStyle(
-              color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               letterSpacing: 1.5,
+              shadows: themeConfig.isDark
+                  ? null
+                  : [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
             ),
           ),
         ),
@@ -1213,10 +1349,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.users,
                 title: 'owner.clients'.tr(),
-                value: isAll
-                    ? '${analytics.totalClients}'
-                    : (isVienna ? '${analytics.vienna.clientCount}' : '${analytics.kyiv.clientCount}'),
-                sublabel: isAll ? '🇺🇦 412 • 🇦🇹 68' : 'Активні відвідувачі',
+                value: '$clientsValue',
+                sublabel: isAll ? '🇺🇦 ${branchMetrics['kyiv']?.activeClientsCount ?? 0} • 🇦🇹 ${branchMetrics['vienna']?.activeClientsCount ?? 0}' : 'Активні відвідувачі',
                 accentColor: const Color(0xFF00E5FF),
                 themeConfig: themeConfig,
               ),
@@ -1231,7 +1365,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 value: isAll
                     ? '${analytics.averageOccupancy}%'
                     : (isVienna ? '${analytics.vienna.occupancyPercent}%' : '${analytics.kyiv.occupancyPercent}%'),
-                sublabel: isAll ? '🇺🇦 84% • 🇦🇹 76%' : 'Завантаженість',
+                sublabel: isAll ? '🇺🇦 ${analytics.kyiv.occupancyPercent}% • 🇦🇹 ${analytics.vienna.occupancyPercent}%' : 'Завантаженість',
                 accentColor: const Color(0xFFF59E0B),
                 themeConfig: themeConfig,
               ),
@@ -1246,10 +1380,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.userCheck,
                 title: 'Тренери',
-                value: isAll
-                    ? '${analytics.totalCoaches} тренерів'
-                    : (isVienna ? '${analytics.vienna.coachCount} тренери' : '${analytics.kyiv.coachCount} тренерів'),
-                sublabel: isAll ? '🇺🇦 8 • 🇦🇹 3 ➔' : 'Штат у нормі ➔',
+                value: _formatCoachesCount(coachesValue),
+                sublabel: isAll ? '🇺🇦 ${branchMetrics['kyiv']?.totalCoachesCount ?? 0} • 🇦🇹 ${branchMetrics['vienna']?.totalCoachesCount ?? 0} ➔' : 'Штат у нормі ➔',
                 accentColor: const Color(0xFF10B981),
                 themeConfig: themeConfig,
                 onTap: () {
@@ -1265,11 +1397,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.alertTriangle,
                 title: 'Потребує уваги',
-                value: '4 без оплати',
+                value: '$unpaidValue без оплати',
                 sublabel: 'Без оплати ➔',
                 accentColor: const Color(0xFFF43F5E),
                 themeConfig: themeConfig,
-                isAttention: true,
+                isAttention: unpaidValue > 0,
                 onTap: _openPaymentAttentionSheet,
               ),
             ),
@@ -1318,12 +1450,12 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 border: Border.all(
                   color: isAttention
                       ? const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.45 : 0.35)
-                      : (isDark ? accentColor.withValues(alpha: 0.25) : const Color(0xFFE2E8F0)),
+                      : (isDark ? accentColor.withValues(alpha: 0.25) : const Color(0xFFBAE6FD)),
                   width: 1.1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withValues(alpha: isDark ? 0.12 : 0.04),
+                    color: accentColor.withValues(alpha: isDark ? 0.12 : 0.06),
                     blurRadius: 14,
                     offset: const Offset(0, 3),
                   ),
@@ -1347,8 +1479,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF43F5E).withValues(alpha: 0.2),
+                            color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.20 : 0.14),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.30 : 0.25),
+                            ),
                           ),
                           child: const Text(
                             'УВАГА',
@@ -1380,7 +1515,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1394,10 +1529,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       color: isAttention
                           ? const Color(0xFFF43F5E)
                           : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF0284C7)),
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w600,
+                      height: 1.2,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -1419,6 +1555,37 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
   ) {
     final isDark = themeConfig.isDark;
     final isVienna = analytics.isViennaSelected;
+
+    double childRevenue = 0.0;
+    double adultRevenue = 0.0;
+    
+    if (tenancyState.isAllLocations) {
+      childRevenue = analytics.kyiv.childRevenue + analytics.vienna.childRevenue;
+      adultRevenue = analytics.kyiv.adultRevenue + analytics.vienna.adultRevenue;
+    } else if (isVienna) {
+      childRevenue = analytics.vienna.childRevenue;
+      adultRevenue = analytics.vienna.adultRevenue;
+    } else {
+      childRevenue = analytics.kyiv.childRevenue;
+      adultRevenue = analytics.kyiv.adultRevenue;
+    }
+    
+    final totalRevenue = childRevenue + adultRevenue;
+    
+    double childPercent = totalRevenue > 0 ? childRevenue / totalRevenue : 0.0;
+    double adultPercent = totalRevenue > 0 ? adultRevenue / totalRevenue : 0.0;
+    
+    final childPercentStr = '${(childPercent * 100).round()}%';
+    final adultPercentStr = '${(adultPercent * 100).round()}%';
+
+    final childAmountStr = tenancyState.isAllLocations
+        ? '${analytics.kyiv.formatMoney(analytics.kyiv.childRevenue)} / ${analytics.vienna.formatMoney(analytics.vienna.childRevenue)}'
+        : (isVienna ? analytics.vienna.formatMoney(childRevenue) : analytics.kyiv.formatMoney(childRevenue));
+
+    final adultAmountStr = tenancyState.isAllLocations
+        ? '${analytics.kyiv.formatMoney(analytics.kyiv.adultRevenue)} / ${analytics.vienna.formatMoney(analytics.vienna.adultRevenue)}'
+        : (isVienna ? analytics.vienna.formatMoney(adultRevenue) : analytics.kyiv.formatMoney(adultRevenue));
+
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -1448,27 +1615,12 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'СТРУКТУРА ДОХОДІВ МЕРЕЖІ',
+                    tenancyState.isAllLocations ? 'СТРУКТУРА ДОХОДІВ МЕРЕЖІ' : 'СТРУКТУРА ДОХОДІВ',
                     style: TextStyle(
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0369A1),
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'TOP КАТЕГОРІЇ',
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
@@ -1477,12 +1629,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
               // Item 1
               _buildBreakdownItem(
-                label: 'Абонементи (8 занять)',
-                percent: '45%',
-                value: 0.45,
-                amount: tenancyState.isAllLocations
-                    ? '56 000 ₴ / € 6 680'
-                    : (isVienna ? '€ 6 680' : '56 000 ₴'),
+                label: 'Дитячі абонементи',
+                percent: childPercentStr,
+                value: childPercent,
+                amount: childAmountStr,
                 gradient: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                 themeConfig: themeConfig,
               ),
@@ -1491,27 +1641,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
               // Item 2
               _buildBreakdownItem(
-                label: 'Безлімітні абонементи',
-                percent: '30%',
-                value: 0.30,
-                amount: tenancyState.isAllLocations
-                    ? '37 350 ₴ / € 4 455'
-                    : (isVienna ? '€ 4 455' : '37 350 ₴'),
+                label: 'Дорослі абонементи',
+                percent: adultPercentStr,
+                value: adultPercent,
+                amount: adultAmountStr,
                 gradient: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                themeConfig: themeConfig,
-              ),
-
-              const SizedBox(height: 14),
-
-              // Item 3
-              _buildBreakdownItem(
-                label: 'Індивідуальні та разові',
-                percent: '25%',
-                value: 0.25,
-                amount: tenancyState.isAllLocations
-                    ? '31 150 ₴ / € 3 715'
-                    : (isVienna ? '€ 3 715' : '31 150 ₴'),
-                gradient: const [Color(0xFF10B981), Color(0xFF059669)],
                 themeConfig: themeConfig,
               ),
             ],
@@ -1578,19 +1712,21 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             ),
             child: Row(
               children: [
-                Expanded(
-                  flex: (value * 100).round(),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: gradient),
-                      borderRadius: BorderRadius.circular(6),
+                if ((value * 100).round() > 0)
+                  Expanded(
+                    flex: (value * 100).round(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: gradient),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  flex: (100 - (value * 100)).round(),
-                  child: const SizedBox(),
-                ),
+                if (100 - (value * 100).round() > 0)
+                  Expanded(
+                    flex: (100 - (value * 100)).round(),
+                    child: const SizedBox(),
+                  ),
               ],
             ),
           ),
@@ -1615,10 +1751,19 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           child: Text(
             'КЛЮЧОВІ ФІНАНСОВІ МЕТРИКИ',
             style: TextStyle(
-              color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
               fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              shadows: themeConfig.isDark
+                  ? null
+                  : [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
             ),
           ),
         ),
@@ -1629,9 +1774,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 icon: LucideIcons.trendingUp,
                 title: 'LTV Клієнта',
                 value: isAll
-                    ? '₴ 12.4k / € 850'
+                    ? '${analytics.kyiv.formatLtv()} / ${analytics.vienna.formatLtv()}'
                     : (isVienna ? analytics.vienna.formatLtv() : analytics.kyiv.formatLtv()),
-                sublabel: '+8% зростання',
+                sublabel: 'Середній дохід на клієнта',
                 accentColor: const Color(0xFF00E5FF),
                 themeConfig: themeConfig,
               ),
@@ -1642,9 +1787,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 icon: LucideIcons.userMinus,
                 title: 'Відтік (Churn)',
                 value: isAll
-                    ? '2.2%'
+                    ? '${analytics.kyiv.churnPercent}% / ${analytics.vienna.churnPercent}%'
                     : (isVienna ? '${analytics.vienna.churnPercent}%' : '${analytics.kyiv.churnPercent}%'),
-                sublabel: '-0.5% покращення',
+                sublabel: 'За поточний місяць',
                 accentColor: const Color(0xFF10B981),
                 themeConfig: themeConfig,
               ),
@@ -1659,9 +1804,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 icon: LucideIcons.shoppingCart,
                 title: 'Нові абонементи',
                 value: isAll
-                    ? '${analytics.totalNewSubscriptions}'
+                    ? '${analytics.kyiv.newSubscriptions} / ${analytics.vienna.newSubscriptions}'
                     : (isVienna ? '${analytics.vienna.newSubscriptions}' : '${analytics.kyiv.newSubscriptions}'),
-                sublabel: '+15% до минулого місяця',
+                sublabel: 'За поточний місяць',
                 accentColor: const Color(0xFFA855F7),
                 themeConfig: themeConfig,
               ),
@@ -1672,8 +1817,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 icon: LucideIcons.receipt,
                 title: 'Середній чек',
                 value: isAll
-                    ? '₴ 2 850 / € 190'
-                    : (isVienna ? '€ 190' : '2 850 ₴'),
+                    ? '${analytics.kyiv.formatMoney(analytics.kyiv.averageCheck)} / ${analytics.vienna.formatMoney(analytics.vienna.averageCheck)}'
+                    : (isVienna ? analytics.vienna.formatMoney(analytics.vienna.averageCheck) : analytics.kyiv.formatMoney(analytics.kyiv.averageCheck)),
                 sublabel: 'Абонементи та разові',
                 accentColor: const Color(0xFFF59E0B),
                 themeConfig: themeConfig,
@@ -1900,7 +2045,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 width: double.infinity,
                 child: CustomPaint(
                   key: ValueKey(_selectedTimeframe),
-                  painter: SplineChartPainter(),
+                  painter: SplineChartPainter(isDark: isDark),
                 ).animate().fadeIn(duration: 350.ms),
               ),
             ],
@@ -1926,89 +2071,44 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           child: Text(
             'ОСТАННІ ОПЕРАЦІЇ В МЕРЕЖІ',
             style: TextStyle(
-              color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              shadows: themeConfig.isDark
+                  ? null
+                  : [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
             ),
           ),
         ),
-        if (tenancyState.isAllLocations) ...[
-          _buildActivityItem(
-            icon: LucideIcons.arrowDownCircle,
-            title: 'Абонемент Vienna',
-            amount: '+ € 180',
-            color: const Color(0xFF10B981),
-            themeConfig: themeConfig,
-            flagEmoji: '🇦🇹',
-          ),
-          _buildActivityItem(
-            icon: LucideIcons.userPlus,
-            title: 'Клієнт Kyiv: О. Спіян',
-            amount: 'Сьогодні, 14:30',
-            color: const Color(0xFF00E5FF),
-            themeConfig: themeConfig,
-            flagEmoji: '🇺🇦',
-          ),
-          _buildActivityItem(
-            icon: LucideIcons.wallet,
-            title: 'Зарплата Kyiv: Алекс',
-            amount: '- ₴ 12,000',
-            color: const Color(0xFFF43F5E),
-            themeConfig: themeConfig,
-            flagEmoji: '🇺🇦',
-          ),
-        ] else if (analytics.isViennaSelected) ...[
-          _buildActivityItem(
-            icon: LucideIcons.arrowDownCircle,
-            title: 'Абонемент Vienna',
-            amount: '+ € 180',
-            color: const Color(0xFF10B981),
-            themeConfig: themeConfig,
-            flagEmoji: '🇦🇹',
-          ),
-          _buildActivityItem(
-            icon: LucideIcons.arrowDownCircle,
-            title: 'Індивідуальне заняття',
-            amount: '+ € 45',
-            color: const Color(0xFF00E5FF),
-            themeConfig: themeConfig,
-            flagEmoji: '🇦🇹',
-          ),
-          _buildActivityItem(
-            icon: LucideIcons.wallet,
-            title: 'Виплата тренеру Lukas',
-            amount: '- € 1,200',
-            color: const Color(0xFFF43F5E),
-            themeConfig: themeConfig,
-            flagEmoji: '🇦🇹',
-          ),
-        ] else ...[
-          _buildActivityItem(
-            icon: LucideIcons.arrowDownCircle,
-            title: 'owner.new_payment'.tr(),
-            amount: '+ ₴ 2,400',
-            color: const Color(0xFF10B981),
-            themeConfig: themeConfig,
-            flagEmoji: '🇺🇦',
-          ),
-          _buildActivityItem(
-            icon: LucideIcons.userPlus,
-            title: 'owner.new_client'.tr(),
-            amount: 'owner.today_time'.tr(),
-            color: const Color(0xFF00E5FF),
-            themeConfig: themeConfig,
-            flagEmoji: '🇺🇦',
-          ),
-          _buildActivityItem(
-            icon: LucideIcons.wallet,
-            title: 'owner.salary_payout'.tr(),
-            amount: '- ₴ 12,000',
-            color: const Color(0xFFF43F5E),
-            themeConfig: themeConfig,
-            flagEmoji: '🇺🇦',
-          ),
-        ],
+        if (analytics.recentTransactions.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              'Немає недавніх операцій',
+              style: TextStyle(
+                color: themeConfig.isDark ? Colors.white54 : Colors.black54,
+                fontSize: 13,
+              ),
+            ),
+          )
+        else
+          ...analytics.recentTransactions.take(4).map((tx) {
+            return _buildActivityItem(
+              icon: LucideIcons.arrowDownCircle,
+              title: '${tx.clientName}: ${tx.packageName}',
+              amount: '+ ${tx.currencySymbol == '€' ? '€ ' : ''}${tx.amount.toStringAsFixed(0)}${tx.currencySymbol != '€' ? ' ${tx.currencySymbol}' : ''}',
+              color: const Color(0xFF10B981),
+              themeConfig: themeConfig,
+              flagEmoji: tx.branchId == 'vienna' ? '🇦🇹' : '🇺🇦',
+            );
+          }),
       ],
     );
   }
@@ -2038,9 +2138,17 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             color: isDark ? const Color(0xFF08182B).withValues(alpha: 0.75) : Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD),
               width: 1,
             ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
           child: Row(
             children: [
@@ -2099,14 +2207,20 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 }
 
 class SplineChartPainter extends CustomPainter {
+  final bool isDark;
+
+  SplineChartPainter({this.isDark = true});
+
   @override
   void paint(Canvas canvas, Size size) {
     const double padding = 8.0;
     final double w = size.width - (padding * 2);
     final double h = size.height;
 
+    final lineColor = isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7);
+
     final paint = Paint()
-      ..color = const Color(0xFF00E5FF)
+      ..color = lineColor
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -2122,7 +2236,11 @@ class SplineChartPainter extends CustomPainter {
     path.cubicTo(padding + (w * 0.9), h * 0.3, padding + (w * 0.95), h * 0.1, padding + w, 0);
 
     // Glow effect
-    canvas.drawShadow(path, const Color(0xFF00E5FF), 15, true);
+    if (isDark) {
+      canvas.drawShadow(path, const Color(0xFF00E5FF), 15, true);
+    } else {
+      canvas.drawShadow(path, const Color(0xFF0284C7).withValues(alpha: 0.4), 10, true);
+    }
 
     // Gradient fill below line
     final fillPath = Path.from(path)
@@ -2134,22 +2252,47 @@ class SplineChartPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF00E5FF).withValues(alpha: 0.30),
-          const Color(0xFF00E5FF).withValues(alpha: 0.0),
-        ],
+        colors: isDark
+            ? [
+                const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                const Color(0xFF00E5FF).withValues(alpha: 0.0),
+              ]
+            : [
+                const Color(0xFF0284C7).withValues(alpha: 0.18),
+                const Color(0xFF0284C7).withValues(alpha: 0.0),
+              ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(path, paint);
 
     // Draw dots
-    final dotPaint = Paint()..color = Colors.white..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(padding + (w * 0.4), h * 0.4), 4, dotPaint);
-    canvas.drawCircle(Offset(padding + (w * 0.8), h * 0.2), 4, dotPaint);
-    canvas.drawCircle(Offset(padding + w, 0), 4, dotPaint);
+    final dotPoints = [
+      Offset(padding + (w * 0.4), h * 0.4),
+      Offset(padding + (w * 0.8), h * 0.2),
+      Offset(padding + w, 0),
+    ];
+
+    if (isDark) {
+      final dotPaint = Paint()..color = Colors.white..style = PaintingStyle.fill;
+      for (final pt in dotPoints) {
+        canvas.drawCircle(pt, 4, dotPaint);
+      }
+    } else {
+      final outerDotPaint = Paint()
+        ..color = const Color(0xFF0284C7)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5;
+      final innerDotPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      for (final pt in dotPoints) {
+        canvas.drawCircle(pt, 4.5, innerDotPaint);
+        canvas.drawCircle(pt, 4.5, outerDotPaint);
+      }
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant SplineChartPainter oldDelegate) => oldDelegate.isDark != isDark;
 }

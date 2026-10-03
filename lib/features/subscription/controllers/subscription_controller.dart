@@ -163,13 +163,15 @@ class SubscriptionController extends _$SubscriptionController {
   bool hasActiveSubscriptionForOwner(String userId, String ownerName, {List<String>? familyUserIds}) {
     final now = DateTime.now();
     final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+    final cleanOwner = ownerName.replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
 
     return state.any((sub) {
-      final matchesOwner = (sub.ownerName ?? '').trim().toLowerCase() == ownerName.trim().toLowerCase();
+      final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
+      final matchesOwner = subOwner == cleanOwner;
       final isSubActive = sub.isActive && sub.remainingClasses > 0 && (sub.expiryDate == null || sub.expiryDate!.isAfter(now));
       if (!isSubActive) return false;
 
-      final isCompatibleUser = !sub.isAdultSubscription
+      final isCompatibleUser = !sub.isAdultOnlySubscription
           ? effectiveFamilyIds.contains(sub.userId)
           : sub.userId == userId;
 
@@ -180,17 +182,19 @@ class SubscriptionController extends _$SubscriptionController {
   Subscription? getActiveSubscriptionForOwner(String userId, String ownerName, {bool isSplit = false, List<String>? familyUserIds}) {
     final now = DateTime.now();
     final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
+    final cleanOwner = ownerName.replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
 
     try {
       return state.firstWhere((sub) {
         if (isSplit && !sub.isSplitSubscription) return false;
         if (!isSplit && sub.isSplitSubscription) return false;
 
-        final matchesOwner = (sub.ownerName ?? '').trim().toLowerCase() == ownerName.trim().toLowerCase();
+        final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
+        final matchesOwner = subOwner == cleanOwner;
         final isSubActive = sub.isActive && sub.remainingClasses > 0 && (sub.expiryDate == null || sub.expiryDate!.isAfter(now));
         if (!isSubActive) return false;
 
-        final isCompatibleUser = !sub.isAdultSubscription
+        final isCompatibleUser = !sub.isAdultOnlySubscription
             ? effectiveFamilyIds.contains(sub.userId)
             : sub.userId == userId;
 
@@ -209,7 +213,7 @@ class SubscriptionController extends _$SubscriptionController {
       if (isSplit && !sub.isSplitSubscription) return false;
       if (!isSplit && sub.isSplitSubscription) return false;
 
-      if (sub.isAdultSubscription) {
+      if (sub.isAdultOnlySubscription) {
         return sub.userId == userId;
       } else {
         return effectiveFamilyIds.contains(sub.userId);
@@ -218,16 +222,19 @@ class SubscriptionController extends _$SubscriptionController {
 
     if (userSubs.isEmpty) return null;
 
-    final cleanOwner = ownerName.trim().toLowerCase();
+    final cleanOwner = ownerName.replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
 
     // 1. Direct owner match
     try {
-      final directMatch = userSubs.firstWhere((sub) => (sub.ownerName ?? '').trim().toLowerCase() == cleanOwner);
+      final directMatch = userSubs.firstWhere((sub) {
+        final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
+        return subOwner == cleanOwner;
+      });
       if (isAdult != null) {
-        if (isAdult && directMatch.isChildSubscription) {
-          // Incompatible: adult cannot use child subscription
-        } else if (!isAdult && directMatch.isAdultSubscription) {
-          // Incompatible: child cannot use adult subscription
+        if (isAdult && directMatch.isChildOnlySubscription) {
+          // Incompatible: adult cannot use strictly child-only subscription
+        } else if (!isAdult && directMatch.isAdultOnlySubscription) {
+          // Incompatible: child cannot use strictly adult-only subscription
         } else {
           return directMatch;
         }
@@ -247,7 +254,7 @@ class SubscriptionController extends _$SubscriptionController {
           final isGenericOwner = sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
           if (!isGenericOwner) return false;
           if (isAdult != null) {
-            return isAdult ? sub.isAdultSubscription : sub.isChildSubscription;
+            return isAdult ? !sub.isChildOnlySubscription : !sub.isAdultOnlySubscription;
           }
           return true;
         });
@@ -258,7 +265,7 @@ class SubscriptionController extends _$SubscriptionController {
     if (!isSplit && isAdult != null) {
       try {
         return userSubs.firstWhere((sub) {
-          final isEligible = isAdult ? sub.isAdultSubscription : sub.isChildSubscription;
+          final isEligible = isAdult ? !sub.isChildOnlySubscription : !sub.isAdultOnlySubscription;
           final isGeneric = sub.ownerName == null || sub.ownerName!.isEmpty || sub.ownerName == 'Всі';
           return isEligible && isGeneric;
         });
@@ -272,7 +279,7 @@ class SubscriptionController extends _$SubscriptionController {
     final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
 
     final userSubs = state.where((sub) {
-      if (sub.isAdultSubscription) {
+      if (sub.isAdultOnlySubscription) {
         return sub.userId == userId;
       } else {
         return effectiveFamilyIds.contains(sub.userId);
@@ -281,11 +288,14 @@ class SubscriptionController extends _$SubscriptionController {
 
     if (userSubs.isEmpty) return null;
 
-    final cleanOwner = ownerName.trim().toLowerCase();
+    final cleanOwner = ownerName.replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
 
     // 1. Exact owner match
     try {
-      return userSubs.firstWhere((sub) => (sub.ownerName ?? '').trim().toLowerCase() == cleanOwner);
+      return userSubs.firstWhere((sub) {
+        final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
+        return subOwner == cleanOwner;
+      });
     } catch (_) {}
 
     // 2. Split or generic owner
@@ -436,10 +446,10 @@ class SubscriptionController extends _$SubscriptionController {
     }
 
     // 3. Audience checks: adult vs child
-    if (gClass.isAdultOnly && !sub.isAdultSubscription) {
+    if (gClass.isAdultOnly && sub.isChildOnlySubscription) {
       return false;
     }
-    if (gClass.isChildOnly && sub.isAdultSubscription) {
+    if (gClass.isChildOnly && sub.isAdultOnlySubscription) {
       return false;
     }
 

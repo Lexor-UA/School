@@ -11,6 +11,7 @@ import 'package:swimming_school_app/features/subscription/models/subscription.da
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/chat/repositories/chat_repository.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 
 class PaymentSheet extends ConsumerStatefulWidget {
@@ -125,6 +126,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         'isRead': false,
         'actionType': 'subscription',
         'senderName': 'Адміністрація CitySwim',
+        'branchId': ref.read(tenancyControllerProvider).activeBranchId ?? 'kyiv',
       });
 
       // 2. Also send to chat so the client has full conversation context
@@ -168,6 +170,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   Widget build(BuildContext context) {
     final currentTheme = ref.watch(appThemeControllerProvider);
     final subsAsync = ref.watch(allSubscriptionsProvider);
+    final tenancyState = ref.watch(tenancyControllerProvider);
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'parent').snapshots(),
@@ -180,7 +183,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         }
 
         return subsAsync.when(
-          data: (allSubs) => _buildMainSheet(context, allSubs, clientsMap, currentTheme),
+          data: (allSubs) => _buildMainSheet(context, allSubs, clientsMap, currentTheme, tenancyState),
           loading: () => _buildLoadingSheet(context, currentTheme),
           error: (err, stack) => _buildErrorSheet(context, err.toString(), currentTheme),
         );
@@ -222,7 +225,11 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     List<Subscription> allSubs,
     Map<String, Map<String, dynamic>> clientsMap,
     AppThemeConfig currentTheme,
+    TenancyState tenancyState,
   ) {
+    final activeBranchId = tenancyState.activeBranchId;
+    final isAllLocations = tenancyState.isAllLocationsSelected;
+
     // 1. Separate Active Subscriptions
     final activeSubs = allSubs.where(_isSubActive).toList();
 
@@ -279,8 +286,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       }
     }
 
-    // Also include registered parents who have ZERO subscriptions at all
+    // Also include registered parents who have ZERO subscriptions at all in the active branch
     clientsMap.forEach((clientId, data) {
+      final userBranch = data['branchId'] as String? ?? 'kyiv';
+      final userBranches = (data['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [userBranch];
+      final bool belongsToBranch = isAllLocations || userBranch == activeBranchId || userBranches.contains(activeBranchId);
+      if (!belongsToBranch) return;
+
       final userHasSub = allSubs.any((s) => s.userId == clientId);
       if (!userHasSub) {
         unpaidList.add(_UnpaidClientItem(
@@ -358,7 +370,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           child: Column(
             children: [
               // 1. Top Drag Handle & Title
-              _buildHeader(context, currentTheme),
+              _buildHeader(context, currentTheme, tenancyState),
 
               // 2. Executive Telemetry Bar (Зведена аналітика)
               _buildTelemetryKPIs(
@@ -407,7 +419,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   // ==========================================
   // 1. HEADER
   // ==========================================
-  Widget _buildHeader(BuildContext context, AppThemeConfig currentTheme) {
+  Widget _buildHeader(BuildContext context, AppThemeConfig currentTheme, TenancyState tenancyState) {
+    final String branchName = tenancyState.isAllLocationsSelected
+        ? 'Всі філії'
+        : tenancyState.effectiveBranch.name;
+    final String branchEmoji = tenancyState.isAllLocationsSelected
+        ? '🌐'
+        : tenancyState.effectiveBranch.flagEmoji;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
       child: Column(
@@ -419,7 +438,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               decoration: BoxDecoration(
                 color: currentTheme.isDark
                     ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
-                    : const Color(0xFF94A3B8),
+                    : const Color(0xFFBAE6FD),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: currentTheme.isDark
                     ? [
@@ -466,14 +485,51 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'admin.payment_title'.tr(),
-                      style: TextStyle(
-                        color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
-                      ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          'admin.payment_title'.tr(),
+                          style: TextStyle(
+                            color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 18.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: currentTheme.isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.14)
+                                : const Color(0xFFE0F2FE),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: currentTheme.isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                                  : const Color(0xFF38BDF8).withValues(alpha: 0.50),
+                              width: 0.9,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(branchEmoji, style: const TextStyle(fontSize: 10.5)),
+                              const SizedBox(width: 4),
+                              Text(
+                                branchName,
+                                style: TextStyle(
+                                  color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -499,17 +555,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     decoration: BoxDecoration(
                       color: currentTheme.isDark
                           ? const Color(0xFF0C2238).withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.90),
+                          : const Color(0xFFF0F9FF),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: currentTheme.isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
                             : const Color(0xFFBAE6FD),
-                        width: 1.1,
+                        width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
+                          color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.08),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -518,7 +574,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     child: IconButton(
                       icon: Icon(
                         LucideIcons.x,
-                        color: currentTheme.isDark ? Colors.white : const Color(0xFF334155),
+                        color: currentTheme.isDark ? Colors.white : const Color(0xFF0284C7),
                         size: 18,
                       ),
                       onPressed: () {
@@ -796,7 +852,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         decoration: BoxDecoration(
           color: currentTheme.isDark
               ? const Color(0xFF08192E).withValues(alpha: 0.85)
-              : const Color(0xFFF1F5F9),
+              : const Color(0xFFF0F9FF),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: currentTheme.isDark
@@ -854,9 +910,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           gradient: isSelected
               ? LinearGradient(
                   colors: index == 0
-                      ? (currentTheme.isDark
-                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                          : const [Color(0xFF0284C7), Color(0xFF0369A1)])
+                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
                       : const [Color(0xFFF43F5E), Color(0xFFBE123C)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -911,7 +965,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ? null
                       : (currentTheme.isDark
                           ? Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.20))
-                          : Border.all(color: const Color(0xFFCBD5E1))),
+                          : Border.all(color: const Color(0xFFBAE6FD))),
                 ),
                 child: Text(
                   badge,
@@ -1416,7 +1470,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF040D18).withValues(alpha: 0.65) : const Color(0xFFF8FAFC),
+                    color: isDark ? const Color(0xFF040D18).withValues(alpha: 0.65) : const Color(0xFFF0F9FF),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFBAE6FD),
@@ -1620,10 +1674,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   ? const LinearGradient(
                                       colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
                                     )
-                                  : LinearGradient(
-                                      colors: currentTheme.isDark
-                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                  : const LinearGradient(
+                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                     )),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(

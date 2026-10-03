@@ -6,7 +6,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
-import 'dart:ui';
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
@@ -21,6 +20,7 @@ import 'package:swimming_school_app/features/parent/controllers/parent_notificat
 import 'package:swimming_school_app/features/parent/presentation/widgets/parent_notifications_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
+import 'package:swimming_school_app/features/parent/presentation/widgets/coach_selection_sheet.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collection/collection.dart';
@@ -33,8 +33,9 @@ class ParentHomeTab extends ConsumerStatefulWidget {
 }
 
 class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
-
-
+  void _openCoachChat(BuildContext context) {
+    showCoachSelectionSheet(context);
+  }
 
   void _showNotifications(BuildContext context, bool isDark) {
     ParentNotificationsSheet.show(context);
@@ -133,9 +134,9 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         Text(
                           'parent.hello'.tr(),
                           style: TextStyle(
-                            color: textSubColor,
+                            color: isDark ? textSubColor : const Color(0xFF0369A1),
                             fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                             letterSpacing: 0.2,
                           ),
                         ),
@@ -297,6 +298,364 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ref.read(parentTabProvider.notifier).setTab(2); // Navigate to Subscription tab
             },
           ),
+
+            const SizedBox(height: 20),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 380),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // A. Subscription balance & status pill
+                    if (currentSub != null) ...[
+                      GestureDetector(
+                        onTap: () {
+                          ref.read(parentTabProvider.notifier).setTab(2);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isDark
+                                  ? const [Color(0xFF0A2239), Color(0xFF051525)]
+                                  : const [Colors.white, Color(0xFFF8FAFC)],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                                  : const Color(0xFFBAE6FD),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              if (isDark) ...[
+                                BoxShadow(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ] else ...[
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                                BoxShadow(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  blurRadius: 1,
+                                  offset: const Offset(0, -1),
+                                ),
+                              ],
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(LucideIcons.sparkles, color: Colors.white, size: 18),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      (currentSub.serviceName != null && currentSub.serviceName!.isNotEmpty)
+                                          ? currentSub.serviceName!
+                                          : 'Абонемент CitySwim',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      currentSub.remainingClasses > 0
+                                          ? 'Залишок: ${currentSub.remainingClasses} ${currentSub.remainingClasses == 1 ? "заняття" : "занять"} • Діє до ${currentSub.expiryDate != null ? DateFormat("dd.MM.yyyy").format(currentSub.expiryDate!) : "безстроково"}'
+                                          : 'Активний абонемент',
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                LucideIcons.chevronRight,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // B. Quick Action Buttons Row
+                    Row(
+                      children: [
+                        // Quick Action 1: Chat with Coach
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              _openCoachChat(context);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isDark
+                                      ? const [Color(0xFF0A2239), Color(0xFF051525)]
+                                      : const [Colors.white, Color(0xFFF8FAFC)],
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                                      : const Color(0xFFBAE6FD),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  if (isDark) ...[
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.45),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ] else ...[
+                                    BoxShadow(
+                                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.white.withValues(alpha: 0.80),
+                                      blurRadius: 1,
+                                      offset: const Offset(0, -1),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Icon(LucideIcons.userCheck, color: Colors.white, size: 18),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Чат',
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        Text(
+                                          'З тренером',
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                            fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+
+                        // Quick Action 2: Chat with school / support
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (user != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ParentChatScreen(
+                                      dialogId: 'support_admin_${user.id}',
+                                      recipientId: 'admin_support',
+                                      recipientName: 'Адміністрація CitySwim',
+                                      clientId: user.id,
+                                      clientName: user.name,
+                                      type: 'client_admin',
+                                      title: 'Підтримка CitySwim',
+                                      subtitle: 'Адміністрація школи',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isDark
+                                      ? const [Color(0xFF0A2239), Color(0xFF051525)]
+                                      : const [Colors.white, Color(0xFFF8FAFC)],
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                                      : const Color(0xFFBAE6FD),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  if (isDark) ...[
+                                    BoxShadow(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.45),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ] else ...[
+                                    BoxShadow(
+                                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.white.withValues(alpha: 0.80),
+                                      blurRadius: 1,
+                                      offset: const Offset(0, -1),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: isDark
+                                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                            : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Icon(LucideIcons.messageCircle, color: Colors.white, size: 18),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Чат',
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Зі школою',
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                            fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           
           const SizedBox(height: 120), // Space for bottom nav
         ],
@@ -354,12 +713,9 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
+        child: Container(
               width: double.infinity,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -392,6 +748,12 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       color: Colors.black.withValues(alpha: 0.50),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
+                    )
+                  else
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.90),
+                      blurRadius: 2,
+                      offset: const Offset(0, -1),
                     ),
                 ],
               ),
@@ -499,53 +861,56 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Row(
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Icon(
-                                    LucideIcons.mapPin,
-                                    size: 12,
-                                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
-                                          ? 'HappyLand · ${nextClass.lane}'
-                                          : 'HappyLand',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.mapPin,
+                                        size: 12,
+                                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                       ),
-                                    ),
-                                  ),
-                                  if (nextClass.coachName.isNotEmpty) ...[
-                                    const SizedBox(width: 10),
-                                    Icon(
-                                      (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
-                                          ? LucideIcons.clock
-                                          : LucideIcons.userCheck,
-                                      size: 12,
-                                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
-                                            ? 'Тренер призначається'
-                                            : nextClass.coachName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
+                                            ? 'HappyLand · ${nextClass.lane}'
+                                            : 'HappyLand',
                                         style: TextStyle(
                                           color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                  if (nextClass.coachName.isNotEmpty)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
+                                              ? LucideIcons.user
+                                              : LucideIcons.userCheck,
+                                          size: 12,
+                                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
+                                              ? 'Тренер призначається'
+                                              : nextClass.coachName,
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
                                 ],
                               ),
                             ],
@@ -556,9 +921,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   ),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
                       border: Border(
                         top: BorderSide(
                           color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
@@ -630,29 +996,84 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                             ),
                           )
                         else
-                          const SizedBox.shrink(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.08)
+                                  : const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.25)
+                                    : const Color(0xFFBAE6FD),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.calendarCheck2,
+                                  size: 11,
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                ),
+                                const SizedBox(width: 4.5),
+                                Text(
+                                  'Заплановано',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         GestureDetector(
                           onTap: () {
                             ref.read(parentTabProvider.notifier).setTab(1); // Schedule
                           },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'В розклад',
-                                style: TextStyle(
-                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13,
+                          child: Container(
+                            padding: isDark
+                                ? EdgeInsets.zero
+                                : const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: isDark
+                                ? null
+                                : BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFFBAE6FD),
+                                      width: 0.9,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'В розклад',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12.5,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                LucideIcons.arrowRight,
-                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                size: 15,
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Icon(
+                                  LucideIcons.arrowRight,
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  size: 14,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -662,8 +1083,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ),
           ),
-        ),
-      ),
     ).animate().slideY(begin: 0.1, end: 0, duration: 500.ms).fadeIn();
   }
 
@@ -671,11 +1090,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
+        child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
@@ -708,6 +1123,12 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       color: Colors.black.withValues(alpha: 0.50),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
+                    )
+                  else
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.90),
+                      blurRadius: 2,
+                      offset: const Offset(0, -1),
                     ),
                 ],
               ),
@@ -768,8 +1189,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ),
           ),
-        ),
-      ),
     ).animate().fadeIn();
   }
 }

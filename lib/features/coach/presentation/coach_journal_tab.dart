@@ -174,21 +174,21 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
               ? LinearGradient(
                   colors: themeConfig.isDark
                       ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                      : [const Color(0xFF0284C7), const Color(0xFF0369A1)],
+                      : [const Color(0xFF00E5FF), const Color(0xFF0284C7)],
                 )
               : null,
           color: isSelected
               ? null
               : (themeConfig.isDark
                   ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.white.withValues(alpha: 0.85)),
+                  : Colors.white),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
                 : (themeConfig.isDark
                     ? Colors.white.withValues(alpha: 0.12)
-                    : const Color(0xFF0284C7).withValues(alpha: 0.20)),
+                    : const Color(0xFFBAE6FD)),
           ),
           boxShadow: isSelected
               ? [
@@ -197,12 +197,19 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                     blurRadius: 10,
                   ),
                 ]
-              : [],
+              : [
+                  if (!themeConfig.isDark)
+                    BoxShadow(
+                      color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                ],
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : themeConfig.textPrimary,
+            color: isSelected ? Colors.white : (themeConfig.isDark ? themeConfig.textPrimary : const Color(0xFF475569)),
             fontSize: 12.5,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
           ),
@@ -429,7 +436,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                     ? LinearGradient(
                                         colors: themeConfig.isDark
                                             ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                                            : [const Color(0xFF0284C7), const Color(0xFF0369A1)],
+                                            : [const Color(0xFF00E5FF), const Color(0xFF0284C7)],
                                       )
                                     : null,
                                 color: (!_isSameDay(_selectedDate, yesterday) &&
@@ -438,7 +445,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                     ? null
                                     : (themeConfig.isDark
                                         ? Colors.white.withValues(alpha: 0.08)
-                                        : Colors.white.withValues(alpha: 0.85)),
+                                        : Colors.white),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: (!_isSameDay(_selectedDate, yesterday) &&
@@ -447,7 +454,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                       ? Colors.transparent
                                       : (themeConfig.isDark
                                           ? Colors.white.withValues(alpha: 0.12)
-                                          : const Color(0xFF0284C7).withValues(alpha: 0.20)),
+                                          : const Color(0xFFBAE6FD)),
                                 ),
                                 boxShadow: (!_isSameDay(_selectedDate, yesterday) &&
                                         !_isSameDay(_selectedDate, today) &&
@@ -458,7 +465,14 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                           blurRadius: 10,
                                         ),
                                       ]
-                                    : [],
+                                    : [
+                                        if (!themeConfig.isDark)
+                                          BoxShadow(
+                                            color: const Color(0xFF003B73).withValues(alpha: 0.04),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                      ],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -470,7 +484,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                             !_isSameDay(_selectedDate, today) &&
                                             !_isSameDay(_selectedDate, tomorrow))
                                         ? Colors.white
-                                        : themeConfig.textPrimary,
+                                        : (themeConfig.isDark ? themeConfig.textPrimary : const Color(0xFF475569)),
                                   ),
                                   if (!_isSameDay(_selectedDate, yesterday) &&
                                       !_isSameDay(_selectedDate, today) &&
@@ -505,13 +519,13 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 color: _onlyMyClasses
                                     ? (themeConfig.isDark
                                         ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
-                                        : const Color(0xFF0284C7).withValues(alpha: 0.15))
-                                    : Colors.transparent,
+                                        : const Color(0xFFE0F2FE))
+                                    : (themeConfig.isDark ? Colors.transparent : Colors.white),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: _onlyMyClasses
-                                      ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                      : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFF0284C7).withValues(alpha: 0.15)),
+                                      ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFFBAE6FD))
+                                      : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFBAE6FD)),
                                 ),
                               ),
                               child: Text(
@@ -519,7 +533,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 style: TextStyle(
                                   color: _onlyMyClasses
                                       ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                      : themeConfig.textSecondary,
+                                      : (themeConfig.isDark ? themeConfig.textSecondary : const Color(0xFF64748B)),
                                   fontSize: 11.5,
                                   fontWeight: _onlyMyClasses ? FontWeight.w800 : FontWeight.w500,
                                 ),
@@ -536,13 +550,13 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 color: !_onlyMyClasses
                                     ? (themeConfig.isDark
                                         ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
-                                        : const Color(0xFF0284C7).withValues(alpha: 0.15))
-                                    : Colors.transparent,
+                                        : const Color(0xFFE0F2FE))
+                                    : (themeConfig.isDark ? Colors.transparent : Colors.white),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: !_onlyMyClasses
-                                      ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                      : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFF0284C7).withValues(alpha: 0.15)),
+                                      ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFFBAE6FD))
+                                      : (themeConfig.isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFBAE6FD)),
                                 ),
                               ),
                               child: Text(
@@ -550,7 +564,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 style: TextStyle(
                                   color: !_onlyMyClasses
                                       ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                      : themeConfig.textSecondary,
+                                      : (themeConfig.isDark ? themeConfig.textSecondary : const Color(0xFF64748B)),
                                   fontSize: 11.5,
                                   fontWeight: !_onlyMyClasses ? FontWeight.w800 : FontWeight.w500,
                                 ),
@@ -653,8 +667,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                                     const Color(0xFF0284C7).withValues(alpha: 0.20),
                                                   ]
                                                 : [
-                                                    const Color(0xFF0284C7),
-                                                    const Color(0xFF0369A1),
+                                                    const Color(0xFFF0F9FF),
+                                                    Colors.white,
                                                   ],
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
@@ -664,14 +678,14 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                         ? null
                                         : (themeConfig.isDark
                                             ? Colors.white.withValues(alpha: 0.06)
-                                            : Colors.white.withValues(alpha: 0.88)),
+                                            : Colors.white),
                                     borderRadius: BorderRadius.circular(18),
                                     border: Border.all(
                                       color: isSel
-                                          ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
+                                          ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                                           : (themeConfig.isDark
                                               ? Colors.white.withValues(alpha: 0.12)
-                                              : const Color(0xFF0284C7).withValues(alpha: 0.20)),
+                                              : const Color(0xFFBAE6FD)),
                                       width: isSel ? 1.8 : 1.0,
                                     ),
                                     boxShadow: isSel
@@ -680,9 +694,9 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                               color: (themeConfig.isDark
                                                       ? const Color(0xFF00E5FF)
                                                       : const Color(0xFF0284C7))
-                                                  .withValues(alpha: themeConfig.isDark ? 0.30 : 0.25),
+                                                  .withValues(alpha: themeConfig.isDark ? 0.30 : 0.18),
                                               blurRadius: 14,
-                                              offset: const Offset(0, 3),
+                                              offset: const Offset(0, 4),
                                             ),
                                           ]
                                         : [
@@ -707,7 +721,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                             timeStr,
                                             style: TextStyle(
                                               color: isSel
-                                                  ? (themeConfig.isDark ? const Color(0xFF00E5FF) : Colors.white)
+                                                  ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                                                   : themeConfig.textPrimary,
                                               fontWeight: FontWeight.w900,
                                               fontSize: 14.5,
@@ -720,11 +734,11 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                               width: 8,
                                               height: 8,
                                               decoration: BoxDecoration(
-                                                color: themeConfig.isDark ? const Color(0xFF00E5FF) : Colors.white,
+                                                color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : Colors.white).withValues(alpha: 0.9),
+                                                    color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.9),
                                                     blurRadius: 6,
                                                     spreadRadius: 1,
                                                   ),
@@ -741,7 +755,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: isSel
-                                              ? Colors.white
+                                              ? (themeConfig.isDark ? Colors.white : const Color(0xFF0F172A))
                                               : themeConfig.textPrimary,
                                           fontSize: 13,
                                           fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
@@ -760,7 +774,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
                                                   color: isSel
-                                                      ? (themeConfig.isDark ? Colors.white70 : Colors.white.withValues(alpha: 0.85))
+                                                      ? (themeConfig.isDark ? Colors.white70 : const Color(0xFF64748B))
                                                       : themeConfig.textSecondary,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w500,
@@ -776,19 +790,19 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                               color: isSel
                                                   ? (themeConfig.isDark
                                                       ? const Color(0xFF00E5FF).withValues(alpha: 0.22)
-                                                      : Colors.white.withValues(alpha: 0.25))
+                                                      : const Color(0xFFE0F2FE))
                                                   : (themeConfig.isDark
                                                       ? Colors.white.withValues(alpha: 0.08)
-                                                      : const Color(0xFF0284C7).withValues(alpha: 0.10)),
+                                                      : const Color(0xFFF1F5F9)),
                                               borderRadius: BorderRadius.circular(8),
                                               border: Border.all(
                                                 color: isSel
                                                     ? (themeConfig.isDark
                                                         ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                                                        : Colors.white.withValues(alpha: 0.35))
+                                                        : const Color(0xFFBAE6FD))
                                                     : (themeConfig.isDark
                                                         ? Colors.white.withValues(alpha: 0.08)
-                                                        : const Color(0xFF0284C7).withValues(alpha: 0.15)),
+                                                        : const Color(0xFFBAE6FD)),
                                               ),
                                             ),
                                             child: Row(
@@ -798,7 +812,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                                   LucideIcons.users,
                                                   size: 11,
                                                   color: isSel
-                                                      ? (themeConfig.isDark ? const Color(0xFF00E5FF) : Colors.white)
+                                                      ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                                                       : themeConfig.textSecondary,
                                                 ),
                                                 const SizedBox(width: 4),
@@ -806,7 +820,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                                   '$count',
                                                   style: TextStyle(
                                                     color: isSel
-                                                        ? (themeConfig.isDark ? const Color(0xFF00E5FF) : Colors.white)
+                                                        ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                                                         : themeConfig.textSecondary,
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.w800,
@@ -886,9 +900,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                             (themeConfig.isDark ? const Color(0xFF1E293B) : const Color(0xFF64748B)).withValues(alpha: 0.9),
                                             (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFF475569)).withValues(alpha: 0.9),
                                           ]
-                                        : (themeConfig.isDark
-                                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
+                                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -898,7 +910,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                       color: (!isClassToday
                                               ? Colors.black
                                               : (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
-                                          .withValues(alpha: themeConfig.isDark ? 0.35 : 0.25),
+                                          .withValues(alpha: themeConfig.isDark ? 0.35 : 0.30),
                                       blurRadius: 18,
                                       offset: const Offset(0, 5),
                                     ),
@@ -987,35 +999,46 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                             Text(
                               'СПИСОК ПЛАВЦІВ (${_enrolledChildren.length})',
                               style: TextStyle(
-                                color: themeConfig.textSecondary,
+                                color: themeConfig.isDark ? Colors.white70 : const Color(0xFF0369A1),
                                 fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                                 letterSpacing: 1.4,
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.15 : 0.12),
+                                color: themeConfig.isDark
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                    : Colors.white.withValues(alpha: 0.92),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                border: Border.all(
+                                  color: const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.40 : 0.50),
+                                  width: 1.0,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                    color: (themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF0284C7))
+                                        .withValues(alpha: themeConfig.isDark ? 0.12 : 0.08),
                                     blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(LucideIcons.check, size: 13, color: Color(0xFF10B981)),
+                                  Icon(
+                                    LucideIcons.check,
+                                    size: 13,
+                                    color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                  ),
                                   const SizedBox(width: 5),
                                   Text(
                                     'Присутні: $presentCount з $enrolledCount',
-                                    style: const TextStyle(
-                                      color: Color(0xFF10B981),
-                                      fontWeight: FontWeight.bold,
+                                    style: TextStyle(
+                                      color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                      fontWeight: FontWeight.w800,
                                       fontSize: 11.5,
                                     ),
                                   ),
@@ -1052,17 +1075,29 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         decoration: BoxDecoration(
                           color: themeConfig.isDark
                               ? Colors.white.withValues(alpha: 0.04)
-                              : Colors.white.withValues(alpha: 0.85),
+                              : null,
+                          gradient: themeConfig.isDark
+                              ? null
+                              : LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.96),
+                                    const Color(0xFFF0F9FF).withValues(alpha: 0.92),
+                                  ],
+                                ),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                             color: themeConfig.isDark
                                 ? Colors.white.withValues(alpha: 0.08)
-                                : const Color(0xFF0284C7).withValues(alpha: 0.18),
+                                : const Color(0xFFBAE6FD),
+                            width: 1.1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (themeConfig.isDark ? Colors.black : const Color(0xFF003B73)).withValues(alpha: 0.05),
-                              blurRadius: 10,
+                              color: (themeConfig.isDark ? Colors.black : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.05 : 0.08),
+                              blurRadius: 14,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -1074,9 +1109,9 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                               height: 60,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
+                                color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.12 : 0.10),
                                 border: Border.all(
-                                  color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                                  color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.35 : 0.40),
                                 ),
                               ),
                               child: Center(
@@ -1091,16 +1126,20 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                             Text(
                               'На це заняття ще немає записаних учнів',
                               style: TextStyle(
-                                color: themeConfig.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
+                                color: themeConfig.isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w900,
                               ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 6),
                             Text(
                               'Учні з\'являться тут автоматично після запису або сканування QR-перепустки',
-                              style: TextStyle(color: themeConfig.textSecondary, fontSize: 12),
+                              style: TextStyle(
+                                color: themeConfig.isDark ? Colors.white60 : const Color(0xFF475569),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -1111,7 +1150,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 110),
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 260),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -1137,14 +1176,14 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isPresent
-            ? (themeConfig.isDark ? const Color(0xFF064E3B).withValues(alpha: 0.4) : const Color(0xFFD1FAE5))
+            ? (themeConfig.isDark ? const Color(0xFF064E3B).withValues(alpha: 0.4) : const Color(0xFFF0FDF4))
             : (themeConfig.isDark ? const Color(0xFF1E2638) : Colors.white),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isPresent
               ? const Color(0xFF10B981)
-              : (themeConfig.isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-          width: 1.0,
+              : (themeConfig.isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD)),
+          width: 1.1,
         ),
         boxShadow: isPresent
             ? [
@@ -1176,9 +1215,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                     gradient: LinearGradient(
                       colors: isPresent
                           ? [const Color(0xFF10B981), const Color(0xFF047857)]
-                          : (themeConfig.isDark
-                              ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                              : [const Color(0xFF0284C7), const Color(0xFF0369A1)]),
+                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -1223,8 +1260,11 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                             decoration: BoxDecoration(
                               color: themeConfig.isDark
                                   ? Colors.white.withValues(alpha: 0.08)
-                                  : const Color(0xFF0284C7).withValues(alpha: 0.10),
+                                  : const Color(0xFFE0F2FE),
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: themeConfig.isDark ? Colors.transparent : const Color(0xFFBAE6FD),
+                              ),
                             ),
                             child: Text(
                               '${'coach.level_label'.tr()} ${child.level}',
@@ -1260,14 +1300,14 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         decoration: BoxDecoration(
                           color: isPresent
                               ? const Color(0xFF10B981)
-                              : (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+                              : (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF)),
                           shape: BoxShape.circle,
                           border: isPresent
                               ? null
                               : Border.all(
                                   color: themeConfig.isDark
                                       ? const Color(0xFF334155)
-                                      : const Color(0xFFCBD5E1),
+                                      : const Color(0xFFBAE6FD),
                                 ),
                           boxShadow: isPresent
                               ? [
@@ -1283,7 +1323,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                           isPresent ? LucideIcons.check : LucideIcons.userCheck,
                           color: isPresent
                               ? Colors.white
-                              : (themeConfig.isDark ? Colors.white70 : const Color(0xFF64748B)),
+                              : (themeConfig.isDark ? Colors.white70 : const Color(0xFF0284C7)),
                           size: 20,
                         ),
                       ),

@@ -258,13 +258,19 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: LinearGradient(
-                              colors: currentTheme.accentGradient,
+                              colors: isDark
+                                  ? currentTheme.accentGradient
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: isDark ? 0.20 : 0.45),
+                              width: 1.2,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: currentTheme.accentPrimary.withValues(alpha: 0.40),
+                                color: (isDark ? currentTheme.accentPrimary : const Color(0xFF00E5FF)).withValues(alpha: isDark ? 0.40 : 0.45),
                                 blurRadius: 18,
                                 offset: const Offset(0, 5),
                               ),
@@ -324,7 +330,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
               decoration: BoxDecoration(
                 color: currentTheme.isDark
                     ? Colors.white.withValues(alpha: 0.30)
-                    : const Color(0xFFCBD5E1),
+                    : const Color(0xFFBAE6FD),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -378,19 +384,25 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: currentTheme.isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : currentTheme.glassCardBg,
+                      color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: currentTheme.isDark
-                            ? Colors.white.withValues(alpha: 0.15)
-                            : currentTheme.cardBorder,
+                        color: currentTheme.isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                        width: 1.2,
                       ),
+                      boxShadow: currentTheme.isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                     ),
                     child: Icon(
                       LucideIcons.x,
-                      color: currentTheme.textSecondary,
+                      color: currentTheme.isDark ? currentTheme.textSecondary : const Color(0xFF0284C7),
                       size: 18,
                     ),
                   ),
@@ -407,12 +419,21 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFF8FAFC),
+        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
-          width: 1.1,
+          color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: ValueListenableBuilder<TextEditingValue>(
         valueListenable: controller,
@@ -459,21 +480,19 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final isDark = currentTheme.isDark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFFF8FAFC),
+        color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFFF0F9FF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withValues(alpha: isDark ? 0.35 : 0.50),
+          color: color.withValues(alpha: isDark ? 0.35 : 0.45),
           width: 1.2,
         ),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: isDark ? 0.08 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(

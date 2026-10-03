@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/tenancy/models/white_label_config.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
+import 'package:swimming_school_app/features/tenancy/presentation/widgets/create_branch_sheet.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
+import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:flutter/services.dart';
 
 class AquatixLabSuperAdminScreen extends ConsumerStatefulWidget {
@@ -110,93 +114,11 @@ class _AquatixLabSuperAdminScreenState
 
   void _showProvisionTenantDialog() {
     HapticFeedback.mediumImpact();
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF131C2E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(LucideIcons.plusCircle, color: Color(0xFF00E5FF), size: 24),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Text(
-                'Підключення нового тененту',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Платформа AquatixLab SaaS готова до миттєвого розгортання нових організацій (White Label). Кожен новий тененат отримує власну структуру філій, басейнів, доріжок та фіскальних юрисдикцій.',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: const Column(
-                children: [
-                  _ModalInfoRow(label: 'Стек ізоляції', val: 'Firestore Multi-Tenancy Rules'),
-                  SizedBox(height: 6),
-                  _ModalInfoRow(label: 'Платіжні шлюзи', val: 'Stripe / LiqPay / SEPA'),
-                  SizedBox(height: 6),
-                  _ModalInfoRow(label: 'Часові пояси', val: 'Автоматичний DST розрахунок'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Закрити', style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Row(
-                    children: [
-                      Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
-                      SizedBox(width: 10),
-                      Text('Архітектура готова. Демонстраційний тененат CitySwim активний!'),
-                    ],
-                  ),
-                  backgroundColor: const Color(0xFF10B981),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: const Color(0xFF001F3F),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Зрозуміло', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CreateBranchSheet(),
     );
   }
 
@@ -204,11 +126,14 @@ class _AquatixLabSuperAdminScreenState
   Widget build(BuildContext context) {
     final kyivConfig = BranchConfig.kyivConfig;
     final viennaConfig = BranchConfig.viennaConfig;
+    final themeConfig = ref.watch(appThemeControllerProvider);
+    final isDark = themeConfig.isDark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: isDark ? const Color(0xFF070B14) : themeConfig.scaffoldBg,
       body: Stack(
         children: [
+          if (!isDark) const AnimatedWaterBackground(),
           // Background ambient gradient glow
           Positioned(
             top: -120,
@@ -220,7 +145,9 @@ class _AquatixLabSuperAdminScreenState
                 height: 340,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(_selectedColorValue).withValues(alpha: 0.12),
+                  color: isDark
+                      ? Color(_selectedColorValue).withValues(alpha: 0.12)
+                      : const Color(0xFFBAE6FD).withValues(alpha: 0.35),
                 ),
               ),
             ),
@@ -235,7 +162,9 @@ class _AquatixLabSuperAdminScreenState
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+                  color: isDark
+                      ? const Color(0xFF8B5CF6).withValues(alpha: 0.08)
+                      : const Color(0xFFE0E7FF).withValues(alpha: 0.25),
                 ),
               ),
             ),
@@ -260,10 +189,18 @@ class _AquatixLabSuperAdminScreenState
                               context.go('/owner');
                             }
                           },
-                          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+                          icon: Icon(
+                            LucideIcons.arrowLeft,
+                            color: isDark ? Colors.white : const Color(0xFF0284C7),
+                          ),
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.06),
+                            backgroundColor: isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.white.withValues(alpha: 0.90),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: isDark
+                                ? null
+                                : const BorderSide(color: Color(0xFFBAE6FD), width: 1),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -271,29 +208,37 @@ class _AquatixLabSuperAdminScreenState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 8,
+                                runSpacing: 4,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'AquatixLab',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: -0.5,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                                      color: isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                                          : const Color(0xFFE0F2FE),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
+                                            : const Color(0xFFBAE6FD),
+                                      ),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'SUPER ADMIN',
                                       style: TextStyle(
-                                        color: Color(0xFF00E5FF),
+                                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                         fontSize: 10,
                                         fontWeight: FontWeight.w900,
                                         letterSpacing: 0.5,
@@ -303,44 +248,20 @@ class _AquatixLabSuperAdminScreenState
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              const Text(
+                              Text(
                                 'Global SaaS Management & Architecture QA',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Live operational badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF10B981),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                '100% ONLINE',
                                 style: TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                  fontSize: 12,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        const ThemeHeaderButton(size: 38),
                       ],
                     ),
                   ),
@@ -355,14 +276,70 @@ class _AquatixLabSuperAdminScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'ГЛОБАЛЬНІ МЕТРИКИ ПЛАТФОРМИ',
-                          style: TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'ГЛОБАЛЬНІ МЕТРИКИ ПЛАТФОРМИ',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            // Live operational badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.3 : 0.45),
+                                ),
+                                boxShadow: [
+                                  if (!isDark)
+                                    BoxShadow(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        if (!isDark)
+                                          BoxShadow(
+                                            color: const Color(0xFF10B981).withValues(alpha: 0.45),
+                                            blurRadius: 4,
+                                            spreadRadius: 1,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '100% ONLINE',
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 10),
                         Row(
@@ -373,6 +350,7 @@ class _AquatixLabSuperAdminScreenState
                               subtitle: 'CitySwim Global',
                               icon: LucideIcons.building,
                               accentColor: const Color(0xFF00E5FF),
+                              isDark: isDark,
                             ),
                             const SizedBox(width: 12),
                             _MetricCard(
@@ -381,6 +359,7 @@ class _AquatixLabSuperAdminScreenState
                               subtitle: 'Kyiv 🇺🇦 & Vienna 🇦🇹',
                               icon: LucideIcons.network,
                               accentColor: const Color(0xFF10B981),
+                              isDark: isDark,
                             ),
                           ],
                         ),
@@ -393,6 +372,7 @@ class _AquatixLabSuperAdminScreenState
                               subtitle: '12 активних доріжок',
                               icon: LucideIcons.waves,
                               accentColor: const Color(0xFF38BDF8),
+                              isDark: isDark,
                             ),
                             const SizedBox(width: 12),
                             _MetricCard(
@@ -401,6 +381,7 @@ class _AquatixLabSuperAdminScreenState
                               subtitle: '0 витоків даних',
                               icon: LucideIcons.shieldCheck,
                               accentColor: const Color(0xFFA855F7),
+                              isDark: isDark,
                             ),
                           ],
                         ),
@@ -421,10 +402,10 @@ class _AquatixLabSuperAdminScreenState
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'АКТИВНІ ФІЛІЇ ТА ОРГАНІЗАЦІЇ',
                               style: TextStyle(
-                                color: Color(0xFF64748B),
+                                color: isDark ? const Color(0xFF64748B) : const Color(0xFF0369A1),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.2,
@@ -437,12 +418,16 @@ class _AquatixLabSuperAdminScreenState
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 child: Row(
                                   children: [
-                                    const Icon(LucideIcons.plus, color: Color(0xFF00E5FF), size: 14),
+                                    Icon(
+                                      LucideIcons.plus,
+                                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                      size: 14,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Додати філію',
                                       style: TextStyle(
-                                        color: Color(_selectedColorValue),
+                                        color: isDark ? Color(_selectedColorValue) : const Color(0xFF0284C7),
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -469,6 +454,7 @@ class _AquatixLabSuperAdminScreenState
                               .expand((l) => l.pools.map((p) => p.name))
                               .join(' · '),
                           accentColor: const Color(0xFF00E5FF),
+                          isDark: isDark,
                         ),
 
                         const SizedBox(height: 12),
@@ -487,6 +473,7 @@ class _AquatixLabSuperAdminScreenState
                               .expand((l) => l.pools.map((p) => p.name))
                               .join(' · '),
                           accentColor: const Color(0xFF10B981),
+                          isDark: isDark,
                         ),
                       ],
                     ),
@@ -502,9 +489,27 @@ class _AquatixLabSuperAdminScreenState
                     child: Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF111827),
+                        color: isDark ? const Color(0xFF111827) : Colors.white,
+                        gradient: isDark
+                            ? null
+                            : const LinearGradient(
+                                colors: [Colors.white, Color(0xFFF8FAFC)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFBAE6FD),
+                          width: isDark ? 1.0 : 1.1,
+                        ),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,27 +519,37 @@ class _AquatixLabSuperAdminScreenState
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Color(_selectedColorValue).withValues(alpha: 0.15),
+                                  color: Color(_selectedColorValue).withValues(alpha: isDark ? 0.15 : 0.12),
                                   borderRadius: BorderRadius.circular(10),
+                                  border: isDark
+                                      ? null
+                                      : Border.all(color: Color(_selectedColorValue).withValues(alpha: 0.3)),
                                 ),
-                                child: Icon(LucideIcons.palette, color: Color(_selectedColorValue), size: 20),
+                                child: Icon(
+                                  LucideIcons.palette,
+                                  color: isDark ? Color(_selectedColorValue) : const Color(0xFF0284C7),
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'White Label Branding Studio',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
                                       'Налаштування бренду школи та теми оформлення',
-                                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -542,9 +557,13 @@ class _AquatixLabSuperAdminScreenState
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Text(
+                          Text(
                             'Первинний колір теми бренду:',
-                            style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Wrap(
@@ -556,47 +575,72 @@ class _AquatixLabSuperAdminScreenState
                                 label: 'Aquamarine',
                                 isSelected: _selectedColorValue == 0xFF00E5FF,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF00E5FF),
+                                isDark: isDark,
                               ),
                               _ColorOption(
                                 color: const Color(0xFF10B981),
                                 label: 'Emerald',
                                 isSelected: _selectedColorValue == 0xFF10B981,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF10B981),
+                                isDark: isDark,
                               ),
                               _ColorOption(
                                 color: const Color(0xFF3B82F6),
                                 label: 'Royal Blue',
                                 isSelected: _selectedColorValue == 0xFF3B82F6,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF3B82F6),
+                                isDark: isDark,
                               ),
                               _ColorOption(
                                 color: const Color(0xFF8B5CF6),
                                 label: 'Purple Wave',
                                 isSelected: _selectedColorValue == 0xFF8B5CF6,
                                 onTap: () => setState(() => _selectedColorValue = 0xFF8B5CF6),
+                                isDark: isDark,
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _appNameController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 14,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Назва додатку (App Title)',
-                              labelStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                              labelStyle: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontSize: 13,
+                              ),
                               filled: true,
-                              fillColor: Colors.white.withValues(alpha: 0.04),
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.04)
+                                  : const Color(0xFFF8FAFC),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : const Color(0xFFBAE6FD),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : const Color(0xFFBAE6FD),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Color(_selectedColorValue)),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? Color(_selectedColorValue)
+                                      : const Color(0xFF0284C7),
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
@@ -617,12 +661,16 @@ class _AquatixLabSuperAdminScreenState
                       children: [
                         Row(
                           children: [
-                            const Icon(LucideIcons.clipboardCheck, color: Color(0xFF10B981), size: 18),
+                            Icon(
+                              LucideIcons.clipboardCheck,
+                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'МАТРИЦЯ ПРИЙОМКИ ТЗ: 10 З 10 ВЕРИФІКОВАНО',
                               style: TextStyle(
-                                color: Color(0xFF10B981),
+                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.2,
@@ -631,7 +679,7 @@ class _AquatixLabSuperAdminScreenState
                           ],
                         ),
                         const SizedBox(height: 12),
-                        ..._acceptanceCriteria.map((c) => _CriteriaItemTile(item: c)),
+                        ..._acceptanceCriteria.map((c) => _CriteriaItemTile(item: c, isDark: isDark)),
                       ],
                     ),
                   ),
@@ -653,6 +701,7 @@ class _MetricCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color accentColor;
+  final bool isDark;
 
   const _MetricCard({
     required this.title,
@@ -660,17 +709,50 @@ class _MetricCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.accentColor,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveAccent = isDark
+        ? accentColor
+        : (accentColor == const Color(0xFF00E5FF)
+            ? const Color(0xFF0284C7)
+            : accentColor == const Color(0xFF38BDF8)
+                ? const Color(0xFF0284C7)
+                : accentColor == const Color(0xFF10B981)
+                    ? const Color(0xFF047857)
+                    : accentColor == const Color(0xFFA855F7)
+                        ? const Color(0xFF7C3AED)
+                        : accentColor);
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF111827),
+          color: isDark ? const Color(0xFF111827) : Colors.white,
+          gradient: isDark
+              ? null
+              : const LinearGradient(
+                  colors: [Colors.white, Color(0xFFF8FAFC)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : const Color(0xFFBAE6FD),
+            width: isDark ? 1.0 : 1.1,
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -680,20 +762,34 @@ class _MetricCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                Icon(icon, color: accentColor, size: 18),
+                Icon(icon, color: effectiveAccent, size: 18),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: TextStyle(color: accentColor.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: isDark
+                    ? accentColor.withValues(alpha: 0.9)
+                    : effectiveAccent,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -713,6 +809,7 @@ class _BranchNodeCard extends StatelessWidget {
   final int poolsCount;
   final String poolsNames;
   final Color accentColor;
+  final bool isDark;
 
   const _BranchNodeCard({
     required this.flag,
@@ -725,16 +822,45 @@ class _BranchNodeCard extends StatelessWidget {
     required this.poolsCount,
     required this.poolsNames,
     required this.accentColor,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveAccent = isDark
+        ? accentColor
+        : (accentColor == const Color(0xFF00E5FF)
+            ? const Color(0xFF0284C7)
+            : accentColor == const Color(0xFF10B981)
+                ? const Color(0xFF047857)
+                : accentColor);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: isDark ? const Color(0xFF111827) : Colors.white,
+        gradient: isDark
+            ? null
+            : const LinearGradient(
+                colors: [Colors.white, Color(0xFFF0F9FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: isDark
+              ? accentColor.withValues(alpha: 0.2)
+              : const Color(0xFFBAE6FD),
+          width: isDark ? 1.0 : 1.1,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -749,11 +875,18 @@ class _BranchNodeCard extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       city,
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -761,25 +894,57 @@ class _BranchNodeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
+                  color: isDark
+                      ? accentColor.withValues(alpha: 0.12)
+                      : (accentColor == const Color(0xFF00E5FF)
+                          ? const Color(0xFFE0F2FE)
+                          : const Color(0xFFECFDF5)),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: isDark
+                        ? accentColor.withValues(alpha: 0.3)
+                        : (accentColor == const Color(0xFF00E5FF)
+                            ? const Color(0xFFBAE6FD)
+                            : const Color(0xFFA7F3D0)),
+                  ),
                 ),
                 child: Text(
                   currency,
-                  style: TextStyle(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: effectiveAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(color: Colors.white10, height: 1),
+          Divider(
+            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+            height: 1,
+          ),
           const SizedBox(height: 10),
-          _DetailRow(icon: LucideIcons.clock, label: 'Часовий пояс', value: timezone),
+          _DetailRow(
+            icon: LucideIcons.clock,
+            label: 'Часовий пояс',
+            value: timezone,
+            isDark: isDark,
+          ),
           const SizedBox(height: 6),
-          _DetailRow(icon: LucideIcons.creditCard, label: 'Еквайринг', value: gateway),
+          _DetailRow(
+            icon: LucideIcons.creditCard,
+            label: 'Еквайринг',
+            value: gateway,
+            isDark: isDark,
+          ),
           const SizedBox(height: 6),
-          _DetailRow(icon: LucideIcons.waves, label: 'Басейни ($poolsCount)', value: poolsNames),
+          _DetailRow(
+            icon: LucideIcons.waves,
+            label: 'Басейни ($poolsCount)',
+            value: poolsNames,
+            isDark: isDark,
+          ),
         ],
       ),
     );
@@ -790,24 +955,41 @@ class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final bool isDark;
 
-  const _DetailRow({required this.icon, required this.label, required this.value});
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: const Color(0xFF64748B), size: 14),
+        Icon(
+          icon,
+          color: isDark ? const Color(0xFF64748B) : const Color(0xFF0284C7),
+          size: 14,
+        ),
         const SizedBox(width: 6),
         Text(
           '$label: ',
-          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+          style: TextStyle(
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            fontSize: 12,
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -820,12 +1002,14 @@ class _ColorOption extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isDark;
 
   const _ColorOption({
     required this.color,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    required this.isDark,
   });
 
   @override
@@ -839,10 +1023,18 @@ class _ColorOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.04),
+          color: isDark
+              ? (isSelected
+                  ? color.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.04))
+              : (isSelected
+                  ? color.withValues(alpha: 0.15)
+                  : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withValues(alpha: 0.08),
+            color: isDark
+                ? (isSelected ? color : Colors.white.withValues(alpha: 0.08))
+                : (isSelected ? color : const Color(0xFFE2E8F0)),
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -858,7 +1050,9 @@ class _ColorOption extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                color: isDark
+                    ? (isSelected ? Colors.white : const Color(0xFF94A3B8))
+                    : (isSelected ? const Color(0xFF0F172A) : const Color(0xFF64748B)),
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
@@ -872,8 +1066,9 @@ class _ColorOption extends StatelessWidget {
 
 class _CriteriaItemTile extends StatelessWidget {
   final Map<String, dynamic> item;
+  final bool isDark;
 
-  const _CriteriaItemTile({required this.item});
+  const _CriteriaItemTile({required this.item, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -881,9 +1076,27 @@ class _CriteriaItemTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: isDark ? const Color(0xFF111827) : Colors.white,
+        gradient: isDark
+            ? null
+            : const LinearGradient(
+                colors: [Colors.white, Color(0xFFF0FDF4)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2)),
+        border: Border.all(
+          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.35),
+          width: isDark ? 1.0 : 1.1,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: const Color(0xFF10B981).withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,10 +1104,16 @@ class _CriteriaItemTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+              color: isDark
+                  ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                  : const Color(0xFFDCFCE7),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.check, color: Color(0xFF10B981), size: 14),
+            child: Icon(
+              LucideIcons.check,
+              color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+              size: 14,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -907,8 +1126,8 @@ class _CriteriaItemTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${item['id']}. ${item['title']}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -917,12 +1136,21 @@ class _CriteriaItemTile extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                        color: isDark
+                            ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                            : const Color(0xFFDCFCE7),
                         borderRadius: BorderRadius.circular(6),
+                        border: isDark
+                            ? null
+                            : Border.all(color: const Color(0xFF86EFAC)),
                       ),
                       child: Text(
                         item['status'] as String,
-                        style: const TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -930,12 +1158,20 @@ class _CriteriaItemTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   item['detail'] as String,
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, height: 1.3),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Тест: ${item['testRef']}',
-                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontFamily: 'monospace'),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF0284C7),
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                  ),
                 ),
               ],
             ),
@@ -949,16 +1185,34 @@ class _CriteriaItemTile extends StatelessWidget {
 class _ModalInfoRow extends StatelessWidget {
   final String label;
   final String val;
+  final bool isDark;
 
-  const _ModalInfoRow({required this.label, required this.val});
+  const _ModalInfoRow({
+    required this.label,
+    required this.val,
+    this.isDark = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-        Text(val, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            fontSize: 12,
+          ),
+        ),
+        Text(
+          val,
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

@@ -54,13 +54,20 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isLight ? Colors.white : const Color(0xFF0A1B30),
+            color: isLight ? null : const Color(0xFF0A1B30),
+            gradient: isLight
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.white, Color(0xFFF0F9FF)],
+                  )
+                : null,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
               color: isLight
-                  ? const Color(0xFFE2E8F0)
+                  ? const Color(0xFFBAE6FD)
                   : const Color(0xFF1E4570),
-              width: 1.0,
+              width: 1.1,
             ),
             boxShadow: isLight
                 ? [
@@ -88,7 +95,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       height: 4.5,
                       decoration: BoxDecoration(
                         color: isLight
-                            ? const Color(0xFFCBD5E1)
+                            ? const Color(0xFFBAE6FD)
                             : const Color(0xFF1E4570),
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -147,11 +154,23 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(
-                            LucideIcons.x,
-                            color: isLight ? const Color(0xFF64748B) : Colors.white70,
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                              border: Border.all(
+                                color: isLight ? const Color(0xFFBAE6FD) : Colors.white.withValues(alpha: 0.15),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Icon(
+                              LucideIcons.x,
+                              size: 18,
+                              color: isLight ? const Color(0xFF0F172A) : Colors.white70,
+                            ),
                           ),
                         ),
                       ],
@@ -271,7 +290,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
           border: Border.all(
             color: isSelected
                 ? Colors.white.withValues(alpha: 0.5)
-                : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E3E66)),
+                : (isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E3E66)),
             width: 1.0,
           ),
           boxShadow: isSelected
@@ -311,7 +330,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isLight
-              ? const Color(0xFFE2E8F0)
+              ? const Color(0xFFBAE6FD)
               : const Color(0xFF1E4570),
           width: 1.0,
         ),
@@ -349,14 +368,14 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       height: 44,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -408,7 +427,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                     ),
                     Icon(
                       LucideIcons.chevronRight,
-                      color: isLight ? const Color(0xFF94A3B8) : Colors.white60,
+                      color: isLight ? const Color(0xFF0284C7) : Colors.white60,
                       size: 18,
                     ),
                   ],
@@ -484,7 +503,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
         border: Border.all(
           color: hasUnread
               ? const Color(0xFF00E5FF)
-              : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570)),
+              : (isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E4570)),
           width: hasUnread ? 1.5 : 1.0,
         ),
         boxShadow: [

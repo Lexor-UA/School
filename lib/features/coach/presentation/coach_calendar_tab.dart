@@ -120,7 +120,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
             border: Border.all(
               color: themeConfig.isDark
                   ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                  : const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                  : const Color(0xFFBAE6FD),
               width: 1.2,
             ),
             boxShadow: [
@@ -533,7 +533,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
             border: Border.all(
               color: themeConfig.isDark
                   ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                  : const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                  : const Color(0xFFBAE6FD),
               width: 1.2,
             ),
             boxShadow: [
@@ -642,12 +642,12 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                 decoration: BoxDecoration(
                   color: themeConfig.isDark
                       ? const Color(0xFF07192C)
-                      : const Color(0xFFE2E8F0).withValues(alpha: 0.70),
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: themeConfig.isDark
                         ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
-                        : const Color(0xFFCBD5E1),
+                        : const Color(0xFFE2E8F0),
                     width: 1.1,
                   ),
                   boxShadow: [
@@ -706,7 +706,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                   decoration: BoxDecoration(
                     color: themeConfig.isDark
                         ? const Color(0xFF0B2138).withValues(alpha: 0.85)
-                        : Colors.white,
+                        : const Color(0xFFF0F9FF),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: themeConfig.isDark
@@ -727,7 +727,9 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                          color: themeConfig.isDark
+                              ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                              : const Color(0xFFE0F2FE),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -739,13 +741,15 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Загалом на день: $totalKidsInDay учнів • ${totalFreeInDay > 0 ? "Вільних місць: $totalFreeInDay з $totalCapInDay" : "Всі місця зайняті"}',
+                          'Учнів: $totalKidsInDay • ${totalFreeInDay > 0 ? "Вільних місць: $totalFreeInDay з $totalCapInDay" : "Всі місця зайняті"}',
                           style: TextStyle(
                             color: themeConfig.textPrimary,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.1,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -1013,17 +1017,21 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                                        color: themeConfig.isDark
+                                            ? const Color(0xFF10B981).withValues(alpha: 0.20)
+                                            : const Color(0xFFD1FAE5),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: const Color(0xFF10B981).withValues(alpha: 0.55),
+                                          color: themeConfig.isDark
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.55)
+                                              : const Color(0xFFA7F3D0),
                                           width: 1.0,
                                         ),
                                       ),
                                       child: Text(
                                         'coach.my_badge'.tr(),
-                                        style: const TextStyle(
-                                          color: Color(0xFF10B981),
+                                        style: TextStyle(
+                                          color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -1050,22 +1058,30 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                               // Coach and enrolled count
                               Row(
                                 children: [
-                                  Icon(LucideIcons.user, color: themeConfig.textMuted, size: 13),
+                                  Icon(
+                                    LucideIcons.user,
+                                    color: themeConfig.isDark ? themeConfig.textMuted : const Color(0xFF64748B),
+                                    size: 13,
+                                  ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       gClass.coachName.isNotEmpty ? gClass.coachName : 'coach.no_coach_assigned'.tr(),
-                                      style: TextStyle(color: themeConfig.textSecondary, fontSize: 12),
+                                      style: TextStyle(color: themeConfig.isDark ? themeConfig.textSecondary : const Color(0xFF475569), fontSize: 12),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  Icon(LucideIcons.users, color: themeConfig.textMuted, size: 13),
+                                  Icon(
+                                    LucideIcons.users,
+                                    color: themeConfig.isDark ? themeConfig.textMuted : const Color(0xFF64748B),
+                                    size: 13,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Записано: $enrolledCount/$maxCap',
                                     style: TextStyle(
-                                      color: themeConfig.textSecondary,
+                                      color: themeConfig.isDark ? themeConfig.textSecondary : const Color(0xFF475569),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -1203,17 +1219,17 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.25)
+                    ? (themeConfig.isDark ? Colors.white.withValues(alpha: 0.25) : Colors.white)
                     : (themeConfig.isDark
                         ? const Color(0xFF0E2C4D).withValues(alpha: 0.8)
-                        : const Color(0xFFCBD5E1).withValues(alpha: 0.6)),
+                        : const Color(0xFFE2E8F0)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.45)
+                      ? (themeConfig.isDark ? Colors.white.withValues(alpha: 0.45) : Colors.white)
                       : (themeConfig.isDark
                           ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
-                          : const Color(0xFF94A3B8).withValues(alpha: 0.3)),
+                          : const Color(0xFFCBD5E1)),
                   width: 0.8,
                 ),
               ),
@@ -1221,8 +1237,8 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                 '$count',
                 style: TextStyle(
                   color: isSelected
-                      ? Colors.white
-                      : (themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
+                      ? (themeConfig.isDark ? Colors.white : const Color(0xFF0284C7))
+                      : (themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF475569)),
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
                 ),

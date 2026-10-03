@@ -20,8 +20,8 @@ class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTick
     super.initState();
     _controller = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
     
-    // Generate initial rich pool of particles
-    for (int i = 0; i < 40; i++) {
+    // Generate initial rich pool of particles (balanced for high-FPS performance)
+    for (int i = 0; i < 22; i++) {
       _particles.add(_generateParticle(initial: true));
     }
 

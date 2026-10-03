@@ -39,24 +39,29 @@ class _ProfileStyleConfig {
   static BoxDecoration cardDecoration(bool isDark, {double radius = 22}) {
     if (!isDark) {
       return BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withValues(alpha: 0.70),
-            Colors.white.withValues(alpha: 0.30),
+            Colors.white,
+            Color(0xFFF0F9FF),
           ],
         ),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.60),
-          width: 1.1,
+          color: const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x140284C7),
-            blurRadius: 18,
-            offset: Offset(0, 4),
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 3),
           ),
         ],
       );
@@ -249,6 +254,28 @@ class _ProfileStyleConfig {
   }
 
   static BoxDecoration addChildButtonDecoration(bool isDark) {
+    if (!isDark) {
+      return BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(
+          color: const Color(0xFF34D399).withValues(alpha: 0.60),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withValues(alpha: 0.32),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
+    }
+
     switch (currentProfileVariant) {
       case ProfileStyleVariant.deepSapphireGlass:
         return BoxDecoration(
@@ -310,6 +337,7 @@ class _ProfileStyleConfig {
   }
 
   static Color addChildTextColor(bool isDark) {
+    if (!isDark) return Colors.white;
     switch (currentProfileVariant) {
       case ProfileStyleVariant.deepSapphireGlass:
       case ProfileStyleVariant.solidOceanicCards:
@@ -527,12 +555,7 @@ class ParentProfileTab extends ConsumerWidget {
                 ? user.loginId!
                 : null;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
-        child: Container(
+    return Container(
           padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 18, vertical: isCompact ? 12 : 16),
           decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 22),
           child: Column(
@@ -720,9 +743,7 @@ class ParentProfileTab extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildHeroStatItem({
@@ -804,12 +825,7 @@ class ParentProfileTab extends ConsumerWidget {
         : (partnerPhone.isNotEmpty ? partnerPhone : 'Другий з батьків');
     final partnerInitial = partnerDisplayName.characters.isNotEmpty ? partnerDisplayName.characters.first.toUpperCase() : 'П';
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.decal),
-        child: Container(
+    return Container(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 11 : 14),
           decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 20),
           child: Column(
@@ -1265,9 +1281,7 @@ class ParentProfileTab extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   // 3. VisionOS Grouped Settings Card
@@ -1282,12 +1296,7 @@ class ParentProfileTab extends ConsumerWidget {
   }) {
     final clientUnread = user != null ? ref.watch(clientUnreadBadgeProvider(user.id)) : 0;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16, tileMode: TileMode.decal),
-        child: Container(
+    return Container(
           decoration: _ProfileStyleConfig.cardDecoration(isDark, radius: 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1491,9 +1500,7 @@ class ParentProfileTab extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   void _showBranchInfoSheet(BuildContext context, WidgetRef ref, bool isDark, String branchId) {

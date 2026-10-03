@@ -1106,7 +1106,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               ? LinearGradient(
                                   colors: isDark
                                       ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 )
@@ -1840,7 +1840,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       ),
                       isDark: isDark,
                       themeConfig: themeConfig,
-                      iconColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF2563EB),
+                      iconColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                     ),
 
                     _buildRowDivider(isDark),
@@ -1895,7 +1895,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       ),
                       isDark: isDark,
                       themeConfig: themeConfig,
-                      iconColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1),
+                      iconColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF0284C7),
                     ),
 
                     _buildRowDivider(isDark),
@@ -1928,7 +1928,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Transform.translate(
-                              offset: const Offset(0, 1.0),
+                              offset: isDark ? const Offset(0, 1.0) : Offset.zero,
                               child: Container(
                                 width: 6,
                                 height: 6,
@@ -2016,7 +2016,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           ],
                   ),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.50) : const Color(0xFF34D399),
+                    color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.50) : const Color(0xFF10B981).withValues(alpha: 0.40),
                     width: 1.2,
                   ),
                   boxShadow: [
@@ -2045,7 +2045,11 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         ),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 22),
+                      child: Icon(
+                        isDark ? LucideIcons.checkCircle2 : LucideIcons.check,
+                        color: const Color(0xFF10B981),
+                        size: isDark ? 22 : 20,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -2055,21 +2059,52 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           Text(
                             'Абонемент активний',
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF065F46),
+                              color: isDark ? Colors.white : const Color(0xFF064E3B),
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 3),
-                          Text(
-                            'Для "$effectiveOwner" вже діє абонемент (залишилось ${_pluralizeClasses(safeRemaining)}). Новий абонемент буде доступний після завершення занять.',
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF047857),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                              height: 1.25,
+                          if (isDark)
+                            Text(
+                              'Для "$effectiveOwner" вже діє абонемент (залишилось ${_pluralizeClasses(safeRemaining)}). Новий абонемент буде доступний після завершення занять.',
+                              style: const TextStyle(
+                                color: Color(0xFFE2E8F0),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                                height: 1.25,
+                              ),
+                            )
+                          else
+                            RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  color: Color(0xFF334155),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.3,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Для '),
+                                  TextSpan(
+                                    text: '"$effectiveOwner"',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF064E3B),
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' вже діє абонемент (залишилось '),
+                                  TextSpan(
+                                    text: _pluralizeClasses(safeRemaining),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF059669),
+                                    ),
+                                  ),
+                                  const TextSpan(text: '). Новий абонемент буде доступний після завершення занять.'),
+                                ],
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -2088,7 +2123,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                   ),
                   border: Border.all(
                     color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.35),

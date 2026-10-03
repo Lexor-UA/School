@@ -187,7 +187,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                             decoration: BoxDecoration(
                               color: isDark
                                   ? Colors.white.withValues(alpha: 0.35)
-                                  : const Color(0xFF94A3B8),
+                                  : const Color(0xFFBAE6FD),
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
@@ -295,10 +295,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                                     decoration: BoxDecoration(
                                       gradient: _onlyUnread
-                                          ? LinearGradient(
-                                              colors: isDark
-                                                  ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                                          ? const LinearGradient(
+                                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                             )
                                           : null,
                                       color: _onlyUnread
@@ -354,19 +352,20 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.12)
-                                    : Colors.white,
+                                    : const Color(0xFFF0F9FF),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: isDark
                                       ? Colors.white.withValues(alpha: 0.20)
                                       : const Color(0xFFBAE6FD),
+                                  width: 1.2,
                                 ),
                                 boxShadow: isDark
                                     ? null
                                     : [
                                         BoxShadow(
-                                          color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-                                          blurRadius: 6,
+                                          color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                          blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
                                       ],
@@ -374,7 +373,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               child: IconButton(
                                 icon: Icon(
                                   LucideIcons.x,
-                                  color: isDark ? Colors.white : const Color(0xFF334155),
+                                  color: isDark ? Colors.white : const Color(0xFF0284C7),
                                   size: 18,
                                 ),
                                 onPressed: () => Navigator.pop(context),
@@ -420,7 +419,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               hintStyle: TextStyle(
                                 color: isDark
                                     ? const Color(0xFFB0D4EC).withValues(alpha: 0.70)
-                                    : const Color(0xFF94A3B8),
+                                    : const Color(0xFF64748B),
                                 fontSize: 13,
                               ),
                               isDense: true,
@@ -771,14 +770,16 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                 ? LinearGradient(
                     colors: isDark
                         ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                        : [Color.lerp(color, const Color(0xFF0284C7), 0.7)!, const Color(0xFF0369A1)],
+                        : (accentColor != null
+                            ? [accentColor, Color.lerp(accentColor, const Color(0xFF0284C7), 0.35)!]
+                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)]),
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
                 : null,
             color: isSelected
                 ? null
-                : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
+                : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
@@ -821,12 +822,14 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? (isDark ? color.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.25))
-                      : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF1F5F9)),
+                      : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE0F2FE)),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected
-                        ? color.withValues(alpha: isDark ? 0.45 : 0.25)
-                        : Colors.transparent,
+                        ? (isDark
+                            ? color.withValues(alpha: 0.45)
+                            : Colors.white.withValues(alpha: 0.35))
+                        : (isDark ? Colors.transparent : const Color(0xFFBAE6FD)),
                     width: 0.8,
                   ),
                 ),
@@ -835,7 +838,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                   style: TextStyle(
                     color: isSelected
                         ? (isDark ? color : Colors.white)
-                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
+                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF0284C7)),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1137,67 +1140,105 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                       child: Icon(LucideIcons.eye, color: Colors.white, size: 22),
                                     ),
                                   )
-                                : StreamBuilder<DocumentSnapshot>(
-                                stream: FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(dialog.clientId)
-                                    .snapshots(),
-                                builder: (context, snapshot) {
-                                  final data = snapshot.data?.data() as Map<String, dynamic>?;
-                                  final avatarUrl = (data?['avatarUrl'] as String?) ?? dialog.clientAvatar;
-                                  final name = (data?['name'] as String?) ?? dialog.clientName;
+                                : (dialog.clientId.trim().isEmpty
+                                    ? Builder(builder: (context) {
+                                        final name = dialog.clientName;
+                                        final avatarGradient = isCoach
+                                            ? const [Color(0xFF10B981), Color(0xFF0284C7)]
+                                            : currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length];
+                                        final parts = name.trim().split(RegExp(r'\s+'));
+                                        final initials = parts.length > 1
+                                            ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+                                            : (name.length >= 2 ? name.substring(0, 2).toUpperCase() : (name.isNotEmpty ? name[0].toUpperCase() : '?'));
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: LinearGradient(
+                                              colors: avatarGradient,
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: avatarGradient.first.withValues(alpha: 0.35),
+                                                blurRadius: 8,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              initials,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                                letterSpacing: 0.4,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                    : StreamBuilder<DocumentSnapshot>(
+                                        stream: FirebaseFirestore.instance
+                                            .collection('users')
+                                            .doc(dialog.clientId.trim())
+                                            .snapshots(),
+                                        builder: (context, snapshot) {
+                                          final data = snapshot.data?.data() as Map<String, dynamic>?;
+                                          final avatarUrl = (data?['avatarUrl'] as String?) ?? dialog.clientAvatar;
+                                          final name = (data?['name'] as String?) ?? dialog.clientName;
 
-                                  // Only show NetworkImage if it's a real user photo and not generic ui-avatars
-                                  if (avatarUrl.isNotEmpty &&
-                                      avatarUrl.startsWith('http') &&
-                                      !avatarUrl.contains('ui-avatars.com')) {
-                                    return CircleAvatar(
-                                      radius: 22,
-                                      backgroundImage: NetworkImage(avatarUrl),
-                                      backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
-                                    );
-                                  }
+                                          // Only show NetworkImage if it's a real user photo and not generic ui-avatars
+                                          if (avatarUrl.isNotEmpty &&
+                                              avatarUrl.startsWith('http') &&
+                                              !avatarUrl.contains('ui-avatars.com')) {
+                                            return CircleAvatar(
+                                              radius: 22,
+                                              backgroundImage: NetworkImage(avatarUrl),
+                                              backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+                                            );
+                                          }
 
-                                  // Jewel Avatar gradient from app theme palette
-                                  final avatarGradient = isCoach
-                                      ? const [Color(0xFF10B981), Color(0xFF0284C7)]
-                                      : currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length];
+                                          // Jewel Avatar gradient from app theme palette
+                                          final avatarGradient = isCoach
+                                              ? const [Color(0xFF10B981), Color(0xFF0284C7)]
+                                              : currentTheme.actionCardGradients[name.hashCode.abs() % currentTheme.actionCardGradients.length];
 
-                                  // Extract 2-letter bold initials
-                                  final parts = name.trim().split(RegExp(r'\s+'));
-                                  final initials = parts.length > 1
-                                      ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
-                                      : (name.length >= 2 ? name.substring(0, 2).toUpperCase() : (name.isNotEmpty ? name[0].toUpperCase() : '?'));
+                                          // Extract 2-letter bold initials
+                                          final parts = name.trim().split(RegExp(r'\s+'));
+                                          final initials = parts.length > 1
+                                              ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+                                              : (name.length >= 2 ? name.substring(0, 2).toUpperCase() : (name.isNotEmpty ? name[0].toUpperCase() : '?'));
 
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        colors: avatarGradient,
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: avatarGradient.first.withValues(alpha: 0.35),
-                                          blurRadius: 8,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        initials,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 14,
-                                          letterSpacing: 0.4,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: LinearGradient(
+                                                colors: avatarGradient,
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: avatarGradient.first.withValues(alpha: 0.35),
+                                                  blurRadius: 8,
+                                                ),
+                                              ],
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                initials,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 14,
+                                                  letterSpacing: 0.4,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      )),
                       ),
                       // Online beacon dot
                       Positioned(

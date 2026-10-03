@@ -257,7 +257,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isLight
-              ? const Color(0xFFE2E8F0)
+              ? const Color(0xFFBAE6FD)
               : const Color(0xFF1E4570),
           width: 1.0,
         ),
@@ -295,10 +295,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                           Container(
                             padding: const EdgeInsets.all(7.5),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: _isLight
-                                    ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
-                                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               ),
                               shape: BoxShape.circle,
                               boxShadow: [
@@ -361,7 +359,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   indent: 14,
                   endIndent: 14,
                   color: _isLight
-                      ? const Color(0xFFE2E8F0)
+                      ? const Color(0xFFE0F2FE)
                       : const Color(0xFF1E4570),
                 ),
 
@@ -474,7 +472,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: _isLight
-              ? const Color(0xFFE2E8F0)
+              ? const Color(0xFFBAE6FD)
               : const Color(0xFF1E4570),
           width: 1.0,
         ),
@@ -935,7 +933,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isLight
-              ? const Color(0xFFCBD5E1)
+              ? const Color(0xFFBAE6FD)
               : const Color(0xFF1E4570),
           width: 1.0,
         ),
@@ -959,7 +957,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               color: _isLight ? const Color(0xFFF1F5F9) : const Color(0xFF081628),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E3E66),
+                color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E3E66),
                 width: 1.0,
               ),
             ),
@@ -1070,10 +1068,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _isLight
-                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
-                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                             ),
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
@@ -1132,7 +1128,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Заплановано до кінця місяця: $totalScheduled занять (+${_isIncomeHidden ? '•••' : currencyFormat.format(scheduledSum)} грн)',
+                            'Заплановано до кінця місяця: ${_formatClassesCount(totalScheduled)} (+${_isIncomeHidden ? '•••' : currencyFormat.format(scheduledSum)} грн)',
                             style: TextStyle(
                               color: _isLight ? const Color(0xFF92400E) : const Color(0xFFFBBF24),
                               fontSize: 10,
@@ -1176,10 +1172,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           padding: const EdgeInsets.symmetric(vertical: 5.5),
           decoration: BoxDecoration(
             gradient: isSelected
-                ? LinearGradient(
-                    colors: _isLight
-                        ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
-                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                ? const LinearGradient(
+                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -1316,7 +1310,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         border: Border.all(
           color: hasEarnings
               ? (_isLight ? accentColor.withValues(alpha: 0.55) : accentColor.withValues(alpha: 0.60))
-              : (_isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E4570)),
+              : (_isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E4570)),
           width: 1.0,
         ),
         boxShadow: hasEarnings
@@ -1415,16 +1409,23 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         return Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           decoration: BoxDecoration(
-            color: _isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0A1B30),
+            color: _isLight ? null : const Color(0xFF0A1B30),
+            gradient: _isLight
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.white, Color(0xFFF0F9FF)],
+                  )
+                : null,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
-              color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570),
-              width: 1.0,
+              color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E4570),
+              width: 1.1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isLight
-                    ? const Color(0xFF0F172A).withValues(alpha: 0.12)
+                    ? const Color(0xFF0284C7).withValues(alpha: 0.12)
                     : Colors.black.withValues(alpha: 0.50),
                 blurRadius: 30,
               ),
@@ -1442,7 +1443,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: _isLight ? const Color(0xFFCBD5E1) : Colors.white38,
+                          color: _isLight ? const Color(0xFFBAE6FD) : Colors.white38,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1469,13 +1470,24 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             ),
                           ],
                         ),
-                        IconButton(
-                          icon: Icon(
-                            LucideIcons.x,
-                            color: _isLight ? const Color(0xFF64748B) : Colors.white70,
-                            size: 20,
+                        GestureDetector(
+                          onTap: () => Navigator.pop(ctx),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _isLight ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                              border: Border.all(
+                                color: _isLight ? const Color(0xFFBAE6FD) : Colors.white.withValues(alpha: 0.15),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Icon(
+                              LucideIcons.x,
+                              size: 18,
+                              color: _isLight ? const Color(0xFF0F172A) : Colors.white70,
+                            ),
                           ),
-                          onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
@@ -1484,7 +1496,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               ),
 
               Divider(
-                color: _isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570),
+                color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E4570),
                 height: 1,
               ),
 
@@ -1535,7 +1547,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: _isLight
-                                    ? [Colors.white, const Color(0xFFF8FAFC)]
+                                    ? [Colors.white, const Color(0xFFF0F9FF)]
                                     : [
                                         const Color(0xFF0F2744),
                                         const Color(0xFF11233B),
@@ -1547,13 +1559,13 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               border: Border.all(
                                 color: isConducted
                                     ? typeColor.withValues(alpha: _isLight ? 0.35 : 0.40)
-                                    : (_isLight ? const Color(0xFFE2E8F0) : const Color(0xFF1E4570)),
+                                    : (_isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E4570)),
                                 width: 1.0,
                               ),
                               boxShadow: _isLight
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                                        color: const Color(0xFF0284C7).withValues(alpha: 0.06),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),

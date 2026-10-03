@@ -111,36 +111,38 @@ class _WaterPainter extends CustomPainter {
     path3.lineTo(0, y3);
 
     bool first = true;
-    for (double x = 0; x <= size.width; x += 2) {
-      final double nx = x / size.width;
+    final double step = 4.0;
+    for (double x = 0; x <= size.width + step; x += step) {
+      final double clampedX = x.clamp(0.0, size.width);
+      final double nx = clampedX / size.width;
 
-      // Wave 1: Slow, deep oceanic swell with subtle rolling counter-wave (strictly integer 1x harmonics for seamless loop)
+      // Wave 1: Slow, deep oceanic swell with subtle rolling counter-wave
       final double h1 = y1 +
           math.sin((nx * 1.6 * math.pi) + phase) * (amp1 * 0.78) +
           math.cos((nx * 3.2 * math.pi) - phase) * (amp1 * 0.22);
-      path1.lineTo(x, h1);
+      path1.lineTo(clampedX, h1);
 
-      // Wave 2: Harmonic mid-depth tide (integer 1x and 2x harmonics)
+      // Wave 2: Harmonic mid-depth tide
       final double h2 = y2 +
           math.cos((nx * 2.0 * math.pi) + phase) * (amp2 * 0.72) +
           math.sin((nx * 4.0 * math.pi) + (phase * 2)) * (amp2 * 0.28);
-      path2.lineTo(x, h2);
+      path2.lineTo(clampedX, h2);
 
-      // Wave 3: Expressive surface counter-current (integer -1x and 2x harmonics)
+      // Wave 3: Expressive surface counter-current
       final double h3 = y3 +
           math.sin((nx * 2.4 * math.pi) - phase) * (amp3 * 0.74) +
           math.cos((nx * 4.8 * math.pi) + (phase * 2)) * (amp3 * 0.26);
-      path3.lineTo(x, h3);
+      path3.lineTo(clampedX, h3);
 
       if (first) {
-        crestPath1.moveTo(x, h1);
-        crestPath2.moveTo(x, h2);
-        crestPath3.moveTo(x, h3);
+        crestPath1.moveTo(clampedX, h1);
+        crestPath2.moveTo(clampedX, h2);
+        crestPath3.moveTo(clampedX, h3);
         first = false;
       } else {
-        crestPath1.lineTo(x, h1);
-        crestPath2.lineTo(x, h2);
-        crestPath3.lineTo(x, h3);
+        crestPath1.lineTo(clampedX, h1);
+        crestPath2.lineTo(clampedX, h2);
+        crestPath3.lineTo(clampedX, h3);
       }
     }
 

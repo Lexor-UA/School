@@ -13,6 +13,7 @@ import 'package:swimming_school_app/features/schedule/controllers/schedule_contr
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
 void showCoachClassAttendeesSheet(BuildContext context, GroupClass gClass) {
   showModalBottomSheet(
@@ -327,6 +328,9 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(appThemeControllerProvider);
+    final isDark = currentTheme.isDark;
+
     final startTimeStr = '${_currentClass.startTime.hour.toString().padLeft(2, '0')}:${_currentClass.startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${_currentClass.endTime.hour.toString().padLeft(2, '0')}:${_currentClass.endTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = _currentClass.enrolledChildIds.length;
@@ -336,12 +340,24 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: isDark ? const Color(0xFF111827) : Colors.white,
+        gradient: isDark
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.white, Color(0xFFF0F9FF)],
+              ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: const Color(0xFF334155), width: 1.2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.50),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.50)
+                : const Color(0xFF0284C7).withValues(alpha: 0.10),
             blurRadius: 32,
             spreadRadius: -4,
           ),
@@ -364,7 +380,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           width: 44,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.white24,
+                            color: isDark ? Colors.white24 : const Color(0xFFBAE6FD),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -386,10 +402,10 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                 child: const Icon(LucideIcons.users, color: Colors.white, size: 16),
                               ),
                               const SizedBox(width: 10),
-                              const Text(
+                              Text(
                                 'ДЕТАЛІ ГРУПИ ТА УЧНІ',
                                 style: TextStyle(
-                                  color: Color(0xFF00E5FF),
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.3,
@@ -397,11 +413,34 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               ),
                             ],
                           ),
-                          IconButton(
-                            icon: const Icon(LucideIcons.x, color: Colors.white70, size: 20),
-                            onPressed: () => Navigator.pop(context),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.pop(context);
+                              },
+                              borderRadius: BorderRadius.circular(18),
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
+                                  border: Border.all(
+                                    color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    LucideIcons.x,
+                                    color: isDark ? Colors.white70 : const Color(0xFF0284C7),
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -418,15 +457,32 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                          const Color(0xFF0284C7).withValues(alpha: 0.08),
-                        ],
+                        colors: isDark
+                            ? [
+                                const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                                const Color(0xFF0284C7).withValues(alpha: 0.08),
+                              ]
+                            : [
+                                const Color(0xFFF0F9FF),
+                                Colors.white,
+                              ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.3) : const Color(0xFFBAE6FD),
+                        width: 1.2,
+                      ),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,8 +493,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             Expanded(
                               child: Text(
                                 _currentClass.title,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : currentTheme.textPrimary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -449,14 +505,16 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.2) : const Color(0xFFE0F2FE),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.45)),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.45) : const Color(0xFFBAE6FD),
+                                ),
                               ),
                               child: Text(
                                 '$startTimeStr - $endTimeStr',
-                                style: const TextStyle(
-                                  color: Color(0xFF00E5FF),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -474,19 +532,30 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             if (_currentClass.category.isNotEmpty)
                               _buildPill(
                                 label: _currentClass.category,
-                                color: const Color(0xFF38BDF8),
+                                color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                 icon: LucideIcons.waves,
+                                lightBg: const Color(0xFFE0F2FE),
+                                lightBorder: const Color(0xFFBAE6FD),
+                                isDark: isDark,
                               ),
                             if (_currentClass.lane.isNotEmpty)
                               _buildPill(
                                 label: _currentClass.lane,
-                                color: Colors.white70,
+                                color: isDark ? Colors.white70 : const Color(0xFF475569),
                                 icon: LucideIcons.mapPin,
+                                lightBg: const Color(0xFFF8FAFC),
+                                lightBorder: const Color(0xFFE2E8F0),
+                                isDark: isDark,
                               ),
                             _buildPill(
                               label: freeSlots > 0 ? 'Вільно: $freeSlots місць' : 'Місць немає (заповнено)',
-                              color: freeSlots > 0 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                              color: freeSlots > 0
+                                  ? (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
+                                  : (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)),
                               icon: freeSlots > 0 ? LucideIcons.checkCircle2 : LucideIcons.alertCircle,
+                              lightBg: freeSlots > 0 ? const Color(0xFFD1FAE5) : const Color(0xFFFEF3C7),
+                              lightBorder: freeSlots > 0 ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A),
+                              isDark: isDark,
                             ),
                           ],
                         ),
@@ -499,8 +568,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           children: [
                             Text(
                               'Записано: $enrolledCount з $maxCap учнів',
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : const Color(0xFF475569),
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -508,7 +577,9 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             Text(
                               '${(fillFraction * 100).toInt()}% заповнено',
                               style: TextStyle(
-                                color: fillFraction > 0.85 ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                                color: fillFraction > 0.85
+                                    ? const Color(0xFFF59E0B)
+                                    : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -521,9 +592,11 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           child: LinearProgressIndicator(
                             value: fillFraction,
                             minHeight: 7,
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              fillFraction > 0.85 ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF),
+                              fillFraction > 0.85
+                                  ? const Color(0xFFF59E0B)
+                                  : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                             ),
                           ),
                         ),
@@ -542,8 +615,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                     children: [
                       Text(
                         'СПИСОК УЧНІВ ($enrolledCount)',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.3,
@@ -551,8 +624,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                       ),
                       Text(
                         'Присутні: ${_currentClass.attendedChildIds.length} з $enrolledCount',
-                        style: const TextStyle(
-                          color: Color(0xFF10B981),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -566,8 +639,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                 // Scrollable attendees roster
                 Expanded(
                   child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                      ? Center(
+                          child: CircularProgressIndicator(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                         )
                       : _attendees.isEmpty
                           ? Center(
@@ -579,27 +652,33 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                     Container(
                                       padding: const EdgeInsets.all(20),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.05),
+                                        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFE0F2FE),
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                        border: Border.all(
+                                          color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFBAE6FD),
+                                        ),
                                       ),
-                                      child: const Icon(LucideIcons.users, color: Colors.white38, size: 40),
+                                      child: Icon(
+                                        LucideIcons.users,
+                                        color: isDark ? Colors.white38 : const Color(0xFF0284C7),
+                                        size: 40,
+                                      ),
                                     ),
                                     const SizedBox(height: 14),
-                                    const Text(
+                                    Text(
                                       'У цій групі ще немає записаних учнів',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: isDark ? Colors.white : currentTheme.textPrimary,
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 6),
-                                    const Text(
+                                    Text(
                                       'Вільні місця будуть зайняті після бронювання клієнтами або запису адміністратором',
                                       style: TextStyle(
-                                        color: Colors.white54,
+                                        color: isDark ? Colors.white54 : const Color(0xFF64748B),
                                         fontSize: 12,
                                       ),
                                       textAlign: TextAlign.center,
@@ -614,7 +693,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               itemCount: _attendees.length,
                               separatorBuilder: (context, index) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
-                                return _buildAttendeeCard(_attendees[index], index);
+                                return _buildAttendeeCard(_attendees[index], index, currentTheme, isDark);
                               },
                             ),
                 ),
@@ -624,24 +703,26 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
         );
   }
 
-  Widget _buildAttendeeCard(CoachAttendeeInfo attendee, int index) {
+  Widget _buildAttendeeCard(CoachAttendeeInfo attendee, int index, AppThemeConfig currentTheme, bool isDark) {
     final isPresent = attendee.isPresent;
 
     return Container(
       decoration: BoxDecoration(
         color: isPresent
-            ? const Color(0xFF0F2922)
-            : const Color(0xFF1E2638),
+            ? (isDark ? const Color(0xFF0F2922) : const Color(0xFFF0FDF4))
+            : (isDark ? const Color(0xFF1E2638) : const Color(0xFFF8FAFC)),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isPresent
-              ? const Color(0xFF10B981).withValues(alpha: 0.60)
-              : const Color(0xFF334155).withValues(alpha: 0.70),
+              ? (isDark ? const Color(0xFF10B981).withValues(alpha: 0.60) : const Color(0xFF86EFAC))
+              : (isDark ? const Color(0xFF334155).withValues(alpha: 0.70) : const Color(0xFFE2E8F0)),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.30),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.30)
+                : const Color(0xFF0284C7).withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -697,8 +778,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               Flexible(
                                 child: Text(
                                   attendee.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : currentTheme.textPrimary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -711,16 +792,20 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                                    color: isDark
+                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+                                        : const Color(0xFFE0F2FE),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                      color: isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                          : const Color(0xFFBAE6FD),
                                     ),
                                   ),
                                   child: Text(
                                     '${attendee.age} р.',
-                                    style: const TextStyle(
-                                      color: Color(0xFF00E5FF),
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -733,8 +818,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           if (attendee.parentName != null && attendee.parentName!.isNotEmpty)
                             Text(
                               'Батьки: ${attendee.parentName}',
-                              style: const TextStyle(
-                                color: Colors.white60,
+                              style: TextStyle(
+                                color: isDark ? Colors.white60 : const Color(0xFF64748B),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -754,12 +839,14 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: isPresent ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.08),
+                          color: isPresent
+                              ? const Color(0xFF10B981)
+                              : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isPresent
                                 ? const Color(0xFF10B981)
-                                : Colors.white.withValues(alpha: 0.2),
+                                : (isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFBAE6FD)),
                           ),
                         ),
                         child: Row(
@@ -768,13 +855,17 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             Icon(
                               isPresent ? LucideIcons.check : LucideIcons.userCheck,
                               size: 14,
-                              color: isPresent ? Colors.black : Colors.white70,
+                              color: isPresent
+                                  ? Colors.white
+                                  : (isDark ? Colors.white70 : const Color(0xFF0284C7)),
                             ),
                             const SizedBox(width: 5),
                             Text(
                               isPresent ? 'Присутній' : 'Відмітити',
                               style: TextStyle(
-                                color: isPresent ? Colors.black : Colors.white70,
+                                color: isPresent
+                                    ? Colors.white
+                                    : (isDark ? Colors.white70 : const Color(0xFF0284C7)),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -793,21 +884,21 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161F30),
+                      color: isDark ? const Color(0xFF161F30) : const Color(0xFFF0F9FF),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF334155)),
+                      border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(LucideIcons.phone, size: 14, color: Color(0xFF00E5FF)),
+                        Icon(LucideIcons.phone, size: 14, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: GestureDetector(
                             onTap: () => _copyPhone(attendee.phone!),
                             child: Text(
                               attendee.phone!,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.3,
@@ -821,17 +912,22 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
+                                  : const Color(0xFFE0F2FE),
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark ? Colors.transparent : const Color(0xFFBAE6FD),
+                              ),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(LucideIcons.copy, size: 12, color: Color(0xFF00E5FF)),
-                                SizedBox(width: 4),
+                                Icon(LucideIcons.copy, size: 12, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                const SizedBox(width: 4),
                                 Text(
                                   'Копіювати',
                                   style: TextStyle(
-                                    color: Color(0xFF00E5FF),
+                                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -847,10 +943,13 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE0F2FE),
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark ? Colors.transparent : const Color(0xFFBAE6FD),
+                              ),
                             ),
-                            child: const Icon(LucideIcons.messageCircle, size: 13, color: Colors.white70),
+                            child: Icon(LucideIcons.messageCircle, size: 13, color: isDark ? Colors.white70 : const Color(0xFF0284C7)),
                           ),
                         ),
                       ],
@@ -863,14 +962,14 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161F30),
+                    color: isDark ? const Color(0xFF161F30) : const Color(0xFFF0F9FF),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: attendee.isExpired
                           ? const Color(0xFFEF4444).withValues(alpha: 0.6)
                           : (attendee.isExhausted
                               ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
-                              : const Color(0xFF334155)),
+                              : (isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD))),
                     ),
                   ),
                   child: Column(
@@ -882,12 +981,14 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           // Remaining classes
                           Row(
                             children: [
-                              const Icon(LucideIcons.ticket, size: 13, color: Color(0xFF00E5FF)),
+                              Icon(LucideIcons.ticket, size: 13, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                               const SizedBox(width: 6),
                               Text(
                                 'Залишок: ${attendee.remainingClasses}${attendee.totalClasses > 0 ? " з ${attendee.totalClasses}" : ""} занять',
                                 style: TextStyle(
-                                  color: attendee.isExhausted ? const Color(0xFFF59E0B) : Colors.white,
+                                  color: attendee.isExhausted
+                                      ? const Color(0xFFF59E0B)
+                                      : (isDark ? Colors.white : const Color(0xFF0F172A)),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -897,12 +998,12 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           // Booked future count
                           Row(
                             children: [
-                              const Icon(LucideIcons.calendarCheck, size: 13, color: Color(0xFF38BDF8)),
+                              Icon(LucideIcons.calendarCheck, size: 13, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                               const SizedBox(width: 5),
                               Text(
                                 'Заброньовано: ${attendee.bookedClassesCount}',
-                                style: const TextStyle(
-                                  color: Color(0xFF38BDF8),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -949,15 +1050,15 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               ),
                             ),
                           ] else ...[
-                            const Icon(LucideIcons.checkCircle2, size: 13, color: Color(0xFF10B981)),
+                            Icon(LucideIcons.checkCircle2, size: 13, color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                             const SizedBox(width: 5),
                             Expanded(
                               child: Text(
                                 attendee.expiryDate != null
                                     ? 'Абонемент діє до ${DateFormat("dd.MM.yyyy").format(attendee.expiryDate!)}'
                                     : 'Абонемент активний',
-                                style: const TextStyle(
-                                  color: Color(0xFF10B981),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -981,13 +1082,19 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
     required String label,
     required Color color,
     required IconData icon,
+    Color? lightBg,
+    Color? lightBorder,
+    bool isDark = true,
   }) {
+    final bgColor = isDark ? color.withValues(alpha: 0.14) : (lightBg ?? color.withValues(alpha: 0.10));
+    final borderColor = isDark ? color.withValues(alpha: 0.35) : (lightBorder ?? color.withValues(alpha: 0.30));
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -169,7 +169,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                   width: 42,
                   height: 4.5,
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFCBD5E1),
+                    color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFBAE6FD),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -236,11 +236,15 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                     // Close button
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9),
+                        color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F9FF),
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+                          width: 1.2,
+                        ),
                       ),
                       child: IconButton(
-                        icon: Icon(LucideIcons.x, color: isDark ? Colors.white70 : currentTheme.textSecondary, size: 18),
+                        icon: Icon(LucideIcons.x, color: isDark ? Colors.white70 : const Color(0xFF0284C7), size: 18),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
@@ -255,12 +259,13 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.08)
-                      : const Color(0xFFF1F5F9),
+                      : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.14)
-                        : currentTheme.cardBorder,
+                        : const Color(0xFFBAE6FD),
+                    width: 1.2,
                   ),
                 ),
                 child: Row(
@@ -370,7 +375,8 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                               border: Border.all(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.12)
-                                    : currentTheme.cardBorder,
+                                    : const Color(0xFFBAE6FD),
+                                width: 1.1,
                               ),
                               boxShadow: isDark
                                   ? [
@@ -497,21 +503,23 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                   )
                 : null,
             color: isSelected ? null : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.70 : 0.40)
+                  ? (isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.70)
+                      : Colors.white.withValues(alpha: 0.45))
                   : Colors.transparent,
               width: 1.2,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15),
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -526,9 +534,9 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                 style: TextStyle(
                   color: isSelected
                       ? Colors.white
-                      : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
+                      : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
                   fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   letterSpacing: 0.2,
                 ),
               ),
@@ -538,12 +546,14 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.25))
-                      : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.06)),
+                      : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE0F2FE)),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.20)
-                        : Colors.transparent,
+                        ? (isDark
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                            : Colors.white.withValues(alpha: 0.35))
+                        : (isDark ? Colors.transparent : const Color(0xFFBAE6FD)),
                     width: 1.0,
                   ),
                 ),
@@ -552,7 +562,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                   style: TextStyle(
                     color: isSelected
                         ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
-                        : (isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary),
+                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF0284C7)),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),

@@ -9,8 +9,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/features/chat/models/chat_dialog.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 class ChatSheet extends ConsumerStatefulWidget {
   const ChatSheet({super.key});
@@ -28,13 +28,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
   @override
   void initState() {
     super.initState();
-    if (FirebaseAuth.instance.currentUser == null) {
-      FirebaseAuth.instance.signInAnonymously().then((_) {
-        if (mounted) {
-          ref.invalidate(adminChatDialogsStreamProvider);
-        }
-      }).catchError((_) => null);
-    }
+    ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
   }
 
   String _getDialogRole(ChatDialog dialog, Map<String, String> userRoles) {
@@ -722,11 +716,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                             ),
                             onPressed: () async {
                               HapticFeedback.lightImpact();
-                              if (FirebaseAuth.instance.currentUser == null) {
-                                try {
-                                  await FirebaseAuth.instance.signInAnonymously();
-                                } catch (_) {}
-                              }
+                              await ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
                               ref.invalidate(adminChatDialogsStreamProvider);
                             },
                             icon: const Icon(LucideIcons.refreshCw, size: 16),
@@ -1282,175 +1272,162 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                       children: [
                         Row(
                           children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      displayName,
-                                      style: TextStyle(
-                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                        fontWeight: isUnread ? FontWeight.w800 : FontWeight.w700,
-                                        fontSize: 15.5,
-                                        letterSpacing: 0.2,
+                            if (isCoachClient)
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        dialog.coachName?.isNotEmpty == true ? dialog.coachName! : 'Тренер',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                          fontWeight: isUnread ? FontWeight.w800 : FontWeight.w700,
+                                          fontSize: 15.5,
+                                          letterSpacing: 0.2,
+                                        ),
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                                        child: Icon(
+                                          LucideIcons.arrowLeftRight,
+                                          size: 13,
+                                          color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                                        ),
+                                      ),
+                                      Text(
+                                        dialog.clientName,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                          fontWeight: isUnread ? FontWeight.w800 : FontWeight.w700,
+                                          fontSize: 15.5,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  // Role Badge with strict WCAG AAA contrast
-                                  if (isCoachClient)
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                          decoration: BoxDecoration(
-                                            color: isDark
-                                                ? const Color(0xFFA855F7).withValues(alpha: 0.22)
-                                                : const Color(0xFFF3E8FF),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: isDark
-                                                  ? const Color(0xFFA855F7).withValues(alpha: 0.60)
-                                                  : const Color(0xFFE9D5FF),
-                                              width: 0.8,
-                                            ),
+                                ),
+                              )
+                            else
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          displayName,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            fontWeight: isUnread ? FontWeight.w800 : FontWeight.w700,
+                                            fontSize: 15.5,
+                                            letterSpacing: 0.2,
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Text('👁️ ', style: TextStyle(fontSize: 8.5)),
-                                              Text(
-                                                'НАГЛЯД',
-                                                style: TextStyle(
-                                                  color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
-                                                  fontSize: 9.5,
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                          maxLines: 1,
                                         ),
-                                        if (dialog.childName != null && dialog.childName!.isNotEmpty) ...[
-                                          const SizedBox(width: 5),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: isDark
-                                                  ? Colors.white.withValues(alpha: 0.08)
-                                                  : const Color(0xFFF1F5F9),
-                                              borderRadius: BorderRadius.circular(5),
-                                            ),
-                                            child: Text(
-                                              dialog.childName!,
-                                              style: TextStyle(
-                                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    )
-                                  else if (isRecovery)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFFF59E0B).withValues(alpha: 0.22)
-                                            : const Color(0xFFFEF3C7),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? const Color(0xFFF59E0B).withValues(alpha: 0.60)
-                                              : const Color(0xFFFDE68A),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text('🔑 ', style: TextStyle(fontSize: 8.5)),
-                                          Text(
-                                            'ВІДНОВЛЕННЯ',
-                                            style: TextStyle(
-                                              color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  else if (isCoach)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF10B981).withValues(alpha: 0.22)
-                                            : const Color(0xFFD1FAE5),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? const Color(0xFF10B981).withValues(alpha: 0.60)
-                                              : const Color(0xFFA7F3D0),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text('🏊 ', style: TextStyle(fontSize: 8.5)),
-                                          Text(
-                                            'ТРЕНЕР',
-                                            style: TextStyle(
-                                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  else
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF38BDF8).withValues(alpha: 0.18)
-                                            : const Color(0xFFE0F2FE),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? const Color(0xFF38BDF8).withValues(alpha: 0.45)
-                                              : const Color(0xFFBAE6FD),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text('👤 ', style: TextStyle(fontSize: 8.5)),
-                                          Text(
-                                            'admin.chat_client_badge'.tr(),
-                                            style: TextStyle(
-                                              color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
                                       ),
                                     ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    // Role Badge with strict WCAG AAA contrast
+                                    if (isRecovery)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFFF59E0B).withValues(alpha: 0.22)
+                                              : const Color(0xFFFEF3C7),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? const Color(0xFFF59E0B).withValues(alpha: 0.60)
+                                                : const Color(0xFFFDE68A),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('🔑 ', style: TextStyle(fontSize: 8.5)),
+                                            Text(
+                                              'ВІДНОВЛЕННЯ',
+                                              style: TextStyle(
+                                                color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else if (isCoach)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.22)
+                                              : const Color(0xFFD1FAE5),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? const Color(0xFF10B981).withValues(alpha: 0.60)
+                                                : const Color(0xFFA7F3D0),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('🏊 ', style: TextStyle(fontSize: 8.5)),
+                                            Text(
+                                              'ТРЕНЕР',
+                                              style: TextStyle(
+                                                color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF38BDF8).withValues(alpha: 0.18)
+                                              : const Color(0xFFE0F2FE),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? const Color(0xFF38BDF8).withValues(alpha: 0.45)
+                                                : const Color(0xFFBAE6FD),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('👤 ', style: TextStyle(fontSize: 8.5)),
+                                            Text(
+                                              'admin.chat_client_badge'.tr(),
+                                              style: TextStyle(
+                                                color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
                             const SizedBox(width: 8),
                             Text(
                               timeString,
@@ -1489,35 +1466,71 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                             ),
                             if (isCoachClient) ...[
                               const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFFA855F7).withValues(alpha: 0.18) : const Color(0xFFF3E8FF),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: isDark ? const Color(0xFFA855F7).withValues(alpha: 0.40) : const Color(0xFFD8B4FE),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.eye,
-                                      size: 11,
-                                      color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Стежити',
-                                      style: TextStyle(
-                                        color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (dialog.childName != null && dialog.childName!.isNotEmpty) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                      margin: const EdgeInsets.only(right: 5),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.08)
+                                            : const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        dialog.childName!,
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ],
-                                ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFFA855F7).withValues(alpha: 0.22) : const Color(0xFFF3E8FF),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isDark ? const Color(0xFFA855F7).withValues(alpha: 0.60) : const Color(0xFFD8B4FE),
+                                        width: 0.9,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFFA855F7).withValues(alpha: isDark ? 0.25 : 0.15),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          LucideIcons.eye,
+                                          size: 11,
+                                          color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
+                                        ),
+                                        const SizedBox(width: 4.5),
+                                        Text(
+                                          'НАГЛЯД',
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ] else if (isUnread) ...[
                               const SizedBox(width: 8),

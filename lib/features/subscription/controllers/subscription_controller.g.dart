@@ -42,7 +42,7 @@ final class SubscriptionControllerProvider
 }
 
 String _$subscriptionControllerHash() =>
-    r'83feaad8a74020ab8a736aa264c421d1bab46e00';
+    r'2679d92d68a3adc63d376ee6fe7246f811984147';
 
 abstract class _$SubscriptionController extends $Notifier<List<Subscription>> {
   List<Subscription> build();

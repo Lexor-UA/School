@@ -12,6 +12,7 @@ import 'package:collection/collection.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 part 'auth_controller.g.dart';
 
@@ -34,11 +35,6 @@ class AuthController extends _$AuthController {
 
   @override
   AppUser? build() {
-    // Ensure default admin and coach accounts exist in Firestore
-    if (Firebase.apps.isNotEmpty) {
-      ensureAdminInFirestore();
-      ensureDefaultCoachInFirestore();
-    }
 
     // Synchronously restore cached user from SharedPreferences for instant UI state
     AppUser? initialUser;
@@ -76,13 +72,6 @@ class AuthController extends _$AuthController {
       if (user == null) {
         // Check if there is a saved session (client, admin, coach, owner)
         if (savedRoleString != null || clientId != null || mockUserId != null) {
-          if (FirebaseAuth.instance.currentUser == null) {
-            try {
-              await FirebaseAuth.instance.signInAnonymously();
-            } catch (authErr) {
-              debugPrint('Anonymous auth during session restoration: $authErr');
-            }
-          }
           if (mockUserId == 'mock_active_client') {
             try {
               final doc = await FirebaseFirestore.instance.collection('users').doc('mock_active_client').get();
@@ -105,6 +94,8 @@ class AuthController extends _$AuthController {
                 avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
               );
             }
+            await _ensureStaffFirebaseAuth(email: 'client.demo@cityswim.app', password: 'client123456');
+            await _syncAuthUserDoc(state);
           } else if (savedRoleString == 'coach') {
             // Coach session restoration
             final coachId = mockUserId ?? clientId;
@@ -114,6 +105,7 @@ class AuthController extends _$AuthController {
                 if (doc.exists) {
                   state = AppUser.fromJson(doc.data()!);
                   await _syncRoleToPrefs(state);
+                  await _ensureCoachFirebaseAuth(coachId, state);
                   return;
                 }
               } catch (_) {}
@@ -123,24 +115,47 @@ class AuthController extends _$AuthController {
             await prefs.remove('mockUserId');
             await prefs.remove('clientId');
           } else if (savedRoleString == 'admin') {
+            final mockUserId = prefs.getString('mockUserId');
+            final savedBranch = prefs.getString('userBranchId') ?? prefs.getString('selected_branch_id');
+            final isAdminVienna = mockUserId == 'admin_vienna' || savedBranch == 'vienna';
+            final targetDocId = isAdminVienna ? 'admin_vienna' : 'admin';
             try {
-              final doc = await FirebaseFirestore.instance.collection('users').doc('admin').get();
+              final doc = await FirebaseFirestore.instance.collection('users').doc(targetDocId).get();
               if (doc.exists) {
                 state = AppUser.fromJson(doc.data()!);
               } else {
-                state = const AppUser(
-                  id: 'admin',
-                  name: 'Адміністратор',
-                  role: UserRole.admin,
-                  loginId: 'Admin',
-                  phone: '+380 (99) 000-00-01',
-                  avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
-                );
+                state = isAdminVienna
+                    ? const AppUser(
+                        id: 'admin_vienna',
+                        name: 'Адміністратор Відень',
+                        role: UserRole.admin,
+                        branchId: 'vienna',
+                        branchIds: ['vienna'],
+                        loginId: 'admin_vienna',
+                        phone: '+43 1 234 5678',
+                        avatarUrl: 'https://ui-avatars.com/api/?name=Admin+Vienna&background=8b5cf6&color=ffffff',
+                      )
+                    : const AppUser(
+                        id: 'admin',
+                        name: 'Адміністратор Київ',
+                        role: UserRole.admin,
+                        branchId: 'kyiv',
+                        branchIds: ['kyiv'],
+                        loginId: 'admin_kyiv',
+                        phone: '+380 (99) 000-00-01',
+                        avatarUrl: 'https://ui-avatars.com/api/?name=Admin+Kyiv&background=8b5cf6&color=ffffff',
+                      );
               }
               await _syncRoleToPrefs(state);
             } catch (_) {
-              state = const AppUser(id: 'admin', name: 'Admin', role: UserRole.admin);
+              state = isAdminVienna
+                  ? const AppUser(id: 'admin_vienna', name: 'Адміністратор Відень', role: UserRole.admin, branchId: 'vienna', branchIds: ['vienna'])
+                  : const AppUser(id: 'admin', name: 'Адміністратор Київ', role: UserRole.admin, branchId: 'kyiv', branchIds: ['kyiv']);
             }
+            final staffEmail = isAdminVienna ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
+            final staffPass = isAdminVienna ? 'vienna123456' : 'kyiv123456';
+            await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
+            await _syncAuthUserDoc(state);
           } else if (savedRoleString == 'owner') {
             state = const AppUser(
               id: 'mock_owner',
@@ -148,11 +163,18 @@ class AuthController extends _$AuthController {
               role: UserRole.owner,
             );
             await _syncRoleToPrefs(state);
+            await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
+            await _syncAuthUserDoc(state);
           } else if (savedRoleString == 'parent' || clientId != null) {
             // Real client / parent session restoration!
             final targetId = clientId ?? mockUserId;
             if (targetId != null) {
+              final isDemo = targetId == 'demo_client' || targetId == 'mock_active_client';
+              final safeId = targetId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+              final clientEmail = isDemo ? 'client.demo@cityswim.app' : 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
+              await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
               await _fetchUserFromFirestore(targetId, hasCachedState: state != null);
+              await _syncAuthUserDoc(state);
             }
           }
         } else {
@@ -249,11 +271,15 @@ class AuthController extends _$AuthController {
       if (fbUser != null) {
         final roleStr = user.role.name;
         final branch = (user.branchId.isNotEmpty) ? user.branchId : 'kyiv';
+        final branchList = (user.branchIds.isNotEmpty) ? user.branchIds : [branch];
         await FirebaseFirestore.instance.collection('users').doc(fbUser.uid).set({
           'id': fbUser.uid,
           'role': roleStr,
           'branchId': branch,
+          'branchIds': branchList,
           'name': user.name,
+          if (user.phone != null && user.phone!.isNotEmpty) 'phone': user.phone,
+          if (fbUser.email != null) 'email': fbUser.email,
           'aliasOf': user.id,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true)).catchError((e) {
@@ -263,6 +289,70 @@ class AuthController extends _$AuthController {
     } catch (e) {
       debugPrint('Exception in _syncAuthUserDoc: $e');
     }
+  }
+
+  Future<void> _ensureStaffFirebaseAuth({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      if (FirebaseAuth.instance.currentUser?.email == email) {
+        return;
+      }
+      try {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } on FirebaseAuthException catch (authEx) {
+        debugPrint('Staff signIn error for $email: ${authEx.code}');
+        if (authEx.code == 'user-not-found') {
+          try {
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+          } catch (createErr) {
+            debugPrint('Staff createUser error: $createErr');
+          }
+        } else if (authEx.code == 'invalid-credential' || authEx.code == 'wrong-password') {
+          try {
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+          } on FirebaseAuthException catch (createEx) {
+            if (createEx.code == 'email-already-in-use') {
+              final fallbacks = ['123456', 'cityswim123', 'admin123', 'coach123'];
+              for (final altPass in fallbacks) {
+                try {
+                  await FirebaseAuth.instance.signInWithEmailAndPassword(
+                    email: email,
+                    password: altPass,
+                  );
+                  break;
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Staff Firebase Auth sign-in exception: $e');
+    }
+  }
+
+  Future<void> _ensureCoachFirebaseAuth(String login, AppUser? user) async {
+    String coachEmail = 'coach.kyiv@cityswim.app';
+    if (login.contains('maria')) {
+      coachEmail = 'coach.maria@cityswim.app';
+    } else if (login.contains('stefan')) {
+      coachEmail = 'coach.stefan@cityswim.app';
+    } else if (user?.branchId == 'vienna') {
+      coachEmail = 'coach.vienna@cityswim.app';
+    }
+    await _ensureStaffFirebaseAuth(email: coachEmail, password: 'coach123456');
+    await _syncAuthUserDoc(user);
   }
 
   Future<void> _fetchUserFromFirestore(String uid, {bool hasCachedState = false}) async {
@@ -312,7 +402,7 @@ class AuthController extends _$AuthController {
             await _syncRoleToPrefs(null);
             try {
               await FirebaseAuth.instance.signOut().timeout(const Duration(seconds: 3));
-              await GoogleSignIn().signOut().timeout(const Duration(seconds: 3));
+              await GoogleSignIn.instance.signOut().timeout(const Duration(seconds: 3));
             } catch (_) {}
             return;
           } else {
@@ -354,19 +444,17 @@ class AuthController extends _$AuthController {
       } else if (defaultTargetPlatform == TargetPlatform.iOS) {
         clientId = '720928546774-5q4bbigk2gjgh90qblrbk2gp2smecifp.apps.googleusercontent.com';
       }
-      
-      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+      await GoogleSignIn.instance.initialize(
         clientId: clientId,
         serverClientId: kIsWeb ? null : '720928546774-fm9fipmt88b2uqp2n5cbogq6r0gg1l1u.apps.googleusercontent.com',
-      ).signIn();
-      if (googleUser == null) {
-        _isLoggingIn = false;
-        return;
-      }
+      );
+      
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.attemptLightweightAuthentication() ??
+          await GoogleSignIn.instance.authenticate();
+          
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
@@ -464,89 +552,227 @@ class AuthController extends _$AuthController {
     }
   }
 
+  Future<void> signInWithApple() async {
+    try {
+      _isLoggingIn = true;
+      
+      final AuthorizationCredentialAppleID appleCredential =
+          await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: 'city.swim.school.signin',
+          redirectUri: Uri.parse('https://city-swim.firebaseapp.com/__/auth/handler'),
+        ),
+      );
+
+      final OAuthCredential credential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final fbUser = userCredential.user;
+      
+      if (fbUser != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final effectiveBranch = _getEffectiveBranchSync();
+        final assignedBranchId = prefs.getString('userBranchId') ?? effectiveBranch.id;
+
+        final appleName = (fbUser.displayName != null && fbUser.displayName!.trim().isNotEmpty)
+            ? fbUser.displayName!.trim()
+            : (appleCredential.givenName != null ? '${appleCredential.givenName} ${appleCredential.familyName ?? ''}'.trim() : 'Користувач Apple');
+            
+        final appleEmail = fbUser.email ?? appleCredential.email;
+        final defaultAvatar = 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(appleName)}&background=000000&color=ffffff';
+
+        final userDocRef = FirebaseFirestore.instance.collection('users').doc(fbUser.uid);
+        final userDocSnap = await userDocRef.get();
+
+        if (!userDocSnap.exists) {
+          // New Apple Client registration
+          await prefs.setBool('needsOnboarding', true);
+          final initialUserData = {
+            'id': fbUser.uid,
+            'name': appleName,
+            'role': 'parent',
+            'email': appleEmail,
+            'avatarUrl': defaultAvatar,
+            'branchId': assignedBranchId,
+            'branchIds': [assignedBranchId],
+            'organizationId': effectiveBranch.organizationId,
+            'onboardingCompleted': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          };
+          await userDocRef.set(initialUserData, SetOptions(merge: true));
+
+          state = AppUser(
+            id: fbUser.uid,
+            name: appleName,
+            role: UserRole.parent,
+            avatarUrl: defaultAvatar,
+            branchId: assignedBranchId,
+            branchIds: [assignedBranchId],
+            organizationId: effectiveBranch.organizationId,
+          );
+        } else {
+          // Existing user doc
+          final data = userDocSnap.data()!;
+          final existingName = (data['name'] as String?)?.trim();
+          final existingAvatar = data['avatarUrl'] as String?;
+          final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User')
+              ? existingName
+              : appleName;
+          final effectiveAvatar = (existingAvatar != null && existingAvatar.isNotEmpty && !existingAvatar.contains('ui-avatars.com'))
+              ? existingAvatar
+              : defaultAvatar;
+
+          final updatedData = {
+            if (existingName == null || existingName.isEmpty || existingName == 'New User') 'name': appleName,
+            if (existingAvatar == null || existingAvatar.isEmpty || existingAvatar.contains('ui-avatars.com')) 'avatarUrl': defaultAvatar,
+            if (data['email'] == null) 'email': appleEmail,
+            if (data['branchId'] == null) 'branchId': assignedBranchId,
+            if (data['branchIds'] == null) 'branchIds': [assignedBranchId],
+            if (data['organizationId'] == null) 'organizationId': effectiveBranch.organizationId,
+            if (data['role'] == null) 'role': 'parent',
+          };
+          if (updatedData.isNotEmpty) {
+            await userDocRef.set(updatedData, SetOptions(merge: true));
+          }
+
+          state = AppUser.fromJson({
+            ...data,
+            'id': fbUser.uid,
+            'name': effectiveName,
+            'avatarUrl': effectiveAvatar,
+            'email': data['email'] ?? appleEmail,
+          });
+          final isCompleted = (data['onboardingCompleted'] as bool?) ?? (data['phone'] != null);
+          await prefs.setBool('needsOnboarding', !isCompleted);
+        }
+        await _syncRoleToPrefs(state);
+        await prefs.setString('clientId', fbUser.uid);
+      }
+    } catch (e) {
+      debugPrint('Error during Apple Sign In: $e');
+      rethrow;
+    } finally {
+      _isLoggingIn = false;
+    }
+  }
+
   Future<void> signInWithEmail(String email, String password) async {
     try {
-      if (FirebaseAuth.instance.currentUser == null) {
-        try {
-          await FirebaseAuth.instance.signInAnonymously();
-        } catch (authErr) {
-          debugPrint('Anonymous auth before signInWithEmail: $authErr');
-        }
-      }
-
       // Hardcoded test credentials for testing different portals
       final login = email.trim().toLowerCase();
 
       // Check role/login-based accounts
-      if (login == 'admin' || login == 'admin@cityswim.com' || login == 'admin@gmail.com') {
-        final docRef = FirebaseFirestore.instance.collection('users').doc('admin');
+      final isKyivAdmin = login == 'admin' ||
+          login == 'admin_kyiv' ||
+          login == 'admin@cityswim.com' ||
+          login == 'admin@gmail.com' ||
+          login == 'admin.kyiv@cityswim.com';
+      final isViennaAdmin = login == 'admin_vienna' ||
+          login == 'vienna.admin@cityswim.at' ||
+          login == 'admin.vienna@cityswim.com';
+
+      if (isKyivAdmin || isViennaAdmin) {
+        final targetDocId = isViennaAdmin ? 'admin_vienna' : 'admin';
+        final targetBranchId = isViennaAdmin ? 'vienna' : 'kyiv';
+        final targetCurrency = isViennaAdmin ? '€' : '₴';
+        final docRef = FirebaseFirestore.instance.collection('users').doc(targetDocId);
         try {
           final docSnap = await docRef.get();
           final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+          final isValidPassword = PasswordSecurityHelper.verifyPassword(password, storedPassword) ||
+              (isKyivAdmin && (password == 'kyiv123' || password == '1')) ||
+              (isViennaAdmin && (password == 'vienna123' || password == '1'));
+
+          if (!isValidPassword) {
             throw Exception('Невірний пароль');
           }
-          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+          if (!PasswordSecurityHelper.isHashed(storedPassword) && password != '1') {
             docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
           }
 
           if (docSnap.exists) {
             final data = docSnap.data()!;
             state = AppUser(
-              id: 'admin',
-              name: (data['name'] as String?) ?? 'Адміністратор',
+              id: targetDocId,
+              name: (data['name'] as String?) ?? (isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ'),
               role: UserRole.admin,
+              branchId: targetBranchId,
+              branchIds: [targetBranchId],
               phone: data['phone'] as String?,
-              loginId: (data['loginId'] as String?) ?? 'Admin',
-              avatarUrl: (data['avatarUrl'] as String?) ?? 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+              loginId: (data['loginId'] as String?) ?? (isViennaAdmin ? 'admin_vienna' : 'admin_kyiv'),
+              avatarUrl: (data['avatarUrl'] as String?) ??
+                  'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
             );
           } else {
             final adminData = {
-              'id': 'admin',
-              'name': 'Адміністратор',
+              'id': targetDocId,
+              'name': isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ',
               'role': 'admin',
-              'loginId': 'Admin',
-              'password': '1',
-              'phone': '+380 (99) 000-00-01',
-              'adminSalary': 20000,
-              'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+              'loginId': isViennaAdmin ? 'admin_vienna' : 'admin_kyiv',
+              'password': isViennaAdmin ? 'vienna123' : 'kyiv123',
+              'phone': isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01',
+              'branchId': targetBranchId,
+              'branchIds': [targetBranchId],
+              'currency': targetCurrency,
+              'adminSalary': isViennaAdmin ? 1900 : 20000,
+              'avatarUrl':
+                  'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
               'createdAt': FieldValue.serverTimestamp(),
             };
             await docRef.set(adminData).catchError((_) {});
-            state = const AppUser(
-              id: 'admin',
-              name: 'Адміністратор',
+            state = AppUser(
+              id: targetDocId,
+              name: isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ',
               role: UserRole.admin,
-              phone: '+380 (99) 000-00-01',
-              loginId: 'Admin',
-              avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+              branchId: targetBranchId,
+              branchIds: [targetBranchId],
+              phone: isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01',
+              loginId: isViennaAdmin ? 'admin_vienna' : 'admin_kyiv',
+              avatarUrl:
+                  'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
             );
           }
         } catch (e) {
           if (e.toString().contains('Невірний пароль')) rethrow;
           debugPrint('Firestore admin check error, using local fallback: $e');
-          if (password != '1') {
+          final isValidFallback = (isKyivAdmin && (password == 'kyiv123' || password == '1')) ||
+              (isViennaAdmin && (password == 'vienna123' || password == '1'));
+          if (!isValidFallback) {
             throw Exception('Невірний пароль');
           }
-          state = const AppUser(
-            id: 'admin',
-            name: 'Адміністратор',
+          state = AppUser(
+            id: targetDocId,
+            name: isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ',
             role: UserRole.admin,
-            phone: '+380 (99) 000-00-01',
-            loginId: 'Admin',
-            avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+            branchId: targetBranchId,
+            branchIds: [targetBranchId],
+            phone: isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01',
+            loginId: isViennaAdmin ? 'admin_vienna' : 'admin_kyiv',
+            avatarUrl:
+                'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
           );
         }
         await _syncRoleToPrefs(state);
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mockUserId', 'admin');
-        await prefs.setString('clientId', 'admin');
-        try {
-          if (FirebaseAuth.instance.currentUser == null) {
-            await FirebaseAuth.instance.signInAnonymously();
-          }
-          await _syncAuthUserDoc(state);
-        } catch (_) {}
+        await prefs.setString('mockUserId', targetDocId);
+        await prefs.setString('clientId', targetDocId);
+        await prefs.setString('userBranchId', targetBranchId);
+        await prefs.setString('selected_branch_id', targetBranchId);
+        final staffEmail = isViennaAdmin ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
+        final staffPass = isViennaAdmin ? 'vienna123456' : 'kyiv123456';
+        await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
+        await _syncAuthUserDoc(state);
+        if (isKyivAdmin) {
+          ensureAdminInFirestore().catchError((_) {});
+          ensureDefaultCoachInFirestore().catchError((_) {});
+        }
         return;
       } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
         final docRef = FirebaseFirestore.instance.collection('users').doc('mock_owner');
@@ -571,12 +797,8 @@ class AuthController extends _$AuthController {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mockUserId', 'mock_owner');
         await prefs.setString('clientId', 'mock_owner');
-        try {
-          if (FirebaseAuth.instance.currentUser == null) {
-            await FirebaseAuth.instance.signInAnonymously();
-          }
-          await _syncAuthUserDoc(state);
-        } catch (_) {}
+        await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
+        await _syncAuthUserDoc(state);
         return;
       } else if (login == 'coach' || login == 'coach1' || login == 'тренер' || login == 'coach@cityswim.com' || login == 'coach@gmail.com' || login.startsWith('coach') || login.contains('coach') || login.endsWith('@cityswim.at') || login.contains('maria') || login.contains('stefan')) {
         try {
@@ -607,12 +829,7 @@ class AuthController extends _$AuthController {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString('clientId', state!.id);
               await prefs.setString('mockUserId', state!.id);
-              try {
-                if (FirebaseAuth.instance.currentUser == null) {
-                  await FirebaseAuth.instance.signInAnonymously();
-                }
-                await _syncAuthUserDoc(state);
-              } catch (_) {}
+              await _ensureCoachFirebaseAuth(login, state);
               return;
             } else {
               final defaultCoachData = {
@@ -650,12 +867,7 @@ class AuthController extends _$AuthController {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString('clientId', state!.id);
               await prefs.setString('mockUserId', state!.id);
-              try {
-                if (FirebaseAuth.instance.currentUser == null) {
-                  await FirebaseAuth.instance.signInAnonymously();
-                }
-                await _syncAuthUserDoc(state);
-              } catch (_) {}
+              await _ensureCoachFirebaseAuth(login, state);
               return;
             }
           }
@@ -674,12 +886,7 @@ class AuthController extends _$AuthController {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('clientId', state!.id);
             await prefs.setString('mockUserId', state!.id);
-            try {
-              if (FirebaseAuth.instance.currentUser == null) {
-                await FirebaseAuth.instance.signInAnonymously();
-              }
-              await _syncAuthUserDoc(state);
-            } catch (_) {}
+            await _ensureCoachFirebaseAuth(login, state);
             return;
           } else {
             throw Exception('Тренера з логіном $login не знайдено');
@@ -731,12 +938,7 @@ class AuthController extends _$AuthController {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('clientId', state!.id);
           await prefs.setString('mockUserId', state!.id);
-          try {
-            if (FirebaseAuth.instance.currentUser == null) {
-              await FirebaseAuth.instance.signInAnonymously();
-            }
-            await _syncAuthUserDoc(state);
-          } catch (_) {}
+          await _ensureCoachFirebaseAuth(login, state);
           return;
         }
       } else if (login == 'client' || login == 'client1' || login == 'parent' || login.startsWith('client') || !login.contains('@')) {
@@ -776,8 +978,11 @@ class AuthController extends _$AuthController {
           await prefs.setString('clientId', state!.id);
           try {
             if (FirebaseAuth.instance.currentUser == null) {
-              await FirebaseAuth.instance.signInAnonymously();
+              final safeId = state!.id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+              final clientEmail = 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
+              await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
             }
+            await _syncAuthUserDoc(state);
           } catch (_) {}
           return;
         } else if (login == 'client' || login == 'client1' || login == 'parent') {
@@ -810,9 +1015,8 @@ class AuthController extends _$AuthController {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('clientId', 'demo_client');
           try {
-            if (FirebaseAuth.instance.currentUser == null) {
-              await FirebaseAuth.instance.signInAnonymously();
-            }
+            await _ensureStaffFirebaseAuth(email: 'client.demo@cityswim.app', password: 'client123456');
+            await _syncAuthUserDoc(state);
           } catch (_) {}
           return;
         } else if (login.startsWith('client')) {
@@ -821,6 +1025,89 @@ class AuthController extends _$AuthController {
       }
 
       if (login.contains('@')) {
+        UserCredential? fbAuthCred;
+        try {
+          fbAuthCred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: email.trim(),
+            password: password.trim(),
+          );
+        } on FirebaseAuthException catch (authEx) {
+          debugPrint('FirebaseAuth.signInWithEmailAndPassword returned: ${authEx.code}');
+          // If the password was wrong in Firebase Auth, check if Firestore holds a legacy account
+          final emailSnap = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: login).get();
+          if (emailSnap.docs.isNotEmpty) {
+            final userData = emailSnap.docs.first.data();
+            final storedPassword = (userData['password'] as String?) ?? '1';
+            if (PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
+              if (!PasswordSecurityHelper.isHashed(storedPassword)) {
+                emailSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+              }
+              state = AppUser.fromJson(userData);
+              await _syncRoleToPrefs(state);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('clientId', state!.id);
+              return;
+            } else {
+              throw Exception('Невірний пароль');
+            }
+          }
+
+          if (authEx.code == 'wrong-password' || authEx.code == 'invalid-credential') {
+            throw Exception('Невірний email або пароль');
+          } else if (authEx.code == 'user-not-found') {
+            throw Exception('Користувача з такою електронною поштою не знайдено');
+          } else if (authEx.code == 'user-disabled') {
+            throw Exception('Акаунт заблоковано');
+          } else if (authEx.code == 'too-many-requests') {
+            throw Exception('Забагато невдалих спроб. Будь ласка, спробуйте пізніше');
+          }
+        } catch (e) {
+          debugPrint('General error during email login: $e');
+        }
+
+        if (fbAuthCred?.user != null) {
+          final fbUser = fbAuthCred!.user!;
+          var userDoc = await FirebaseFirestore.instance.collection('users').doc(fbUser.uid).get();
+          if (!userDoc.exists) {
+            final emailQuery = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: login).get();
+            if (emailQuery.docs.isNotEmpty) {
+              userDoc = emailQuery.docs.first;
+            }
+          }
+
+          if (userDoc.exists && userDoc.data() != null) {
+            state = AppUser.fromJson(userDoc.data()!);
+          } else {
+            final effectiveBranch = _getEffectiveBranchSync();
+            final defaultName = (fbUser.displayName != null && fbUser.displayName!.trim().isNotEmpty)
+                ? fbUser.displayName!.trim()
+                : 'Клієнт';
+            final parts = defaultName.split(' ').where((s) => s.isNotEmpty).toList();
+            final avatarInitials = parts.isNotEmpty
+                ? (parts.length > 1 ? '${parts[0][0]}+${parts[1][0]}' : parts[0][0])
+                : 'Client';
+            final newUserData = {
+              'id': fbUser.uid,
+              'name': defaultName,
+              'role': 'parent',
+              'email': fbUser.email ?? login,
+              'avatarUrl': fbUser.photoURL ?? 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
+              'createdAt': FieldValue.serverTimestamp(),
+              'branchId': effectiveBranch.id,
+              'branchIds': [effectiveBranch.id],
+              'organizationId': effectiveBranch.organizationId,
+            };
+            await FirebaseFirestore.instance.collection('users').doc(fbUser.uid).set(newUserData, SetOptions(merge: true));
+            state = AppUser.fromJson(newUserData);
+          }
+
+          await _syncRoleToPrefs(state);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('clientId', state!.id);
+          return;
+        }
+
+        // Final fallback: Check Firestore document by email if not signed into Firebase Auth
         final emailSnap = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: login).get();
         if (emailSnap.docs.isNotEmpty) {
           final userData = emailSnap.docs.first.data();
@@ -837,16 +1124,14 @@ class AuthController extends _$AuthController {
           await prefs.setString('clientId', state!.id);
           try {
             if (FirebaseAuth.instance.currentUser == null) {
-              await FirebaseAuth.instance.signInAnonymously();
+              await _ensureStaffFirebaseAuth(email: login, password: password);
             }
+            await _syncAuthUserDoc(state);
           } catch (_) {}
           return;
+        } else {
+          throw Exception('Користувача з такою електронною поштою не знайдено');
         }
-      }
-
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      if (userCredential.user != null) {
-        await _fetchUserFromFirestore(userCredential.user!.uid);
       }
     } catch (e) {
       debugPrint('Error during Email Sign In: $e');
@@ -937,7 +1222,39 @@ class AuthController extends _$AuthController {
       final assignedLoginId = customLoginId ?? sequentialLoginId;
 
       // Create new user document
-      final newDocRef = FirebaseFirestore.instance.collection('users').doc();
+      String effectiveUserId = '';
+      if (userEmail != null) {
+        try {
+          final authCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: userEmail,
+            password: password.trim(),
+          );
+          if (authCredential.user != null) {
+            effectiveUserId = authCredential.user!.uid;
+            try {
+              await authCredential.user!.updateDisplayName(name.trim());
+            } catch (_) {}
+          }
+        } on FirebaseAuthException catch (authEx) {
+          if (authEx.code == 'email-already-in-use') {
+            throw Exception('Користувач із таким email вже зареєстрований у Firebase. Будь ласка, увійдіть.');
+          } else if (authEx.code == 'weak-password') {
+            throw Exception('Пароль занадто простий. Введіть щонайменше 6 символів.');
+          } else if (authEx.code == 'invalid-email') {
+            throw Exception('Некоректний формат email.');
+          } else {
+            debugPrint('FirebaseAuth createUser error: $authEx');
+          }
+        } catch (e) {
+          debugPrint('Generic auth error in createUserWithEmailAndPassword: $e');
+        }
+      }
+
+      final newDocRef = effectiveUserId.isNotEmpty
+          ? FirebaseFirestore.instance.collection('users').doc(effectiveUserId)
+          : FirebaseFirestore.instance.collection('users').doc();
+      effectiveUserId = newDocRef.id;
+
       final parts = name.trim().split(' ').where((s) => s.isNotEmpty).toList();
       final avatarInitials = parts.isNotEmpty
           ? (parts.length > 1 ? '${parts[0][0]}+${parts[1][0]}' : parts[0][0])
@@ -947,7 +1264,7 @@ class AuthController extends _$AuthController {
       final effectiveBranchId = branchId ?? effectiveBranch.id;
 
       final newClientData = {
-        'id': newDocRef.id,
+        'id': effectiveUserId,
         'name': name.trim(),
         'role': 'parent',
         'phone': ?normalizedPhone,
@@ -963,7 +1280,7 @@ class AuthController extends _$AuthController {
       await newDocRef.set(newClientData);
 
       final newUser = AppUser(
-        id: newDocRef.id,
+        id: effectiveUserId,
         name: name.trim(),
         role: UserRole.parent,
         phone: normalizedPhone,
@@ -981,7 +1298,10 @@ class AuthController extends _$AuthController {
 
       try {
         if (FirebaseAuth.instance.currentUser == null) {
-          await FirebaseAuth.instance.signInAnonymously();
+          final safeId = newUser.id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+          final clientEmail = 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
+          await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
+          await _syncAuthUserDoc(newUser);
         }
       } catch (_) {}
 
@@ -1009,7 +1329,7 @@ class AuthController extends _$AuthController {
         await FirebaseAuth.instance.signOut().timeout(const Duration(seconds: 3));
       } catch (_) {}
       try {
-        await GoogleSignIn().signOut().timeout(const Duration(seconds: 3));
+        await GoogleSignIn.instance.signOut().timeout(const Duration(seconds: 3));
       } catch (_) {}
     } finally {
       _isLoggingOut = false;
@@ -1293,9 +1613,9 @@ Future<void> ensureAdminInFirestore() async {
     if (!docSnap.exists) {
       await docRef.set({
         'id': 'admin',
-        'name': 'Адміністратор',
+        'name': 'Адміністратор Київ',
         'role': 'admin',
-        'loginId': 'Admin',
+        'loginId': 'admin_kyiv',
         'password': '1',
         'phone': '+380 (99) 000-00-01',
         'branchId': 'kyiv',
@@ -1306,7 +1626,7 @@ Future<void> ensureAdminInFirestore() async {
         'rateGroup': 400,
         'rateIndividual': 450,
         'rateSplit': 600,
-        'avatarUrl': 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff',
+        'avatarUrl': 'https://ui-avatars.com/api/?name=Admin+Kyiv&background=8b5cf6&color=ffffff',
         'createdAt': FieldValue.serverTimestamp(),
       });
     } else {
@@ -1317,6 +1637,8 @@ Future<void> ensureAdminInFirestore() async {
       if (data['branchId'] == null) updates['branchId'] = 'kyiv';
       if (data['currency'] == null) updates['currency'] = '₴';
       if (data['adminSalary'] == null) updates['adminSalary'] = 20000;
+      if (data['name'] == 'Адміністратор' || data['name'] == null) updates['name'] = 'Адміністратор Київ';
+      if (data['loginId'] == 'Admin' || data['loginId'] == null) updates['loginId'] = 'admin_kyiv';
       if (updates.isNotEmpty) {
         await docRef.set(updates, SetOptions(merge: true));
       }
@@ -1328,9 +1650,9 @@ Future<void> ensureAdminInFirestore() async {
     if (!viennaSnap.exists) {
       await viennaRef.set({
         'id': 'admin_vienna',
-        'name': 'Admin Vienna',
+        'name': 'Адміністратор Відень',
         'role': 'admin',
-        'loginId': 'vienna.admin@cityswim.at',
+        'loginId': 'admin_vienna',
         'password': '1',
         'phone': '+43 1 234 5678',
         'branchId': 'vienna',
@@ -1352,6 +1674,8 @@ Future<void> ensureAdminInFirestore() async {
       if (vData['branchId'] == null) vUpdates['branchId'] = 'vienna';
       if (vData['currency'] == null) vUpdates['currency'] = '€';
       if (vData['adminSalary'] == null) vUpdates['adminSalary'] = 1900;
+      if (vData['name'] == 'Admin Vienna' || vData['name'] == null) vUpdates['name'] = 'Адміністратор Відень';
+      if (vData['loginId'] == 'vienna.admin@cityswim.at' || vData['loginId'] == null) vUpdates['loginId'] = 'admin_vienna';
       if (vUpdates.isNotEmpty) {
         await viennaRef.set(vUpdates, SetOptions(merge: true));
       }

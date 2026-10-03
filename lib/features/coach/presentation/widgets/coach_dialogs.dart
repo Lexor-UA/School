@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/core/router/app_router.dart';
 import 'package:swimming_school_app/features/coach/presentation/coach_dashboard.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
@@ -26,206 +27,11 @@ String coachTr(String key, String fallback, {List<String>? args}) {
 }
 
 String _coachTr(String key, String fallback, {List<String>? args}) => coachTr(key, fallback, args: args);
-void showCoachNoteDialog(BuildContext context, Child child) {
-  final textController = TextEditingController();
-  bool isSaving = false;
-  final isAdult = child.parentId == 'adult_swimmer';
-
-  // Asynchronously load note from users or children collection
-  if (isAdult) {
-    FirebaseFirestore.instance.collection('users').doc(child.id).get().then((userDoc) {
-      if (userDoc.exists && userDoc.data() != null && userDoc.data()!['notes'] != null) {
-        textController.text = userDoc.data()!['notes'].toString();
-      } else {
-        FirebaseFirestore.instance.collection('children').doc(child.id).get().then((doc) {
-          if (doc.exists && doc.data() != null && doc.data()!['notes'] != null) {
-            textController.text = doc.data()!['notes'].toString();
-          }
-        }).catchError((_) {});
-      }
-    }).catchError((_) {});
-  } else {
-    FirebaseFirestore.instance.collection('children').doc(child.id).get().then((doc) {
-      if (doc.exists && doc.data() != null && doc.data()!['notes'] != null) {
-        textController.text = doc.data()!['notes'].toString();
-      } else {
-        FirebaseFirestore.instance.collection('users').doc(child.id).get().then((userDoc) {
-          if (userDoc.exists && userDoc.data() != null && userDoc.data()!['notes'] != null) {
-            textController.text = userDoc.data()!['notes'].toString();
-          }
-        }).catchError((_) {});
-      }
-    }).catchError((_) {});
-  }
-
-  showDialog(
-    context: context,
-    builder: (ctx) => Consumer(
-      builder: (dialogCtx, ref, _) {
-        final themeConfig = ref.watch(appThemeControllerProvider);
-        final isDark = themeConfig.isDark;
-
-        return StatefulBuilder(
-          builder: (stateCtx, setDialogState) => AlertDialog(
-            scrollable: true,
-            backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
-                width: isDark ? 1.0 : 1.2,
-              ),
-            ),
-            title: Text(
-              _coachTr('coach.note_for', 'Нотатка про плавця {0}', args: [child.name]),
-              style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: TextField(
-              controller: textController,
-              style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: _coachTr('coach.note_hint', 'Наприклад: Відпрацювати вдих під праву руку...'),
-                hintStyle: TextStyle(
-                  color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
-                ),
-                filled: true,
-                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                    width: 1.5,
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSaving ? null : () => Navigator.pop(ctx),
-                child: Text(
-                  _coachTr('coach.btn_cancel', 'Скасувати'),
-                  style: TextStyle(
-                    color: isDark ? Colors.white54 : const Color(0xFF64748B),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00E5FF),
-                  foregroundColor: Colors.black,
-                  elevation: isDark ? 0 : 2,
-                  shadowColor: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: isSaving
-                    ? null
-                    : () async {
-                        setDialogState(() => isSaving = true);
-                        final note = textController.text.trim();
-                        try {
-                          if (isAdult) {
-                            // 1. Save directly to users collection
-                            await FirebaseFirestore.instance.collection('users').doc(child.id).set({
-                              'notes': note,
-                              'lastUpdated': FieldValue.serverTimestamp(),
-                            }, SetOptions(merge: true));
-
-                            // 2. Also mirror to children collection for backwards compatibility
-                            try {
-                              await FirebaseFirestore.instance.collection('children').doc(child.id).set({
-                                'notes': note,
-                                'name': child.name,
-                                'lastUpdated': FieldValue.serverTimestamp(),
-                              }, SetOptions(merge: true));
-                            } catch (e) {
-                              debugPrint('Mirror adult note to children: $e');
-                            }
-                          } else {
-                            // 1. Always save to children collection with merge (creates doc if it didn't exist)
-                            await FirebaseFirestore.instance.collection('children').doc(child.id).set({
-                              'notes': note,
-                              'name': child.name,
-                              'lastUpdated': FieldValue.serverTimestamp(),
-                            }, SetOptions(merge: true));
-
-                            // 2. Also save to users collection in case this swimmer is an adult client/user
-                            try {
-                              final userDoc = await FirebaseFirestore.instance.collection('users').doc(child.id).get();
-                              if (userDoc.exists) {
-                                await FirebaseFirestore.instance.collection('users').doc(child.id).set({
-                                  'notes': note,
-                                  'lastUpdated': FieldValue.serverTimestamp(),
-                                }, SetOptions(merge: true));
-                              }
-                            } catch (e) {
-                              debugPrint('Could not update note in users collection: $e');
-                            }
-                          }
-
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(_coachTr('coach.save_success', 'Нотатку збережено!')),
-                                backgroundColor: const Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          debugPrint('Error saving coach note: $e');
-                          if (ctx.mounted) {
-                            setDialogState(() => isSaving = false);
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Помилка збереження: $e'),
-                                backgroundColor: Colors.redAccent,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                      )
-                    : Text(_coachTr('admin.save', 'Зберегти'), style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
-
-void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
+void showSwimmerDetailsSheet(
+  BuildContext context,
+  Child initialChild, {
+  bool isMyStudent = false,
+}) {
   final isAdult = initialChild.parentId == 'adult_swimmer';
 
   showModalBottomSheet(
@@ -237,6 +43,9 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
         builder: (bottomSheetCtx, ref, _) {
           final themeConfig = ref.watch(appThemeControllerProvider);
           final isDark = themeConfig.isDark;
+          final currentUser = ref.watch(authControllerProvider);
+          final isPrivileged = currentUser?.role == UserRole.admin || currentUser?.role == UserRole.owner || currentUser?.role == UserRole.superAdmin;
+          final canViewContacts = isMyStudent || isPrivileged;
 
           return StreamBuilder<DocumentSnapshot>(
             stream: isAdult
@@ -248,13 +57,11 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                   : null;
 
               Child child;
-              String? note;
               String? phone;
 
               if (isAdult) {
                 int? adultAge;
                 if (docData != null) {
-                  note = docData['notes']?.toString();
                   phone = docData['phone']?.toString();
                   if (docData['birthDate'] != null) {
                     try {
@@ -289,9 +96,6 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                 child = (docData != null)
                     ? Child.fromJson({'id': snapshot.data!.id, ...docData})
                     : initialChild;
-                if (docData != null && docData['notes'] != null) {
-                  note = docData['notes'].toString();
-                }
               }
 
               return Container(
@@ -347,7 +151,7 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _coachTr('coach.swimmer_details_title', 'ПРОФІЛЬ ТА НОТАТКИ ПЛАВЦЯ'),
+                              _coachTr('coach.swimmer_details_title', 'ПРОФІЛЬ ПЛАВЦЯ'),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                 fontSize: 12,
@@ -522,7 +326,7 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                                           ],
                                         ],
                                       ),
-                                    if (phone != null && phone.trim().isNotEmpty) ...[
+                                    if (canViewContacts && phone != null && phone.trim().isNotEmpty) ...[
                                       const SizedBox(height: 6),
                                       Row(
                                         children: [
@@ -549,160 +353,7 @@ void showSwimmerDetailsSheet(BuildContext context, Child initialChild) {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 18),
-
-                        // Quick Note Action Button
-                        GestureDetector(
-                          onTap: () => showCoachNoteDialog(context, child),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(LucideIcons.fileText, color: Colors.white, size: 18),
-                                const SizedBox(width: 8),
-                                Text(
-                                  note != null && note.trim().isNotEmpty
-                                      ? _coachTr('coach.edit_note_btn', 'Редагувати нотатку')
-                                      : _coachTr('coach.add_note_btn', 'Додати нотатку про плавця'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Note Section
-                        if (note != null && note.trim().isNotEmpty) ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
-                                width: 1.1,
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  LucideIcons.notepadText,
-                                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _coachTr('coach.coach_note_label', 'Нотатка тренера:'),
-                                        style: TextStyle(
-                                          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        note,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                          fontSize: 13.5,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    LucideIcons.pencil,
-                                    color: isDark ? Colors.white60 : const Color(0xFF0284C7),
-                                    size: 16,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () => showCoachNoteDialog(context, child),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
-                                width: 1.1,
-                              ),
-                              boxShadow: isDark
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: const Color(0xFF0284C7).withValues(alpha: 0.06),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  LucideIcons.clipboardEdit,
-                                  color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFF94A3B8),
-                                  size: 36,
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  _coachTr('coach.no_notes_yet', 'Нотаток ще немає'),
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white70 : const Color(0xFF334155),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _coachTr('coach.no_notes_desc', 'Зафіксуйте прогрес або рекомендації для цього плавця'),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white.withValues(alpha: 0.4) : const Color(0xFF64748B),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        const SizedBox(height: 8),
                         const SizedBox(height: 10),
                       ],
                     ),
@@ -743,14 +394,17 @@ void _confirmCoachLogout(BuildContext context, WidgetRef ref) {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () async {
+            final tabNotifier = ref.read(coachTabProvider.notifier);
+            final router = ref.read(goRouterProvider);
+            final authNotifier = ref.read(authControllerProvider.notifier);
             Navigator.pop(ctx);
             try {
-              await ref.read(authControllerProvider.notifier).logout();
+              await authNotifier.logout();
             } catch (e) {
               debugPrint('Coach logout error: $e');
             }
-            ref.read(coachTabProvider.notifier).setTab(0);
-            ref.read(goRouterProvider).go('/?skipSplash=true');
+            tabNotifier.setTab(0);
+            router.go('/?skipSplash=true');
           },
           child: Text('coach.btn_logout'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),

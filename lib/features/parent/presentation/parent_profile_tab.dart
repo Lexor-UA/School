@@ -24,6 +24,8 @@ import 'package:swimming_school_app/features/chat/providers/chat_providers.dart'
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/client_dialogs_sheet.dart';
 import 'package:swimming_school_app/core/router/app_router.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 
 /// Варіанти стилізації карток та елементів екрана профілю для порівняння та тестування
 enum ProfileStyleVariant {
@@ -366,6 +368,23 @@ class ParentProfileTab extends ConsumerWidget {
 
     final notifState = ref.watch(parentNotificationsControllerProvider);
 
+    // Calculate real bookable classes for today
+    final scheduleAsync = ref.watch(scheduleControllerProvider);
+    final allClasses = scheduleAsync.value ?? [];
+    final now = DateTime.now();
+    final availableTodayClasses = allClasses.where((c) {
+      final start = c.branchStartTime;
+      final isToday = start.year == now.year &&
+                      start.month == now.month &&
+                      start.day == now.day;
+      if (!isToday) return false;
+      final isUpcoming = start.isAfter(now);
+      if (!isUpcoming) return false;
+      final hasFreeSlots = c.enrolledChildIds.length < c.maxCapacity;
+      return hasFreeSlots;
+    }).toList();
+    final availableTodayCount = availableTodayClasses.length;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -482,12 +501,14 @@ class ParentProfileTab extends ConsumerWidget {
                       // 1. Hero Profile Card with Swimming Quick Stats
                       _buildHeroProfileWithStats(
                         context,
+                        ref,
                         user,
                         hasChildren,
                         isDark,
                         textColor,
                         textSubColor,
                         accentColor,
+                        availableTodayCount: availableTodayCount,
                         isCompact: isCompact,
                       ),
                       SizedBox(height: isCompact ? 9 : 13),
@@ -538,12 +559,14 @@ class ParentProfileTab extends ConsumerWidget {
   // 1. Hero Profile Card with Glow Avatar and Swimming Stats Counter
   Widget _buildHeroProfileWithStats(
     BuildContext context,
+    WidgetRef ref,
     AppUser? user,
     bool hasChildren,
     bool isDark,
     Color textColor,
     Color subColor,
     Color accentColor, {
+    required int availableTodayCount,
     bool isCompact = false,
   }) {
     final fbUser = FirebaseAuth.instance.currentUser;
@@ -695,14 +718,17 @@ class ParentProfileTab extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _buildHeroStatItem(
-                      icon: LucideIcons.waves,
-                      value: '24',
-                      label: 'Занять',
+                      icon: LucideIcons.calendarCheck,
+                      value: '$availableTodayCount',
+                      label: 'Доступно сьогодні',
                       color: const Color(0xFF06B6D4),
                       isDark: isDark,
                       textColor: textColor,
                       subColor: subColor,
                       isCompact: isCompact,
+                      onTap: () {
+                        ref.read(parentTabProvider.notifier).setTab(1);
+                      },
                     ),
                   ),
                   Container(
@@ -728,15 +754,37 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                   Expanded(
                     child: _buildHeroStatItem(
-                      icon: LucideIcons.mapPin,
-                      value: '15.4',
-                      unit: 'км',
-                      label: 'Дистанція',
-                      color: const Color(0xFF3B82F6),
+                      icon: LucideIcons.thermometer,
+                      value: '+28',
+                      unit: '°C',
+                      label: 'Вода в басейні',
+                      color: const Color(0xFF00E5FF),
                       isDark: isDark,
                       textColor: textColor,
                       subColor: subColor,
                       isCompact: isCompact,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: isDark ? const Color(0xFF0C233C) : const Color(0xFF0284C7),
+                            content: const Row(
+                              children: [
+                                Icon(LucideIcons.droplets, color: Color(0xFF00E5FF), size: 18),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Стабільна комфортна температура води +28°C',
+                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -756,8 +804,9 @@ class ParentProfileTab extends ConsumerWidget {
     required Color textColor,
     required Color subColor,
     bool isCompact = false,
+    VoidCallback? onTap,
   }) {
-    return Column(
+    final itemWidget = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
@@ -801,6 +850,15 @@ class ParentProfileTab extends ConsumerWidget {
         ),
       ],
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: itemWidget,
+      );
+    }
+    return itemWidget;
   }
 
   // 2. Family & Children Section
@@ -1986,14 +2044,17 @@ class ParentProfileTab extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
+              final tabNotifier = ref.read(parentTabProvider.notifier);
+              final router = ref.read(goRouterProvider);
+              final authNotifier = ref.read(authControllerProvider.notifier);
               Navigator.pop(ctx);
               try {
-                await ref.read(authControllerProvider.notifier).logout();
+                await authNotifier.logout();
               } catch (e) {
                 debugPrint('Logout error: $e');
               }
-              ref.read(parentTabProvider.notifier).setTab(0);
-              ref.read(goRouterProvider).go('/?skipSplash=true');
+              tabNotifier.setTab(0);
+              router.go('/?skipSplash=true');
             },
             child: const Text('Вийти'),
           ),

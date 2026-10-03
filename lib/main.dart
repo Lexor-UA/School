@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/providers/shared_prefs_provider.dart';
+import 'package:swimming_school_app/core/services/push_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,11 +101,25 @@ class CustomScrollBehavior extends MaterialScrollBehavior {
       };
 }
 
-class SwimmingSchoolApp extends ConsumerWidget {
+class SwimmingSchoolApp extends ConsumerStatefulWidget {
   const SwimmingSchoolApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SwimmingSchoolApp> createState() => _SwimmingSchoolAppState();
+}
+
+class _SwimmingSchoolAppState extends ConsumerState<SwimmingSchoolApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize push notifications after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(pushNotificationServiceProvider).initialize();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
     final themeConfig = ref.watch(appThemeControllerProvider);
     

@@ -6,15 +6,17 @@ import 'package:swimming_school_app/features/chat/models/chat_message.dart';
 import 'package:swimming_school_app/features/chat/repositories/chat_repository.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   return ChatRepository();
 });
 
 final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) async* {
-  if (FirebaseAuth.instance.currentUser == null) {
-    try {
-      await FirebaseAuth.instance.signInAnonymously();
-    } catch (_) {}
+  final user = ref.watch(authControllerProvider);
+  if (user == null || FirebaseAuth.instance.currentUser == null) {
+    yield const [];
+    return;
   }
   final repo = ref.watch(chatRepositoryProvider);
   final tenancy = ref.watch(tenancyControllerProvider);
@@ -44,6 +46,10 @@ final chatMessagesStreamProvider = StreamProvider.family<List<ChatMessage>, Stri
 
 // A provider that maps userId and name to user role ('coach', 'parent', 'admin')
 final usersRoleMapProvider = StreamProvider<Map<String, String>>((ref) {
+  final user = ref.watch(authControllerProvider);
+  if (user == null || FirebaseAuth.instance.currentUser == null) {
+    return const Stream.empty();
+  }
   return FirebaseFirestore.instance.collection('users').snapshots().map((snapshot) {
     final map = <String, String>{};
     for (final doc in snapshot.docs) {

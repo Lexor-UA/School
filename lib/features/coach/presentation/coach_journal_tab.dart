@@ -156,8 +156,6 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
     }
   }
 
-  void _showNoteDialog(Child child) => showCoachNoteDialog(context, child);
-
   Widget _buildDatePill(String label, DateTime targetDate, bool isSelected, AppThemeConfig themeConfig) {
     return GestureDetector(
       onTap: () {
@@ -1281,54 +1279,42 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                   ),
                 ),
 
-                // Quick Action buttons: Note & Attendance toggle
-                Row(
-                  children: [
-                    // Note button
-                    IconButton(
-                      icon: Icon(LucideIcons.fileText, color: themeConfig.textSecondary, size: 20),
-                      onPressed: () => _showNoteDialog(child),
-                      tooltip: 'coach.btn_add_note'.tr(),
+                // One-tap attendance check
+                GestureDetector(
+                  onTap: () => _toggleAttendance(gClass, child.id),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isPresent
+                          ? const Color(0xFF10B981)
+                          : (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF)),
+                      shape: BoxShape.circle,
+                      border: isPresent
+                          ? null
+                          : Border.all(
+                              color: themeConfig.isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFBAE6FD),
+                            ),
+                      boxShadow: isPresent
+                          ? [
+                              const BoxShadow(
+                                color: Color(0xFF10B981),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : [],
                     ),
-
-                    // One-tap attendance check
-                    GestureDetector(
-                      onTap: () => _toggleAttendance(gClass, child.id),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isPresent
-                              ? const Color(0xFF10B981)
-                              : (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF)),
-                          shape: BoxShape.circle,
-                          border: isPresent
-                              ? null
-                              : Border.all(
-                                  color: themeConfig.isDark
-                                      ? const Color(0xFF334155)
-                                      : const Color(0xFFBAE6FD),
-                                ),
-                          boxShadow: isPresent
-                              ? [
-                                  const BoxShadow(
-                                    color: Color(0xFF10B981),
-                                    blurRadius: 10,
-                                    spreadRadius: 1,
-                                  ),
-                                ]
-                              : [],
-                        ),
-                        child: Icon(
-                          isPresent ? LucideIcons.check : LucideIcons.userCheck,
-                          color: isPresent
-                              ? Colors.white
-                              : (themeConfig.isDark ? Colors.white70 : const Color(0xFF0284C7)),
-                          size: 20,
-                        ),
-                      ),
+                    child: Icon(
+                      isPresent ? LucideIcons.check : LucideIcons.userCheck,
+                      color: isPresent
+                          ? Colors.white
+                          : (themeConfig.isDark ? Colors.white70 : const Color(0xFF0284C7)),
+                      size: 20,
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

@@ -160,7 +160,7 @@ final class UnpaidSubscriptionsCountProvider
 }
 
 String _$unpaidSubscriptionsCountHash() =>
-    r'5c226a00308293d538fa32343b2233d62564fec3';
+    r'b69602e138377413a3aa7de460c53e5fbbb61c92';
 
 @ProviderFor(allSubscriptions)
 final allSubscriptionsProvider = AllSubscriptionsProvider._();
@@ -201,7 +201,7 @@ final class AllSubscriptionsProvider
   }
 }
 
-String _$allSubscriptionsHash() => r'7f6c8a20069be7e904e922756bd168febd5b7106';
+String _$allSubscriptionsHash() => r'77079d9dbb266a68e6b73ad991cee1371a39daa4';
 
 @ProviderFor(coaches)
 final coachesProvider = CoachesProvider._();
@@ -240,7 +240,7 @@ final class CoachesProvider
   }
 }
 
-String _$coachesHash() => r'fe4c83c0e15ce980c5d5692f528f7c6ff39d5367';
+String _$coachesHash() => r'550ed9416e8bb339bdbea97ec305b57cf8f520b7';
 
 @ProviderFor(adminDashboard)
 final adminDashboardProvider = AdminDashboardProvider._();

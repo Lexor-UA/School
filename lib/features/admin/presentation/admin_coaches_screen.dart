@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -398,45 +397,39 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: currentTheme.isDark
-                      ? const Color(0xFF0C2238).withValues(alpha: 0.85)
-                      : Colors.white.withValues(alpha: 0.90),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                        : const Color(0xFFBAE6FD),
-                    width: 1.1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    LucideIcons.arrowLeft,
-                    color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  },
-                ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: currentTheme.isDark
+                  ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.90),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                    : const Color(0xFFBAE6FD),
+                width: 1.1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                LucideIcons.arrowLeft,
+                color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                size: 20,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -545,83 +538,77 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: currentTheme.isDark
-                  ? [
-                      const Color(0xFF0C2238).withValues(alpha: 0.85),
-                      const Color(0xFF061424).withValues(alpha: 0.90),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.95),
-                      const Color(0xFFF0F9FF).withValues(alpha: 0.90),
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: currentTheme.isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
-                  : const Color(0xFFBAE6FD),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 3),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.25 : 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: currentTheme.isDark
+              ? [
+                  const Color(0xFF0C2238).withValues(alpha: 0.85),
+                  const Color(0xFF061424).withValues(alpha: 0.90),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.95),
+                  const Color(0xFFF0F9FF).withValues(alpha: 0.90),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: currentTheme.isDark
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+              : const Color(0xFFBAE6FD),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 3),
           ),
-          child: TextField(
-            controller: _searchController,
-            style: TextStyle(
-              color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-            ),
-            onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-            decoration: InputDecoration(
-              hintText: 'admin.coaches_search_hint'.tr(),
-              hintStyle: TextStyle(
-                color: currentTheme.isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-              prefixIcon: const Icon(
-                LucideIcons.search,
-                color: Color(0xFF00E5FF),
-                size: 18,
-              ),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(
-                        LucideIcons.x,
-                        color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
-                        size: 16,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              border: InputBorder.none,
-            ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.25 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(
+          color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
+        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+        decoration: InputDecoration(
+          hintText: 'admin.coaches_search_hint'.tr(),
+          hintStyle: TextStyle(
+            color: currentTheme.isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: const Icon(
+            LucideIcons.search,
+            color: Color(0xFF00E5FF),
+            size: 18,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    LucideIcons.x,
+                    color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
+                    size: 16,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          border: InputBorder.none,
         ),
       ),
     );
@@ -682,11 +669,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }) {
     final isCopied = _recentlyCopiedCoachId == coachId;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+    return RepaintBoundary(
+      child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -728,6 +712,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 50x50 Jewel Avatar
                   Container(
@@ -766,192 +751,181 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                   ),
                   const SizedBox(width: 14),
 
-                  // Info with Variant A Smart Branch Badge
+                  // Info with Smart Adaptive Layout
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                name,
-                                style: TextStyle(
-                                  color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildBranchBadge(branchId, branchIds, currentTheme),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Clipboard.setData(ClipboardData(text: phone));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Номер $phone скопійовано!'),
-                                duration: const Duration(seconds: 1),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 1.5, horizontal: 2),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  LucideIcons.phone,
-                                  size: 13,
-                                  color: Color(0xFF00E5FF),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  phone,
-                                  style: TextStyle(
-                                    color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        Text(
+                          name,
+                          style: TextStyle(
+                            color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 5),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 5,
+                          children: [
+                            _buildBranchBadge(branchId, branchIds, currentTheme),
+                            InkWell(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                Clipboard.setData(ClipboardData(text: phone));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Номер $phone скопійовано!'),
+                                    duration: const Duration(seconds: 1),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(6),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 1.5, horizontal: 2),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.phone,
+                                      size: 12.5,
+                                      color: Color(0xFF00E5FF),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      phone,
+                                      style: TextStyle(
+                                        color: currentTheme.isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 10),
 
-                  // Action Buttons (Jewel Edit & Delete)
+                  // Action Buttons (Jewel Edit & Delete, 36x36)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: currentTheme.isDark
-                                    ? [
-                                        const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                                        const Color(0xFF0284C7).withValues(alpha: 0.10),
-                                      ]
-                                    : [
-                                        const Color(0xFFE0F2FE),
-                                        const Color(0xFFF0F9FF),
-                                      ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: currentTheme.isDark
-                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                                    : const Color(0xFFBAE6FD),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                LucideIcons.pencil,
-                                color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                size: 16.5,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) => EditCoachSheet(
-                                    coachId: coachId,
-                                    initialName: name,
-                                    initialPhone: phone,
-                                    initialRateGroup: rateGroup,
-                                    initialRateIndividual: rateIndividual,
-                                    initialRateSplit: rateSplit,
-                                  ),
-                                );
-                              },
-                            ),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: currentTheme.isDark
+                                ? [
+                                    const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                                    const Color(0xFF0284C7).withValues(alpha: 0.10),
+                                  ]
+                                : [
+                                    const Color(0xFFE0F2FE),
+                                    const Color(0xFFF0F9FF),
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color: currentTheme.isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                : const Color(0xFFBAE6FD),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            LucideIcons.pencil,
+                            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                            size: 16,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => EditCoachSheet(
+                                coachId: coachId,
+                                initialName: name,
+                                initialPhone: phone,
+                                initialRateGroup: rateGroup,
+                                initialRateIndividual: rateIndividual,
+                                initialRateSplit: rateSplit,
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: currentTheme.isDark
-                                    ? [
-                                        const Color(0xFFF43F5E).withValues(alpha: 0.18),
-                                        const Color(0xFF881337).withValues(alpha: 0.12),
-                                      ]
-                                    : [
-                                        const Color(0xFFFFF1F2),
-                                        const Color(0xFFFFE4E6),
-                                      ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: currentTheme.isDark
-                                    ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
-                                    : const Color(0xFFFECDD3),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFF43F5E).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                LucideIcons.trash2,
-                                color: currentTheme.isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
-                                size: 16.5,
-                              ),
-                              tooltip: 'admin.delete'.tr(),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                _deleteCoach(coachId, name, currentTheme);
-                              },
-                            ),
+                      const SizedBox(width: 7),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: currentTheme.isDark
+                                ? [
+                                    const Color(0xFFF43F5E).withValues(alpha: 0.18),
+                                    const Color(0xFF881337).withValues(alpha: 0.12),
+                                  ]
+                                : [
+                                    const Color(0xFFFFF1F2),
+                                    const Color(0xFFFFE4E6),
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color: currentTheme.isDark
+                                ? const Color(0xFFF43F5E).withValues(alpha: 0.40)
+                                : const Color(0xFFFECDD3),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF43F5E).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            LucideIcons.trash2,
+                            color: currentTheme.isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
+                            size: 16,
+                          ),
+                          tooltip: 'admin.delete'.tr(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _deleteCoach(coachId, name, currentTheme);
+                          },
                         ),
                       ),
                     ],
@@ -1302,8 +1276,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
             ],
           ),
         ),
-      ),
-    ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
+      ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
   }
 
   Widget _buildRateChip({
@@ -1371,12 +1344,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     final isVienna = activeBranchId == 'vienna';
 
     return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            margin: const EdgeInsets.all(32),
+      child: Container(
+        margin: const EdgeInsets.all(32),
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -1483,9 +1452,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Future<void> _seedBranchCoaches(String? branchId) async {
@@ -1513,12 +1480,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
   Widget _buildNoSearchResults(AppThemeConfig currentTheme) {
     return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            margin: const EdgeInsets.all(32),
+      child: Container(
+        margin: const EdgeInsets.all(32),
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -1577,8 +1540,6 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

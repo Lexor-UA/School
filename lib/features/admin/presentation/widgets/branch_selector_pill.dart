@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,12 +31,8 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              padding: EdgeInsets.only(
+        return Container(
+          padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
                 top: 16,
@@ -222,11 +217,9 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                 const SizedBox(height: 12),
               ],
             ),
-          ),
-        ),
+          );
+        },
       );
-    },
-  );
   }
 
   Widget _buildBranchOption({
@@ -519,30 +512,39 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
       label = b.id == 'vienna' ? 'CitySwim Vienna' : 'CitySwim Kyiv';
     }
 
-    final canSwitchBranch = user?.role == UserRole.owner || user?.role == UserRole.admin;
+    final canSwitchBranch = user?.isOwnerOrSuperAdmin == true;
 
-    // Для тренера показуємо статичний бейдж
+    // Для адміністратора та тренера показуємо статичний люксовий бейдж
     if (!canSwitchBranch) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F9FF),
-          borderRadius: BorderRadius.circular(14),
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFBAE6FD),
+            color: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFBAE6FD),
+            width: 1.2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black.withValues(alpha: 0.20) : const Color(0xFF0284C7).withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(flag, style: const TextStyle(fontSize: 14)),
-            const SizedBox(width: 6),
+            const SizedBox(width: 7),
             Text(
               label,
               style: TextStyle(
                 color: currentTheme.textPrimary,
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
               ),
             ),
           ],
@@ -568,9 +570,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
           curve: Curves.easeOutCubic,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: AnimatedContainer(
+            child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                 decoration: BoxDecoration(
@@ -631,7 +631,6 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

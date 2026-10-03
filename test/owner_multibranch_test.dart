@@ -6,6 +6,8 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/owner/controllers/owner_analytics_controller.dart';
+import 'package:swimming_school_app/features/payment/models/payment_transaction.dart';
+import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 
 class FakeAuthController extends AuthController {
   final AppUser? _user;
@@ -13,6 +15,94 @@ class FakeAuthController extends AuthController {
 
   @override
   AppUser? build() => _user;
+}
+
+List<PaymentTransaction> generateTestPayments() {
+  final now = DateTime.now();
+  final list = <PaymentTransaction>[];
+
+  // 84 транзакції Києва із загальною сумою 124 500 ₴
+  const kyivTotal = 124500.0;
+  final kyivStep = (kyivTotal / 84).floorToDouble();
+  double currentKyivSum = 0;
+  for (int i = 0; i < 84; i++) {
+    final amount = (i == 83) ? (kyivTotal - currentKyivSum) : kyivStep;
+    currentKyivSum += amount;
+    list.add(PaymentTransaction(
+      id: 'pay_kyiv_$i',
+      branchId: 'kyiv',
+      clientId: 'client_kyiv_$i',
+      clientName: 'Клієнт Київ $i',
+      packageId: 'pkg_child_$i',
+      packageName: 'Абонемент $i',
+      amount: amount,
+      currency: 'UAH',
+      currencySymbol: '₴',
+      paymentGateway: 'liqpay',
+      status: PaymentStatus.completed,
+      transactionId: 'tx_k_$i',
+      receiptNumber: 'REC-K-$i',
+      paymentMethod: 'card',
+      createdAt: now,
+    ));
+  }
+
+  // 14 транзакцій Відня із загальною сумою 14 850 €
+  const viennaTotal = 14850.0;
+  final viennaStep = (viennaTotal / 14).floorToDouble();
+  double currentViennaSum = 0;
+  for (int i = 0; i < 14; i++) {
+    final amount = (i == 13) ? (viennaTotal - currentViennaSum) : viennaStep;
+    currentViennaSum += amount;
+    list.add(PaymentTransaction(
+      id: 'pay_vienna_$i',
+      branchId: 'vienna',
+      clientId: 'client_vienna_$i',
+      clientName: 'Client Vienna $i',
+      packageId: 'pkg_child_v_$i',
+      packageName: 'Einheit $i',
+      amount: amount,
+      currency: 'EUR',
+      currencySymbol: '€',
+      paymentGateway: 'stripe',
+      status: PaymentStatus.completed,
+      transactionId: 'tx_v_$i',
+      receiptNumber: 'REC-V-$i',
+      paymentMethod: 'card',
+      createdAt: now,
+    ));
+  }
+
+  return list;
+}
+
+AdminDashboardState generateTestAdminDashboard() {
+  return AdminDashboardState(
+    branchMetrics: {
+      'kyiv': const BranchSummaryMetric(
+        branchId: 'kyiv',
+        branchName: 'CitySwim Kyiv',
+        currencySymbol: '₴',
+        flagEmoji: '🇺🇦',
+        activeClientsCount: 412,
+        todayClassesCount: 12,
+        totalCoachesCount: 8,
+        ongoingClassesCount: 2,
+        unpaidSubscriptions: 5,
+      ),
+      'vienna': const BranchSummaryMetric(
+        branchId: 'vienna',
+        branchName: 'CitySwim Vienna',
+        currencySymbol: '€',
+        flagEmoji: '🇦🇹',
+        activeClientsCount: 68,
+        todayClassesCount: 4,
+        totalCoachesCount: 3,
+        ongoingClassesCount: 1,
+        unpaidSubscriptions: 1,
+      ),
+    },
+  );
 }
 
 void main() {
@@ -34,11 +124,34 @@ void main() {
       branchIds: ['kyiv', 'vienna'],
     );
 
+    test('Zero transactions state correctly reports 0 revenue and 0 profit', () {
+      final container = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
+          ownerPaymentsProvider.overrideWithValue([]),
+        ],
+      );
+
+      final analytics = container.read(ownerAnalyticsControllerProvider);
+      expect(analytics.kyiv.totalRevenue, equals(0.0));
+      expect(analytics.kyiv.netProfit, equals(0.0));
+      expect(analytics.kyiv.expenses, equals(0.0));
+      expect(analytics.kyiv.formatRevenue(), equals('0 ₴'));
+
+      expect(analytics.vienna.totalRevenue, equals(0.0));
+      expect(analytics.vienna.netProfit, equals(0.0));
+      expect(analytics.vienna.expenses, equals(0.0));
+      expect(analytics.vienna.formatRevenue(), equals('€ 0'));
+    });
+
     test('Owner defaults to Kyiv branch with UAH (₴) revenue metrics', () {
       final container = ProviderContainer(
         overrides: [
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
+          ownerPaymentsProvider.overrideWithValue(generateTestPayments()),
+          adminDashboardProvider.overrideWith((ref) => generateTestAdminDashboard()),
         ],
       );
 
@@ -64,6 +177,8 @@ void main() {
         overrides: [
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
+          ownerPaymentsProvider.overrideWithValue(generateTestPayments()),
+          adminDashboardProvider.overrideWith((ref) => generateTestAdminDashboard()),
         ],
       );
 
@@ -93,6 +208,8 @@ void main() {
         overrides: [
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
+          ownerPaymentsProvider.overrideWithValue(generateTestPayments()),
+          adminDashboardProvider.overrideWith((ref) => generateTestAdminDashboard()),
         ],
       );
 

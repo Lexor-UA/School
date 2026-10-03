@@ -31,7 +31,7 @@ class SubscriptionFrontCard extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 380),
           child: AspectRatio(
-            aspectRatio: 1.58,
+            aspectRatio: 1.75,
             child: Interactive3DCard(
               onTap: onTap,
               enableHologram: false,
@@ -49,7 +49,7 @@ class SubscriptionFrontCard extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: AspectRatio(
-          aspectRatio: 1.58,
+          aspectRatio: 1.75,
           child: cardContent,
         ),
       ),
@@ -142,7 +142,7 @@ class SubscriptionFrontCard extends ConsumerWidget {
           ),
 
           Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +13,7 @@ import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'add_client_sheet.dart';
@@ -479,13 +479,21 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 // 1. Header
                 _buildHeader(context, currentTheme),
 
-                // 1.5 Branch Selector Pill (Kyiv / Vienna / All Locations)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 2, 20, 6),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: BranchSelectorPill(),
-                  ),
+                // 1.5 Branch Selector Pill (Тільки для Owner/SuperAdmin, для адміна філія зафіксована)
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentUser = ref.watch(authControllerProvider);
+                    if (currentUser?.isOwnerOrSuperAdmin != true) {
+                      return const SizedBox.shrink();
+                    }
+                    return const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 2, 20, 6),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: BranchSelectorPill(),
+                      ),
+                    );
+                  },
                 ),
 
                 // 2. Search Bar
@@ -650,45 +658,39 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: currentTheme.isDark
-                      ? const Color(0xFF0C2238).withValues(alpha: 0.85)
-                      : Colors.white.withValues(alpha: 0.90),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                        : const Color(0xFFBAE6FD),
-                    width: 1.1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    LucideIcons.arrowLeft,
-                    color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  },
-                ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: currentTheme.isDark
+                  ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.90),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                    : const Color(0xFFBAE6FD),
+                width: 1.1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                LucideIcons.arrowLeft,
+                color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
+                size: 20,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -753,61 +755,55 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               ],
             ),
           ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                width: 40,
-                height: 40,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: currentTheme.isDark
-                      ? const Color(0xFF0C2238).withValues(alpha: 0.85)
-                      : Colors.white.withValues(alpha: 0.90),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                        : const Color(0xFFBAE6FD),
-                    width: 1.1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  tooltip: 'Синхронізація та очищення осиротілих сімей',
-                  icon: Icon(
-                    LucideIcons.sparkles,
-                    color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                    size: 18,
-                  ),
-                  onPressed: () async {
-                    HapticFeedback.lightImpact();
-                    final cleaned = await ref.read(familyControllerProvider).cleanupOrphanedFamilies();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            cleaned > 0
-                                ? 'Видалено $cleaned осиротілих сімей без активних клієнтів'
-                                : 'Усі сімейні зв\'язки в порядку, осиротілих сімей немає',
-                          ),
-                          backgroundColor: const Color(0xFF10B981),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    }
-                  },
-                ),
+          Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: currentTheme.isDark
+                  ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.90),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: currentTheme.isDark
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                    : const Color(0xFFBAE6FD),
+                width: 1.1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              tooltip: 'Синхронізація та очищення осиротілих сімей',
+              icon: Icon(
+                LucideIcons.sparkles,
+                color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                size: 18,
+              ),
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                final cleaned = await ref.read(familyControllerProvider).cleanupOrphanedFamilies();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        cleaned > 0
+                            ? 'Видалено $cleaned осиротілих сімей без активних клієнтів'
+                            : 'Усі сімейні зв\'язки в порядку, осиротілих сімей немає',
+                      ),
+                      backgroundColor: const Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              },
             ),
           ),
           const ThemeHeaderButton(size: 40),
@@ -817,74 +813,68 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   }
 
   Widget _buildSearchBar(AppThemeConfig currentTheme) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: currentTheme.isDark
-                ? const Color(0xFF0C2238).withValues(alpha: 0.85)
-                : Colors.white.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: currentTheme.isDark
-                  ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
-                  : const Color(0xFFBAE6FD),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.10 : 0.04),
-                blurRadius: 14,
-                offset: const Offset(0, 3),
-              ),
-              if (currentTheme.isDark)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: currentTheme.isDark
+            ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+            : Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: currentTheme.isDark
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+              : const Color(0xFFBAE6FD),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.10 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
-          child: TextField(
-            controller: _searchController,
-            style: TextStyle(
-              color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
+          if (currentTheme.isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-            decoration: InputDecoration(
-              hintText: 'admin.clients_search_hint'.tr(),
-              hintStyle: TextStyle(
-                color: currentTheme.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-              prefixIcon: Icon(
-                LucideIcons.search,
-                color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                size: 18,
-              ),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(
-                        LucideIcons.x,
-                        color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
-                        size: 16,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 13),
-              border: InputBorder.none,
-            ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(
+          color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
+        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+        decoration: InputDecoration(
+          hintText: 'admin.clients_search_hint'.tr(),
+          hintStyle: TextStyle(
+            color: currentTheme.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
+          prefixIcon: Icon(
+            LucideIcons.search,
+            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            size: 18,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    LucideIcons.x,
+                    color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.textSecondary,
+                    size: 16,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          contentPadding: const EdgeInsets.symmetric(vertical: 13),
+          border: InputBorder.none,
         ),
       ),
     );
@@ -1058,10 +1048,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     final activeSubs = subscriptions.where((s) => s.isActive && s.remainingClasses > 0).toList();
     final bool hasActiveSubs = activeSubs.isNotEmpty;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+    return RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1296,55 +1285,30 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                     ],
                                   ),
                                 ),
-                              // Branch pill in Row 2
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  _showAdminChangeBranchDialog(
-                                    context: context,
-                                    clientId: clientId,
-                                    clientName: name,
-                                    currentBranchId: branchId,
-                                    currentTheme: currentTheme,
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 2.5),
-                                  decoration: BoxDecoration(
+                              // Branch pill in Row 2 (Static branch badge for branch admin)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: branchId == 'vienna'
+                                      ? const Color(0xFFDC2626).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12)
+                                      : const Color(0xFF0284C7).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12),
+                                  borderRadius: BorderRadius.circular(7),
+                                  border: Border.all(
                                     color: branchId == 'vienna'
-                                        ? const Color(0xFFDC2626).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12)
-                                        : const Color(0xFF0284C7).withValues(alpha: currentTheme.isDark ? 0.25 : 0.12),
-                                    borderRadius: BorderRadius.circular(7),
-                                    border: Border.all(
-                                      color: branchId == 'vienna'
-                                          ? const Color(0xFFF87171).withValues(alpha: 0.5)
-                                          : const Color(0xFF38BDF8).withValues(alpha: 0.5),
-                                      width: 0.8,
-                                    ),
+                                        ? const Color(0xFFF87171).withValues(alpha: 0.5)
+                                        : const Color(0xFF38BDF8).withValues(alpha: 0.5),
+                                    width: 0.8,
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        branchId == 'vienna' ? '🇦🇹 Відень' : '🇺🇦 Київ',
-                                        style: TextStyle(
-                                          color: branchId == 'vienna'
-                                              ? (currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
-                                              : (currentTheme.isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1)),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 3.5),
-                                      Icon(
-                                        LucideIcons.pencil,
-                                        size: 9,
-                                        color: branchId == 'vienna'
-                                            ? (currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
-                                            : (currentTheme.isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1)),
-                                      ),
-                                    ],
+                                ),
+                                child: Text(
+                                  branchId == 'vienna' ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                                  style: TextStyle(
+                                    color: branchId == 'vienna'
+                                        ? (currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
+                                        : (currentTheme.isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1)),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
                               ),
@@ -1791,7 +1755,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ),
           ),
         ),
-      ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
+      );
   }
 
   Widget _buildEmptyState(AppThemeConfig currentTheme, String? activeBranchId) {
@@ -2059,224 +2023,6 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showAdminChangeBranchDialog({
-    required BuildContext context,
-    required String clientId,
-    required String clientName,
-    required String currentBranchId,
-    required AppThemeConfig currentTheme,
-  }) async {
-    final isDark = currentTheme.isDark;
-    String selectedBranch = currentBranchId;
-
-    await showDialog(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
-              width: 1.2,
-            ),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.25 : 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(LucideIcons.building2, color: Color(0xFF38BDF8), size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Зміна філії клієнта',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                    ),
-                    Text(
-                      clientName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Оберіть філію, за якою буде закріплено клієнта. Клієнт самостійно змінювати філію не може.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: isDark ? Colors.white70 : const Color(0xFF475569),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Branch Kyiv option
-              InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => setDialogState(() => selectedBranch = 'kyiv'),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: selectedBranch == 'kyiv'
-                        ? const Color(0xFF0284C7).withValues(alpha: isDark ? 0.25 : 0.12)
-                        : (isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC)),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: selectedBranch == 'kyiv'
-                          ? const Color(0xFF00E5FF)
-                          : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
-                      width: selectedBranch == 'kyiv' ? 1.8 : 1.0,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text('🇺🇦', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CitySwim Київ',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            Text(
-                              'Україна • Валюта: UAH ₴',
-                              style: TextStyle(fontSize: 11.5, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (selectedBranch == 'kyiv')
-                        const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 20),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Branch Vienna option
-              InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => setDialogState(() => selectedBranch = 'vienna'),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: selectedBranch == 'vienna'
-                        ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.25 : 0.12)
-                        : (isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC)),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: selectedBranch == 'vienna'
-                          ? const Color(0xFFF87171)
-                          : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
-                      width: selectedBranch == 'vienna' ? 1.8 : 1.0,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text('🇦🇹', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CitySwim Відень',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            Text(
-                              'Австрія • Валюта: EUR €',
-                              style: TextStyle(fontSize: 11.5, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (selectedBranch == 'vienna')
-                        const Icon(LucideIcons.checkCircle2, color: Color(0xFFF87171), size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Скасувати'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0284C7),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: selectedBranch == currentBranchId
-                  ? () => Navigator.pop(dialogCtx)
-                  : () async {
-                      Navigator.pop(dialogCtx);
-                      try {
-                        await FirebaseFirestore.instance.collection('users').doc(clientId).set({
-                          'branchId': selectedBranch,
-                          'branchIds': [selectedBranch],
-                        }, SetOptions(merge: true));
-
-                        final admin = ref.read(authControllerProvider);
-                        if (admin != null) {
-                          await logAdminAction(
-                            'Змінено філію клієнта "$clientName" на ${selectedBranch == "vienna" ? "Відень 🇦🇹" : "Київ 🇺🇦"}',
-                            admin.id,
-                          );
-                        }
-
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Філію для "$clientName" успішно змінено на ${selectedBranch == "vienna" ? "Відень 🇦🇹" : "Київ 🇺🇦"}',
-                              ),
-                              backgroundColor: const Color(0xFF0284C7),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Помилка оновлення філії: $e'),
-                              backgroundColor: Colors.redAccent,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      }
-                    },
-              child: const Text('Зберегти', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),

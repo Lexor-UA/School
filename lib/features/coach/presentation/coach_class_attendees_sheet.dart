@@ -330,6 +330,14 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
   Widget build(BuildContext context) {
     final currentTheme = ref.watch(appThemeControllerProvider);
     final isDark = currentTheme.isDark;
+    final currentUser = ref.watch(authControllerProvider);
+    final isMyClass = currentUser != null && (
+      currentUser.id == _currentClass.coachId ||
+      currentUser.name.trim().toLowerCase() == _currentClass.coachName.trim().toLowerCase() ||
+      currentUser.role == UserRole.admin ||
+      currentUser.role == UserRole.owner ||
+      currentUser.role == UserRole.superAdmin
+    );
 
     final startTimeStr = '${_currentClass.startTime.hour.toString().padLeft(2, '0')}:${_currentClass.startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${_currentClass.endTime.hour.toString().padLeft(2, '0')}:${_currentClass.endTime.minute.toString().padLeft(2, '0')}';
@@ -693,7 +701,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               itemCount: _attendees.length,
                               separatorBuilder: (context, index) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
-                                return _buildAttendeeCard(_attendees[index], index, currentTheme, isDark);
+                                return _buildAttendeeCard(_attendees[index], index, currentTheme, isDark, isMyClass: isMyClass);
                               },
                             ),
                 ),
@@ -703,7 +711,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
         );
   }
 
-  Widget _buildAttendeeCard(CoachAttendeeInfo attendee, int index, AppThemeConfig currentTheme, bool isDark) {
+  Widget _buildAttendeeCard(CoachAttendeeInfo attendee, int index, AppThemeConfig currentTheme, bool isDark, {bool isMyClass = false}) {
     final isPresent = attendee.isPresent;
 
     return Container(
@@ -880,7 +888,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                 const SizedBox(height: 12),
 
                 // Phone contact row with 1-tap call/copy and chat
-                if (attendee.phone != null && attendee.phone!.isNotEmpty) ...[
+                if (isMyClass && attendee.phone != null && attendee.phone!.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(

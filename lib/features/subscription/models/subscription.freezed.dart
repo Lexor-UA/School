@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'subscription.dart';
@@ -9,6 +9,7 @@ part of 'subscription.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $SubscriptionCopyWith<Subscription> get copyWith => _$SubscriptionCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.currencySymbol, currencySymbol) || other.currencySymbol == currencySymbol));
+  final _this = this as Subscription;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subscription&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.totalClasses, _this.totalClasses) || other.totalClasses == _this.totalClasses)&&(identical(other.remainingClasses, _this.remainingClasses) || other.remainingClasses == _this.remainingClasses)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.serviceName, _this.serviceName) || other.serviceName == _this.serviceName)&&(identical(other.expiryDate, _this.expiryDate) || other.expiryDate == _this.expiryDate)&&(identical(other.ownerName, _this.ownerName) || other.ownerName == _this.ownerName)&&(identical(other.organizationId, _this.organizationId) || other.organizationId == _this.organizationId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&(identical(other.currency, _this.currency) || other.currency == _this.currency)&&(identical(other.currencySymbol, _this.currencySymbol) || other.currencySymbol == _this.currencySymbol));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName,organizationId,branchId,currency,currencySymbol);
+int get hashCode {
+  final _this = this as Subscription;
+  return Object.hash(runtimeType,_this.id,_this.userId,_this.totalClasses,_this.remainingClasses,_this.isActive,_this.serviceName,_this.expiryDate,_this.ownerName,_this.organizationId,_this.branchId,_this.currency,_this.currencySymbol);
+}
 
 @override
 String toString() {
-  return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName, organizationId: $organizationId, branchId: $branchId, currency: $currency, currencySymbol: $currencySymbol)';
+  final _this = this as Subscription;
+  return 'Subscription(id: ${_this.id}, userId: ${_this.userId}, totalClasses: ${_this.totalClasses}, remainingClasses: ${_this.remainingClasses}, isActive: ${_this.isActive}, serviceName: ${_this.serviceName}, expiryDate: ${_this.expiryDate}, ownerName: ${_this.ownerName}, organizationId: ${_this.organizationId}, branchId: ${_this.branchId}, currency: ${_this.currency}, currencySymbol: ${_this.currencySymbol})';
 }
 
 
@@ -66,7 +72,7 @@ class _$SubscriptionCopyWithImpl<$Res>
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,Object? organizationId = null,Object? branchId = null,Object? currency = null,Object? currencySymbol = null,}) {
-  return _then(_self.copyWith(
+  return _then(Subscription(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,totalClasses: null == totalClasses ? _self.totalClasses : totalClasses // ignore: cast_nullable_to_non_nullable
@@ -249,16 +255,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.currencySymbol, currencySymbol) || other.currencySymbol == currencySymbol));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.currencySymbol, currencySymbol) || other.currencySymbol == currencySymbol));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName,organizationId,branchId,currency,currencySymbol);
+int get hashCode {
+    return Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName,organizationId,branchId,currency,currencySymbol);
+}
 
 @override
 String toString() {
-  return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName, organizationId: $organizationId, branchId: $branchId, currency: $currency, currencySymbol: $currencySymbol)';
+    return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName, organizationId: $organizationId, branchId: $branchId, currency: $currency, currencySymbol: $currencySymbol)';
 }
 
 

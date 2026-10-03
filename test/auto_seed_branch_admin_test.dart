@@ -5,6 +5,9 @@ import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -106,5 +109,70 @@ void main() {
       expect(resolveCurrency(warsawDocData), equals('zł'));
       expect(resolveCurrency(kyivDocData), equals('₴'));
     });
+
+    test('Admin role is locked from switching branches via tenancy switchBranch', () async {
+      const kyivAdmin = AppUser(
+        id: 'admin',
+        name: 'Адміністратор Київ',
+        role: UserRole.admin,
+        branchId: 'kyiv',
+        loginId: 'admin_kyiv',
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final adminContainer = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          authControllerProvider.overrideWith(() => MockAuthController(kyivAdmin)),
+        ],
+      );
+
+      final initialTenancy = adminContainer.read(tenancyControllerProvider);
+      expect(initialTenancy.activeBranchId, equals('kyiv'));
+
+      // Attempt to switch to Vienna as Kyiv admin
+      await adminContainer.read(tenancyControllerProvider.notifier).switchBranch('vienna');
+
+      // Must remain 'kyiv' because admins cannot switch branches
+      final afterAttemptTenancy = adminContainer.read(tenancyControllerProvider);
+      expect(afterAttemptTenancy.activeBranchId, equals('kyiv'),
+          reason: 'Branch admin must not be able to switch active branch');
+
+      adminContainer.dispose();
+    });
+
+    test('Owner role CAN switch branches freely', () async {
+      const ownerUser = AppUser(
+        id: 'owner',
+        name: 'Owner',
+        role: UserRole.owner,
+        branchId: 'kyiv',
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final ownerContainer = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          authControllerProvider.overrideWith(() => MockAuthController(ownerUser)),
+        ],
+      );
+
+      // Attempt to switch to Vienna as Owner
+      await ownerContainer.read(tenancyControllerProvider.notifier).switchBranch('vienna');
+
+      final switchedTenancy = ownerContainer.read(tenancyControllerProvider);
+      expect(switchedTenancy.activeBranchId, equals('vienna'),
+          reason: 'Owner must be able to switch active branch');
+
+      ownerContainer.dispose();
+    });
   });
+}
+
+class MockAuthController extends AuthController {
+  final AppUser _user;
+  MockAuthController(this._user);
+
+  @override
+  AppUser? build() => _user;
 }

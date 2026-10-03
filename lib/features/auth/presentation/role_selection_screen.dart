@@ -15,7 +15,6 @@ import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dar
 import 'package:swimming_school_app/features/auth/presentation/password_recovery_screen.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
-
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   final bool skipSplash;
   final String? initialBranchId;
@@ -468,133 +467,89 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Google Button
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: BorderSide(
-              color: Colors.blue.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          onPressed: _isLoading
-              ? null
-              : () async {
-                  try {
-                    setState(() => _isLoading = true);
-                    await ref
-                        .read(authControllerProvider.notifier)
-                        .signInWithGoogle();
-                    if (!mounted) return;
-                    final authUser = ref.read(authControllerProvider);
-                    if (authUser != null) {
-                      _navigateBasedOnRole(authUser.role, authUser);
-                    }
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Помилка Google Sign In: $e'),
-                      ),
-                    );
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isLoading = false);
-                    }
-                  }
-                },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/google_logo.png',
-                height: 24,
-                errorBuilder: (c, e, s) => const Icon(
-                  LucideIcons.globe,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'auth.login_google'.tr(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+        _buildPremiumAuthButton(
+          context,
+          title: 'auth.login_google'.tr().isNotEmpty && !'auth.login_google'.tr().startsWith('auth.') ? 'auth.login_google'.tr() : 'Увійти через Google',
+          imageAsset: 'assets/images/google_logo.png',
+          borderColor: Colors.blue.withValues(alpha: 0.5),
+          onPressed: () async {
+            HapticFeedback.lightImpact();
+            try {
+              setState(() => _isLoading = true);
+              await ref.read(authControllerProvider.notifier).signInWithGoogle();
+              if (!mounted) return;
+              final authUser = ref.read(authControllerProvider);
+              if (authUser != null) {
+                _navigateBasedOnRole(authUser.role, authUser);
+              }
+            } catch (e) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Помилка Google Sign In: $e')),
+              );
+            } finally {
+              if (mounted) setState(() => _isLoading = false);
+            }
+          },
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // OR Divider
+        _buildPremiumAuthButton(
+          context,
+          title: 'auth.login_apple'.tr().isNotEmpty && !'auth.login_apple'.tr().startsWith('auth.') ? 'auth.login_apple'.tr() : 'Увійти через Apple',
+          imageAsset: 'assets/images/apple_logo.png',
+          borderColor: Colors.white.withValues(alpha: 0.5),
+          backgroundColor: Colors.white.withValues(alpha: 0.04),
+          onPressed: () async {
+            HapticFeedback.lightImpact();
+            try {
+              setState(() => _isLoading = true);
+              await ref.read(authControllerProvider.notifier).signInWithApple();
+              if (!mounted) return;
+              final authUser = ref.read(authControllerProvider);
+              if (authUser != null) {
+                _navigateBasedOnRole(authUser.role, authUser);
+              }
+            } catch (e) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Помилка Apple Sign In: $e')),
+              );
+            } finally {
+              if (mounted) setState(() => _isLoading = false);
+            }
+          },
+        ),
+        
+        const SizedBox(height: 24),
         Row(
           children: [
-            Expanded(
-              child: Divider(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
-            ),
+            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'auth.or'.tr(),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               ),
             ),
-            Expanded(
-              child: Divider(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
-            ),
+            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
           ],
         ),
         const SizedBox(height: 24),
 
-        // Primary Client Hub Login Button (Styled identical to Google sign-in button)
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: BorderSide(
-              color: Colors.blue.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
+        _buildPremiumAuthButton(
+          context,
+          title: 'auth.login_email'.tr().isNotEmpty && !'auth.login_email'.tr().startsWith('auth.')
+              ? 'auth.login_email'.tr()
+              : 'Увійти через Email / Логін',
+          icon: LucideIcons.mail,
+          iconColor: Colors.white,
+          borderColor: Colors.cyanAccent.withValues(alpha: 0.5),
+          backgroundColor: Colors.cyanAccent.withValues(alpha: 0.05),
           onPressed: () {
             HapticFeedback.lightImpact();
             _showClientAuthModal(context, ref, initialTab: 0);
           },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                LucideIcons.logIn,
-                size: 20,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'auth.tab_login'.tr().isNotEmpty &&
-                        !'auth.tab_login'.tr().startsWith('auth.')
-                    ? 'auth.tab_login'.tr()
-                    : 'Увійти',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     ).animate().fadeIn(duration: 600.ms).slideY(
@@ -603,6 +558,73 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
           duration: 600.ms,
           curve: Curves.easeOutExpo,
         );
+  }
+
+  Widget _buildPremiumAuthButton(
+    BuildContext context, {
+    required String title,
+    IconData? icon,
+    String? imageAsset,
+    Color? iconColor,
+    required Color borderColor,
+    Color backgroundColor = Colors.transparent,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: borderColor.withValues(alpha: 0.1),
+            blurRadius: 15,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              backgroundColor: backgroundColor,
+              foregroundColor: Colors.white,
+              side: BorderSide(color: borderColor, width: 1.5),
+              minimumSize: const Size(double.infinity, 58),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+            onPressed: _isLoading ? null : onPressed,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (imageAsset != null)
+                  Image.asset(
+                    imageAsset,
+                    height: 24,
+                    errorBuilder: (c, e, s) => Icon(LucideIcons.globe, color: borderColor),
+                  )
+                else if (icon != null)
+                  Icon(icon, size: 22, color: iconColor ?? Colors.white),
+                
+                const SizedBox(width: 14),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showLanguageSelector(BuildContext context) {
@@ -843,7 +865,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               if (login.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('Введіть логін'),
+                    content: const Text('Введіть емейл або логін'),
                     backgroundColor: Colors.amber.shade800,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -852,10 +874,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 return;
               }
 
-              if (password.length < 4) {
+              if (password.length < 6) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('Пароль має містити щонайменше 4 символи'),
+                    content: const Text('Пароль має містити щонайменше 6 символів'),
                     backgroundColor: Colors.amber.shade800,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1119,16 +1141,18 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
                                           children: [
-                                            // Login or Phone
+                                            // Login or Email
                                             TextField(
                                               controller: loginController,
                                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
-                                              keyboardType: TextInputType.text,
+                                              keyboardType: TextInputType.emailAddress,
                                               autocorrect: false,
                                               textInputAction: TextInputAction.next,
                                               decoration: _modalInputDecoration(
-                                                hintText: 'Логін',
-                                                prefixIcon: LucideIcons.userCheck,
+                                                hintText: 'auth.email_login'.tr().isNotEmpty && !'auth.email_login'.tr().startsWith('auth.')
+                                                    ? 'auth.email_login'.tr()
+                                                    : 'Емейл або логін',
+                                                prefixIcon: LucideIcons.mail,
                                                 suffixIcon: loginController.text.isNotEmpty
                                                     ? IconButton(
                                                         icon: Icon(LucideIcons.circleX, color: Colors.white.withValues(alpha: 0.5), size: 18),
@@ -1417,13 +1441,15 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                             // Login (Phone, Email, or Username)
                                             TextField(
                                               controller: regLoginController,
-                                              keyboardType: TextInputType.text,
+                                              keyboardType: TextInputType.emailAddress,
                                               autocorrect: false,
                                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
                                               textInputAction: TextInputAction.next,
                                               decoration: _modalInputDecoration(
-                                                hintText: 'Логін',
-                                                prefixIcon: LucideIcons.userCheck,
+                                                hintText: 'auth.email_login'.tr().isNotEmpty && !'auth.email_login'.tr().startsWith('auth.')
+                                                    ? 'auth.email_login'.tr()
+                                                    : 'Емейл або логін',
+                                                prefixIcon: LucideIcons.mail,
                                                 suffixIcon: regLoginController.text.isNotEmpty
                                                     ? IconButton(
                                                         icon: Icon(LucideIcons.circleX, color: Colors.white.withValues(alpha: 0.5), size: 18),

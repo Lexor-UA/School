@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'app_user.dart';
@@ -9,6 +9,7 @@ part of 'app_user.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $AchievementCopyWith<Achievement> get copyWith => _$AchievementCopyWithImpl<Achi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Achievement&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.iconType, iconType) || other.iconType == iconType)&&(identical(other.isUnlocked, isUnlocked) || other.isUnlocked == isUnlocked));
+  final _this = this as Achievement;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Achievement&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.iconType, _this.iconType) || other.iconType == _this.iconType)&&(identical(other.isUnlocked, _this.isUnlocked) || other.isUnlocked == _this.isUnlocked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,iconType,isUnlocked);
+int get hashCode {
+  final _this = this as Achievement;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.iconType,_this.isUnlocked);
+}
 
 @override
 String toString() {
-  return 'Achievement(id: $id, name: $name, description: $description, iconType: $iconType, isUnlocked: $isUnlocked)';
+  final _this = this as Achievement;
+  return 'Achievement(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, iconType: ${_this.iconType}, isUnlocked: ${_this.isUnlocked})';
 }
 
 
@@ -66,7 +72,7 @@ class _$AchievementCopyWithImpl<$Res>
 /// Create a copy of Achievement
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? iconType = null,Object? isUnlocked = null,}) {
-  return _then(_self.copyWith(
+  return _then(Achievement(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -235,16 +241,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Achievement&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.iconType, iconType) || other.iconType == iconType)&&(identical(other.isUnlocked, isUnlocked) || other.isUnlocked == isUnlocked));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Achievement&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.iconType, iconType) || other.iconType == iconType)&&(identical(other.isUnlocked, isUnlocked) || other.isUnlocked == isUnlocked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,iconType,isUnlocked);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,description,iconType,isUnlocked);
+}
 
 @override
 String toString() {
-  return 'Achievement(id: $id, name: $name, description: $description, iconType: $iconType, isUnlocked: $isUnlocked)';
+    return 'Achievement(id: $id, name: $name, description: $description, iconType: $iconType, isUnlocked: $isUnlocked)';
 }
 
 
@@ -303,16 +311,21 @@ $AppUserCopyWith<AppUser> get copyWith => _$AppUserCopyWithImpl<AppUser>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.loginId, loginId) || other.loginId == loginId)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&const DeepCollectionEquality().equals(other.branchIds, branchIds)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
+  final _this = this as AppUser;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.loginId, _this.loginId) || other.loginId == _this.loginId)&&(identical(other.organizationId, _this.organizationId) || other.organizationId == _this.organizationId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&const DeepCollectionEquality().equals(other.branchIds, _this.branchIds)&&(identical(other.level, _this.level) || other.level == _this.level)&&(identical(other.xp, _this.xp) || other.xp == _this.xp)&&(identical(other.maxXp, _this.maxXp) || other.maxXp == _this.maxXp)&&const DeepCollectionEquality().equals(other.achievements, _this.achievements)&&(identical(other.avatarUrl, _this.avatarUrl) || other.avatarUrl == _this.avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, _this.avatarBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,role,phone,loginId,organizationId,branchId,const DeepCollectionEquality().hash(branchIds),level,xp,maxXp,const DeepCollectionEquality().hash(achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
+int get hashCode {
+  final _this = this as AppUser;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.role,_this.phone,_this.loginId,_this.organizationId,_this.branchId,const DeepCollectionEquality().hash(_this.branchIds),_this.level,_this.xp,_this.maxXp,const DeepCollectionEquality().hash(_this.achievements),_this.avatarUrl,const DeepCollectionEquality().hash(_this.avatarBytes));
+}
 
 @override
 String toString() {
-  return 'AppUser(id: $id, name: $name, role: $role, phone: $phone, loginId: $loginId, organizationId: $organizationId, branchId: $branchId, branchIds: $branchIds, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
+  final _this = this as AppUser;
+  return 'AppUser(id: ${_this.id}, name: ${_this.name}, role: ${_this.role}, phone: ${_this.phone}, loginId: ${_this.loginId}, organizationId: ${_this.organizationId}, branchId: ${_this.branchId}, branchIds: ${_this.branchIds}, level: ${_this.level}, xp: ${_this.xp}, maxXp: ${_this.maxXp}, achievements: ${_this.achievements}, avatarUrl: ${_this.avatarUrl}, avatarBytes: ${_this.avatarBytes})';
 }
 
 
@@ -341,7 +354,7 @@ class _$AppUserCopyWithImpl<$Res>
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? role = null,Object? phone = freezed,Object? loginId = freezed,Object? organizationId = null,Object? branchId = null,Object? branchIds = null,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,Object? avatarUrl = null,Object? avatarBytes = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(AppUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
@@ -497,7 +510,7 @@ return $default(_that.id,_that.name,_that.role,_that.phone,_that.loginId,_that.o
 @JsonSerializable()
 
 class _AppUser implements AppUser {
-  const _AppUser({required this.id, required this.name, required this.role, this.phone, this.loginId, this.organizationId = 'cityswim', this.branchId = 'kyiv', final  List<String> branchIds = const ['kyiv'], this.level = 1, this.xp = 0, this.maxXp = 100, final  List<Achievement> achievements = const [], this.avatarUrl = 'https://ui-avatars.com/api/?name=User', @JsonKey(includeFromJson: false, includeToJson: false) this.avatarBytes}): _branchIds = branchIds,_achievements = achievements;
+  const _AppUser({required this.id, required this.name, required this.role, this.phone, this.loginId, this.organizationId = 'cityswim', this.branchId = 'kyiv',  List<String> branchIds = const ['kyiv'], this.level = 1, this.xp = 0, this.maxXp = 100,  List<Achievement> achievements = const [], this.avatarUrl = 'https://ui-avatars.com/api/?name=User', @JsonKey(includeFromJson: false, includeToJson: false) this.avatarBytes}): _branchIds = branchIds,_achievements = achievements;
   factory _AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
 
 @override final  String id;
@@ -540,16 +553,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.loginId, loginId) || other.loginId == loginId)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&const DeepCollectionEquality().equals(other._branchIds, _branchIds)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other._achievements, _achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.loginId, loginId) || other.loginId == loginId)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&const DeepCollectionEquality().equals(other.branchIds, _branchIds)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, _achievements)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&const DeepCollectionEquality().equals(other.avatarBytes, avatarBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,role,phone,loginId,organizationId,branchId,const DeepCollectionEquality().hash(_branchIds),level,xp,maxXp,const DeepCollectionEquality().hash(_achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
+int get hashCode {
+    return Object.hash(runtimeType,id,name,role,phone,loginId,organizationId,branchId,const DeepCollectionEquality().hash(_branchIds),level,xp,maxXp,const DeepCollectionEquality().hash(_achievements),avatarUrl,const DeepCollectionEquality().hash(avatarBytes));
+}
 
 @override
 String toString() {
-  return 'AppUser(id: $id, name: $name, role: $role, phone: $phone, loginId: $loginId, organizationId: $organizationId, branchId: $branchId, branchIds: $branchIds, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
+    return 'AppUser(id: $id, name: $name, role: $role, phone: $phone, loginId: $loginId, organizationId: $organizationId, branchId: $branchId, branchIds: $branchIds, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, avatarUrl: $avatarUrl, avatarBytes: $avatarBytes)';
 }
 
 

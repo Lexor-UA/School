@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -229,11 +228,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
       'admin.wd_sun'.tr(),
     ];
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+    return RepaintBoundary(
+      child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -556,9 +552,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildMonthNavButton({required IconData icon, required VoidCallback onTap, required AppThemeConfig currentTheme}) {
     return Material(
@@ -805,11 +800,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
   Widget _buildDayScheduleSection(List<GroupClass> dayClasses, AppThemeConfig currentTheme) {
     final dateStr = DateFormat('d MMMM', context.locale.languageCode).format(_selectedDate);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+    return RepaintBoundary(
+      child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -1101,8 +1093,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildEmptyDayState(String dateStr, AppThemeConfig currentTheme) {

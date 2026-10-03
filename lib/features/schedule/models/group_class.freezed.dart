@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'group_class.dart';
@@ -9,6 +9,7 @@ part of 'group_class.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $GroupClassCopyWith<GroupClass> get copyWith => _$GroupClassCopyWithImpl<GroupCl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other.enrolledChildIds, enrolledChildIds)&&const DeepCollectionEquality().equals(other.attendedChildIds, attendedChildIds)&&(identical(other.category, category) || other.category == category)&&(identical(other.lane, lane) || other.lane == lane)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.poolId, poolId) || other.poolId == poolId));
+  final _this = this as GroupClass;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupClass&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.startTime, _this.startTime) || other.startTime == _this.startTime)&&(identical(other.endTime, _this.endTime) || other.endTime == _this.endTime)&&(identical(other.coachId, _this.coachId) || other.coachId == _this.coachId)&&(identical(other.coachName, _this.coachName) || other.coachName == _this.coachName)&&(identical(other.maxCapacity, _this.maxCapacity) || other.maxCapacity == _this.maxCapacity)&&const DeepCollectionEquality().equals(other.enrolledChildIds, _this.enrolledChildIds)&&const DeepCollectionEquality().equals(other.attendedChildIds, _this.attendedChildIds)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.lane, _this.lane) || other.lane == _this.lane)&&(identical(other.organizationId, _this.organizationId) || other.organizationId == _this.organizationId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.locationId, _this.locationId) || other.locationId == _this.locationId)&&(identical(other.poolId, _this.poolId) || other.poolId == _this.poolId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(enrolledChildIds),const DeepCollectionEquality().hash(attendedChildIds),category,lane,organizationId,branchId,timezone,locationId,poolId);
+int get hashCode {
+  final _this = this as GroupClass;
+  return Object.hash(runtimeType,_this.id,_this.title,_this.startTime,_this.endTime,_this.coachId,_this.coachName,_this.maxCapacity,const DeepCollectionEquality().hash(_this.enrolledChildIds),const DeepCollectionEquality().hash(_this.attendedChildIds),_this.category,_this.lane,_this.organizationId,_this.branchId,_this.timezone,_this.locationId,_this.poolId);
+}
 
 @override
 String toString() {
-  return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledChildIds: $enrolledChildIds, attendedChildIds: $attendedChildIds, category: $category, lane: $lane, organizationId: $organizationId, branchId: $branchId, timezone: $timezone, locationId: $locationId, poolId: $poolId)';
+  final _this = this as GroupClass;
+  return 'GroupClass(id: ${_this.id}, title: ${_this.title}, startTime: ${_this.startTime}, endTime: ${_this.endTime}, coachId: ${_this.coachId}, coachName: ${_this.coachName}, maxCapacity: ${_this.maxCapacity}, enrolledChildIds: ${_this.enrolledChildIds}, attendedChildIds: ${_this.attendedChildIds}, category: ${_this.category}, lane: ${_this.lane}, organizationId: ${_this.organizationId}, branchId: ${_this.branchId}, timezone: ${_this.timezone}, locationId: ${_this.locationId}, poolId: ${_this.poolId})';
 }
 
 
@@ -66,7 +72,7 @@ class _$GroupClassCopyWithImpl<$Res>
 /// Create a copy of GroupClass
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? startTime = null,Object? endTime = null,Object? coachId = null,Object? coachName = null,Object? maxCapacity = null,Object? enrolledChildIds = null,Object? attendedChildIds = null,Object? category = null,Object? lane = null,Object? organizationId = null,Object? branchId = null,Object? timezone = null,Object? locationId = null,Object? poolId = null,}) {
-  return _then(_self.copyWith(
+  return _then(GroupClass(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
@@ -224,7 +230,7 @@ return $default(_that.id,_that.title,_that.startTime,_that.endTime,_that.coachId
 @JsonSerializable()
 
 class _GroupClass implements GroupClass {
-  const _GroupClass({required this.id, required this.title, required this.startTime, required this.endTime, required this.coachId, required this.coachName, required this.maxCapacity, final  List<String> enrolledChildIds = const [], final  List<String> attendedChildIds = const [], required this.category, this.lane = '', this.organizationId = 'cityswim', this.branchId = 'kyiv', this.timezone = 'Europe/Kyiv', this.locationId = 'kyiv_main', this.poolId = 'pool_25m'}): _enrolledChildIds = enrolledChildIds,_attendedChildIds = attendedChildIds;
+  const _GroupClass({required this.id, required this.title, required this.startTime, required this.endTime, required this.coachId, required this.coachName, required this.maxCapacity,  List<String> enrolledChildIds = const [],  List<String> attendedChildIds = const [], required this.category, this.lane = '', this.organizationId = 'cityswim', this.branchId = 'kyiv', this.timezone = 'Europe/Kyiv', this.locationId = 'kyiv_main', this.poolId = 'pool_25m'}): _enrolledChildIds = enrolledChildIds,_attendedChildIds = attendedChildIds;
   factory _GroupClass.fromJson(Map<String, dynamic> json) => _$GroupClassFromJson(json);
 
 @override final  String id;
@@ -269,16 +275,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other._enrolledChildIds, _enrolledChildIds)&&const DeepCollectionEquality().equals(other._attendedChildIds, _attendedChildIds)&&(identical(other.category, category) || other.category == category)&&(identical(other.lane, lane) || other.lane == lane)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.poolId, poolId) || other.poolId == poolId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupClass&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.coachId, coachId) || other.coachId == coachId)&&(identical(other.coachName, coachName) || other.coachName == coachName)&&(identical(other.maxCapacity, maxCapacity) || other.maxCapacity == maxCapacity)&&const DeepCollectionEquality().equals(other.enrolledChildIds, _enrolledChildIds)&&const DeepCollectionEquality().equals(other.attendedChildIds, _attendedChildIds)&&(identical(other.category, category) || other.category == category)&&(identical(other.lane, lane) || other.lane == lane)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.poolId, poolId) || other.poolId == poolId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(_enrolledChildIds),const DeepCollectionEquality().hash(_attendedChildIds),category,lane,organizationId,branchId,timezone,locationId,poolId);
+int get hashCode {
+    return Object.hash(runtimeType,id,title,startTime,endTime,coachId,coachName,maxCapacity,const DeepCollectionEquality().hash(_enrolledChildIds),const DeepCollectionEquality().hash(_attendedChildIds),category,lane,organizationId,branchId,timezone,locationId,poolId);
+}
 
 @override
 String toString() {
-  return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledChildIds: $enrolledChildIds, attendedChildIds: $attendedChildIds, category: $category, lane: $lane, organizationId: $organizationId, branchId: $branchId, timezone: $timezone, locationId: $locationId, poolId: $poolId)';
+    return 'GroupClass(id: $id, title: $title, startTime: $startTime, endTime: $endTime, coachId: $coachId, coachName: $coachName, maxCapacity: $maxCapacity, enrolledChildIds: $enrolledChildIds, attendedChildIds: $attendedChildIds, category: $category, lane: $lane, organizationId: $organizationId, branchId: $branchId, timezone: $timezone, locationId: $locationId, poolId: $poolId)';
 }
 
 

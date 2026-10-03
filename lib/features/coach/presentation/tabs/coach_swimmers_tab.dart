@@ -609,6 +609,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         item['child'] as Child,
                         index,
                         assignedClasses: classes,
+                        isMyStudent: true,
                       );
                     } else {
                       return _buildAdultSwimmerCard(
@@ -618,6 +619,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         userId: item['id'] as String,
                         assignedClasses: classes,
                         branchId: item['branchId'] as String?,
+                        isMyStudent: true,
                       );
                     }
                   },
@@ -1247,8 +1249,24 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             }
 
             final coach = ref.watch(authControllerProvider);
+            final coachId = coach?.id ?? '';
+            final coachName = (coach?.name ?? '').trim().toLowerCase();
             final coachBranch = coach?.branchId ?? 'kyiv';
             final coachBranches = coach?.branchIds ?? [coachBranch];
+
+            final scheduleAsync = ref.watch(scheduleControllerProvider);
+            final allClasses = scheduleAsync.value ?? [];
+
+            final coachClasses = allClasses.where((c) {
+              if (coachId.isNotEmpty && c.coachId == coachId) return true;
+              if (coachName.isNotEmpty && c.coachName.trim().toLowerCase() == coachName) return true;
+              return false;
+            }).toList();
+
+            final Set<String> myEnrolledIds = {};
+            for (final c in coachClasses) {
+              myEnrolledIds.addAll(c.enrolledChildIds);
+            }
 
             final allChildDocs = childSnap.data?.docs ?? [];
             final allUserDocs = userSnap.data?.docs ?? [];
@@ -1370,8 +1388,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   (context, index) {
                     final item = filtered[index];
                     final bool isAdult = item['isAdult'] as bool;
+                    final bool isMyStudent = myEnrolledIds.contains(item['id']);
                     if (!isAdult && item['child'] != null) {
-                      return _buildSwimmerDirectoryCard(item['child'] as Child, index);
+                      return _buildSwimmerDirectoryCard(
+                        item['child'] as Child,
+                        index,
+                        isMyStudent: isMyStudent,
+                      );
                     } else {
                       return _buildAdultSwimmerCard(
                         item['name'] as String,
@@ -1379,6 +1402,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         index,
                         userId: item['id'] as String,
                         branchId: item['branchId'] as String?,
+                        isMyStudent: isMyStudent,
                       );
                     }
                   },
@@ -1399,6 +1423,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     required String userId,
     List<GroupClass>? assignedClasses,
     String? branchId,
+    bool isMyStudent = false,
   }) {
     final adultChild = Child(
       id: userId,
@@ -1458,7 +1483,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         borderRadius: BorderRadius.circular(22),
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: () => showSwimmerDetailsSheet(context, adultChild),
+          onTap: () => showSwimmerDetailsSheet(context, adultChild, isMyStudent: isMyStudent),
           splashColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
           highlightColor: const Color(0xFF00E5FF).withValues(alpha: 0.08),
           child: Padding(
@@ -1542,42 +1567,33 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'ДОРОСЛИЙ ПЛАВЕЦЬ',
+                                      (age != null && age > 0)
+                                          ? 'Дорослий • $age р.'
+                                          : 'Дорослий плавець',
                                       style: TextStyle(
                                         color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.2,
+                                        letterSpacing: 0.1,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              if (age != null && age > 0) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  '$age р.',
-                                  style: TextStyle(
-                                    color: _themeConfig.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ],
                       ),
                     ),
-                    if (userId.isNotEmpty) ...[
+                    if (isMyStudent && userId.isNotEmpty)
                       GestureDetector(
                         onTap: () => _openCoachChatWithClient(
                           targetClientId: userId,
                           targetClientName: name,
                         ),
                         child: Container(
-                          width: 34,
-                          height: 34,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: const LinearGradient(
@@ -1597,32 +1613,11 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             child: Icon(
                               LucideIcons.messageCircle,
                               color: Colors.white,
-                              size: 16,
+                              size: 17,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
-                        border: Border.all(
-                          color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E3E66),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          LucideIcons.chevronRight,
-                          color: _isLight ? const Color(0xFF0284C7) : Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
 
@@ -1668,87 +1663,45 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
 
                 const SizedBox(height: 14),
 
-                // Row 2: Actions (Note + Profile Card)
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => showCoachNoteDialog(context, adultChild),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                          decoration: BoxDecoration(
-                            color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _isLight
-                                  ? const Color(0xFFBAE6FD)
-                                  : const Color(0xFF1E3E66),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.fileText,
-                                color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
-                                size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _coachTr('coach.note_btn', 'Нотатка'),
-                                style: TextStyle(
-                                  color: _isLight ? const Color(0xFF0284C7) : Colors.white,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                const SizedBox(height: 14),
+
+                // Action: Swimmer Card (full width)
+                GestureDetector(
+                  onTap: () => showSwimmerDetailsSheet(context, adultChild, isMyStudent: isMyStudent),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _isLight
+                            ? const Color(0xFFBAE6FD)
+                            : const Color(0xFF1E3E66),
+                        width: 1.2,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => showSwimmerDetailsSheet(context, adultChild),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                          decoration: BoxDecoration(
-                            color: _isLight ? Colors.white : const Color(0xFF081628),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _isLight
-                                  ? const Color(0xFFBAE6FD).withValues(alpha: 0.70)
-                                  : const Color(0xFF1E3E66),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.user,
-                                color: _isLight ? const Color(0xFF0284C7) : Colors.white70,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _coachTr('coach.details_btn', 'Картка плавця'),
-                                style: TextStyle(
-                                  color: _isLight ? const Color(0xFF334155) : Colors.white,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.user,
+                          color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _coachTr('coach.details_btn', 'Картка плавця'),
+                          style: TextStyle(
+                            color: _isLight ? const Color(0xFF0284C7) : Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -1762,6 +1715,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     Child child,
     int index, {
     List<GroupClass>? assignedClasses,
+    bool isMyStudent = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -1812,7 +1766,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         borderRadius: BorderRadius.circular(22),
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: () => showSwimmerDetailsSheet(context, child),
+          onTap: () => showSwimmerDetailsSheet(context, child, isMyStudent: isMyStudent),
           splashColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
           highlightColor: const Color(0xFF00E5FF).withValues(alpha: 0.08),
           child: Padding(
@@ -1877,7 +1831,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                 Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                       decoration: BoxDecoration(
                                         color: _isLight ? const Color(0xFFE0F2FE) : const Color(0xFF0F172A),
                                         borderRadius: BorderRadius.circular(8),
@@ -1887,12 +1841,14 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                         ),
                                       ),
                                       child: Text(
-                                        '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
+                                        (child.age != null && child.age! > 0)
+                                            ? '${_coachTr('coach.level_label', 'Рівень')} ${child.level} • ${child.age} р.'
+                                            : '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
                                         style: TextStyle(
                                           color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
-                                          fontSize: 11,
+                                          fontSize: 10.5,
                                           fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.2,
+                                          letterSpacing: 0.1,
                                         ),
                                       ),
                                     ),
@@ -1901,7 +1857,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               ],
                             ),
                           ),
-                          if (child.parentId.isNotEmpty) ...[
+                          if (isMyStudent && child.parentId.isNotEmpty)
                             GestureDetector(
                               onTap: () => _openCoachChatWithClient(
                                 targetClientId: child.parentId,
@@ -1909,8 +1865,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                 childName: child.name,
                               ),
                               child: Container(
-                                width: 34,
-                                height: 34,
+                                width: 36,
+                                height: 36,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: const LinearGradient(
@@ -1930,32 +1886,11 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                   child: Icon(
                                     LucideIcons.messageCircle,
                                     color: Colors.white,
-                                    size: 16,
+                                    size: 17,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                          ],
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
-                              border: Border.all(
-                                color: _isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E3E66),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                LucideIcons.chevronRight,
-                                color: _isLight ? const Color(0xFF0284C7) : Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
 
@@ -2001,87 +1936,45 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
 
                       const SizedBox(height: 14),
 
-                      // Row 2: Actions (Note + Profile Card)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => showCoachNoteDialog(context, child),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                decoration: BoxDecoration(
-                                  color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: _isLight
-                                        ? const Color(0xFFBAE6FD)
-                                        : const Color(0xFF1E3E66),
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.fileText,
-                                      color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _coachTr('coach.note_btn', 'Нотатка'),
-                                      style: TextStyle(
-                                        color: _isLight ? const Color(0xFF0284C7) : Colors.white,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                      const SizedBox(height: 14),
+
+                      // Action: Swimmer Card (full width)
+                      GestureDetector(
+                        onTap: () => showSwimmerDetailsSheet(context, child, isMyStudent: isMyStudent),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _isLight ? const Color(0xFFF0F9FF) : const Color(0xFF081628),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _isLight
+                                  ? const Color(0xFFBAE6FD)
+                                  : const Color(0xFF1E3E66),
+                              width: 1.2,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => showSwimmerDetailsSheet(context, child),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                decoration: BoxDecoration(
-                                  color: _isLight ? Colors.white : const Color(0xFF081628),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: _isLight
-                                        ? const Color(0xFFBAE6FD).withValues(alpha: 0.70)
-                                        : const Color(0xFF1E3E66),
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.user,
-                                      color: _isLight ? const Color(0xFF0284C7) : Colors.white70,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _coachTr('coach.details_btn', 'Картка плавця'),
-                                      style: TextStyle(
-                                        color: _isLight ? const Color(0xFF334155) : Colors.white,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                  ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.user,
+                                color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _coachTr('coach.details_btn', 'Картка плавця'),
+                                style: TextStyle(
+                                  color: _isLight ? const Color(0xFF0284C7) : Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

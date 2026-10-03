@@ -17,7 +17,6 @@ import 'package:swimming_school_app/features/chat/providers/chat_providers.dart'
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
 import 'package:swimming_school_app/features/chat/utils/chat_image_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class AdminChatScreen extends ConsumerStatefulWidget {
   final String clientName;
@@ -337,11 +336,6 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     try {
       String? imageUrl;
       try {
-        if (FirebaseAuth.instance.currentUser == null) {
-          try {
-            await FirebaseAuth.instance.signInAnonymously();
-          } catch (_) {}
-        }
         final fileName = 'admin_chat_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final storageRef = FirebaseStorage.instance.ref().child('chats/${widget.clientId}/$fileName');
         final metadata = SettableMetadata(contentType: 'image/jpeg');
@@ -1241,46 +1235,23 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              '${widget.coachName ?? 'Тренер'} ↔ ${widget.clientName}',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.2,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFA78BFA), width: 0.9),
-                            ),
-                            child: const Text(
-                              'НАГЛЯД',
-                              style: TextStyle(
-                                color: Color(0xFFA78BFA),
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        '${widget.coachName ?? 'Тренер'} ↔ ${widget.clientName}',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 15.0,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2.5),
+                      const SizedBox(height: 3),
                       Row(
                         children: [
                           Container(
-                            width: 7,
-                            height: 7,
+                            width: 6.5,
+                            height: 6.5,
                             decoration: const BoxDecoration(
                               color: Color(0xFF10B981),
                               shape: BoxShape.circle,
@@ -1292,12 +1263,30 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: const Color(0xFFA78BFA), width: 0.8),
+                            ),
+                            child: const Text(
+                              'НАГЛЯД',
+                              style: TextStyle(
+                                color: Color(0xFFA78BFA),
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
                           Expanded(
                             child: Text(
                               widget.childName != null && widget.childName!.isNotEmpty
-                                  ? 'Скритне спостереження • Дитина: ${widget.childName}'
-                                  : 'Скритний нагляд активний • Тільки читання',
+                                  ? 'Дитина: ${widget.childName} • Тільки читання'
+                                  : 'Скритний режим • Тільки читання',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -2270,8 +2259,8 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -2287,10 +2276,10 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                   ],
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.eye, color: Colors.white, size: 20),
+                  child: Icon(LucideIcons.eye, color: Colors.white, size: 19),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2299,12 +2288,12 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                     Row(
                       children: [
                         Text(
-                          'РЕЖИМ СКРИТНОГО НАГЛЯДУ',
+                          'Скритний нагляд',
                           style: TextStyle(
                             color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF581C87),
                             fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 0.4,
+                            fontSize: 12.5,
+                            letterSpacing: 0.2,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -2328,11 +2317,11 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Моніторинг листування в режимі "Тільки читання". Учасники не знають про присутність адміністратора.',
-                      maxLines: 2,
+                      'Тільки читання • Учасники не знають про нагляд',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: isDark ? const Color(0xFFC084FC).withValues(alpha: 0.85) : const Color(0xFF7E22CE),
+                        color: isDark ? const Color(0xFFC084FC).withValues(alpha: 0.90) : const Color(0xFF7E22CE),
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2342,12 +2331,13 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  color: isDark ? const Color(0xFF8B5CF6).withValues(alpha: 0.15) : const Color(0xFFEDE9FE),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isDark ? Colors.white12 : const Color(0xFFE9D5FF),
+                    color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.35 : 0.40),
+                    width: 0.8,
                   ),
                 ),
                 child: Row(
@@ -2355,15 +2345,15 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                   children: [
                     Icon(
                       LucideIcons.lock,
-                      size: 13,
+                      size: 11.5,
                       color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF6B21A8),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3.5),
                     Text(
-                      'Locked',
+                      'Read-only',
                       style: TextStyle(
                         color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF6B21A8),
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

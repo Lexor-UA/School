@@ -10,6 +10,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AddClientSheet extends ConsumerStatefulWidget {
@@ -1478,7 +1479,77 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
 
   Widget _buildBranchSelector({required bool isDark}) {
     final effectiveBranch = ref.watch(effectiveBranchProvider);
+    final user = ref.watch(authControllerProvider);
+    final isOwner = user?.isOwnerOrSuperAdmin == true;
     final activeId = _selectedBranchId ?? effectiveBranch.id;
+
+    if (!isOwner) {
+      final isVienna = activeId == 'vienna';
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF081829).withValues(alpha: 0.70) : const Color(0xFFF0F9FF),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFBAE6FD),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Text(isVienna ? '🇦🇹' : '🇺🇦', style: const TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Філія реєстрації клієнта',
+                    style: TextStyle(
+                      color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isVienna ? 'CitySwim Відень (EUR €)' : 'CitySwim Київ (UAH ₴)',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Авто',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(5),

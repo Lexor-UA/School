@@ -148,8 +148,16 @@ class TenancyNotifier extends Notifier<TenancyState> {
     );
   }
 
-  /// Перемикання поточної філії (для Owner)
+  /// Перемикання поточної філії (тільки для Owner або SuperAdmin)
   Future<void> switchBranch(String branchId) async {
+    try {
+      final user = ref.read(authControllerProvider);
+      if (user != null && !user.isOwnerOrSuperAdmin) {
+        // Адміністратори та співробітники жорстко прив'язані до своєї філії
+        return;
+      }
+    } catch (_) {}
+
     final prefs = ref.read(sharedPrefsProvider);
 
     if (branchId == 'all') {

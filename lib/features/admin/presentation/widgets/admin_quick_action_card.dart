@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,53 +60,51 @@ class AdminQuickActionCardState extends ConsumerState<AdminQuickActionCard> {
             transform: Matrix4.translationValues(0, _isHovered ? -2.5 : 0, 0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: widget.onTap,
-                    borderRadius: BorderRadius.circular(20),
-                    splashColor: widget.accentColor.withValues(alpha: isDark ? 0.25 : 0.15),
-                    highlightColor: widget.accentColor.withValues(alpha: isDark ? 0.12 : 0.08),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: isDark
-                            ? LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white.withValues(alpha: _isHovered ? 0.30 : 0.22),
-                                  widget.accentColor.withValues(alpha: _isHovered ? 0.15 : 0.07),
-                                ],
-                              )
-                            : const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white,
-                                  Color(0xFFF8FAFC),
-                                ],
-                              ),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: _isHovered
-                              ? (isDark
-                                  ? widget.accentColor.withValues(alpha: 0.85)
-                                  : widget.accentColor.withValues(alpha: 0.65))
-                              : (isDark
-                                  ? Colors.white.withValues(alpha: 0.28)
-                                  : const Color(0xFFBAE6FD)),
-                          width: _isHovered ? 1.2 : 1.15,
-                        ),
-                        boxShadow: [
-                          if (isDark) ...[
-                            // Layer 1: Deep colored base shadow
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: _isHovered ? 0.30 : 0.18),
-                              blurRadius: _isHovered ? 20 : 14,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onTap,
+                  borderRadius: BorderRadius.circular(20),
+                  splashColor: widget.accentColor.withValues(alpha: isDark ? 0.25 : 0.15),
+                  highlightColor: widget.accentColor.withValues(alpha: isDark ? 0.12 : 0.08),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: isDark
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFF132F4C).withValues(alpha: _isHovered ? 0.92 : 0.85),
+                                const Color(0xFF0B1929).withValues(alpha: _isHovered ? 0.96 : 0.90),
+                              ],
+                            )
+                          : const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white,
+                                Color(0xFFF8FAFC),
+                              ],
+                            ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: _isHovered
+                            ? (isDark
+                                ? widget.accentColor.withValues(alpha: 0.85)
+                                : widget.accentColor.withValues(alpha: 0.65))
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.28)
+                                : const Color(0xFFBAE6FD)),
+                        width: _isHovered ? 1.2 : 1.15,
+                      ),
+                      boxShadow: [
+                        if (isDark) ...[
+                          // Layer 1: Deep colored base shadow
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: _isHovered ? 0.30 : 0.18),
+                            blurRadius: _isHovered ? 20 : 14,
                               offset: const Offset(0, 6),
                             ),
                             // Layer 2: Medium elevation shadow
@@ -255,7 +252,6 @@ class AdminQuickActionCardState extends ConsumerState<AdminQuickActionCard> {
             ),
           ),
         ),
-      ),
     );
   }
 }

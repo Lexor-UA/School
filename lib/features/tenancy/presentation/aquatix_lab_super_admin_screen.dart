@@ -1181,39 +1181,3 @@ class _CriteriaItemTile extends StatelessWidget {
     );
   }
 }
-
-class _ModalInfoRow extends StatelessWidget {
-  final String label;
-  final String val;
-  final bool isDark;
-
-  const _ModalInfoRow({
-    required this.label,
-    required this.val,
-    this.isDark = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-            fontSize: 12,
-          ),
-        ),
-        Text(
-          val,
-          style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF0F172A),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}

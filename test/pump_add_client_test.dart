@@ -5,6 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/features/admin/presentation/add_client_sheet.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
+
+class FakeAuthController extends AuthController {
+  @override
+  AppUser? build() => null;
+}
 
 class TestAdminAssetLoader extends AssetLoader {
   const TestAdminAssetLoader();
@@ -38,6 +45,7 @@ void main() {
         child: ProviderScope(
           overrides: [
             sharedPrefsProvider.overrideWithValue(prefs),
+            authControllerProvider.overrideWith(FakeAuthController.new),
           ],
           child: const MaterialApp(
             home: Scaffold(

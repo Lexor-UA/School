@@ -692,12 +692,11 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final isPastDay = selectedDateOnly.isBefore(todayDate);
 
-    final List<GroupClass> enrolledClasses;
+    final List<GroupClass> allMyEnrolledClasses;
     final List<GroupClass> availableClasses;
-    final List<GroupClass> pastUnenrolledClasses;
 
     if (targetChildId == 'all') {
-      enrolledClasses = dayClasses.where((c) {
+      allMyEnrolledClasses = dayClasses.where((c) {
         return c.enrolledChildIds.any((id) => allFamilyIds.contains(id));
       }).toList();
 
@@ -706,13 +705,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             c.enrolledChildIds.length < c.maxCapacity &&
             c.branchStartTime.isAfter(now);
       }).toList();
-
-      pastUnenrolledClasses = dayClasses.where((c) {
-        return !c.enrolledChildIds.any((id) => allFamilyIds.contains(id)) &&
-            c.branchStartTime.isBefore(now);
-      }).toList();
     } else {
-      enrolledClasses = dayClasses.where((c) {
+      allMyEnrolledClasses = dayClasses.where((c) {
         return c.enrolledChildIds.contains(targetChildId);
       }).toList();
 
@@ -721,12 +715,15 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             c.enrolledChildIds.length < c.maxCapacity &&
             c.branchStartTime.isAfter(now);
       }).toList();
-
-      pastUnenrolledClasses = dayClasses.where((c) {
-        return !c.enrolledChildIds.contains(targetChildId) &&
-            c.branchStartTime.isBefore(now);
-      }).toList();
     }
+
+    final upcomingEnrolledClasses = allMyEnrolledClasses
+        .where((c) => !c.branchStartTime.isBefore(now))
+        .toList();
+
+    final completedEnrolledClasses = allMyEnrolledClasses
+        .where((c) => c.branchStartTime.isBefore(now))
+        .toList();
 
     final dateFormatted = DateFormat('d MMMM', context.locale.languageCode).format(selectedDate);
 
@@ -806,7 +803,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         ),
         const SizedBox(height: 6),
 
-        if (enrolledClasses.isEmpty && availableClasses.isEmpty && pastUnenrolledClasses.isEmpty)
+        if (upcomingEnrolledClasses.isEmpty && completedEnrolledClasses.isEmpty && availableClasses.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: _buildEmptyDayState(currentTheme, isPastDay: isPastDay),
@@ -815,7 +812,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (enrolledClasses.isNotEmpty) ...[
+              if (upcomingEnrolledClasses.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                   decoration: BoxDecoration(
@@ -856,7 +853,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       ),
                       const SizedBox(width: 7),
                       Text(
-                        'Ваші заплановані заняття (${enrolledClasses.length})',
+                        'Ваші заплановані заняття (${upcomingEnrolledClasses.length})',
                         style: TextStyle(
                           color: isDark ? Colors.white : currentTheme.textPrimary,
                           fontSize: 12,
@@ -868,7 +865,63 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...enrolledClasses.map((c) => ParentEnrolledClassCard(c: c, targetChildId: targetChildId, currentTheme: currentTheme, user: user, children: children, family: family)),
+                ...upcomingEnrolledClasses.map((c) => ParentEnrolledClassCard(c: c, targetChildId: targetChildId, currentTheme: currentTheme, user: user, children: children, family: family)),
+                const SizedBox(height: 12),
+              ],
+              if (completedEnrolledClasses.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF38BDF8).withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                          : const Color(0xFFBAE6FD),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Ваші завершені тренування (${completedEnrolledClasses.length})',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : currentTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...completedEnrolledClasses.map((c) => ParentEnrolledClassCard(c: c, targetChildId: targetChildId, currentTheme: currentTheme, user: user, children: children, family: family)),
                 const SizedBox(height: 12),
               ],
               if (availableClasses.isNotEmpty) ...[
@@ -926,9 +979,6 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                 const SizedBox(height: 8),
                 ...availableClasses.map((c) => ParentAvailableClassCard(c: c, targetChildId: targetChildId, currentTheme: currentTheme, user: user, children: children, family: family)),
                 const SizedBox(height: 12),
-              ],
-              if (pastUnenrolledClasses.isNotEmpty) ...[
-                _buildPastClassesSection(pastUnenrolledClasses, currentTheme),
               ],
             ],
           ),
@@ -1108,55 +1158,4 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
       ),
     );
   }
-
-  Widget _buildPastClassesSection(List<GroupClass> pastClasses, AppThemeConfig currentTheme) {
-    final isDark = currentTheme.isDark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1E293B).withValues(alpha: 0.50)
-                : const Color(0xFFF1F5F9).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFF475569).withValues(alpha: 0.40)
-                  : const Color(0xFFCBD5E1),
-              width: 0.8,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                'Завершені тренування (${pastClasses.length})',
-                style: TextStyle(
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...pastClasses.map((c) => ParentPastClassCard(classItem: c, currentTheme: currentTheme)),
-      ],
-    );
-  }
-
 }

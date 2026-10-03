@@ -51,7 +51,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
           // Top Bar Header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -266,12 +266,12 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                     ],
                   ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.1, end: 0),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Shift telemetry card
                   _buildShiftTelemetryCard(themeConfig),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Section title & Today Date Badge (Розклад на сьогодні)
                   Row(
@@ -592,7 +592,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -624,14 +624,14 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
           // 2. Потім зміни. Потім журнал відвідування.
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 190),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Changes & Activity Feed Banner ("Потім зміни")
                   const CoachChangesBanner(),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
 
                   // Quick Attendance Journal Action Button ("Потім журнал відвідування")
                   Container(
@@ -684,19 +684,19 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                             },
                             borderRadius: BorderRadius.circular(22),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 46,
-                                    height: 46,
+                                    width: 42,
+                                    height: 42,
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
                                         colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
-                                      borderRadius: BorderRadius.circular(15),
+                                      borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
                                         color: Colors.white.withValues(alpha: 0.55),
                                         width: 1.2,
@@ -710,10 +710,10 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                       ],
                                     ),
                                     child: const Center(
-                                      child: Icon(LucideIcons.clipboardCheck, color: Colors.white, size: 22),
+                                      child: Icon(LucideIcons.clipboardCheck, color: Colors.white, size: 20),
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -787,7 +787,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
 
   Widget _buildShiftTelemetryCard(AppThemeConfig themeConfig) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -839,7 +839,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
               Container(
                 width: 1.2,
-                height: 44,
+                height: 38,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -866,7 +866,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               ),
               Container(
                 width: 1.2,
-                height: 44,
+                height: 38,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -1007,17 +1007,19 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
             ),
           ),
           const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              color: themeConfig.textMuted,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: themeConfig.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.2,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1034,7 +1036,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
 
     return RepaintBoundary(
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -1072,7 +1074,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 ),
             ],
           ),
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1232,14 +1234,14 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 ],
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
 
               // Class Title & Coach
               Text(
                 gClass.title,
                 style: TextStyle(
                   color: themeConfig.textPrimary,
-                  fontSize: 18.5,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
                 ),
@@ -1266,7 +1268,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 11),
 
               // Capacity & Attendance Progress Bar
               Row(
@@ -1303,7 +1305,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 7),
               // Custom gradient progress bar with glow
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -1355,7 +1357,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 },
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Action Button: Attendee Roster
               GestureDetector(
@@ -1365,7 +1367,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],

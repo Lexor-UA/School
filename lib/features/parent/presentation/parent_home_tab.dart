@@ -103,7 +103,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24.0, 60.0, 24.0, 115.0),
+      padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 85.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -236,7 +236,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 12),
           
           // 2. MAIN CLASS CARDS
           Center(
@@ -245,7 +245,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isDark
@@ -254,23 +254,23 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
                           color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                          blurRadius: 5,
+                          offset: const Offset(0, 1.5),
                         ),
                       ],
                     ),
-                    child: const Icon(LucideIcons.calendarCheck, color: Colors.white, size: 14),
+                    child: const Icon(LucideIcons.calendarCheck, color: Colors.white, size: 13),
                   ),
-                  const SizedBox(width: 9),
+                  const SizedBox(width: 8),
                   Text(
                     'Найближчі заняття',
                     style: TextStyle(
                       color: textColor,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
                     ),
@@ -279,17 +279,17 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           
           if (hasClassesToday)
             ...todaysUpcomingClasses.map((c) => Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
+              padding: const EdgeInsets.only(bottom: 8.0),
               child: _buildNextClassCard(context, isDark, accentColor, textColor, textSubColor, c, user, children, family),
             ))
           else
             _buildEmptyStateCard(context, ref, isDark, accentColor, textColor),
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           // 3. SUBSCRIPTION CARD
           SubscriptionFrontCard(
@@ -299,7 +299,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
             },
           ),
 
-            const SizedBox(height: 20),
+          const SizedBox(height: 10),
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 380),
@@ -314,7 +314,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         },
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
@@ -323,7 +323,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                   ? const [Color(0xFF0A2239), Color(0xFF051525)]
                                   : const [Colors.white, Color(0xFFF8FAFC)],
                             ),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: isDark
                                   ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
@@ -359,8 +359,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                           child: Row(
                             children: [
                               Container(
-                                width: 38,
-                                height: 38,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: const LinearGradient(
@@ -371,16 +371,16 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 1.5),
                                     ),
                                   ],
                                 ),
                                 child: const Center(
-                                  child: Icon(LucideIcons.sparkles, color: Colors.white, size: 18),
+                                  child: Icon(LucideIcons.sparkles, color: Colors.white, size: 16),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,7 +420,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 8),
                     ],
 
                     // B. Quick Action Buttons Row
@@ -433,7 +433,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               _openCoachChat(context);
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
@@ -442,7 +442,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                       ? const [Color(0xFF0A2239), Color(0xFF051525)]
                                       : const [Colors.white, Color(0xFFF8FAFC)],
                                 ),
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isDark
                                       ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
@@ -478,28 +478,28 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 36,
-                                    height: 36,
+                                    width: 30,
+                                    height: 30,
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
                                         colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(9),
                                       boxShadow: [
                                         BoxShadow(
                                           color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 1.5),
                                         ),
                                       ],
                                     ),
                                     child: const Center(
-                                      child: Icon(LucideIcons.userCheck, color: Colors.white, size: 18),
+                                      child: Icon(LucideIcons.userCheck, color: Colors.white, size: 16),
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,7 +553,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               }
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
@@ -562,7 +562,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                       ? const [Color(0xFF0A2239), Color(0xFF051525)]
                                       : const [Colors.white, Color(0xFFF8FAFC)],
                                 ),
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isDark
                                       ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
@@ -598,8 +598,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 36,
-                                    height: 36,
+                                    width: 30,
+                                    height: 30,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: isDark
@@ -608,20 +608,20 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(9),
                                       boxShadow: [
                                         BoxShadow(
                                           color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 1.5),
                                         ),
                                       ],
                                     ),
                                     child: const Center(
-                                      child: Icon(LucideIcons.messageCircle, color: Colors.white, size: 18),
+                                      child: Icon(LucideIcons.messageCircle, color: Colors.white, size: 16),
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,7 +657,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ),
           
-          const SizedBox(height: 120), // Space for bottom nav
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -760,29 +760,29 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2.5),
                               ),
                             ],
                           ),
-                          child: const Icon(LucideIcons.waves, color: Colors.white, size: 22),
+                          child: const Icon(LucideIcons.waves, color: Colors.white, size: 19),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -921,7 +921,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   ),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.05) : const Color(0xFFF0F9FF).withValues(alpha: 0.85),
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
@@ -1092,7 +1092,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
         constraints: const BoxConstraints(maxWidth: 380),
         child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -1107,7 +1107,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                           Color(0xFFF0F9FF),
                         ],
                 ),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.32) : const Color(0xFFBAE6FD),
                   width: 1.2,
@@ -1115,14 +1115,14 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                 boxShadow: [
                   BoxShadow(
                     color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.12) : const Color(0xFF0284C7).withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
+                    blurRadius: 18,
+                    offset: const Offset(0, 5),
                   ),
                   if (isDark)
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.50),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
                     )
                   else
                     BoxShadow(
@@ -1134,24 +1134,24 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
               child: Column(
                 children: [
-                  Icon(LucideIcons.calendarX2, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 34),
-                  const SizedBox(height: 12),
+                  Icon(LucideIcons.calendarX2, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 28),
+                  const SizedBox(height: 8),
                   Text(
                     'У вас немає запланованих занять.\nДодайте заняття в календарі!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: isDark ? const Color(0xFFF1F5F9) : textColor,
-                      fontSize: 14.5,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w600,
-                      height: 1.4,
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   GestureDetector(
                     onTap: () => ref.read(parentTabProvider.notifier).setTab(1),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDark
@@ -1160,7 +1160,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.45),
                           width: 0.8,
@@ -1168,8 +1168,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         boxShadow: [
                           BoxShadow(
                             color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2.5),
                           ),
                         ],
                       ),
@@ -1177,7 +1177,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         child: Text(
                           'Відкрити календар',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),

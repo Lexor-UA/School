@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -39,6 +38,18 @@ class AdminMain extends ConsumerStatefulWidget {
 }
 
 class _AdminMainState extends ConsumerState<AdminMain> {
+  bool _hasAnimated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        setState(() => _hasAnimated = true);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final dashboardState = ref.watch(adminDashboardProvider);
@@ -150,7 +161,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
-                    child: _buildSearchBar().animate().fadeIn(delay: 100.ms).slideY(begin: 0.06),
+                    child: _hasAnimated
+                        ? _buildSearchBar()
+                        : _buildSearchBar().animate().fadeIn(delay: 100.ms).slideY(begin: 0.06),
                   ),
                 ),
 
@@ -166,7 +179,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         gradientColors: currentTheme.accentGradient,
                       ),
                       const SizedBox(height: 10),
-                      _buildQuickActions(context).animate().fadeIn(delay: 150.ms).slideY(begin: 0.06),
+                      RepaintBoundary(
+                        child: _hasAnimated
+                            ? _buildQuickActions(context)
+                            : _buildQuickActions(context).animate().fadeIn(delay: 150.ms).slideY(begin: 0.06),
+                      ),
                       const SizedBox(height: 18),
 
                       // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
@@ -180,16 +197,24 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           badgeColor: const Color(0xFFF43F5E),
                         ),
                         const SizedBox(height: 10),
-                        _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions).animate().fadeIn(delay: 220.ms).slideY(begin: 0.06),
+                        _hasAnimated
+                            ? _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions)
+                            : _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions).animate().fadeIn(delay: 220.ms).slideY(begin: 0.06),
                         const SizedBox(height: 18),
                       ],
 
                       // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
-                      _buildLivePulseBar(dashboardState).animate().fadeIn(delay: 300.ms).slideY(begin: 0.06),
+                      RepaintBoundary(
+                        child: _hasAnimated
+                            ? _buildLivePulseBar(dashboardState)
+                            : _buildLivePulseBar(dashboardState).animate().fadeIn(delay: 300.ms).slideY(begin: 0.06),
+                      ),
                       const SizedBox(height: 18),
 
                       // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
-                      _buildSupportCenterCard(unreadCount).animate().fadeIn(delay: 380.ms).slideY(begin: 0.06),
+                      _hasAnimated
+                          ? _buildSupportCenterCard(unreadCount)
+                          : _buildSupportCenterCard(unreadCount).animate().fadeIn(delay: 380.ms).slideY(begin: 0.06),
                       const SizedBox(height: 20),
 
                       // 5. Найближче заняття з аватарками учнів
@@ -203,7 +228,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           badgeColor: currentTheme.accentPrimary,
                         ),
                         const SizedBox(height: 10),
-                        _buildNearestClass(dashboardState.nearestClass!).animate().fadeIn(delay: 450.ms).slideY(begin: 0.06),
+                        RepaintBoundary(
+                          child: _hasAnimated
+                              ? _buildNearestClass(dashboardState.nearestClass!)
+                              : _buildNearestClass(dashboardState.nearestClass!).animate().fadeIn(delay: 450.ms).slideY(begin: 0.06),
+                        ),
                         const SizedBox(height: 20),
                       ],
 
@@ -623,10 +652,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   Container(
@@ -719,8 +746,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   String _formatPulseBeaconTitle(bool isSessionActive) {
@@ -818,10 +844,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1086,25 +1110,28 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          isSessionActive
-                              ? 'admin.in_pool_now_desc'.tr(args: [
-                                  _formatCompactClassTitle(state.ongoingClasses.first.title),
-                                  state.ongoingClientsCount.toString(),
-                                ])
-                              : (state.nearestClass != null
-                                  ? 'admin.nearest_class_at'.tr(args: [
-                                      DateFormat('HH:mm').format(state.nearestClass!.startTime),
-                                      _formatCompactClassTitle(state.nearestClass!.title),
-                                    ])
-                                  : 'admin.normal_mode'.tr()),
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            isSessionActive
+                                ? 'admin.in_pool_now_desc'.tr(args: [
+                                    _formatCompactClassTitle(state.ongoingClasses.first.title),
+                                    state.ongoingClientsCount.toString(),
+                                  ])
+                                : (state.nearestClass != null
+                                    ? 'admin.nearest_class_at'.tr(args: [
+                                        DateFormat('HH:mm').format(state.nearestClass!.startTime),
+                                        _formatCompactClassTitle(state.nearestClass!.title),
+                                      ])
+                                    : 'admin.normal_mode'.tr()),
+                            style: TextStyle(
+                              color: currentTheme.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Container(
@@ -1150,8 +1177,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   String _formatCompactClassTitle(String title) {
@@ -1162,8 +1188,19 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     if (cleaned.toLowerCase().contains('дитяч') || cleaned.toLowerCase().contains('дітей')) {
       return 'Дитяча група';
     }
-    cleaned = cleaned.replaceFirst(RegExp(r'^(Групові|Індивідуальні)\s+заняття\s+(для\s+)?', caseSensitive: false), '');
-    cleaned = cleaned.replaceFirst(RegExp(r'^(Групове|Індивідуальне)\s+тренування\s+(для\s+)?', caseSensitive: false), '');
+    cleaned = cleaned.replaceFirst(
+      RegExp(r'^(Групові|Індивідуальні|Персональні|Спліт)\s*(заняття|тренування)?\s*[:\-–—]?\s*(для\s+)?', caseSensitive: false),
+      '',
+    );
+    cleaned = cleaned.replaceFirst(
+      RegExp(r'^(Групове|Індивідуальне|Персональне|Спліт)\s*(заняття|тренування)?\s*[:\-–—]?\s*(для\s+)?', caseSensitive: false),
+      '',
+    );
+    cleaned = cleaned.replaceFirst(
+      RegExp(r'^(Тренування|Заняття)\s*[:\-–—]\s*(для\s+)?', caseSensitive: false),
+      '',
+    );
+    cleaned = cleaned.trim();
     if (cleaned.isNotEmpty) {
       cleaned = cleaned[0].toUpperCase() + cleaned.substring(1);
     }
@@ -1288,11 +1325,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
             onTap: () {
               showModalBottomSheet(
                 context: context,
@@ -1508,8 +1543,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildUnpaidAttentionItem(int unpaidCount) {
@@ -1518,11 +1552,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
             onTap: () {
               HapticFeedback.lightImpact();
               showModalBottomSheet(
@@ -1635,18 +1667,21 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                               ),
                             ),
                             Expanded(
-                              child: Text(
-                                unpaidCount == 1
-                                    ? '1 неоплачений абонемент'
-                                    : (unpaidCount >= 2 && unpaidCount <= 4)
-                                        ? '$unpaidCount неоплачені абонементи'
-                                        : '$unpaidCount неоплачених абонементів',
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : const Color(0xFF9F1239),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  unpaidCount == 1
+                                      ? '1 неоплачений абонемент'
+                                      : (unpaidCount >= 2 && unpaidCount <= 4)
+                                          ? '$unpaidCount неоплачені абонементи'
+                                          : '$unpaidCount неоплачених абонементів',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF9F1239),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -1690,8 +1725,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   // ==========================================
@@ -1895,10 +1929,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2218,8 +2250,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildEnrolledFacepile(List<String> childIds, bool isDark) {

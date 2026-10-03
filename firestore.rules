@@ -30,15 +30,150 @@ service cloud.firestore {
       );
     }
 
-    // Rule for branches (multi-tenancy)
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        (hasUserData() && getUserData().role == 'admin')
+      );
+    }
+    
+    function isCoach() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'coach' ||
+        (hasUserData() && getUserData().role == 'coach')
+      );
+    }
+
+    function isStaff() {
+      return isSuperAdmin() || isOwner() || isAdmin() || isCoach();
+    }
+
+    // 1. Multi-tenancy & Public Branding Configurations
     match /branches/{branchId} {
       allow read: if true;
       allow write: if isSuperAdmin() || isOwner();
     }
+    
+    match /branch_configs/{configId} {
+      allow read: if true;
+      allow write: if isSuperAdmin() || isOwner();
+    }
+    
+    match /organizations/{orgId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
 
-    // Development mode: unrestricted read and write for rapid development and testing
+    // 2. User Profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff() || request.auth.uid == userId;
+    }
+
+    // 3. Family Accounts & Connections
+    match /families/{familyId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff() || (isAuthenticated() && (
+        !exists(/databases/$(database)/documents/families/$(familyId)) ||
+        (resource.data.parentIds != null && resource.data.parentIds.hasAny([request.auth.uid])) ||
+        (request.resource.data.parentIds != null && request.resource.data.parentIds.hasAny([request.auth.uid]))
+      ));
+    }
+
+    match /family_connections/{connId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // 4. Children & Graduated Children
+    match /children/{childId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff() || (isAuthenticated() && (
+        !exists(/databases/$(database)/documents/children/$(childId)) || 
+        resource.data.parentId == request.auth.uid || 
+        request.resource.data.parentId == request.auth.uid
+      ));
+    }
+
+    match /graduated_children/{childId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff() || (isAuthenticated() && (
+        !exists(/databases/$(database)/documents/graduated_children/$(childId)) || 
+        resource.data.parentId == request.auth.uid || 
+        request.resource.data.parentId == request.auth.uid
+      ));
+    }
+
+    // 5. Subscriptions & Personal Discounts
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isOwner() || isAdmin();
+    }
+
+    match /subscription_discounts/{discountId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isOwner() || isAdmin();
+    }
+
+    // 6. Schedule, Classes & Activities
+    match /classes/{classId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+    
+    match /class_activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+
+    // 7. Coach Star Ratings
+    match /coach_ratings/{ratingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // 8. Financials: Payments & Payouts
+    match /payments/{paymentId} {
+      allow read: if isStaff() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
+      allow write: if isSuperAdmin() || isOwner() || isAdmin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isSuperAdmin() || isOwner() || (isCoach() && resource.data.coachId == request.auth.uid);
+      allow write: if isSuperAdmin() || isOwner();
+    }
+
+    // 9. Communications: Chats & Nested Messages
+    match /chats/{chatId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+    }
+
+    // 10. Notifications
+    match /notifications/{notificationId} {
+      allow read: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if isStaff() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+    }
+
+    // 11. Administrative Audits & Tasks
+    match /activity_logs/{logId} {
+      allow read: if isSuperAdmin() || isOwner();
+      allow write: if isStaff();
+    }
+
+    match /admin_tasks/{taskId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+    // Fallback: deny public access, allow superAdmin/owner
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isSuperAdmin() || isOwner();
     }
   }
 }

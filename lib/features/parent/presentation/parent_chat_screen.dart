@@ -17,7 +17,6 @@ import 'package:swimming_school_app/features/chat/providers/chat_providers.dart'
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
 import 'package:swimming_school_app/features/chat/utils/chat_image_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ParentChatScreen extends ConsumerStatefulWidget {
   final String? title;
@@ -379,11 +378,6 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       
       // 1. Спроба завантаження у Firebase Storage
       try {
-        if (FirebaseAuth.instance.currentUser == null) {
-          try {
-            await FirebaseAuth.instance.signInAnonymously();
-          } catch (_) {}
-        }
         final fileName = 'chat_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final storageRef = FirebaseStorage.instance.ref().child('chats/${user.id}/$fileName');
         final metadata = SettableMetadata(contentType: 'image/jpeg');

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'child.dart';
@@ -9,6 +9,7 @@ part of 'child.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $ChildCopyWith<Child> get copyWith => _$ChildCopyWithImpl<Child>(this as Child, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, achievements)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId));
+  final _this = this as Child;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Child&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.parentId, _this.parentId) || other.parentId == _this.parentId)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.age, _this.age) || other.age == _this.age)&&(identical(other.birthDate, _this.birthDate) || other.birthDate == _this.birthDate)&&(identical(other.colorHex, _this.colorHex) || other.colorHex == _this.colorHex)&&(identical(other.level, _this.level) || other.level == _this.level)&&(identical(other.xp, _this.xp) || other.xp == _this.xp)&&(identical(other.maxXp, _this.maxXp) || other.maxXp == _this.maxXp)&&const DeepCollectionEquality().equals(other.achievements, _this.achievements)&&(identical(other.organizationId, _this.organizationId) || other.organizationId == _this.organizationId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,parentId,name,age,birthDate,colorHex,level,xp,maxXp,const DeepCollectionEquality().hash(achievements),organizationId,branchId);
+int get hashCode {
+  final _this = this as Child;
+  return Object.hash(runtimeType,_this.id,_this.parentId,_this.name,_this.age,_this.birthDate,_this.colorHex,_this.level,_this.xp,_this.maxXp,const DeepCollectionEquality().hash(_this.achievements),_this.organizationId,_this.branchId);
+}
 
 @override
 String toString() {
-  return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, birthDate: $birthDate, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, organizationId: $organizationId, branchId: $branchId)';
+  final _this = this as Child;
+  return 'Child(id: ${_this.id}, parentId: ${_this.parentId}, name: ${_this.name}, age: ${_this.age}, birthDate: ${_this.birthDate}, colorHex: ${_this.colorHex}, level: ${_this.level}, xp: ${_this.xp}, maxXp: ${_this.maxXp}, achievements: ${_this.achievements}, organizationId: ${_this.organizationId}, branchId: ${_this.branchId})';
 }
 
 
@@ -66,7 +72,7 @@ class _$ChildCopyWithImpl<$Res>
 /// Create a copy of Child
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? parentId = null,Object? name = null,Object? age = freezed,Object? birthDate = freezed,Object? colorHex = null,Object? level = null,Object? xp = null,Object? maxXp = null,Object? achievements = null,Object? organizationId = null,Object? branchId = null,}) {
-  return _then(_self.copyWith(
+  return _then(Child(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,parentId: null == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -220,7 +226,7 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_th
 @JsonSerializable()
 
 class _Child implements Child {
-  const _Child({required this.id, required this.parentId, required this.name, this.age, this.birthDate, this.colorHex = '0xFF40C4FF', this.level = 1, this.xp = 0, this.maxXp = 100, final  List<Achievement> achievements = const [], this.organizationId = 'cityswim', this.branchId = 'kyiv'}): _achievements = achievements;
+  const _Child({required this.id, required this.parentId, required this.name, this.age, this.birthDate, this.colorHex = '0xFF40C4FF', this.level = 1, this.xp = 0, this.maxXp = 100,  List<Achievement> achievements = const [], this.organizationId = 'cityswim', this.branchId = 'kyiv'}): _achievements = achievements;
   factory _Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);
 
 @override final  String id;
@@ -255,16 +261,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other._achievements, _achievements)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Child&&(identical(other.id, id) || other.id == id)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.level, level) || other.level == level)&&(identical(other.xp, xp) || other.xp == xp)&&(identical(other.maxXp, maxXp) || other.maxXp == maxXp)&&const DeepCollectionEquality().equals(other.achievements, _achievements)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,parentId,name,age,birthDate,colorHex,level,xp,maxXp,const DeepCollectionEquality().hash(_achievements),organizationId,branchId);
+int get hashCode {
+    return Object.hash(runtimeType,id,parentId,name,age,birthDate,colorHex,level,xp,maxXp,const DeepCollectionEquality().hash(_achievements),organizationId,branchId);
+}
 
 @override
 String toString() {
-  return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, birthDate: $birthDate, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, organizationId: $organizationId, branchId: $branchId)';
+    return 'Child(id: $id, parentId: $parentId, name: $name, age: $age, birthDate: $birthDate, colorHex: $colorHex, level: $level, xp: $xp, maxXp: $maxXp, achievements: $achievements, organizationId: $organizationId, branchId: $branchId)';
 }
 
 

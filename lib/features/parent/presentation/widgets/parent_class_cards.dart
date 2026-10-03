@@ -13,6 +13,9 @@ import 'package:swimming_school_app/features/parent/presentation/parent_main.dar
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
+import 'package:swimming_school_app/features/parent/presentation/widgets/completed_class_coach_rating_bar.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
 import 'package:collection/collection.dart';
 
 Future<bool?> _showCancelConfirmationDialog({
@@ -254,7 +257,17 @@ class ParentEnrolledClassCard extends ConsumerWidget {
         ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
         : null;
 
-    final enrolledMembers = c.enrolledChildIds.map((id) {
+    final familyIds = {
+      ?user?.id,
+      ?partnerId,
+      ...children.map((ch) => ch.id),
+    };
+
+    final relevantEnrolledIds = targetChildId != 'all'
+        ? c.enrolledChildIds.where((id) => id == targetChildId).toList()
+        : c.enrolledChildIds.where((id) => familyIds.contains(id)).toList();
+
+    final enrolledMembers = relevantEnrolledIds.map((id) {
       if (user != null && id == user.id) {
         return (
           id: user.id,
@@ -345,8 +358,15 @@ class ParentEnrolledClassCard extends ConsumerWidget {
     ];
 
     final freeSlots = c.maxCapacity - c.enrolledChildIds.length;
-    final isPast = c.startTime.isBefore(DateTime.now());
+    final activeBranch = ref.watch(effectiveBranchProvider);
+    final now = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), activeBranch.id);
+    final isPast = c.branchStartTime.isBefore(now);
     final canEnrollMore = freeSlots > 0 && unenrolledMembers.isNotEmpty && !isPast;
+
+    final relevantMemberIds = targetChildId != 'all'
+        ? [targetChildId]
+        : (relevantEnrolledIds.isNotEmpty ? relevantEnrolledIds : familyIds.toList());
+    final wasAttended = c.attendedChildIds.any((id) => relevantMemberIds.contains(id));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -433,11 +453,47 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
 
-                    // Confirmation badge (Emerald) or Completed badge (Slate)
+                    // Status Badge: Attended / Missed / Confirmed
                     Builder(
                       builder: (context) {
-                        final isPastClass = c.startTime.isBefore(DateTime.now());
-                        if (isPastClass) {
+                        if (isPast) {
+                          if (wasAttended) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.18)
+                                    : const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.50)
+                                      : const Color(0xFFA7F3D0),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.checkCheck,
+                                    size: 12,
+                                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Відвідано',
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                             decoration: BoxDecoration(
@@ -456,13 +512,13 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  LucideIcons.history,
+                                  LucideIcons.userX,
                                   size: 12,
                                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Завершено',
+                                  'Пропущено',
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                                     fontSize: 11,
@@ -1078,6 +1134,11 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                     ],
                   ],
                 ),
+                if (isPast && wasAttended)
+                  CompletedClassCoachRatingBar(
+                    classItem: c,
+                    currentTheme: currentTheme,
+                  ),
               ],
             ),
           ),

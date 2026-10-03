@@ -12,6 +12,7 @@ import 'package:swimming_school_app/features/chat/providers/chat_providers.dart'
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import '../widgets/coach_dialogs_sheet.dart';
 import '../coach_dashboard.dart';
+import 'package:swimming_school_app/features/coach/controllers/coach_rating_controller.dart';
 
 void _confirmCoachLogout(BuildContext context, WidgetRef ref) => confirmCoachLogout(context, ref);
 
@@ -210,12 +211,24 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _buildKpiCard(
-                            '5.0 ★',
-                            'Рейтинг тренера',
-                            LucideIcons.award,
-                            _isLight ? const Color(0xFFDB2777) : const Color(0xFFEC4899),
-                            isRating: true,
+                          child: Builder(
+                            builder: (context) {
+                              final coachRatingData = ref.watch(
+                                coachAverageRatingProvider(user.id.isNotEmpty ? user.id : user.name),
+                              );
+                              final ratingString = '${coachRatingData.rating.toStringAsFixed(1)} ★';
+                              final ratingLabel = coachRatingData.count > 0
+                                  ? 'Рейтинг (${coachRatingData.count})'
+                                  : 'Рейтинг тренера';
+
+                              return _buildKpiCard(
+                                ratingString,
+                                ratingLabel,
+                                LucideIcons.award,
+                                _isLight ? const Color(0xFFDB2777) : const Color(0xFFEC4899),
+                                isRating: true,
+                              );
+                            },
                           ),
                         ),
                       ],

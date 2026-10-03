@@ -58,6 +58,13 @@ class PushNotificationService {
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         
+        // Show banner, badge, and sound even when app is open in foreground
+        await _fcm.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
         // Ensure APNs token is available on iOS before getting FCM token
         if (!kIsWeb && Platform.isIOS) {
           await _fcm.getAPNSToken();

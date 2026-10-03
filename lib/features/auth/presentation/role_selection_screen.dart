@@ -149,7 +149,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   void _navigateBasedOnRole(UserRole role, [AppUser? user]) {
     final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
     final needsOnboardingPref = prefs.getBool('needsOnboarding');
-    final needsOnboarding = needsOnboardingPref ?? (user != null && (user.phone == null || user.phone!.isEmpty));
+    final needsOnboarding = needsOnboardingPref == true ||
+        (needsOnboardingPref == null && user != null && (user.phone == null || user.phone!.trim().isEmpty));
 
     if (role == UserRole.parent && needsOnboarding) {
       context.go('/onboarding');

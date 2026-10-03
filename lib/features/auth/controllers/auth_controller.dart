@@ -365,7 +365,28 @@ class AuthController extends _$AuthController {
           
       if (doc.exists && doc.data() != null) {
         state = AppUser.fromJson(doc.data()!);
-        final isCompleted = (doc.data()!['onboardingCompleted'] as bool?) ?? (doc.data()!['phone'] != null);
+        final data = doc.data()!;
+        final hasOnboardingFlag = data['onboardingCompleted'] == true;
+        final hasPhone = (data['phone'] as String?)?.trim().isNotEmpty == true;
+
+        bool isCompleted = hasOnboardingFlag || hasPhone;
+        if (!isCompleted) {
+          try {
+            final subsSnap = await FirebaseFirestore.instance
+                .collection('subscriptions')
+                .where('userId', isEqualTo: uid)
+                .limit(1)
+                .get();
+            if (subsSnap.docs.isNotEmpty) {
+              isCompleted = true;
+              await FirebaseFirestore.instance.collection('users').doc(uid).set(
+                {'onboardingCompleted': true},
+                SetOptions(merge: true),
+              );
+            }
+          } catch (_) {}
+        }
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('needsOnboarding', !isCompleted);
         await _syncRoleToPrefs(state);
@@ -435,6 +456,270 @@ class AuthController extends _$AuthController {
     }
   }
 
+  String _cleanPhoneDigits(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 9) {
+      return digits.substring(digits.length - 9);
+    }
+    return digits;
+  }
+
+  Future<void> _migrateUserData({
+    required String oldUserId,
+    required String newUserId,
+    Map<String, dynamic>? oldUserData,
+  }) async {
+    if (oldUserId == newUserId) return;
+    final firestore = FirebaseFirestore.instance;
+    debugPrint('Smart Account Linking: Migrating data from $oldUserId to $newUserId');
+
+    try {
+      final batch = firestore.batch();
+      bool hasBatchOps = false;
+
+      // 1. Subscriptions: userId == oldUserId -> update to newUserId
+      final subsSnap = await firestore
+          .collection('subscriptions')
+          .where('userId', isEqualTo: oldUserId)
+          .get();
+      for (final doc in subsSnap.docs) {
+        batch.update(doc.reference, {'userId': newUserId});
+        hasBatchOps = true;
+      }
+
+      // 2. Children: parentId == oldUserId -> update to newUserId
+      final childrenSnap = await firestore
+          .collection('children')
+          .where('parentId', isEqualTo: oldUserId)
+          .get();
+      for (final doc in childrenSnap.docs) {
+        batch.update(doc.reference, {'parentId': newUserId});
+        hasBatchOps = true;
+      }
+
+      // 3. Notifications: userId == oldUserId -> update to newUserId
+      final notifSnap = await firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: oldUserId)
+          .get();
+      for (final doc in notifSnap.docs) {
+        batch.update(doc.reference, {'userId': newUserId});
+        hasBatchOps = true;
+      }
+
+      // 4. Payments: clientId == oldUserId -> update to newUserId
+      final paymentsSnap = await firestore
+          .collection('payments')
+          .where('clientId', isEqualTo: oldUserId)
+          .get();
+      for (final doc in paymentsSnap.docs) {
+        batch.update(doc.reference, {'clientId': newUserId});
+        hasBatchOps = true;
+      }
+
+      // 5. Families: parentIds contains oldUserId
+      final famSnap = await firestore
+          .collection('families')
+          .where('parentIds', arrayContains: oldUserId)
+          .get();
+      for (final doc in famSnap.docs) {
+        final data = doc.data();
+        final parentIds = List<String>.from(data['parentIds'] ?? []);
+        parentIds.remove(oldUserId);
+        if (!parentIds.contains(newUserId)) {
+          parentIds.add(newUserId);
+        }
+
+        final parentNames = Map<String, dynamic>.from(data['parentNames'] ?? {});
+        if (parentNames.containsKey(oldUserId)) {
+          final nameVal = parentNames.remove(oldUserId);
+          parentNames[newUserId] = nameVal;
+        }
+
+        final parentPhones = Map<String, dynamic>.from(data['parentPhones'] ?? {});
+        if (parentPhones.containsKey(oldUserId)) {
+          final phoneVal = parentPhones.remove(oldUserId);
+          parentPhones[newUserId] = phoneVal;
+        }
+
+        batch.update(doc.reference, {
+          'parentIds': parentIds,
+          'parentNames': parentNames,
+          'parentPhones': parentPhones,
+        });
+        hasBatchOps = true;
+      }
+
+      // 6. Classes: enrolledChildIds contains oldUserId (for adult participants)
+      final classesSnap = await firestore
+          .collection('classes')
+          .where('enrolledChildIds', arrayContains: oldUserId)
+          .get();
+      for (final doc in classesSnap.docs) {
+        final data = doc.data();
+        final enrolled = List<String>.from(data['enrolledChildIds'] ?? []);
+        enrolled.remove(oldUserId);
+        if (!enrolled.contains(newUserId)) {
+          enrolled.add(newUserId);
+        }
+        batch.update(doc.reference, {'enrolledChildIds': enrolled});
+        hasBatchOps = true;
+      }
+
+      // 7. Mark old user document as merged
+      final oldUserRef = firestore.collection('users').doc(oldUserId);
+      batch.set(oldUserRef, {
+        'mergedInto': newUserId,
+        'mergedAt': FieldValue.serverTimestamp(),
+        'isActive': false,
+      }, SetOptions(merge: true));
+      hasBatchOps = true;
+
+      if (hasBatchOps) {
+        await batch.commit();
+      }
+      debugPrint('Smart Account Linking: Successfully migrated data from $oldUserId to $newUserId');
+    } catch (e) {
+      debugPrint('Error migrating user data from $oldUserId to $newUserId: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _findOrMergeExistingClient({
+    required String newUid,
+    required String? email,
+    required String? phone,
+    required String name,
+    required String avatarUrl,
+    required String assignedBranchId,
+    required String organizationId,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    final userDocRef = firestore.collection('users').doc(newUid);
+    final userDocSnap = await userDocRef.get();
+
+    String? foundOldUserId;
+    Map<String, dynamic> mergedData = {};
+
+    if (userDocSnap.exists) {
+      mergedData = Map<String, dynamic>.from(userDocSnap.data()!);
+    }
+
+    // 1. If newUid doc does not exist, or exists but has 0 subscriptions, check for matching existing account
+    final existingSubs = await firestore
+        .collection('subscriptions')
+        .where('userId', isEqualTo: newUid)
+        .limit(1)
+        .get();
+
+    final hasSubsUnderNewUid = existingSubs.docs.isNotEmpty;
+
+    if (!userDocSnap.exists || !hasSubsUnderNewUid) {
+      // Try to find matching user by email
+      final cleanEmail = email?.trim().toLowerCase();
+      if (cleanEmail != null && cleanEmail.isNotEmpty) {
+        try {
+          final querySnap = await firestore
+              .collection('users')
+              .where('email', isEqualTo: cleanEmail)
+              .get();
+          for (final doc in querySnap.docs) {
+            if (doc.id != newUid && doc.data()['mergedInto'] == null) {
+              foundOldUserId = doc.id;
+              mergedData = {...doc.data(), ...mergedData};
+              break;
+            }
+          }
+        } catch (e) {
+          debugPrint('Notice: Email user lookup error: $e');
+        }
+      }
+
+      // Try to find matching user by phone if phone is provided
+      if (foundOldUserId == null && phone != null && phone.trim().isNotEmpty) {
+        final phoneDigits = _cleanPhoneDigits(phone);
+        if (phoneDigits.length >= 7) {
+          try {
+            final querySnap = await firestore
+                .collection('users')
+                .where('phone', isEqualTo: phone.trim())
+                .get();
+            for (final doc in querySnap.docs) {
+              if (doc.id != newUid && doc.data()['mergedInto'] == null) {
+                foundOldUserId = doc.id;
+                mergedData = {...doc.data(), ...mergedData};
+                break;
+              }
+            }
+          } catch (e) {
+            debugPrint('Notice: Phone user lookup error: $e');
+          }
+        }
+      }
+
+      // If an existing account was found under a different ID, migrate everything!
+      if (foundOldUserId != null && foundOldUserId != newUid) {
+        await _migrateUserData(
+          oldUserId: foundOldUserId,
+          newUserId: newUid,
+          oldUserData: mergedData,
+        );
+      }
+    }
+
+    // Determine final effective properties
+    final existingName = (mergedData['name'] as String?)?.trim();
+    final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User' && existingName != 'Користувач')
+        ? existingName
+        : name;
+
+    final existingAvatar = mergedData['avatarUrl'] as String?;
+    final effectiveAvatar = (existingAvatar != null && existingAvatar.isNotEmpty && !existingAvatar.contains('ui-avatars.com'))
+        ? existingAvatar
+        : avatarUrl;
+
+    // Check if subscriptions exist under newUid now (either migrated or existing)
+    final checkSubs = await firestore
+        .collection('subscriptions')
+        .where('userId', isEqualTo: newUid)
+        .limit(1)
+        .get();
+    final hasActiveOrAnySubs = checkSubs.docs.isNotEmpty;
+
+    final isCompleted = hasActiveOrAnySubs ||
+        (mergedData['onboardingCompleted'] == true) ||
+        (mergedData['phone'] != null && (mergedData['phone'] as String).trim().isNotEmpty);
+
+    final safeUserData = <String, dynamic>{
+      'id': newUid,
+      'name': effectiveName,
+      'role': 'parent',
+      'avatarUrl': effectiveAvatar,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (mergedData['phone'] != null) 'phone': mergedData['phone'],
+      if (mergedData['loginId'] != null) 'loginId': mergedData['loginId'],
+      'branchId': (mergedData['branchId'] as String?) ?? assignedBranchId,
+      'branchIds': mergedData['branchIds'] is List
+          ? List<String>.from(mergedData['branchIds'])
+          : [assignedBranchId],
+      'organizationId': (mergedData['organizationId'] as String?) ?? organizationId,
+      'onboardingCompleted': isCompleted,
+      if (mergedData['age'] != null) 'age': mergedData['age'],
+      if (mergedData['swimmingGoal'] != null) 'swimmingGoal': mergedData['swimmingGoal'],
+      if (mergedData['swimmingLevel'] != null) 'swimmingLevel': mergedData['swimmingLevel'],
+      if (mergedData['isAdultOnly'] != null) 'isAdultOnly': mergedData['isAdultOnly'],
+      'mergedFrom': ?foundOldUserId,
+      if (!userDocSnap.exists) 'createdAt': FieldValue.serverTimestamp(),
+      'lastLoginAt': FieldValue.serverTimestamp(),
+    };
+
+    await userDocRef.set(safeUserData, SetOptions(merge: true));
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('needsOnboarding', !isCompleted);
+
+    return safeUserData;
+  }
+
   Future<void> signInWithGoogle() async {
     try {
       _isLoggingIn = true;
@@ -477,70 +762,17 @@ class AuthController extends _$AuthController {
             ? googlePhoto
             : '';
 
-        final userDocRef = FirebaseFirestore.instance.collection('users').doc(fbUser.uid);
-        final userDocSnap = await userDocRef.get();
+        final finalUserData = await _findOrMergeExistingClient(
+          newUid: fbUser.uid,
+          email: googleEmail,
+          phone: fbUser.phoneNumber,
+          name: googleName,
+          avatarUrl: defaultAvatar,
+          assignedBranchId: assignedBranchId,
+          organizationId: effectiveBranch.organizationId,
+        );
 
-        if (!userDocSnap.exists) {
-          // New Google Client registration
-          await prefs.setBool('needsOnboarding', true);
-          final initialUserData = {
-            'id': fbUser.uid,
-            'name': googleName,
-            'role': 'parent',
-            'email': googleEmail,
-            'avatarUrl': defaultAvatar,
-            'branchId': assignedBranchId,
-            'branchIds': [assignedBranchId],
-            'organizationId': effectiveBranch.organizationId,
-            'onboardingCompleted': false,
-            'createdAt': FieldValue.serverTimestamp(),
-          };
-          await userDocRef.set(initialUserData, SetOptions(merge: true));
-
-          state = AppUser(
-            id: fbUser.uid,
-            name: googleName,
-            role: UserRole.parent,
-            avatarUrl: defaultAvatar,
-            branchId: assignedBranchId,
-            branchIds: [assignedBranchId],
-            organizationId: effectiveBranch.organizationId,
-          );
-        } else {
-          // Existing user doc
-          final data = userDocSnap.data()!;
-          final existingName = (data['name'] as String?)?.trim();
-          final existingAvatar = data['avatarUrl'] as String?;
-          final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User')
-              ? existingName
-              : googleName;
-          final effectiveAvatar = (existingAvatar != null && existingAvatar.isNotEmpty && !existingAvatar.contains('ui-avatars.com'))
-              ? existingAvatar
-              : defaultAvatar;
-
-          final updatedData = {
-            if (existingName == null || existingName.isEmpty || existingName == 'New User') 'name': googleName,
-            if (existingAvatar == null || existingAvatar.isEmpty || existingAvatar.contains('ui-avatars.com')) 'avatarUrl': defaultAvatar,
-            if (data['email'] == null) 'email': googleEmail,
-            if (data['branchId'] == null) 'branchId': assignedBranchId,
-            if (data['branchIds'] == null) 'branchIds': [assignedBranchId],
-            if (data['organizationId'] == null) 'organizationId': effectiveBranch.organizationId,
-            if (data['role'] == null) 'role': 'parent',
-          };
-          if (updatedData.isNotEmpty) {
-            await userDocRef.set(updatedData, SetOptions(merge: true));
-          }
-
-          state = AppUser.fromJson({
-            ...data,
-            'id': fbUser.uid,
-            'name': effectiveName,
-            'avatarUrl': effectiveAvatar,
-            'email': data['email'] ?? googleEmail,
-          });
-          final isCompleted = (data['onboardingCompleted'] as bool?) ?? (data['phone'] != null);
-          await prefs.setBool('needsOnboarding', !isCompleted);
-        }
+        state = AppUser.fromJson(finalUserData);
         await _syncRoleToPrefs(state);
         await prefs.setString('clientId', fbUser.uid);
       }
@@ -588,70 +820,17 @@ class AuthController extends _$AuthController {
         final appleEmail = fbUser.email ?? appleCredential.email;
         final defaultAvatar = 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(appleName)}&background=000000&color=ffffff';
 
-        final userDocRef = FirebaseFirestore.instance.collection('users').doc(fbUser.uid);
-        final userDocSnap = await userDocRef.get();
+        final finalUserData = await _findOrMergeExistingClient(
+          newUid: fbUser.uid,
+          email: appleEmail,
+          phone: fbUser.phoneNumber,
+          name: appleName,
+          avatarUrl: defaultAvatar,
+          assignedBranchId: assignedBranchId,
+          organizationId: effectiveBranch.organizationId,
+        );
 
-        if (!userDocSnap.exists) {
-          // New Apple Client registration
-          await prefs.setBool('needsOnboarding', true);
-          final initialUserData = {
-            'id': fbUser.uid,
-            'name': appleName,
-            'role': 'parent',
-            'email': appleEmail,
-            'avatarUrl': defaultAvatar,
-            'branchId': assignedBranchId,
-            'branchIds': [assignedBranchId],
-            'organizationId': effectiveBranch.organizationId,
-            'onboardingCompleted': false,
-            'createdAt': FieldValue.serverTimestamp(),
-          };
-          await userDocRef.set(initialUserData, SetOptions(merge: true));
-
-          state = AppUser(
-            id: fbUser.uid,
-            name: appleName,
-            role: UserRole.parent,
-            avatarUrl: defaultAvatar,
-            branchId: assignedBranchId,
-            branchIds: [assignedBranchId],
-            organizationId: effectiveBranch.organizationId,
-          );
-        } else {
-          // Existing user doc
-          final data = userDocSnap.data()!;
-          final existingName = (data['name'] as String?)?.trim();
-          final existingAvatar = data['avatarUrl'] as String?;
-          final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User')
-              ? existingName
-              : appleName;
-          final effectiveAvatar = (existingAvatar != null && existingAvatar.isNotEmpty && !existingAvatar.contains('ui-avatars.com'))
-              ? existingAvatar
-              : defaultAvatar;
-
-          final updatedData = {
-            if (existingName == null || existingName.isEmpty || existingName == 'New User') 'name': appleName,
-            if (existingAvatar == null || existingAvatar.isEmpty || existingAvatar.contains('ui-avatars.com')) 'avatarUrl': defaultAvatar,
-            if (data['email'] == null) 'email': appleEmail,
-            if (data['branchId'] == null) 'branchId': assignedBranchId,
-            if (data['branchIds'] == null) 'branchIds': [assignedBranchId],
-            if (data['organizationId'] == null) 'organizationId': effectiveBranch.organizationId,
-            if (data['role'] == null) 'role': 'parent',
-          };
-          if (updatedData.isNotEmpty) {
-            await userDocRef.set(updatedData, SetOptions(merge: true));
-          }
-
-          state = AppUser.fromJson({
-            ...data,
-            'id': fbUser.uid,
-            'name': effectiveName,
-            'avatarUrl': effectiveAvatar,
-            'email': data['email'] ?? appleEmail,
-          });
-          final isCompleted = (data['onboardingCompleted'] as bool?) ?? (data['phone'] != null);
-          await prefs.setBool('needsOnboarding', !isCompleted);
-        }
+        state = AppUser.fromJson(finalUserData);
         await _syncRoleToPrefs(state);
         await prefs.setString('clientId', fbUser.uid);
       }
@@ -1470,62 +1649,116 @@ class AuthController extends _$AuthController {
       userMap['branchId'] = assignedBranchId;
       userMap['branchIds'] = [assignedBranchId];
       userMap['organizationId'] = organizationId;
-      await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).set(userMap);
+      // Smart Account Linking by Phone:
+      // If an existing client was created by an admin (or previous login) with this phone number,
+      // migrate all their subscriptions, children, families, and payments to this account!
+      final cleanDigits = _cleanPhoneDigits(phone);
+      if (cleanDigits.length >= 7) {
+        try {
+          DocumentSnapshot<Map<String, dynamic>>? existingClientDoc;
+          for (final doc in usersSnap.docs) {
+            if (doc.id != updatedUser.id && doc.data()['mergedInto'] == null) {
+              final otherPhone = doc.data()['phone'] as String?;
+              if (otherPhone != null && _cleanPhoneDigits(otherPhone) == cleanDigits) {
+                existingClientDoc = doc;
+                break;
+              }
+            }
+          }
+
+          if (existingClientDoc != null) {
+            final oldId = existingClientDoc.id;
+            final oldData = existingClientDoc.data()!;
+            debugPrint('Smart Account Linking: Found existing user $oldId by phone $phone, migrating to ${updatedUser.id}');
+            await _migrateUserData(
+              oldUserId: oldId,
+              newUserId: updatedUser.id,
+              oldUserData: oldData,
+            );
+
+            // Copy loginId if old user had one
+            final oldLoginId = oldData['loginId'] as String?;
+            if (oldLoginId != null && oldLoginId.isNotEmpty) {
+              userMap['loginId'] = oldLoginId;
+            }
+          }
+        } catch (e) {
+          debugPrint('Notice: Error checking existing user by phone during onboarding: $e');
+        }
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(updatedUser.id).set(userMap, SetOptions(merge: true));
+
+      // Check existing children for this parent to prevent duplicates
+      final existingChildrenSnap = await FirebaseFirestore.instance
+          .collection('children')
+          .where('parentId', isEqualTo: updatedUser.id)
+          .get();
+      final existingChildNames = existingChildrenSnap.docs
+          .map((d) => (d.data()['name'] as String?)?.trim().toLowerCase())
+          .whereType<String>()
+          .toSet();
 
       // Save children if provided as list
       if (children != null && children.isNotEmpty) {
         for (var c in children) {
           final cName = (c['name'] as String?)?.trim();
+          if (cName == null || cName.isEmpty) continue;
+          if (existingChildNames.contains(cName.toLowerCase())) {
+            debugPrint('Child "$cName" already exists for parent, skipping duplicate creation');
+            continue;
+          }
           final cAge = c['age'] is int ? c['age'] as int : int.tryParse(c['age']?.toString() ?? '');
           final cGoal = (c['goal'] as String?)?.trim();
-          if (cName != null && cName.isNotEmpty) {
-            final childRef = FirebaseFirestore.instance.collection('children').doc();
-            String childNotes = '';
-            if (cAge != null && cGoal != null && cGoal.isNotEmpty) {
-              childNotes = 'Вік: $cAge • Ціль: $cGoal';
-            } else if (cGoal != null && cGoal.isNotEmpty) {
-              childNotes = 'Ціль: $cGoal';
-            } else if (cAge != null) {
-              childNotes = 'Вік: $cAge';
-            }
-
-            final childData = <String, dynamic>{
-              'id': childRef.id,
-              'parentId': updatedUser.id,
-              'name': cName,
-              'level': 1,
-              'xp': 0,
-              'maxXp': 100,
-              'colorHex': '0xFF40C4FF',
-              'notes': childNotes,
-            };
-            if (cAge != null) {
-              childData['age'] = cAge;
-            }
-            if (cGoal != null && cGoal.isNotEmpty) {
-              childData['goal'] = cGoal;
-            }
-            await childRef.set(childData);
+          final childRef = FirebaseFirestore.instance.collection('children').doc();
+          String childNotes = '';
+          if (cAge != null && cGoal != null && cGoal.isNotEmpty) {
+            childNotes = 'Вік: $cAge • Ціль: $cGoal';
+          } else if (cGoal != null && cGoal.isNotEmpty) {
+            childNotes = 'Ціль: $cGoal';
+          } else if (cAge != null) {
+            childNotes = 'Вік: $cAge';
           }
+
+          final childData = <String, dynamic>{
+            'id': childRef.id,
+            'parentId': updatedUser.id,
+            'name': cName,
+            'level': 1,
+            'xp': 0,
+            'maxXp': 100,
+            'colorHex': '0xFF40C4FF',
+            'notes': childNotes,
+          };
+          if (cAge != null) {
+            childData['age'] = cAge;
+          }
+          if (cGoal != null && cGoal.isNotEmpty) {
+            childData['goal'] = cGoal;
+          }
+          await childRef.set(childData);
+          existingChildNames.add(cName.toLowerCase());
         }
       } else if (childName != null && childName.trim().isNotEmpty) {
-        // Fallback for single child
-        final parsedAge = childAge is int ? childAge : int.tryParse(childAge?.toString() ?? '');
-        final childRef = FirebaseFirestore.instance.collection('children').doc();
-        final childData = <String, dynamic>{
-          'id': childRef.id,
-          'parentId': updatedUser.id,
-          'name': childName.trim(),
-          'level': 1,
-          'xp': 0,
-          'maxXp': 100,
-          'colorHex': '0xFF40C4FF',
-          'notes': parsedAge != null ? 'Вік: $parsedAge' : '',
-        };
-        if (parsedAge != null) {
-          childData['age'] = parsedAge;
+        final cName = childName.trim();
+        if (!existingChildNames.contains(cName.toLowerCase())) {
+          final parsedAge = childAge is int ? childAge : int.tryParse(childAge?.toString() ?? '');
+          final childRef = FirebaseFirestore.instance.collection('children').doc();
+          final childData = <String, dynamic>{
+            'id': childRef.id,
+            'parentId': updatedUser.id,
+            'name': cName,
+            'level': 1,
+            'xp': 0,
+            'maxXp': 100,
+            'colorHex': '0xFF40C4FF',
+            'notes': parsedAge != null ? 'Вік: $parsedAge' : '',
+          };
+          if (parsedAge != null) {
+            childData['age'] = parsedAge;
+          }
+          await childRef.set(childData);
         }
-        await childRef.set(childData);
       }
 
       await prefs.setBool('needsOnboarding', false);

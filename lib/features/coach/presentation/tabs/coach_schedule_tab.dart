@@ -27,8 +27,6 @@ class CoachScheduleTab extends ConsumerStatefulWidget {
 }
 
 class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
-  final bool _showAllPoolClassesFallback = false;
-
   @override
   void initState() {
     super.initState();
@@ -376,32 +374,25 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
             ),
           ),
 
-          // 1. Schedule list content (Розклад першим)
-          scheduleAsync.when(
-            data: (allClasses) {
+          // 1. Schedule list content (Розклад першим - миттєво без спінера завантаження)
+          Builder(
+            builder: (context) {
+              final allClasses = scheduleAsync.value ??
+                  ScheduleController.cachedClasses ??
+                  ScheduleController.getImmediateSeedClasses(user?.branchId ?? 'kyiv');
+
               final now = DateTime.now();
               final today = DateTime(now.year, now.month, now.day);
 
               // Filter strictly by TODAY
-              List<GroupClass> dateFiltered = allClasses.where((c) {
+              final dateFiltered = allClasses.where((c) {
                 final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
                 return classDate.isAtSameMomentAs(today);
               }).toList();
 
-              // Filter by coach
-              List<GroupClass> coachClasses = dateFiltered.where((c) {
-                if (_showAllPoolClassesFallback) return true;
-                final isMock = user?.id == 'mock_coach';
-                final matchesId = c.coachId == user?.id;
-                final matchesName = user != null &&
-                    user.name.isNotEmpty &&
-                    c.coachName.toLowerCase().contains(user.name.toLowerCase());
-                return matchesId || matchesName || isMock;
-              }).toList();
-
-              // If specific coach has 0 classes, fall back smoothly to showing all pool sessions for today
-              final bool isUsingFallback = coachClasses.isEmpty && dateFiltered.isNotEmpty;
-              final displayClasses = isUsingFallback ? dateFiltered : coachClasses;
+              // Filter strictly by this coach (NO fallback to other coaches)
+              final coachClasses = dateFiltered.where((c) => isClassForCoach(c, user)).toList();
+              final displayClasses = coachClasses;
 
               if (displayClasses.isEmpty) {
                 return SliverToBoxAdapter(
@@ -603,22 +594,6 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 ),
               );
             },
-            loading: () => const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 36),
-                child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
-                ),
-              ),
-            ),
-            error: (e, _) => SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Center(
-                  child: Text('coach.load_error'.tr(args: ['$e']), style: const TextStyle(color: Colors.redAccent)),
-                ),
-              ),
-            ),
           ),
 
           // 2. Потім зміни. Потім журнал відвідування.

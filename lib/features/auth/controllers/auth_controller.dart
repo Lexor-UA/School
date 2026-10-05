@@ -1338,101 +1338,46 @@ class AuthController extends _$AuthController {
     String? branchId,
   }) async {
     try {
-      final rawLogin = phone.trim();
-      if (rawLogin.isEmpty) {
-        throw Exception('Введіть логін');
+      final userEmail = (email ?? phone).trim().toLowerCase();
+      if (userEmail.isEmpty || !userEmail.contains('@') || !userEmail.contains('.')) {
+        throw Exception('Будь ласка, введіть коректну електронну пошту (email)');
       }
-      if (password.trim().length < 4) {
-        throw Exception('Пароль має містити щонайменше 4 символи');
-      }
-
-      final rawDigits = rawLogin.replaceAll(RegExp(r'\D'), '');
-      final isPhone = !rawLogin.contains('@') && rawDigits.length >= 9;
-
-      String? normalizedPhone;
-      String? userEmail;
-      String? customLoginId;
-
-      final allUsers = await FirebaseFirestore.instance.collection('users').get();
-
-      if (isPhone) {
-        normalizedPhone = _normalizePhone(rawLogin);
-        final last9 = rawDigits.substring(rawDigits.length - 9);
-        final duplicate = allUsers.docs.firstWhereOrNull((d) {
-          final p = (d.data()['phone'] as String? ?? '').replaceAll(RegExp(r'\D'), '');
-          return p.endsWith(last9);
-        });
-        if (duplicate != null) {
-          throw Exception('Користувач із таким номером вже існує в системі. Будь ласка, увійдіть.');
-        }
-      } else if (rawLogin.contains('@')) {
-        userEmail = rawLogin.toLowerCase();
-        final duplicate = allUsers.docs.firstWhereOrNull((d) {
-          final e = (d.data()['email'] as String? ?? '').toLowerCase();
-          return e == userEmail;
-        });
-        if (duplicate != null) {
-          throw Exception('Користувач із таким email вже існує в системі. Будь ласка, увійдіть.');
-        }
-      } else {
-        customLoginId = rawLogin.toLowerCase();
-        final duplicate = allUsers.docs.firstWhereOrNull((d) {
-          final l = (d.data()['loginId'] as String? ?? '').toLowerCase();
-          return l == customLoginId;
-        });
-        if (duplicate != null) {
-          throw Exception('Користувач із таким логіном вже існує в системі. Будь ласка, увійдіть.');
-        }
+      if (password.trim().length < 6) {
+        throw Exception('Пароль має містити щонайменше 6 символів');
       }
 
-      // Calculate sequential loginId for CRM if not a custom login
-      int maxClientNum = 0;
-      for (var doc in allUsers.docs) {
-        final loginId = doc.data()['loginId'] as String?;
-        if (loginId != null && loginId.startsWith('client')) {
-          final numStr = loginId.replaceAll('client', '');
-          final num = int.tryParse(numStr);
-          if (num != null && num > maxClientNum) {
-            maxClientNum = num;
-          }
+      // 1. Create user in Firebase Auth FIRST (handles duplicate validation natively)
+      UserCredential authCredential;
+      try {
+        authCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: userEmail,
+          password: password.trim(),
+        );
+      } on FirebaseAuthException catch (authEx) {
+        if (authEx.code == 'email-already-in-use') {
+          throw Exception('Користувач із таким email вже зареєстрований у системі. Будь ласка, увійдіть.');
+        } else if (authEx.code == 'weak-password') {
+          throw Exception('Пароль занадто простий. Введіть щонайменше 6 символів.');
+        } else if (authEx.code == 'invalid-email') {
+          throw Exception('Некоректний формат email.');
+        } else {
+          debugPrint('FirebaseAuth createUser error: $authEx');
+          throw Exception(authEx.message ?? 'Помилка реєстрації у Firebase Auth');
         }
-      }
-      final sequentialLoginId = 'client${maxClientNum + 1}';
-      final assignedLoginId = customLoginId ?? sequentialLoginId;
-
-      // Create new user document
-      String effectiveUserId = '';
-      if (userEmail != null) {
-        try {
-          final authCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: userEmail,
-            password: password.trim(),
-          );
-          if (authCredential.user != null) {
-            effectiveUserId = authCredential.user!.uid;
-            try {
-              await authCredential.user!.updateDisplayName(name.trim());
-            } catch (_) {}
-          }
-        } on FirebaseAuthException catch (authEx) {
-          if (authEx.code == 'email-already-in-use') {
-            throw Exception('Користувач із таким email вже зареєстрований у Firebase. Будь ласка, увійдіть.');
-          } else if (authEx.code == 'weak-password') {
-            throw Exception('Пароль занадто простий. Введіть щонайменше 6 символів.');
-          } else if (authEx.code == 'invalid-email') {
-            throw Exception('Некоректний формат email.');
-          } else {
-            debugPrint('FirebaseAuth createUser error: $authEx');
-          }
-        } catch (e) {
-          debugPrint('Generic auth error in createUserWithEmailAndPassword: $e');
-        }
+      } catch (e) {
+        debugPrint('Generic auth error in createUserWithEmailAndPassword: $e');
+        rethrow;
       }
 
-      final newDocRef = effectiveUserId.isNotEmpty
-          ? FirebaseFirestore.instance.collection('users').doc(effectiveUserId)
-          : FirebaseFirestore.instance.collection('users').doc();
-      effectiveUserId = newDocRef.id;
+      final fbUser = authCredential.user;
+      if (fbUser == null) {
+        throw Exception('Не вдалося створити профіль авторизації');
+      }
+
+      final effectiveUserId = fbUser.uid;
+      try {
+        await fbUser.updateDisplayName(name.trim());
+      } catch (_) {}
 
       final parts = name.trim().split(' ').where((s) => s.isNotEmpty).toList();
       final avatarInitials = parts.isNotEmpty
@@ -1446,26 +1391,27 @@ class AuthController extends _$AuthController {
         'id': effectiveUserId,
         'name': name.trim(),
         'role': 'parent',
-        'phone': ?normalizedPhone,
-        'loginId': assignedLoginId,
+        'loginId': userEmail,
         'password': PasswordSecurityHelper.hashPassword(password.trim()),
-        'email': ?userEmail,
+        'email': userEmail,
         'avatarUrl': 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
         'createdAt': FieldValue.serverTimestamp(),
         'branchId': effectiveBranchId,
+        'branchIds': [effectiveBranchId],
         'organizationId': effectiveBranch.organizationId,
       };
 
-      await newDocRef.set(newClientData);
+      // 2. Since the user is now authenticated and request.auth.uid == effectiveUserId, this writes directly with full permissions
+      await FirebaseFirestore.instance.collection('users').doc(effectiveUserId).set(newClientData);
 
       final newUser = AppUser(
         id: effectiveUserId,
         name: name.trim(),
         role: UserRole.parent,
-        phone: normalizedPhone,
-        loginId: assignedLoginId,
+        loginId: userEmail,
         avatarUrl: 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
         branchId: effectiveBranchId,
+        branchIds: [effectiveBranchId],
         organizationId: effectiveBranch.organizationId,
       );
 
@@ -1474,15 +1420,6 @@ class AuthController extends _$AuthController {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('clientId', newUser.id);
       await prefs.setBool('needsOnboarding', true);
-
-      try {
-        if (FirebaseAuth.instance.currentUser == null) {
-          final safeId = newUser.id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-          final clientEmail = 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
-          await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
-          await _syncAuthUserDoc(newUser);
-        }
-      } catch (_) {}
 
       return newUser;
     } catch (e) {

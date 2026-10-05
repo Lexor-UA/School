@@ -12,12 +12,14 @@ class SubscriptionFrontCard extends ConsumerWidget {
   final Subscription? currentSub;
   final VoidCallback? onTap;
   final bool isInteractive;
+  final double aspectRatio;
 
   const SubscriptionFrontCard({
     super.key,
     this.currentSub,
     this.onTap,
     this.isInteractive = true,
+    this.aspectRatio = 1.75,
   });
 
   @override
@@ -31,7 +33,7 @@ class SubscriptionFrontCard extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 380),
           child: AspectRatio(
-            aspectRatio: 1.75,
+            aspectRatio: aspectRatio,
             child: Interactive3DCard(
               onTap: onTap,
               enableHologram: false,
@@ -49,7 +51,7 @@ class SubscriptionFrontCard extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: AspectRatio(
-          aspectRatio: 1.75,
+          aspectRatio: aspectRatio,
           child: cardContent,
         ),
       ),

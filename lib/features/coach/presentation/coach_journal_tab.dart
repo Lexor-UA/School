@@ -246,14 +246,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
             ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
           // 2. Filter by coach if _onlyMyClasses is active
-          final myClasses = dayClasses.where((c) {
-            final isMock = user?.id == 'mock_coach';
-            final matchesId = c.coachId == user?.id;
-            final matchesName = user != null &&
-                user.name.isNotEmpty &&
-                c.coachName.toLowerCase().contains(user.name.toLowerCase());
-            return matchesId || matchesName || isMock;
-          }).toList();
+          final myClasses = dayClasses.where((c) => isClassForCoach(c, user)).toList();
 
           final effectiveClasses = _onlyMyClasses ? myClasses : dayClasses;
 

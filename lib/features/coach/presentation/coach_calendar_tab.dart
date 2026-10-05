@@ -9,6 +9,7 @@ import 'package:swimming_school_app/features/schedule/controllers/schedule_contr
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'coach_class_attendees_sheet.dart';
+import 'coach_dashboard.dart';
 
 class CoachCalendarTab extends ConsumerStatefulWidget {
   const CoachCalendarTab({super.key});
@@ -26,7 +27,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
     final user = ref.watch(authControllerProvider);
     final themeConfig = ref.watch(appThemeControllerProvider);
     final scheduleAsync = ref.watch(scheduleControllerProvider);
-    final allClasses = scheduleAsync.value ?? [];
+    final allClasses = scheduleAsync.value ?? ScheduleController.cachedClasses ?? [];
 
     final coachBranch = user?.branchId ?? 'kyiv';
     final coachBranches = user?.branchIds ?? [coachBranch];
@@ -43,14 +44,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
     dayClassesAll.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     // Filter by coach if toggle active
-    final myDayClasses = dayClassesAll.where((c) {
-      if (user == null) return false;
-      final matchesId = c.coachId == user.id;
-      final matchesName = user.name.isNotEmpty &&
-          c.coachName.toLowerCase().contains(user.name.toLowerCase());
-      final isMock = user.id == 'mock_coach';
-      return matchesId || matchesName || isMock;
-    }).toList();
+    final myDayClasses = dayClassesAll.where((c) => isClassForCoach(c, user)).toList();
 
     final dayClasses = _onlyMyClasses ? myDayClasses : dayClassesAll;
 
@@ -269,15 +263,8 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       c.startTime.month == cellDate.month &&
                       c.startTime.day == cellDate.day).toList();
                   final hasClasses = dayClasses.isNotEmpty;
-                  final hasMyClasses = user != null && dayClasses.any((c) =>
-                      c.coachId == user.id ||
-                      (user.name.isNotEmpty && c.coachName.toLowerCase().contains(user.name.toLowerCase())) ||
-                      user.id == 'mock_coach');
-                  final hasOtherClasses = dayClasses.any((c) =>
-                      user == null ||
-                      (c.coachId != user.id &&
-                       !(user.name.isNotEmpty && c.coachName.toLowerCase().contains(user.name.toLowerCase())) &&
-                       user.id != 'mock_coach'));
+                  final hasMyClasses = user != null && dayClasses.any((c) => isClassForCoach(c, user));
+                  final hasOtherClasses = dayClasses.any((c) => !isClassForCoach(c, user));
 
                   return GestureDetector(
                     onTap: () {
@@ -855,10 +842,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final gClass = dayClasses[index];
-                        final isMyClass = user != null &&
-                            (gClass.coachId == user.id ||
-                                (user.name.isNotEmpty && gClass.coachName.toLowerCase().contains(user.name.toLowerCase())) ||
-                                user.id == 'mock_coach');
+                        final isMyClass = isClassForCoach(gClass, user);
                         final startTimeStr = '${gClass.startTime.hour.toString().padLeft(2, '0')}:${gClass.startTime.minute.toString().padLeft(2, '0')}';
                         final endTimeStr = '${gClass.endTime.hour.toString().padLeft(2, '0')}:${gClass.endTime.minute.toString().padLeft(2, '0')}';
                         final enrolledCount = gClass.enrolledChildIds.length;

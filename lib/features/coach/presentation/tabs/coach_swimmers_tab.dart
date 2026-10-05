@@ -411,7 +411,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     final coachName = (coach?.name ?? '').trim().toLowerCase();
 
     final scheduleAsync = ref.watch(scheduleControllerProvider);
-    final allClasses = scheduleAsync.value ?? [];
+    final allClasses = scheduleAsync.value ?? ScheduleController.cachedClasses ?? [];
 
     if (scheduleAsync.isLoading && allClasses.isEmpty) {
       return SliverFillRemaining(
@@ -430,9 +430,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     final coachClasses = allClasses.where((c) {
       final matchesBranch = c.branchId == coachBranch || coachBranches.contains(c.branchId);
       if (!matchesBranch) return false;
-      if (coachId.isNotEmpty && c.coachId == coachId) return true;
-      if (coachName.isNotEmpty && c.coachName.trim().toLowerCase() == coachName) return true;
-      return false;
+      return isClassForCoach(c, coach);
     }).toList();
 
     // Map student ID to their assigned classes with this coach
@@ -1255,13 +1253,9 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             final coachBranches = coach?.branchIds ?? [coachBranch];
 
             final scheduleAsync = ref.watch(scheduleControllerProvider);
-            final allClasses = scheduleAsync.value ?? [];
+            final allClasses = scheduleAsync.value ?? ScheduleController.cachedClasses ?? [];
 
-            final coachClasses = allClasses.where((c) {
-              if (coachId.isNotEmpty && c.coachId == coachId) return true;
-              if (coachName.isNotEmpty && c.coachName.trim().toLowerCase() == coachName) return true;
-              return false;
-            }).toList();
+            final coachClasses = allClasses.where((c) => isClassForCoach(c, coach)).toList();
 
             final Set<String> myEnrolledIds = {};
             for (final c in coachClasses) {

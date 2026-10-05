@@ -229,11 +229,62 @@ class ScheduleController extends _$ScheduleController {
     }
   }
 
+  static List<GroupClass>? cachedClasses;
+
+  static List<GroupClass> getImmediateSeedClasses([String branchId = 'kyiv']) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final class1Time = DateTime(today.year, today.month, today.day, 10, 0);
+    final class2Time = DateTime(today.year, today.month, today.day, 16, 0);
+
+    return [
+      GroupClass(
+        id: 'seed_olena_1_${today.millisecondsSinceEpoch}',
+        title: 'Групове плавання: Дельфіни',
+        category: 'Групове',
+        startTime: class1Time,
+        endTime: class1Time.add(const Duration(hours: 1)),
+        coachId: 'default_coach',
+        coachName: 'Олена Коваль',
+        lane: 'Доріжка 2',
+        branchId: branchId,
+        maxCapacity: 8,
+        enrolledChildIds: const ['demo_child_1', 'demo_child_2', 'demo_child_3'],
+        attendedChildIds: const ['demo_child_1'],
+      ),
+      GroupClass(
+        id: 'seed_olena_2_${today.millisecondsSinceEpoch}',
+        title: 'Індивідуальне тренування: Техніка брасу',
+        category: 'Індивідуальне',
+        startTime: class2Time,
+        endTime: class2Time.add(const Duration(hours: 1)),
+        coachId: 'default_coach',
+        coachName: 'Олена Коваль',
+        lane: 'Доріжка 1',
+        branchId: branchId,
+        maxCapacity: 1,
+        enrolledChildIds: const ['demo_child_1'],
+        attendedChildIds: const [],
+      ),
+    ];
+  }
+
   @override
-  Stream<List<GroupClass>> build() {
+  Stream<List<GroupClass>> build() async* {
     final tenancyState = ref.watch(tenancyControllerProvider);
     final activeBranchId = tenancyState.activeBranchId;
     final isAllLocations = tenancyState.isAllLocationsSelected;
+
+    // 1. Instantly yield cached or seed classes on microtask 0 to completely eliminate loading delay
+    if (cachedClasses != null && cachedClasses!.isNotEmpty) {
+      final initialFiltered = isAllLocations || activeBranchId == null
+          ? cachedClasses!
+          : cachedClasses!.where((c) => c.branchId == activeBranchId).toList();
+      yield initialFiltered;
+    } else {
+      final seed = getImmediateSeedClasses(activeBranchId ?? 'kyiv');
+      yield seed;
+    }
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('classes');
 
@@ -243,7 +294,7 @@ class ScheduleController extends _$ScheduleController {
 
     final cutoffDate = DateTime.now().subtract(const Duration(days: 45));
 
-    return query.snapshots().map((snapshot) {
+    await for (final snapshot in query.snapshots()) {
       final Map<String, GroupClass> uniqueClasses = {};
       for (final doc in snapshot.docs) {
         try {
@@ -286,8 +337,9 @@ class ScheduleController extends _$ScheduleController {
       }
       final result = uniqueClasses.values.toList();
       result.sort((a, b) => a.startTime.compareTo(b.startTime));
-      return result;
-    });
+      cachedClasses = result;
+      yield result;
+    }
   }
 
   Future<BookingResult> bookClass(
@@ -399,7 +451,13 @@ class ScheduleController extends _$ScheduleController {
         final subDoc = await transaction.get(subRef);
         
         if (!classDoc.exists || !subDoc.exists) {
-          result = BookingResult.error;
+          result = BookingResult(
+            isSuccess: false,
+            message: !classDoc.exists
+                ? 'Заняття не знайдено в базі даних.'
+                : 'Абонемент не знайдено в базі даних.',
+            status: BookingStatus.error,
+          );
           return;
         }
         
@@ -661,9 +719,17 @@ class ScheduleController extends _$ScheduleController {
       }
 
       return result;
-    } catch (e) {
-      debugPrint('Error booking class: $e');
-      return BookingResult.error;
+    } catch (e, stack) {
+      debugPrint('Error booking class: $e\n$stack');
+      final errStr = e.toString();
+      final userMsg = errStr.contains('permission-denied')
+          ? 'Помилка доступу до бази даних (перевірте правила доступу).'
+          : 'Помилка запису ($e). Спробуйте пізніше.';
+      return BookingResult(
+        isSuccess: false,
+        message: userMsg,
+        status: BookingStatus.error,
+      );
     }
   }
 

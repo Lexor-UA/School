@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swimming_school_app/features/payment/models/branch_payment_config.dart';
@@ -101,11 +102,18 @@ class BranchPaymentService {
       },
     );
 
+    // Ensure authenticated session if available
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
+    } catch (_) {}
+
     // 4. Збереження транзакції в Firestore
     try {
       await _db.collection('payments').doc(transaction.id).set(transaction.toMap());
     } catch (e) {
-      debugPrint('Notice: Firestore payments log skipped or offline: $e');
+      debugPrint('Notice: Firestore payments log warning: $e');
     }
 
     // 5. Активація абонемента для користувача
@@ -127,10 +135,25 @@ class BranchPaymentService {
       currencySymbol: config.currencySymbol,
     );
 
+    final subData = {
+      ...newSubscription.toJson(),
+      'user_id': clientId,
+      'userId': clientId,
+      'branch_id': branchId,
+      'branchId': branchId,
+      'organization_id': config.organizationId,
+      'organizationId': config.organizationId,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
     try {
-      await _db.collection('subscriptions').doc(newSubscription.id).set(newSubscription.toJson());
+      await _db.collection('subscriptions').doc(newSubscription.id).set(subData);
+      debugPrint('BranchPaymentService: Subscription $subId successfully created in Firestore for $clientId (${childName ?? clientName})');
     } catch (e) {
-      debugPrint('Notice: Firestore subscription activation skipped or offline: $e');
+      debugPrint('Notice: Firestore subscription activation error: $e');
+      if (!e.toString().contains('no-app')) {
+        rethrow;
+      }
     }
 
     // 6. Формування та повернення електронної квитанції

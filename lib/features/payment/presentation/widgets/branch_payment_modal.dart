@@ -62,6 +62,7 @@ class BranchPaymentModal extends ConsumerStatefulWidget {
 
 class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
   bool _isProcessing = false;
+  String? _errorMessage;
   String _selectedMethod = 'card';
   PaymentReceipt? _completedReceipt;
 
@@ -398,6 +399,47 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         ),
         const SizedBox(height: 22),
 
+        // Error display if payment failed
+        if (_errorMessage != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.20 : 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.55 : 0.40),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.20 : 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.alertCircle, color: Color(0xFFEF4444), size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ).animate().fadeIn(duration: 250.ms).shake(duration: 350.ms, hz: 4),
+        ],
+
         // Action Button
         Container(
           width: double.infinity,
@@ -428,6 +470,8 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
+              disabledBackgroundColor: Colors.transparent,
+              disabledForegroundColor: Colors.white60,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -794,8 +838,12 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
   }
 
   Future<void> _handlePayment() async {
-    setState(() => _isProcessing = true);
+    setState(() {
+      _isProcessing = true;
+      _errorMessage = null;
+    });
     HapticFeedback.mediumImpact();
+    debugPrint('BranchPaymentModal: _handlePayment invoked for package ${widget.package.name} (branch: ${widget.package.branchId})');
 
     try {
       final paymentService = ref.read(branchPaymentServiceProvider);
@@ -818,9 +866,13 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
           _completedReceipt = receipt;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('BranchPaymentModal: Payment error: $e\n$stack');
       if (mounted) {
-        setState(() => _isProcessing = false);
+        setState(() {
+          _isProcessing = false;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Помилка платежу: $e'),

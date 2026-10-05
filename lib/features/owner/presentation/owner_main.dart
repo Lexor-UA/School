@@ -437,15 +437,18 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${'owner.hello'.tr()}, ${user?.name ?? "Власник"}',
-                          style: TextStyle(
-                            color: themeConfig.textPrimary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.2,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${'owner.hello'.tr()}, ${user?.name ?? "Власник"}',
+                            style: TextStyle(
+                              color: themeConfig.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 3),
                         Row(

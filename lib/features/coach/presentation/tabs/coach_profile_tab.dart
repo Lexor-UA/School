@@ -58,11 +58,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 data['id'] = d.id;
                 try {
                   final gc = GroupClass.fromJson(data);
-                  final matchesId = gc.coachId == user.id;
-                  final matchesName = gc.coachName.isNotEmpty &&
-                      (gc.coachName.toLowerCase().contains(user.name.toLowerCase()) ||
-                       user.name.toLowerCase().contains(gc.coachName.toLowerCase()));
-                  if (matchesId || matchesName) {
+                  if (isClassForCoach(gc, user)) {
                     coachClasses.add(gc);
                   }
                 } catch (_) {}

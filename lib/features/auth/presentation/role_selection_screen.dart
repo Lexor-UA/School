@@ -15,6 +15,7 @@ import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dar
 import 'package:swimming_school_app/features/auth/presentation/password_recovery_screen.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   final bool skipSplash;
   final String? initialBranchId;
@@ -41,6 +42,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Pre-warm schedule controller in background so coach and parent tabs load instantly
+      ref.read(scheduleControllerProvider);
+
       final activeBranch = ref.read(tenancyControllerProvider).effectiveBranch;
       if (!activeBranch.supportedLanguages.contains(context.locale.languageCode)) {
         context.setLocale(Locale(activeBranch.defaultLanguage));
@@ -848,7 +852,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
             Future<void> submitRegister() async {
               final name = regNameController.text.trim();
-              final login = regLoginController.text.trim();
+              final email = regLoginController.text.trim().toLowerCase();
               final password = regPasswordController.text.trim();
 
               if (name.isEmpty) {
@@ -863,10 +867,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 return;
               }
 
-              if (login.isEmpty) {
+              if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('Введіть емейл або логін'),
+                    content: const Text('Введіть коректну електронну пошту (email)'),
                     backgroundColor: Colors.amber.shade800,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -892,7 +896,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 final notifier = ref.read(authControllerProvider.notifier);
                 await notifier.registerParentWithPhoneOrEmail(
                   name: name,
-                  phone: login,
+                  phone: email,
                   password: password,
                   branchId: selectedBranchId,
                 );
@@ -901,9 +905,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   setModalState(() => isModalLoading = false);
                 }
                 if (context.mounted) {
+                  final errorMsg = e.toString().replaceAll('Exception: ', '');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Помилка реєстрації: $e'),
+                      content: Text('Помилка реєстрації: $errorMsg'),
                       backgroundColor: Colors.redAccent,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1439,7 +1444,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                                             const SizedBox(height: 12),
 
-                                            // Login (Phone, Email, or Username)
+                                            // Email
                                             TextField(
                                               controller: regLoginController,
                                               keyboardType: TextInputType.emailAddress,
@@ -1447,9 +1452,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
                                               textInputAction: TextInputAction.next,
                                               decoration: _modalInputDecoration(
-                                                hintText: 'auth.email_login'.tr().isNotEmpty && !'auth.email_login'.tr().startsWith('auth.')
-                                                    ? 'auth.email_login'.tr()
-                                                    : 'Емейл або логін',
+                                                hintText: 'Електронна пошта (email)',
                                                 prefixIcon: LucideIcons.mail,
                                                 suffixIcon: regLoginController.text.isNotEmpty
                                                     ? IconButton(

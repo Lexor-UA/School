@@ -404,21 +404,39 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          (user?.name != null &&
-                                  user!.name.trim().isNotEmpty &&
-                                  user.name.trim() != 'Admin' &&
-                                  user.name.trim() != 'Адміністратор')
-                              ? 'admin.welcome_admin'.tr(namedArgs: {'name': user.name.trim()})
-                              : '${'admin.hello'.tr()} 👋',
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Builder(
+                          builder: (context) {
+                            String displayName = user?.name.trim() ?? '';
+                            final lower = displayName.toLowerCase();
+                            if (displayName.isEmpty ||
+                                lower == 'admin' ||
+                                lower == 'адміністратор' ||
+                                lower.startsWith('адміністратор') ||
+                                lower.startsWith('admin')) {
+                              displayName = 'Адмін';
+                            } else if (displayName.contains(' ')) {
+                              final parts = displayName.split(' ');
+                              if (parts.first.length >= 3) {
+                                displayName = parts.first;
+                              }
+                            }
+
+                            final greeting = 'admin.welcome_admin'.tr(namedArgs: {'name': displayName});
+
+                            return FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '$greeting 👋',
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 2),
                         Row(
@@ -439,16 +457,18 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                             ),
                             const SizedBox(width: 6),
                             Flexible(
-                              child: Text(
-                                'CitySwim Admin',
-                                style: TextStyle(
-                                  color: currentTheme.accentSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.4,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'CitySwim Admin',
+                                  style: TextStyle(
+                                    color: currentTheme.accentSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.4,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -463,13 +483,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const ThemeHeaderButton(size: 40),
-                const SizedBox(width: 8),
-                _buildActivityLogHeaderButton(context, recentActions, currentTheme),
-                const SizedBox(width: 8),
+                const ThemeHeaderButton(size: 38),
+                const SizedBox(width: 6),
+                _buildActivityLogHeaderButton(context, recentActions, currentTheme, size: 38),
+                const SizedBox(width: 6),
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: currentTheme.isDark
                         ? const Color(0xFFEF4444).withValues(alpha: 0.14)
@@ -490,11 +510,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   ),
                   child: IconButton(
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                    constraints: const BoxConstraints.tightFor(width: 38, height: 38),
                     icon: Icon(
                       LucideIcons.logOut,
                       color: currentTheme.isDark ? const Color(0xFFF87171) : Colors.redAccent,
-                      size: 20,
+                      size: 19,
                     ),
                     tooltip: 'parent.logout_short'.tr(),
                     onPressed: () async {
@@ -516,16 +536,17 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   Widget _buildActivityLogHeaderButton(
     BuildContext context,
     List<ActivityLog> recentActions,
-    AppThemeConfig currentTheme,
-  ) {
+    AppThemeConfig currentTheme, {
+    double size = 38,
+  }) {
     final now = DateTime.now();
     final hasRecentToday = recentActions.any((a) =>
         a.timestamp.isAfter(now.subtract(const Duration(hours: 24))) ||
         (a.timestamp.year == now.year && a.timestamp.month == now.month && a.timestamp.day == now.day));
 
     return Container(
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: currentTheme.isDark
             ? Colors.white.withValues(alpha: 0.12)
@@ -550,11 +571,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
         children: [
           IconButton(
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+            constraints: BoxConstraints.tightFor(width: size, height: size),
             icon: Icon(
               LucideIcons.history,
               color: currentTheme.accentPrimary,
-              size: 20,
+              size: size > 38 ? 20 : 19,
             ),
             tooltip: 'admin.recent_actions'.tr(),
             onPressed: () => _showRecentActionsSheet(context, recentActions),

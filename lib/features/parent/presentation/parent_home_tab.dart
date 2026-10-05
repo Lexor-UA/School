@@ -64,10 +64,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
       ...children.map((c) => c.id),
     ];
 
-    List<GroupClass> todaysUpcomingClasses = [];
+    GroupClass? nextEnrolledClass;
     if (scheduleAsync.value != null) {
       final now = DateTime.now();
-      var upcomingClasses = scheduleAsync.value!.where((c) {
+      final upcomingClasses = scheduleAsync.value!.where((c) {
         if (c.startTime.isBefore(now)) return false;
         return c.enrolledChildIds.any((id) => allEnrolledIds.contains(id));
       }).toList();
@@ -75,16 +75,9 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
       upcomingClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
       
       if (upcomingClasses.isNotEmpty) {
-        final nearestDate = upcomingClasses.first.startTime;
-        todaysUpcomingClasses = upcomingClasses.where((c) {
-          return c.startTime.year == nearestDate.year &&
-                 c.startTime.month == nearestDate.month &&
-                 c.startTime.day == nearestDate.day;
-        }).toList();
+        nextEnrolledClass = upcomingClasses.first;
       }
     }
-
-    bool hasClassesToday = todaysUpcomingClasses.isNotEmpty;
 
     // Fetch active subscription for the main user (or default)
     final allSubs = user != null ? ref.watch(subscriptionControllerProvider.notifier).getSubscriptionsForUser(user.id) : <Subscription>[];
@@ -101,12 +94,31 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     
     final currentSub = activeSubs.isNotEmpty ? activeSubs.first : null;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 85.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        final isShort = availableHeight < 620;
+        final isCompact = availableHeight < 690;
+        final isTall = availableHeight >= 760;
+
+        final cardAspectRatio = isShort ? 2.05 : (isCompact ? 1.90 : 1.75);
+        final subPillVerticalPadding = isShort ? 8.0 : (isCompact ? 10.0 : (isTall ? 14.0 : 12.5));
+        final chatPillVerticalPadding = isShort ? 8.0 : (isCompact ? 10.0 : (isTall ? 14.0 : 12.5));
+        final iconBoxSize = isShort ? 32.0 : (isCompact ? 36.0 : 40.0);
+        final iconSize = isShort ? 16.0 : (isCompact ? 18.0 : 20.0);
+
+        final gapHeaderToClass = isShort ? 6.0 : (isCompact ? 8.0 : (isTall ? 12.0 : 10.0));
+        final gapClassToCard = isShort ? 6.0 : (isCompact ? 8.0 : (isTall ? 12.0 : 10.0));
+        final gapCardToSubPill = isShort ? 6.0 : (isCompact ? 8.0 : (isTall ? 12.0 : 10.0));
+        final gapSubPillToChats = isShort ? 6.0 : (isCompact ? 8.0 : (isTall ? 10.0 : 8.0));
+        final bottomClearance = isTall ? 95.0 : 85.0;
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(20.0, isShort ? 6.0 : 10.0, 20.0, bottomClearance),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // 1. HEADER
           Row(
             children: [
@@ -145,19 +157,22 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
-                          ? user.name
-                          : (FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
-                              ? FirebaseAuth.instance.currentUser!.displayName!.trim()
-                              : 'Гість'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 18.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.1,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        (user?.name != null && user!.name.trim().isNotEmpty && user.name != 'New User')
+                            ? user.name
+                            : (FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
+                                ? FirebaseAuth.instance.currentUser!.displayName!.trim()
+                                : 'Гість'),
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 18.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.1,
+                        ),
                       ),
                     ),
                   ],
@@ -236,9 +251,9 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: gapHeaderToClass),
           
-          // 2. MAIN CLASS CARDS
+          // 2. MAIN CLASS CARD (Only ONE nearest enrolled class, or empty state)
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 380),
@@ -267,7 +282,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Найближчі заняття',
+                    'Найближче заняття',
                     style: TextStyle(
                       color: textColor,
                       fontSize: 15,
@@ -279,387 +294,400 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isShort ? 6 : 8),
           
-          if (hasClassesToday)
-            ...todaysUpcomingClasses.map((c) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: _buildNextClassCard(context, isDark, accentColor, textColor, textSubColor, c, user, children, family),
-            ))
+          if (nextEnrolledClass != null)
+            _buildNextClassCard(context, isDark, accentColor, textColor, textSubColor, nextEnrolledClass, user, children, family)
           else
             _buildEmptyStateCard(context, ref, isDark, accentColor, textColor),
           
-          const SizedBox(height: 12),
+          SizedBox(height: gapClassToCard),
 
           // 3. SUBSCRIPTION CARD
           SubscriptionFrontCard(
             currentSub: currentSub,
+            aspectRatio: cardAspectRatio,
             onTap: () {
               ref.read(parentTabProvider.notifier).setTab(2); // Navigate to Subscription tab
             },
           ),
 
-          const SizedBox(height: 10),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 380),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // A. Subscription balance & status pill
-                    if (currentSub != null) ...[
-                      GestureDetector(
-                        onTap: () {
-                          ref.read(parentTabProvider.notifier).setTab(2);
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: isDark
-                                  ? const [Color(0xFF0A2239), Color(0xFF051525)]
-                                  : const [Colors.white, Color(0xFFF8FAFC)],
-                            ),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
-                                  : const Color(0xFFBAE6FD),
-                              width: 1.0,
-                            ),
-                            boxShadow: [
-                              if (isDark) ...[
-                                BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.45),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ] else ...[
-                                BoxShadow(
-                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  blurRadius: 1,
-                                  offset: const Offset(0, -1),
-                                ),
-                              ],
-                            ],
+          SizedBox(height: gapCardToSubPill),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // A. Subscription balance & status pill
+                  if (currentSub != null) ...[
+                    GestureDetector(
+                      onTap: () {
+                        ref.read(parentTabProvider.notifier).setTab(2);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: subPillVerticalPadding),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? const [Color(0xFF0A2239), Color(0xFF051525)]
+                                : const [Colors.white, Color(0xFFF8FAFC)],
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 1.5),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Icon(LucideIcons.sparkles, color: Colors.white, size: 16),
-                                ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                                : const Color(0xFFBAE6FD),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            if (isDark) ...[
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      (currentSub.serviceName != null && currentSub.serviceName!.isNotEmpty)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ] else ...[
+                              BoxShadow(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                blurRadius: 1,
+                                offset: const Offset(0, -1),
+                              ),
+                            ],
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: iconBoxSize,
+                              height: iconBoxSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1.5),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Icon(LucideIcons.sparkles, color: Colors.white, size: iconSize),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Builder(
+                                    builder: (context) {
+                                      final rawName = (currentSub.serviceName != null && currentSub.serviceName!.isNotEmpty)
                                           ? currentSub.serviceName!
-                                          : 'Абонемент CitySwim',
-                                      style: TextStyle(
-                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 13.5,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
+                                          : 'Абонемент CitySwim';
+                                      final cleanTitle = rawName.replaceFirst(RegExp(r'^Абонемент\s+(на\s+)?', caseSensitive: false), '').trim();
+                                      final displayTitle = cleanTitle.isNotEmpty ? cleanTitle : rawName;
+                                      return FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          displayTitle,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: isCompact ? 13.5 : 15.0,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 2),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
                                       currentSub.remainingClasses > 0
                                           ? 'Залишок: ${currentSub.remainingClasses} ${currentSub.remainingClasses == 1 ? "заняття" : "занять"} • Діє до ${currentSub.expiryDate != null ? DateFormat("dd.MM.yyyy").format(currentSub.expiryDate!) : "безстроково"}'
                                           : 'Активний абонемент',
                                       style: TextStyle(
                                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                         fontWeight: FontWeight.w600,
-                                        fontSize: 11.5,
+                                        fontSize: isCompact ? 11.5 : 12.5,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              LucideIcons.chevronRight,
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
+                              size: isCompact ? 18 : 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: gapSubPillToChats),
+                  ],
+
+                  // B. Quick Action Buttons Row
+                  Row(
+                    children: [
+                      // Quick Action 1: Chat with Coach
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            _openCoachChat(context);
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 14, vertical: chatPillVerticalPadding),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDark
+                                    ? const [Color(0xFF0A2239), Color(0xFF051525)]
+                                    : const [Colors.white, Color(0xFFF8FAFC)],
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                                    : const Color(0xFFBAE6FD),
+                                width: 1.0,
+                              ),
+                              boxShadow: [
+                                if (isDark) ...[
+                                  BoxShadow(
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ] else ...[
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white.withValues(alpha: 0.80),
+                                    blurRadius: 1,
+                                    offset: const Offset(0, -1),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: iconBoxSize,
+                                  height: iconBoxSize,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(11),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 1.5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Icon(LucideIcons.userCheck, color: Colors.white, size: iconSize),
+                                  ),
                                 ),
-                              ),
-                              Icon(
-                                LucideIcons.chevronRight,
-                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
-                                size: 18,
-                              ),
-                            ],
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Чат',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: isCompact ? 13.0 : 14.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        'З тренером',
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                          fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
+                                          fontSize: isCompact ? 11.0 : 12.0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(width: 12),
+
+                      // Quick Action 2: Chat with school / support
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (user != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ParentChatScreen(
+                                    dialogId: 'support_admin_${user.id}',
+                                    recipientId: 'admin_support',
+                                    recipientName: 'Адміністрація CitySwim',
+                                    clientId: user.id,
+                                    clientName: user.name,
+                                    type: 'client_admin',
+                                    title: 'Підтримка CitySwim',
+                                    subtitle: 'Адміністрація школи',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 14, vertical: chatPillVerticalPadding),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDark
+                                    ? const [Color(0xFF0A2239), Color(0xFF051525)]
+                                    : const [Colors.white, Color(0xFFF8FAFC)],
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
+                                    : const Color(0xFFBAE6FD),
+                                width: 1.0,
+                              ),
+                              boxShadow: [
+                                if (isDark) ...[
+                                  BoxShadow(
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ] else ...[
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white.withValues(alpha: 0.80),
+                                    blurRadius: 1,
+                                    offset: const Offset(0, -1),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: iconBoxSize,
+                                  height: iconBoxSize,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(11),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 1.5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Icon(LucideIcons.messageCircle, color: Colors.white, size: iconSize),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Чат',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: isCompact ? 13.0 : 14.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Зі школою',
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                          fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
+                                          fontSize: isCompact ? 11.0 : 12.0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
-
-                    // B. Quick Action Buttons Row
-                    Row(
-                      children: [
-                        // Quick Action 1: Chat with Coach
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              _openCoachChat(context);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: isDark
-                                      ? const [Color(0xFF0A2239), Color(0xFF051525)]
-                                      : const [Colors.white, Color(0xFFF8FAFC)],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isDark
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
-                                      : const Color(0xFFBAE6FD),
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  if (isDark) ...[
-                                    BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.45),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ] else ...[
-                                    BoxShadow(
-                                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.80),
-                                      blurRadius: 1,
-                                      offset: const Offset(0, -1),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(9),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 1.5),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: Icon(LucideIcons.userCheck, color: Colors.white, size: 16),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Чат',
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        Text(
-                                          'З тренером',
-                                          style: TextStyle(
-                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-                                            fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Quick Action 2: Chat with school / support
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              if (user != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ParentChatScreen(
-                                      dialogId: 'support_admin_${user.id}',
-                                      recipientId: 'admin_support',
-                                      recipientName: 'Адміністрація CitySwim',
-                                      clientId: user.id,
-                                      clientName: user.name,
-                                      type: 'client_admin',
-                                      title: 'Підтримка CitySwim',
-                                      subtitle: 'Адміністрація школи',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: isDark
-                                      ? const [Color(0xFF0A2239), Color(0xFF051525)]
-                                      : const [Colors.white, Color(0xFFF8FAFC)],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isDark
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
-                                      : const Color(0xFFBAE6FD),
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  if (isDark) ...[
-                                    BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.45),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ] else ...[
-                                    BoxShadow(
-                                      color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.80),
-                                      blurRadius: 1,
-                                      offset: const Offset(0, -1),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: isDark
-                                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                            : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(9),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 1.5),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: Icon(LucideIcons.messageCircle, color: Colors.white, size: 16),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Чат',
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Зі школою',
-                                          style: TextStyle(
-                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-                                            fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+          ),
           
           const SizedBox(height: 8),
         ],
       ),
+    );
+      },
     );
   }
 

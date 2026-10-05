@@ -38,17 +38,6 @@ class AdminMain extends ConsumerStatefulWidget {
 }
 
 class _AdminMainState extends ConsumerState<AdminMain> {
-  bool _hasAnimated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() => _hasAnimated = true);
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,110 +127,100 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
           SafeArea(
             bottom: false,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-              slivers: [
-                _buildAppBar(context, ref, dashboardState.recentActions),
+            child: RepaintBoundary(
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                slivers: [
+                  _buildAppBar(context, ref, dashboardState.recentActions),
 
-                // 0. Селектор філій для Owner та бейдж філії для персоналу
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 6.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        BranchSelectorPill(),
-                        BranchInvitationQrButton(),
-                      ],
+                  // 0. Селектор філій для Owner та бейдж філії для персоналу
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          BranchSelectorPill(),
+                          BranchInvitationQrButton(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                // Search Bar
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
-                    child: _hasAnimated
-                        ? _buildSearchBar()
-                        : _buildSearchBar().animate().fadeIn(delay: 100.ms).slideY(begin: 0.06),
+                  // Search Bar
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
+                      child: _buildSearchBar(),
+                    ),
                   ),
-                ),
 
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // 1. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок під пошуком)
-                      _buildSectionTitle(
-                        'admin.quick_actions'.tr(),
-                        LucideIcons.zap,
-                        currentTheme.accentPrimary,
-                        gradientColors: currentTheme.accentGradient,
-                      ),
-                      const SizedBox(height: 10),
-                      RepaintBoundary(
-                        child: _hasAnimated
-                            ? _buildQuickActions(context)
-                            : _buildQuickActions(context).animate().fadeIn(delay: 150.ms).slideY(begin: 0.06),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
-                      if (dashboardState.unpaidSubscriptions > 0) ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // 1. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок під пошуком)
                         _buildSectionTitle(
-                          'admin.needs_attention'.tr(),
-                          LucideIcons.alertTriangle,
-                          const Color(0xFFF43F5E),
-                          gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
-                          badgeText: '${dashboardState.unpaidSubscriptions} ${'admin.debtors_short'.tr()}',
-                          badgeColor: const Color(0xFFF43F5E),
-                        ),
-                        const SizedBox(height: 10),
-                        _hasAnimated
-                            ? _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions)
-                            : _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions).animate().fadeIn(delay: 220.ms).slideY(begin: 0.06),
-                        const SizedBox(height: 18),
-                      ],
-
-                      // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
-                      RepaintBoundary(
-                        child: _hasAnimated
-                            ? _buildLivePulseBar(dashboardState)
-                            : _buildLivePulseBar(dashboardState).animate().fadeIn(delay: 300.ms).slideY(begin: 0.06),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
-                      _hasAnimated
-                          ? _buildSupportCenterCard(unreadCount)
-                          : _buildSupportCenterCard(unreadCount).animate().fadeIn(delay: 380.ms).slideY(begin: 0.06),
-                      const SizedBox(height: 20),
-
-                      // 5. Найближче заняття з аватарками учнів
-                      if (dashboardState.nearestClass != null) ...[
-                        _buildSectionTitle(
-                          'admin.nearest_class'.tr(),
-                          LucideIcons.clock,
+                          'admin.quick_actions'.tr(),
+                          LucideIcons.zap,
                           currentTheme.accentPrimary,
                           gradientColors: currentTheme.accentGradient,
-                          badgeText: 'admin.today'.tr(),
-                          badgeColor: currentTheme.accentPrimary,
                         ),
                         const SizedBox(height: 10),
                         RepaintBoundary(
-                          child: _hasAnimated
-                              ? _buildNearestClass(dashboardState.nearestClass!)
-                              : _buildNearestClass(dashboardState.nearestClass!).animate().fadeIn(delay: 450.ms).slideY(begin: 0.06),
+                          child: _buildQuickActions(context),
                         ),
-                        const SizedBox(height: 20),
-                      ],
+                        const SizedBox(height: 18),
 
-                      // Generous bottom buffer ensuring the entire screen can be scrolled comfortably above the home indicator
-                      SizedBox(height: MediaQuery.of(context).padding.bottom + 64),
-                    ]),
+                        // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
+                        if (dashboardState.unpaidSubscriptions > 0) ...[
+                          _buildSectionTitle(
+                            'admin.needs_attention'.tr(),
+                            LucideIcons.alertTriangle,
+                            const Color(0xFFF43F5E),
+                            gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
+                            badgeText: '${dashboardState.unpaidSubscriptions} ${'admin.debtors_short'.tr()}',
+                            badgeColor: const Color(0xFFF43F5E),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions),
+                          const SizedBox(height: 18),
+                        ],
+
+                        // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
+                        RepaintBoundary(
+                          child: _buildLivePulseBar(dashboardState),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
+                        _buildSupportCenterCard(unreadCount),
+                        const SizedBox(height: 20),
+
+                        // 5. Найближче заняття з аватарками учнів
+                        if (dashboardState.nearestClass != null) ...[
+                          _buildSectionTitle(
+                            'admin.nearest_class'.tr(),
+                            LucideIcons.clock,
+                            currentTheme.accentPrimary,
+                            gradientColors: currentTheme.accentGradient,
+                            badgeText: 'admin.today'.tr(),
+                            badgeColor: currentTheme.accentPrimary,
+                          ),
+                          const SizedBox(height: 10),
+                          RepaintBoundary(
+                            child: _buildNearestClass(dashboardState.nearestClass!),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+
+                        // Generous bottom buffer ensuring the entire screen can be scrolled comfortably above the home indicator
+                        SizedBox(height: MediaQuery.of(context).padding.bottom + 64),
+                      ]),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -2301,57 +2280,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     ),
                   ],
                 ),
-                child: StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(displayIds[i])
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    final data = snapshot.data?.data() as Map<String, dynamic>?;
-                    final avatarUrl = data?['avatarUrl'] as String?;
-                    final rawName = data?['name'] as String? ?? '';
-                    final cleanName = (rawName.trim().isEmpty || rawName.trim().toLowerCase() == 'user') ? 'Учень' : rawName.trim();
-
-                    final parts = cleanName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-                    final initials = parts.length >= 2
-                        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
-                        : (cleanName.length >= 2 ? cleanName.substring(0, 2).toUpperCase() : cleanName.toUpperCase());
-
-                    final hash = displayIds[i].hashCode.abs();
-                    final gradient = currentTheme.actionCardGradients[hash % currentTheme.actionCardGradients.length];
-
-                    if (avatarUrl != null &&
-                        avatarUrl.isNotEmpty &&
-                        avatarUrl.startsWith('http') &&
-                        !avatarUrl.contains('ui-avatars.com')) {
-                      return CircleAvatar(
-                        radius: 13,
-                        backgroundImage: NetworkImage(avatarUrl),
-                        backgroundColor: Colors.white24,
-                      );
-                    }
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: gradient,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                child: _StudentFacepileAvatar(
+                  childId: displayIds[i],
+                  isDark: isDark,
+                  gradient: currentTheme.actionCardGradients[displayIds[i].hashCode.abs() % currentTheme.actionCardGradients.length],
                 ),
               ),
             ),
@@ -2404,3 +2336,101 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     );
   }
 }
+
+class _ChildAvatarCacheItem {
+  final String initials;
+  final String? avatarUrl;
+  const _ChildAvatarCacheItem({required this.initials, this.avatarUrl});
+}
+
+class _StudentFacepileAvatar extends StatefulWidget {
+  final String childId;
+  final bool isDark;
+  final List<Color> gradient;
+
+  const _StudentFacepileAvatar({
+    required this.childId,
+    required this.isDark,
+    required this.gradient,
+  });
+
+  static final Map<String, _ChildAvatarCacheItem> _cache = {};
+
+  @override
+  State<_StudentFacepileAvatar> createState() => _StudentFacepileAvatarState();
+}
+
+class _StudentFacepileAvatarState extends State<_StudentFacepileAvatar> {
+  @override
+  void initState() {
+    super.initState();
+    _resolveAvatar();
+  }
+
+  Future<void> _resolveAvatar() async {
+    if (_StudentFacepileAvatar._cache.containsKey(widget.childId)) return;
+    try {
+      var doc = await FirebaseFirestore.instance.collection('children').doc(widget.childId).get();
+      if (!doc.exists) {
+        doc = await FirebaseFirestore.instance.collection('users').doc(widget.childId).get();
+      }
+      if (doc.exists && mounted) {
+        final data = doc.data();
+        final rawName = (data?['name'] as String?)?.trim() ?? '';
+        final cleanName = (rawName.isEmpty || rawName.toLowerCase() == 'user') ? 'Учень' : rawName;
+        final parts = cleanName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+        final initials = parts.length >= 2
+            ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+            : (cleanName.length >= 2 ? cleanName.substring(0, 2).toUpperCase() : cleanName.toUpperCase());
+        final avatarUrl = data?['avatarUrl'] as String?;
+
+        _StudentFacepileAvatar._cache[widget.childId] = _ChildAvatarCacheItem(
+          initials: initials,
+          avatarUrl: avatarUrl,
+        );
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cached = _StudentFacepileAvatar._cache[widget.childId];
+    final initials = cached?.initials ?? 'У';
+    final avatarUrl = cached?.avatarUrl;
+
+    if (avatarUrl != null &&
+        avatarUrl.isNotEmpty &&
+        avatarUrl.startsWith('http') &&
+        !avatarUrl.contains('ui-avatars.com')) {
+      return CircleAvatar(
+        radius: 13,
+        backgroundImage: NetworkImage(avatarUrl),
+        backgroundColor: Colors.white24,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: widget.gradient,
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+

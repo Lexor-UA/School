@@ -255,6 +255,9 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
         ? (List<String>.from(_currentClass.attendedChildIds)..remove(attendee.id))
         : (List<String>.from(_currentClass.attendedChildIds)..add(attendee.id));
 
+    final prevClass = _currentClass;
+    final prevAttendees = List<CoachAttendeeInfo>.from(_attendees);
+
     setState(() {
       _currentClass = _currentClass.copyWith(attendedChildIds: updatedAttended);
       _attendees = _attendees.map((a) {
@@ -322,6 +325,23 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
       }
     } catch (e) {
       debugPrint('Error toggling attendance: $e');
+      if (mounted) {
+        setState(() {
+          _currentClass = prevClass;
+          _attendees = prevAttendees;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Не вдалося зберегти відвідуваність для ${attendee.name}. Перевірте зв’язок.',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 

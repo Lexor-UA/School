@@ -142,6 +142,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           );
         }
 
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
           _isSuccess = true;

@@ -96,8 +96,11 @@ class ChildrenController extends _$ChildrenController {
         final data = doc.data();
         final enrolled = List<String>.from(data['enrolledChildIds'] ?? []);
         enrolled.remove(childId);
+        final attended = List<String>.from(data['attendedChildIds'] ?? []);
+        attended.remove(childId);
         final updates = <String, dynamic>{
           'enrolledChildIds': enrolled,
+          'attendedChildIds': attended,
         };
         if (data['bookedSubscriptions'] is Map) {
           final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map);
@@ -130,8 +133,27 @@ class ChildrenController extends _$ChildrenController {
             }
           }
         }
-        await doc.reference.update(updates);
+        final isCustomBooking = data['isCustomBooking'] == true || data['createdByRole'] == 'parent';
+        if (enrolled.isEmpty && isCustomBooking) {
+          await doc.reference.delete();
+        } else {
+          await doc.reference.update(updates);
+        }
       }
+
+      // Also clean up any past classes where child was in attendedChildIds
+      try {
+        final attendedSnap = await FirebaseFirestore.instance
+            .collection('classes')
+            .where('attendedChildIds', arrayContains: childId)
+            .get();
+        for (final aDoc in attendedSnap.docs) {
+          final aData = aDoc.data();
+          final attList = List<String>.from(aData['attendedChildIds'] ?? []);
+          attList.remove(childId);
+          await aDoc.reference.update({'attendedChildIds': attList});
+        }
+      } catch (_) {}
 
       // 2. Delete child document
       await FirebaseFirestore.instance.collection('children').doc(childId).delete();

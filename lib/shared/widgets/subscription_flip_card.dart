@@ -10,8 +10,13 @@ import 'package:swimming_school_app/shared/widgets/interactive_3d_card.dart';
 
 class SubscriptionFlipCard extends StatefulWidget {
   final dynamic currentSub;
+  final double aspectRatio;
 
-  const SubscriptionFlipCard({super.key, this.currentSub});
+  const SubscriptionFlipCard({
+    super.key,
+    this.currentSub,
+    this.aspectRatio = 1.58,
+  });
 
   @override
   State<SubscriptionFlipCard> createState() => _SubscriptionFlipCardState();
@@ -134,6 +139,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
     return SubscriptionFrontCard(
       currentSub: widget.currentSub,
       isInteractive: true,
+      aspectRatio: widget.aspectRatio,
       onTap: _toggleFlip,
     );
   }
@@ -146,7 +152,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: AspectRatio(
-          aspectRatio: 1.58,
+          aspectRatio: widget.aspectRatio,
           child: Interactive3DCard(
             enableHologram: false,
             onTap: _toggleFlip,
@@ -183,7 +189,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -219,7 +225,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                           ],
                         ),
                         if (sub != null && sub.serviceName != null && sub.serviceName!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
@@ -243,14 +249,14 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                           child: GestureDetector(
                             onTap: () => _showFullScreenQr(context, qrData),
                             child: Container(
-                              padding: const EdgeInsets.all(7),
+                              padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(15),
                                 boxShadow: [
                                   BoxShadow(
                                     color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                                    blurRadius: 14,
+                                    blurRadius: 12,
                                     spreadRadius: 2,
                                   ),
                                 ],
@@ -261,7 +267,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                                   QrImageView(
                                     data: qrData,
                                     version: QrVersions.auto,
-                                    size: 84.0,
+                                    size: 80.0,
                                     backgroundColor: Colors.white,
                                   ),
                                 ],
@@ -270,7 +276,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                           ),
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 5),
                         Center(
                           child: Text(
                             'Торкніться для перевороту · Натисніть QR для збільшення',
@@ -284,15 +290,19 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
 
                         const Spacer(),
 
-                        Text(
-                          'Ця цифрова картка є власністю басейну. Пред\'явіть QR-код тренеру або адміністратору на ресепшені.',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.65),
-                            fontSize: 8.5,
-                            height: 1.3,
-                            shadows: const [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))],
+                        Center(
+                          child: Text(
+                            'Ця цифрова картка є власністю басейну. Пред\'явіть QR-код тренеру або адміністратору на ресепшені.',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 8.5,
+                              height: 1.25,
+                              shadows: const [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(1, 1))],
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),

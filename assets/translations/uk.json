@@ -323,6 +323,8 @@
   "parent.save": "Зберегти",
   "parent.client_account": "Клієнт",
   "admin": {
+    "edit": "Редагувати",
+    "close": "Закрити",
     "hello": "Привіт",
     "search_hint": "Пошук клієнтів та тренерів",
     "today": "Сьогодні",
@@ -716,6 +718,7 @@
   "theme_light_azure_title": "Океанічна Перлина",
   "theme_light_azure_sub": "Розкішний світлий дизайн з ефектом скла та живою водою",
   "common": {
+    "loading": "Завантаження...",
     "error": "Помилка"
   }
 }

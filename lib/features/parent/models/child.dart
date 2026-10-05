@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 
@@ -22,7 +23,13 @@ abstract class Child with _$Child {
     @Default('kyiv') String branchId,
   }) = _Child;
 
-  factory Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);
+  factory Child.fromJson(Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    if (copy['birthDate'] is Timestamp) {
+      copy['birthDate'] = (copy['birthDate'] as Timestamp).toDate().toIso8601String();
+    }
+    return _$ChildFromJson(copy);
+  }
 }
 
 extension ChildAgeX on Child {

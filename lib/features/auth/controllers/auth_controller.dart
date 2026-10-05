@@ -972,7 +972,6 @@ class AuthController extends _$AuthController {
         await _syncAuthUserDoc(state);
         if (isKyivAdmin) {
           ensureAdminInFirestore().catchError((_) {});
-          ensureDefaultCoachInFirestore().catchError((_) {});
         }
         return;
       } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
@@ -1878,28 +1877,37 @@ Future<void> ensureAdminInFirestore() async {
 }
 
 /// Guarantees that the default Coach profile exists in Firestore `users` collection.
-Future<void> ensureDefaultCoachInFirestore() async {
+Future<void> ensureDefaultCoachInFirestore({bool force = false}) async {
   try {
     if (Firebase.apps.isEmpty) return;
+    final existingKyivCoaches = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'coach')
+        .where('branchId', isEqualTo: 'kyiv')
+        .limit(1)
+        .get();
+
     final docRef = FirebaseFirestore.instance.collection('users').doc('default_coach');
     final docSnap = await docRef.get();
     if (!docSnap.exists) {
-      await docRef.set({
-        'id': 'default_coach',
-        'name': 'Олена Коваль',
-        'role': 'coach',
-        'loginId': 'coach',
-        'password': '1',
-        'phone': '+380 (99) 000-00-02',
-        'branchId': 'kyiv',
-        'branchIds': ['kyiv'],
-        'organizationId': 'cityswim',
-        'rateGroup': 400,
-        'rateIndividual': 450,
-        'rateSplit': 600,
-        'avatarUrl': 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      if (force || existingKyivCoaches.docs.isEmpty) {
+        await docRef.set({
+          'id': 'default_coach',
+          'name': 'Олена Коваль',
+          'role': 'coach',
+          'loginId': 'coach',
+          'password': '1',
+          'phone': '+380 (99) 000-00-02',
+          'branchId': 'kyiv',
+          'branchIds': ['kyiv'],
+          'organizationId': 'cityswim',
+          'rateGroup': 400,
+          'rateIndividual': 450,
+          'rateSplit': 600,
+          'avatarUrl': 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     } else {
       final d = docSnap.data() ?? {};
       if (d['role'] != 'coach' || d['branchId'] == null) {

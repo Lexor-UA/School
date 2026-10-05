@@ -346,8 +346,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               focusNode: _phoneFocusNode,
                               icon: LucideIcons.phone,
                               hint: 'onboarding.phone_hint'.tr(),
-                              keyboardType: TextInputType.phone,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: false, signed: false),
                               textInputAction: TextInputAction.next,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(15),
+                              ],
                               validator: (v) => v == null || v.trim().isEmpty ? 'onboarding.phone_error'.tr() : null,
                             ),
                             
@@ -358,7 +362,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               focusNode: _ageFocusNode,
                               icon: LucideIcons.calendar,
                               hint: 'onboarding.age_hint'.tr(),
-                              keyboardType: TextInputType.number,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: false, signed: false),
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                               inputFormatters: [
@@ -495,7 +499,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         focusNode: child.ageFocusNode,
                                         icon: LucideIcons.calendarDays,
                                         hint: 'onboarding.child_age_hint'.tr(),
-                                        keyboardType: TextInputType.number,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: false, signed: false),
                                         textInputAction: TextInputAction.done,
                                         onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                                         inputFormatters: [

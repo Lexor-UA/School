@@ -1666,7 +1666,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             if (currentSub == null)
               Container(
                 width: double.infinity,
-                height: 200,
+                height: 230,
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(26),
@@ -1774,7 +1774,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               )
             else
               SizedBox(
-                height: 200,
+                height: 230,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4.0),

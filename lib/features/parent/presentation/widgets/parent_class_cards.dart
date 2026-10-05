@@ -1320,23 +1320,31 @@ class ParentAvailableClassCard extends ConsumerWidget {
                                   Icon(
                                     c.isChildOnly
                                         ? LucideIcons.baby
-                                        : (c.isAdultOnly ? LucideIcons.user : LucideIcons.users),
+                                        : (c.isAdultOnly
+                                            ? LucideIcons.user
+                                            : (c.isSplit ? LucideIcons.users : LucideIcons.waves)),
                                     size: 11,
                                     color: c.isChildOnly
                                         ? const Color(0xFF34D399)
                                         : (c.isAdultOnly
                                             ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
-                                            : const Color(0xFF38BDF8)),
+                                            : (c.isSplit ? const Color(0xFF38BDF8) : const Color(0xFF2DD4BF))),
                                   ),
                                   const SizedBox(width: 3.5),
                                   Text(
-                                    c.isChildOnly ? 'Для дітей' : (c.isAdultOnly ? 'Для дорослих' : 'Спліт'),
+                                    c.isChildOnly
+                                        ? 'Для дітей'
+                                        : (c.isAdultOnly
+                                            ? 'Для дорослих'
+                                            : (c.isSplit ? 'Спліт' : 'Загальна')),
                                     style: TextStyle(
                                       color: c.isChildOnly
                                           ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
                                           : (c.isAdultOnly
                                               ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
-                                              : (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))),
+                                              : (c.isSplit
+                                                  ? (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))
+                                                  : const Color(0xFF2DD4BF))),
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
                                     ),

@@ -288,6 +288,16 @@ final adminParentsProvider = StreamProvider.autoDispose<List<AppUser>>((ref) {
   });
 });
 
+final adminAllChildrenProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
+  return FirebaseFirestore.instance.collection('children').snapshots().map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = Map<String, dynamic>.from(doc.data());
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+  });
+});
+
 final liveClockProvider = StreamProvider.autoDispose<DateTime>((ref) {
   return Stream.periodic(const Duration(seconds: 15), (_) => DateTime.now());
 });
@@ -297,7 +307,6 @@ AdminDashboardState adminDashboard(Ref ref) {
   // Re-evaluate current timestamp every 15s so ongoing classes automatically trigger
   ref.watch(liveClockProvider);
 
-  final todayClassesList = ref.watch(todayClassesProvider).value ?? [];
   final recentActionsList = ref.watch(recentActionsProvider).value ?? [];
   final tasksList = ref.watch(adminTasksProvider).value ?? [];
   final coachesList = ref.watch(coachesProvider).value ?? [];
@@ -306,6 +315,13 @@ AdminDashboardState adminDashboard(Ref ref) {
   final parentsList = ref.watch(adminParentsProvider).value ?? [];
 
   final now = DateTime.now();
+
+  // Derived today classes from allClassesList (avoids redundant duplicate stream listening)
+  final todayClassesList = allClassesList.where((c) {
+    return c.startTime.year == now.year &&
+           c.startTime.month == now.month &&
+           c.startTime.day == now.day;
+  }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
 
   // 1. Активні та майбутні заняття (ті, що ще не закінчились)
   final activeUpcomingClasses = allClassesList.where((c) => c.endTime.isAfter(now)).toList();
@@ -374,7 +390,9 @@ AdminDashboardState adminDashboard(Ref ref) {
 
   // Calculate unpaid items synchronized with PaymentSheet (inactive/expired subs + parents without subs)
   final Set<String> uniqueUnpaidKeys = {};
+  final Set<String> usersWithAnySub = {};
   for (final sub in allSubs) {
+    usersWithAnySub.add(sub.userId);
     final bool isInactive = !sub.isActive ||
         sub.remainingClasses <= 0 ||
         (sub.expiryDate != null && now.isAfter(sub.expiryDate!));
@@ -383,8 +401,7 @@ AdminDashboardState adminDashboard(Ref ref) {
     }
   }
   for (final parent in parentsList) {
-    final bool hasSub = allSubs.any((s) => s.userId == parent.id);
-    if (!hasSub) {
+    if (!usersWithAnySub.contains(parent.id)) {
       uniqueUnpaidKeys.add('${parent.id}_${parent.name}');
     }
   }

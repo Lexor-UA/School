@@ -137,25 +137,11 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                 ],
               ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.25)
-                : const Color(0xFFBAE6FD),
-            width: 1.2,
-          ),
-          left: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.16)
-                : const Color(0xFFBAE6FD),
-            width: 1.2,
-          ),
-          right: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.16)
-                : const Color(0xFFBAE6FD),
-            width: 1.2,
-          ),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+              : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
@@ -440,7 +426,15 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
         builder: (context, value, child) {
           return TextField(
             controller: controller,
-            keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
+            keyboardType: isNumber
+                ? const TextInputType.numberWithOptions(decimal: false, signed: false)
+                : TextInputType.text,
+            inputFormatters: isNumber
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(15),
+                  ]
+                : null,
             style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: hint,
@@ -528,7 +522,11 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                 const SizedBox(height: 2),
                 TextField(
                   controller: controller,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: false, signed: false),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
                   style: TextStyle(
                     color: currentTheme.textPrimary,
                     fontSize: 16.5,

@@ -323,6 +323,24 @@ class ScheduleController extends _$ScheduleController {
             });
           }
 
+          // Self-heal classes created in adult 25m pool where title defaulted to 'Junior Pro'
+          final rawPoolId = (data['poolId'] as String? ?? '').toLowerCase();
+          final rawLane = (data['lane'] as String? ?? '').toLowerCase();
+          final isAdultPoolOrLane = rawPoolId.contains('25m') ||
+              rawPoolId.contains('sport') ||
+              rawLane.contains('доріжка') ||
+              rawLane.contains('lane');
+          if (titleLower == 'junior pro' && isAdultPoolOrLane) {
+            data['title'] = 'Плавання для дорослих';
+            data['category'] = 'Плавання (Дорослі)';
+            doc.reference.update({
+              'title': 'Плавання для дорослих',
+              'category': 'Плавання (Дорослі)',
+            }).catchError((e) {
+              debugPrint('Failed to auto-heal adult pool class ${doc.id}: $e');
+            });
+          }
+
           final groupClass = GroupClass.fromJson(data);
           // In-memory filter for historical classes (eliminates composite index requirement in Firestore)
           if (groupClass.startTime.isBefore(cutoffDate)) {
@@ -1605,6 +1623,81 @@ class ScheduleController extends _$ScheduleController {
     } catch (e) {
       debugPrint('Error in updateClass: $e');
       return false;
+    }
+  }
+
+  /// Batch update all classes belonging to the same recurring series
+  Future<int> updateClassSeries({
+    required String originalTitle,
+    required String coachId,
+    required String lane,
+    required String newTitle,
+    required String newCategory,
+    required int newMaxCapacity,
+    String? newCoachId,
+    String? newCoachName,
+    String? newLane,
+    String? locationId,
+    String? poolId,
+  }) async {
+    try {
+      final currentList = state.value ?? <GroupClass>[];
+      final matchingClasses = currentList.where((c) {
+        final isTitleMatch = c.title.trim().toLowerCase() == originalTitle.trim().toLowerCase();
+        final isCoachMatch = coachId.isEmpty || coachId == 'unassigned' || c.coachId == coachId;
+        final isLaneMatch = lane.isEmpty || c.lane == lane;
+        return isTitleMatch && isCoachMatch && isLaneMatch;
+      }).toList();
+
+      if (matchingClasses.isEmpty) return 0;
+
+      final batch = FirebaseFirestore.instance.batch();
+      for (final c in matchingClasses) {
+        final docRef = FirebaseFirestore.instance.collection('classes').doc(c.id);
+        final updates = <String, dynamic>{
+          'title': newTitle,
+          'category': newCategory,
+          'maxCapacity': newMaxCapacity,
+        };
+        if (newCoachId != null && newCoachName != null) {
+          updates['coachId'] = newCoachId;
+          updates['coachName'] = newCoachName;
+        }
+        if (newLane != null && newLane.isNotEmpty) {
+          updates['lane'] = newLane;
+        }
+        if (locationId != null) {
+          updates['locationId'] = locationId;
+        }
+        if (poolId != null) {
+          updates['poolId'] = poolId;
+        }
+        batch.update(docRef, updates);
+      }
+      await batch.commit();
+
+      // Update in-memory cache
+      final updatedList = currentList.map((c) {
+        final isMatch = matchingClasses.any((m) => m.id == c.id);
+        if (!isMatch) return c;
+        return c.copyWith(
+          title: newTitle,
+          category: newCategory,
+          maxCapacity: newMaxCapacity,
+          coachId: (newCoachId != null && newCoachName != null) ? newCoachId : c.coachId,
+          coachName: (newCoachId != null && newCoachName != null) ? newCoachName : c.coachName,
+          lane: (newLane != null && newLane.isNotEmpty) ? newLane : c.lane,
+          locationId: locationId ?? c.locationId,
+          poolId: poolId ?? c.poolId,
+        );
+      }).toList();
+      state = AsyncData(updatedList);
+      cachedClasses = updatedList;
+
+      return matchingClasses.length;
+    } catch (e) {
+      debugPrint('Error in updateClassSeries: $e');
+      return 0;
     }
   }
 

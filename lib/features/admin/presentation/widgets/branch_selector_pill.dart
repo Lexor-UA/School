@@ -543,54 +543,62 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
 
     // Для Owner показуємо інтерактивну Glassmorphic-капсулу
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) {
+        if (!_isHovered) setState(() => _isHovered = true);
+      },
+      onExit: (_) {
+        if (_isHovered) setState(() => _isHovered = false);
+      },
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          _showBranchPicker(context, tenancyState);
-        },
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          scale: _isPressed ? 0.95 : (_isHovered ? 1.03 : 1.0),
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: ClipRRect(
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : (_isHovered ? 1.03 : 1.0),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: isDark
+                ? (tenancyState.isAllLocations
+                    ? const Color(0xFF6366F1).withValues(alpha: 0.20)
+                    : currentTheme.accentPrimary.withValues(alpha: 0.16))
+                : const Color(0xFFF0F9FF),
             borderRadius: BorderRadius.circular(16),
-            child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+            border: Border.all(
+              color: tenancyState.isAllLocations
+                  ? const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.5 : 0.7)
+                  : (isDark
+                      ? currentTheme.accentPrimary.withValues(alpha: 0.45)
+                      : const Color(0xFFBAE6FD)),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? (tenancyState.isAllLocations
+                            ? const Color(0xFF6366F1)
+                            : currentTheme.accentPrimary)
+                        .withValues(alpha: _isHovered ? 0.35 : 0.18)
+                    : const Color(0xFF0284C7)
+                        .withValues(alpha: _isHovered ? 0.20 : 0.08),
+                blurRadius: _isHovered ? 14 : 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                _showBranchPicker(context, tenancyState);
+              },
+              onHighlightChanged: (isHighlighted) {
+                if (_isPressed != isHighlighted) {
+                  setState(() => _isPressed = isHighlighted);
+                }
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? (tenancyState.isAllLocations
-                          ? const Color(0xFF6366F1).withValues(alpha: 0.20)
-                          : currentTheme.accentPrimary.withValues(alpha: 0.16))
-                      : const Color(0xFFF0F9FF),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: tenancyState.isAllLocations
-                        ? const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.5 : 0.7)
-                        : (isDark
-                            ? currentTheme.accentPrimary.withValues(alpha: 0.45)
-                            : const Color(0xFFBAE6FD)),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark
-                          ? (tenancyState.isAllLocations
-                                  ? const Color(0xFF6366F1)
-                                  : currentTheme.accentPrimary)
-                              .withValues(alpha: _isHovered ? 0.35 : 0.18)
-                          : const Color(0xFF0284C7)
-                              .withValues(alpha: _isHovered ? 0.20 : 0.08),
-                      blurRadius: _isHovered ? 14 : 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -620,6 +628,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 }

@@ -17,6 +17,12 @@ import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
 import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
 import 'widgets/apple_time_wheel_picker.dart';
 
+enum ClassAudience {
+  adult,
+  child,
+  split,
+}
+
 class CreateClassSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
   final GroupClass? classToEdit;
@@ -82,6 +88,53 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   );
 
   AppUser? _selectedCoach;
+
+  ClassAudience _selectedAudience = ClassAudience.adult;
+  bool _updateEntireSeries = true;
+
+  String _getDefaultTitleFor(ClassAudience audience) {
+    switch (audience) {
+      case ClassAudience.adult:
+        return 'Плавання для дорослих';
+      case ClassAudience.child:
+        return 'Дитяча група';
+      case ClassAudience.split:
+        return 'Спліт-тренування (2 особи)';
+    }
+  }
+
+  bool _isDefaultTitle(String text) {
+    final trimmed = text.trim();
+    return trimmed.isEmpty ||
+        trimmed == 'Junior Pro' ||
+        trimmed == 'Плавання для дорослих' ||
+        trimmed == 'Дитяча група' ||
+        trimmed == 'Дитяче плавання' ||
+        trimmed == 'Спліт-тренування (2 особи)';
+  }
+
+  void _setAudience(ClassAudience audience) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedAudience = audience;
+      if (_isDefaultTitle(_titleController.text)) {
+        _titleController.text = _getDefaultTitleFor(audience);
+      }
+      if (audience == ClassAudience.adult) {
+        if (_selectedPoolId != null && _selectedPoolId!.contains('baby')) {
+          final p25 = _availablePools.where((p) => !p.id.contains('baby')).firstOrNull;
+          if (p25 != null) {
+            _selectedPoolId = p25.id;
+            if (p25.lanes.isNotEmpty && !p25.lanes.contains(_selectedLane)) {
+              _selectedLane = p25.lanes.first;
+            }
+          }
+        }
+      } else if (audience == ClassAudience.split) {
+        _maxCapacity = 2;
+      }
+    });
+  }
 
   String _selectedCategory = 'Плавання';
   final List<String> _categories = ['Плавання', 'Аквааеробіка'];
@@ -170,6 +223,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     super.initState();
     if (_isEditing) {
       final c = widget.classToEdit!;
+      if (c.isSplit) {
+        _selectedAudience = ClassAudience.split;
+      } else if (c.isAdultOnly) {
+        _selectedAudience = ClassAudience.adult;
+      } else {
+        _selectedAudience = ClassAudience.child;
+      }
       final isUnassigned = c.coachId == 'unassigned' ||
           c.coachId.trim().isEmpty ||
           c.coachName.trim().isEmpty ||
@@ -193,12 +253,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       _selectedLane = c.lane;
       _selectedWeekdays = {c.startTime.weekday};
     } else {
-      _titleController = TextEditingController(text: 'Junior Pro');
       _selectedDate = widget.initialDate ?? DateTime.now();
       if (widget.initialDate != null) {
         _selectedTime = TimeOfDay(hour: widget.initialDate!.hour, minute: widget.initialDate!.minute);
       }
       _selectedWeekdays = {_selectedDate.weekday};
+      _selectedAudience = ClassAudience.adult;
+      _titleController = TextEditingController(text: _getDefaultTitleFor(_selectedAudience));
     }
   }
 
@@ -508,6 +569,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       }
     }
 
+    final String effectiveCategory;
+    if (_selectedAudience == ClassAudience.adult) {
+      effectiveCategory = _selectedCategory == 'Аквааеробіка' ? 'Аквааеробіка' : 'Плавання (Дорослі)';
+    } else if (_selectedAudience == ClassAudience.child) {
+      effectiveCategory = _selectedCategory == 'Аквааеробіка' ? 'Аквааеробіка' : 'Плавання (Діти)';
+    } else {
+      effectiveCategory = 'Спліт';
+    }
+
     bool success = false;
     if (_isEditing) {
       final conflict = ref.read(scheduleControllerProvider.notifier).checkClassConflict(
@@ -525,6 +595,23 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         return;
       }
 
+      if (_updateEntireSeries) {
+        final original = widget.classToEdit!;
+        await ref.read(scheduleControllerProvider.notifier).updateClassSeries(
+          originalTitle: original.title,
+          coachId: original.coachId,
+          lane: original.lane,
+          newTitle: _titleController.text.trim(),
+          newCategory: effectiveCategory,
+          newMaxCapacity: _maxCapacity,
+          newCoachId: effectiveCoachId,
+          newCoachName: effectiveCoachName,
+          newLane: _selectedLane,
+          locationId: _currentLocation?.id,
+          poolId: _selectedPoolId ?? _activePool?.id,
+        );
+      }
+
       success = await ref.read(scheduleControllerProvider.notifier).updateClass(
         classId: widget.classToEdit!.id,
         title: _titleController.text.trim(),
@@ -533,7 +620,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         coachId: effectiveCoachId,
         coachName: effectiveCoachName,
         maxCapacity: _maxCapacity,
-        category: _selectedCategory,
+        category: effectiveCategory,
         lane: _selectedLane,
         locationId: _currentLocation?.id,
         poolId: _selectedPoolId ?? _activePool?.id,
@@ -603,7 +690,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         coachId: effectiveCoachId,
         coachName: effectiveCoachName,
         maxCapacity: _maxCapacity,
-        category: _selectedCategory,
+        category: effectiveCategory,
         lane: _selectedLane,
         locationId: _currentLocation?.id,
         poolId: _selectedPoolId ?? _activePool?.id,
@@ -685,7 +772,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         coachId: effectiveCoachId,
         coachName: effectiveCoachName,
         maxCapacity: _maxCapacity,
-        category: _selectedCategory,
+        category: effectiveCategory,
         lane: _selectedLane,
       );
 
@@ -695,6 +782,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           await logAdminAction('Створено заняття "${_titleController.text.trim()}"', admin.id);
         }
       } else {
+        if (!mounted) return;
         setState(() => _isSaving = false);
         final lastConf = ref.read(scheduleControllerProvider.notifier).lastConflict;
         if (lastConf != null && mounted) {
@@ -891,6 +979,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 22),
 
+                  // Target Audience Selector (Для дорослих / Для дітей / Спліт)
+                  _buildLabel('Цільова аудиторія', isDark: isDark),
+                  _buildAudienceSelector(isDark: isDark),
+                  const SizedBox(height: 16),
+
                   // Title input (Group Name vs Class Title)
                   _buildLabel(_isRecurring ? 'admin.group_name'.tr() : 'admin.class_name'.tr(), isDark: isDark),
                   TextField(
@@ -905,6 +998,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       isDark: isDark,
                     ),
                   ),
+                  if (_isEditing) ...[
+                    const SizedBox(height: 14),
+                    _buildUpdateEntireSeriesToggle(isDark: isDark),
+                  ],
                   const SizedBox(height: 16),
 
                   // Category & Coach
@@ -1990,6 +2087,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                       HapticFeedback.selectionClick();
                       setState(() {
                         _selectedPoolId = pool.id;
+                        final isBaby = pool.id.contains('baby') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('wellen');
+                        if (isBaby) {
+                          _selectedAudience = ClassAudience.child;
+                          if (_isDefaultTitle(_titleController.text)) {
+                            _titleController.text = _getDefaultTitleFor(ClassAudience.child);
+                          }
+                        }
                         if (pool.lanes.isNotEmpty && !pool.lanes.contains(_selectedLane)) {
                           _selectedLane = pool.lanes.first;
                         }
@@ -2286,6 +2390,181 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildAudienceSelector({required bool isDark}) {
+    final pool = _activePool;
+    final isBabyPool = pool != null &&
+        (pool.id.contains('baby') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('wellen'));
+
+    final options = [
+      (
+        audience: ClassAudience.adult,
+        label: 'Для дорослих',
+        icon: LucideIcons.user,
+        disabled: isBabyPool,
+      ),
+      (
+        audience: ClassAudience.child,
+        label: 'Для дітей',
+        icon: LucideIcons.baby,
+        disabled: false,
+      ),
+      (
+        audience: ClassAudience.split,
+        label: 'Спліт',
+        icon: LucideIcons.users,
+        disabled: isBabyPool,
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0A1625) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1),
+        ),
+      ),
+      child: Row(
+        children: options.map((opt) {
+          final isSelected = _selectedAudience == opt.audience;
+          final flex = switch (opt.audience) {
+            ClassAudience.adult => 13,
+            ClassAudience.child => 11,
+            ClassAudience.split => 9,
+          };
+          return Expanded(
+            flex: flex,
+            child: GestureDetector(
+              onTap: opt.disabled
+                  ? () {
+                      HapticFeedback.lightImpact();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Дитячий басейн призначений лише для дитячих тренувань.'),
+                          backgroundColor: Colors.orangeAccent,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    }
+                  : () => _setAudience(opt.audience),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 3),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                        )
+                      : null,
+                  borderRadius: BorderRadius.circular(12),
+                  border: isSelected
+                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
+                      : Border.all(color: Colors.transparent, width: 1.3),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      opt.icon,
+                      size: 14,
+                      color: isSelected
+                          ? const Color(0xFF00E5FF)
+                          : (opt.disabled
+                              ? (isDark ? Colors.white24 : Colors.black26)
+                              : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B))),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          opt.label,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : (opt.disabled
+                                    ? (isDark ? Colors.white24 : Colors.black26)
+                                    : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B))),
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildUpdateEntireSeriesToggle({required bool isDark}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _updateEntireSeries
+              ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+              : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.repeat, size: 18, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Оновити всю регулярну серію',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  'Застосувати зміни для всіх занять цієї групи',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: _updateEntireSeries,
+            activeTrackColor: const Color(0xFF00E5FF),
+            activeThumbColor: Colors.white,
+            onChanged: (v) => setState(() => _updateEntireSeries = v),
+          ),
+        ],
+      ),
     );
   }
 }

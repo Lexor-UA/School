@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -172,33 +171,35 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
           // 3. Screen content
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 6),
-                  // Month Header & Calendar Card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildCalendarCard(branchClasses, currentTheme),
-                  ),
-                  const SizedBox(height: 10),
+            child: RepaintBoundary(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 6),
+                    // Month Header & Calendar Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildCalendarCard(branchClasses, currentTheme),
+                    ),
+                    const SizedBox(height: 10),
 
-                  // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
-                  _buildCoachFilterBar(currentTheme),
+                    // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
+                    _buildCoachFilterBar(currentTheme),
 
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  // Selected Day Schedule Section (Directly on screen!)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildDayScheduleSection(dayClasses, currentTheme),
-                  ),
+                    // Selected Day Schedule Section (Directly on screen!)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildDayScheduleSection(dayClasses, currentTheme),
+                    ),
 
-                  // Comfortable bottom breathing room
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
-                ],
+                    // Comfortable bottom breathing room
+                    SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
+                  ],
+                ),
               ),
             ),
           ),
@@ -276,47 +277,57 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.45),
-                              width: 1.1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            ],
+                              borderRadius: BorderRadius.circular(11),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.45),
+                                width: 1.1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Icon(LucideIcons.calendar, color: Colors.white, size: 16),
+                            ),
                           ),
-                          child: const Center(
-                            child: Icon(LucideIcons.calendar, color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                capitalizedMonth,
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          capitalizedMonth,
-                          style: TextStyle(
-                            color: currentTheme.textPrimary,
-                            fontSize: 17.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!isCurrentDateSelected) ...[
                           Material(
@@ -328,7 +339,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                 setState(() => _selectedDate = DateTime.now());
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5.5),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: currentTheme.isDark
                                       ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
@@ -354,7 +365,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                   children: [
                                     Icon(
                                       LucideIcons.calendarDays,
-                                      size: 12,
+                                      size: 11.5,
                                       color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     ),
                                     const SizedBox(width: 4),
@@ -362,7 +373,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                       'Сьогодні',
                                       style: TextStyle(
                                         color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                        fontSize: 11,
+                                        fontSize: 10.5,
                                         fontWeight: FontWeight.w800,
                                       ),
                                     ),
@@ -371,7 +382,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                         ],
                         _buildMonthNavButton(
                           icon: LucideIcons.chevronLeft,
@@ -381,7 +392,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           },
                           currentTheme: currentTheme,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildMonthNavButton(
                           icon: LucideIcons.chevronRight,
                           onTap: () {
@@ -562,8 +573,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          width: 34,
-          height: 34,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             color: currentTheme.isDark
                 ? const Color(0xFF0B2138).withValues(alpha: 0.85)
@@ -588,7 +599,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             child: Icon(
               icon,
               color: currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-              size: 16,
+              size: 15,
             ),
           ),
         ),
@@ -597,203 +608,193 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
   }
 
   Widget _buildCoachFilterBar(AppThemeConfig currentTheme) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .where('role', isEqualTo: 'coach')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    final coaches = ref.watch(coachesProvider).value ?? [];
+    if (coaches.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-        final tenancyState = ref.watch(tenancyControllerProvider);
-        final activeBranchId = tenancyState.activeBranchId;
-        final isAllLocations = tenancyState.isAllLocationsSelected;
+    final tenancyState = ref.watch(tenancyControllerProvider);
+    final activeBranchId = tenancyState.activeBranchId;
+    final isAllLocations = tenancyState.isAllLocationsSelected;
 
-        final rawCoachDocs = snapshot.data!.docs;
-        final coachDocs = isAllLocations
-            ? rawCoachDocs
-            : rawCoachDocs.where((c) {
-                final d = c.data() as Map<String, dynamic>;
-                final bId = d['branchId'] as String? ?? 'kyiv';
-                final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
-                return bId == activeBranchId || bIds.contains(activeBranchId);
-              }).toList();
+    final coachDocs = isAllLocations
+        ? coaches
+        : coaches.where((c) {
+            final bId = c.branchId;
+            final bIds = c.branchIds.isNotEmpty ? c.branchIds : [bId];
+            return bId == activeBranchId || bIds.contains(activeBranchId);
+          }).toList();
 
-        return SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              // All coaches chip
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() {
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          // All coaches chip
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _selectedCoachId = null;
+                _selectedCoachName = null;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: _selectedCoachId == null
+                    ? const LinearGradient(
+                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: _selectedCoachId == null
+                    ? null
+                    : (currentTheme.isDark ? const Color(0xFF0C2238).withValues(alpha: 0.85) : Colors.white),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _selectedCoachId == null
+                      ? Colors.white.withValues(alpha: 0.50)
+                      : (currentTheme.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD)),
+                  width: 1.1,
+                ),
+                boxShadow: _selectedCoachId == null
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF003B73))
+                              .withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.users,
+                    size: 13.5,
+                    color: _selectedCoachId == null
+                        ? Colors.white
+                        : (currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Всі тренери',
+                    style: TextStyle(
+                      color: _selectedCoachId == null
+                          ? Colors.white
+                          : (currentTheme.isDark ? const Color(0xFFCBD5E1) : const Color(0xFF0F172A)),
+                      fontSize: 12,
+                      fontWeight: _selectedCoachId == null ? FontWeight.w800 : FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Individual coach chips
+          ...coachDocs.map((coach) {
+            final cId = coach.id;
+            final cName = coach.name.isNotEmpty ? coach.name : 'Тренер';
+            final isSelected = _selectedCoachId == cId ||
+                (_selectedCoachName != null && _selectedCoachName!.toLowerCase() == cName.toLowerCase());
+
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  if (isSelected) {
                     _selectedCoachId = null;
                     _selectedCoachName = null;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    gradient: _selectedCoachId == null
-                        ? const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: _selectedCoachId == null
-                        ? null
-                        : (currentTheme.isDark ? const Color(0xFF0C2238).withValues(alpha: 0.85) : Colors.white),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedCoachId == null
-                          ? Colors.white.withValues(alpha: 0.50)
-                          : (currentTheme.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD)),
-                      width: 1.1,
+                  } else {
+                    _selectedCoachId = cId;
+                    _selectedCoachName = cName;
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: isSelected
+                      ? null
+                      : (currentTheme.isDark ? const Color(0xFF0C2238).withValues(alpha: 0.85) : Colors.white),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.50)
+                        : (currentTheme.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD)),
+                    width: 1.1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF003B73))
+                                .withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.waves,
+                      size: 13.5,
+                      color: isSelected
+                          ? Colors.white
+                          : (currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                     ),
-                    boxShadow: _selectedCoachId == null
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF003B73))
-                                  .withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        LucideIcons.users,
-                        size: 13.5,
-                        color: _selectedCoachId == null
+                    const SizedBox(width: 6),
+                    Text(
+                      cName,
+                      style: TextStyle(
+                        color: isSelected
                             ? Colors.white
-                            : (currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
+                            : (currentTheme.isDark ? const Color(0xFFCBD5E1) : const Color(0xFF0F172A)),
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                        letterSpacing: 0.2,
                       ),
+                    ),
+                    if (isSelected) ...[
                       const SizedBox(width: 6),
-                      Text(
-                        'Всі тренери',
-                        style: TextStyle(
-                          color: _selectedCoachId == null
-                              ? Colors.white
-                              : (currentTheme.isDark ? const Color(0xFFCBD5E1) : const Color(0xFF0F172A)),
-                          fontSize: 12,
-                          fontWeight: _selectedCoachId == null ? FontWeight.w800 : FontWeight.w700,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
+                      const Icon(LucideIcons.x, size: 12, color: Colors.white),
                     ],
-                  ),
+                  ],
                 ),
               ),
-
-              // Individual coach chips
-              ...coachDocs.map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                final cId = doc.id;
-                final cName = (data['name'] as String?) ?? 'Тренер';
-                final isSelected = _selectedCoachId == cId ||
-                    (_selectedCoachName != null && _selectedCoachName!.toLowerCase() == cName.toLowerCase());
-
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      if (isSelected) {
-                        _selectedCoachId = null;
-                        _selectedCoachName = null;
-                      } else {
-                        _selectedCoachId = cId;
-                        _selectedCoachName = cName;
-                      }
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: isSelected
-                          ? null
-                          : (currentTheme.isDark ? const Color(0xFF0C2238).withValues(alpha: 0.85) : Colors.white),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.50)
-                            : (currentTheme.isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD)),
-                        width: 1.1,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF003B73))
-                                    .withValues(alpha: currentTheme.isDark ? 0.08 : 0.04),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          LucideIcons.waves,
-                          size: 13.5,
-                          color: isSelected
-                              ? Colors.white
-                              : (currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          cName,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : (currentTheme.isDark ? const Color(0xFFCBD5E1) : const Color(0xFF0F172A)),
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        if (isSelected) ...[
-                          const SizedBox(width: 6),
-                          const Icon(LucideIcons.x, size: 12, color: Colors.white),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
+            );
+          }),
+        ],
+      ),
     );
   }
 

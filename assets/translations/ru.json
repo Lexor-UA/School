@@ -323,6 +323,8 @@
   "parent.save": "Сохранить",
   "parent.client_account": "Клиент",
   "admin": {
+    "edit": "Редактировать",
+    "close": "Закрыть",
     "hello": "Привет",
     "search_hint": "Поиск клиентов и тренеров",
     "today": "Сегодня",
@@ -716,6 +718,7 @@
   "theme_light_azure_title": "Океаническая Жемчужина",
   "theme_light_azure_sub": "Роскошный светлый дизайн с эффектом стекла и живой водой",
   "common": {
+    "loading": "Загрузка...",
     "error": "Ошибка"
   }
 }

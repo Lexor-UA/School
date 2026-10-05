@@ -50,9 +50,12 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     return clean.length >= 2 ? clean.substring(0, 2).toUpperCase() : clean[0].toUpperCase();
   }
 
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _clientsStream;
+
   @override
   void initState() {
     super.initState();
+    _clientsStream = FirebaseFirestore.instance.collection('users').snapshots();
     Future.microtask(() {
       ref.read(familyControllerProvider).cleanupOrphanedFamilies();
     });
@@ -289,7 +292,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
           } catch (_) {}
         }
 
-        // 5. Remove enrollments and booked subscriptions from scheduled classes
+        // 5. Remove enrollments, attendance, and booked subscriptions from scheduled classes
         for (var i = 0; i < allRelatedIds.length; i += 30) {
           final chunk = allRelatedIds.sublist(i, math.min(i + 30, allRelatedIds.length));
           try {
@@ -302,17 +305,42 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 final data = doc.data();
                 List<dynamic> enrolled = List.from(data['enrolledChildIds'] ?? []);
                 enrolled.removeWhere((id) => allRelatedIds.contains(id));
+                List<dynamic> attended = List.from(data['attendedChildIds'] ?? []);
+                attended.removeWhere((id) => allRelatedIds.contains(id));
                 final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map? ?? {});
                 for (final relId in allRelatedIds) {
                   bookedMap.remove(relId);
                 }
-                await doc.reference.set({
-                  'enrolledChildIds': enrolled,
-                  'bookedSubscriptions': bookedMap,
-                }, SetOptions(merge: true));
+
+                final isCustomBooking = data['isCustomBooking'] == true || data['createdByRole'] == 'parent';
+                if (enrolled.isEmpty && isCustomBooking) {
+                  await doc.reference.delete();
+                } else {
+                  await doc.reference.set({
+                    'enrolledChildIds': enrolled,
+                    'attendedChildIds': attended,
+                    'bookedSubscriptions': bookedMap,
+                  }, SetOptions(merge: true));
+                }
               } catch (cErr) {
                 debugPrint('Error updating class ${doc.id} on client delete: $cErr');
               }
+            }
+
+            // Also clean up attendedChildIds for past classes
+            final attendedSnap = await FirebaseFirestore.instance
+                .collection('classes')
+                .where('attendedChildIds', arrayContainsAny: chunk)
+                .get();
+            for (var doc in attendedSnap.docs) {
+              try {
+                final data = doc.data();
+                List<dynamic> attended = List.from(data['attendedChildIds'] ?? []);
+                attended.removeWhere((id) => allRelatedIds.contains(id));
+                await doc.reference.update({
+                  'attendedChildIds': attended,
+                });
+              } catch (_) {}
             }
           } catch (chunkErr) {
             debugPrint('Error querying classes for deletion chunk: $chunkErr');
@@ -347,6 +375,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   @override
   Widget build(BuildContext context) {
     final allSubscriptions = ref.watch(subscriptionControllerProvider);
+    final allChildren = ref.watch(adminAllChildrenProvider).value ?? const <Map<String, dynamic>>[];
     final currentTheme = ref.watch(appThemeControllerProvider);
 
     return Scaffold(
@@ -512,14 +541,18 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     final activeBranchId = tenancyState.activeBranchId;
                     final isAllLocations = tenancyState.isAllLocationsSelected;
 
-                    // Stream users collection without fragile multi-field indexes that fail on un-indexed live Firestore
-                    final Stream<QuerySnapshot<Map<String, dynamic>>> clientsStream = FirebaseFirestore.instance
-                        .collection('users')
-                        .snapshots();
+                    // Group children by parentId in-memory ($O(N)$ once)
+                    final Map<String, List<Map<String, dynamic>>> childrenByParent = {};
+                    for (final child in allChildren) {
+                      final pId = child['parentId'] as String?;
+                      if (pId != null) {
+                        (childrenByParent[pId] ??= []).add(child);
+                      }
+                    }
 
                     return Expanded(
                       child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: clientsStream,
+                        stream: _clientsStream,
                         builder: (context, snapshot) {
                           if (snapshot.hasError) {
                             debugPrint('[AdminClientsScreen] Firestore stream error: ${snapshot.error}');
@@ -539,115 +572,108 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
                             return bId == activeBranchId || bIds.contains(activeBranchId);
                           }).toList();
-                      final now = DateTime.now();
+                          final now = DateTime.now();
 
-                      final int totalCount = allClients.length;
-                      final int withSubCount = allClients.where((c) {
-                        return allSubscriptions.any((s) =>
-                            s.userId == c.id &&
-                            s.isActive &&
-                            s.remainingClasses > 0 &&
-                            (s.expiryDate == null || s.expiryDate!.isAfter(now)));
-                      }).length;
-                      final int withoutSubCount = (totalCount - withSubCount).clamp(0, totalCount);
+                          // Fast O(1) set lookup for active subscription userIds
+                          final activeUserIds = allSubscriptions
+                              .where((s) =>
+                                  s.isActive &&
+                                  s.remainingClasses > 0 &&
+                                  (s.expiryDate == null || s.expiryDate!.isAfter(now)))
+                              .map((s) => s.userId)
+                              .toSet();
 
-                      var clients = List<QueryDocumentSnapshot>.from(allClients);
+                          final int totalCount = allClients.length;
+                          final int withSubCount = allClients.where((c) => activeUserIds.contains(c.id)).length;
+                          final int withoutSubCount = (totalCount - withSubCount).clamp(0, totalCount);
 
-                      // Filter by search
-                      if (_searchQuery.isNotEmpty) {
-                        clients = clients.where((c) {
-                          final data = c.data() as Map<String, dynamic>;
-                          final name = data['name']?.toString().toLowerCase() ?? '';
-                          final loginId = data['loginId']?.toString().toLowerCase() ?? '';
-                          final phone = data['phone']?.toString().toLowerCase() ?? '';
-                          return name.contains(_searchQuery) ||
-                              loginId.contains(_searchQuery) ||
-                              phone.contains(_searchQuery);
-                        }).toList();
-                      }
+                          var clients = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(allClients);
 
-                      // Filter by tab
-                      if (_selectedFilterIndex == 1) {
-                        // Тільки з активним абонементом
-                        clients = clients.where((c) {
-                          return allSubscriptions.any((s) =>
-                              s.userId == c.id &&
-                              s.isActive &&
-                              s.remainingClasses > 0 &&
-                              (s.expiryDate == null || s.expiryDate!.isAfter(now)));
-                        }).toList();
-                      } else if (_selectedFilterIndex == 2) {
-                        // Без активного абонемента
-                        clients = clients.where((c) {
-                          final hasActive = allSubscriptions.any((s) =>
-                              s.userId == c.id &&
-                              s.isActive &&
-                              s.remainingClasses > 0 &&
-                              (s.expiryDate == null || s.expiryDate!.isAfter(now)));
-                          return !hasActive;
-                        }).toList();
-                      }
+                          // Filter by search
+                          if (_searchQuery.isNotEmpty) {
+                            clients = clients.where((c) {
+                              final data = c.data();
+                              final name = data['name']?.toString().toLowerCase() ?? '';
+                              final loginId = data['loginId']?.toString().toLowerCase() ?? '';
+                              final phone = data['phone']?.toString().toLowerCase() ?? '';
+                              return name.contains(_searchQuery) ||
+                                  loginId.contains(_searchQuery) ||
+                                  phone.contains(_searchQuery);
+                            }).toList();
+                          }
 
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                            child: _buildFilterTabs(
-                              currentTheme,
-                              totalCount: totalCount,
-                              withSubCount: withSubCount,
-                              withoutSubCount: withoutSubCount,
-                            ),
-                          ),
-                          Expanded(
-                            child: snapshot.connectionState == ConnectionState.waiting
-                                ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
-                                : (allClients.isEmpty
-                                    ? _buildEmptyState(currentTheme, activeBranchId)
-                                    : (clients.isEmpty
-                                        ? _buildNoSearchResults(currentTheme)
-                                        : ListView.separated(
-                                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
-                                            physics: const BouncingScrollPhysics(),
-                                            itemCount: clients.length,
-                                            separatorBuilder: (ctx, idx) => const SizedBox(height: 14),
-                                            itemBuilder: (context, index) {
-                                              final clientDoc = clients[index];
-                                              final data = clientDoc.data() as Map<String, dynamic>;
-                                              final clientId = clientDoc.id;
-                                              final name = data['name'] ?? 'Невідомо';
-                                              final phone = data['phone'] ?? 'Немає номеру';
-                                              final loginId = data['loginId'] ?? 'Не призначено';
-                                              final password = (data['password'] as String?) ?? '1';
-                                              final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
+                          // Filter by tab
+                          if (_selectedFilterIndex == 1) {
+                            // Тільки з активним абонементом
+                            clients = clients.where((c) => activeUserIds.contains(c.id)).toList();
+                          } else if (_selectedFilterIndex == 2) {
+                            // Без активного абонемента
+                            clients = clients.where((c) => !activeUserIds.contains(c.id)).toList();
+                          }
 
-                                              final userSubs = allSubscriptions.where((s) => s.userId == clientId).toList();
-                                              final bool hasDiscounts = (data['subscriptionDiscounts'] as List<dynamic>? ?? []).isNotEmpty;
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                child: _buildFilterTabs(
+                                  currentTheme,
+                                  totalCount: totalCount,
+                                  withSubCount: withSubCount,
+                                  withoutSubCount: withoutSubCount,
+                                ),
+                              ),
+                              Expanded(
+                                child: snapshot.connectionState == ConnectionState.waiting
+                                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
+                                    : (allClients.isEmpty
+                                        ? _buildEmptyState(currentTheme, activeBranchId)
+                                        : (clients.isEmpty
+                                            ? _buildNoSearchResults(currentTheme)
+                                            : RepaintBoundary(
+                                                child: ListView.separated(
+                                                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                                                  physics: const BouncingScrollPhysics(),
+                                                  itemCount: clients.length,
+                                                  separatorBuilder: (ctx, idx) => const SizedBox(height: 14),
+                                                  itemBuilder: (context, index) {
+                                                    final clientDoc = clients[index];
+                                                    final data = clientDoc.data();
+                                                    final clientId = clientDoc.id;
+                                                    final name = data['name'] ?? 'Невідомо';
+                                                    final phone = data['phone'] ?? 'Немає номеру';
+                                                    final loginId = data['loginId'] ?? 'Не призначено';
+                                                    final password = (data['password'] as String?) ?? '1';
+                                                    final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
 
-                                              return _buildClientCard(
-                                                clientId: clientId,
-                                                hasDiscounts: hasDiscounts,
-                                                name: name,
-                                                phone: phone,
-                                                age: age,
-                                                loginId: loginId,
-                                                password: password,
-                                                subscriptions: userSubs,
-                                                branchId: (data['branchId'] as String? ?? 'kyiv'),
-                                                isAllLocations: isAllLocations,
-                                                index: index,
-                                                currentTheme: currentTheme,
-                                              );
-                                            },
-                                          ))),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
+                                                    final userSubs = allSubscriptions.where((s) => s.userId == clientId).toList();
+                                                    final bool hasDiscounts = (data['subscriptionDiscounts'] as List<dynamic>? ?? []).isNotEmpty;
+
+                                                    return _buildClientCard(
+                                                      clientId: clientId,
+                                                      hasDiscounts: hasDiscounts,
+                                                      name: name,
+                                                      phone: phone,
+                                                      age: age,
+                                                      loginId: loginId,
+                                                      password: password,
+                                                      subscriptions: userSubs,
+                                                      children: childrenByParent[clientId] ?? const [],
+                                                      branchId: (data['branchId'] as String? ?? 'kyiv'),
+                                                      isAllLocations: isAllLocations,
+                                                      index: index,
+                                                      currentTheme: currentTheme,
+                                                    );
+                                                  },
+                                                ),
+                                              ))),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -1042,6 +1068,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     required String loginId,
     required String password,
     required List<dynamic> subscriptions,
+    List<Map<String, dynamic>> children = const [],
     bool hasDiscounts = false,
     String branchId = 'kyiv',
     bool isAllLocations = false,
@@ -1433,80 +1460,66 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 ),
 
                 // 3. Children Section
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('children')
-                      .where('parentId', isEqualTo: clientId)
-                      .snapshots(),
-                  builder: (context, childSnap) {
-                    if (!childSnap.hasData || childSnap.data!.docs.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final children = childSnap.data!.docs;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.baby,
-                                size: 13.5,
-                                color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
+                if (children.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.baby,
+                              size: 13.5,
+                              color: currentTheme.isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'admin.clients_children_count'.tr(args: [children.length.toString()]),
+                              style: TextStyle(
+                                color: currentTheme.isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'admin.clients_children_count'.tr(args: [children.length.toString()]),
-                                style: TextStyle(
-                                  color: currentTheme.isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: children.map((doc) {
-                              final cData = doc.data() as Map<String, dynamic>;
-                              final cName = cData['name'] ?? 'Дитина';
-                              final cAge = cData['age'];
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: children.map((cData) {
+                            final cName = cData['name'] ?? 'Дитина';
+                            final cAge = cData['age'];
 
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                decoration: BoxDecoration(
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: currentTheme.isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
+                                    : const Color(0xFFE0F2FE),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
                                   color: currentTheme.isDark
-                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
-                                      : const Color(0xFFE0F2FE),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: currentTheme.isDark
-                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
-                                        : const Color(0xFFBAE6FD),
-                                    width: 0.9,
-                                  ),
+                                      ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                      : const Color(0xFFBAE6FD),
+                                  width: 0.9,
                                 ),
-                                child: Text(
-                                  '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
-                                  style: TextStyle(
-                                    color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                              ),
+                              child: Text(
+                                '🏊 $cName${cAge != null ? ", $cAge ${'admin.years_short'.tr()}" : ""}',
+                                style: TextStyle(
+                                  color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 const SizedBox(height: 10),
 

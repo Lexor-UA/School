@@ -160,6 +160,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         if (admin != null) {
           await logAdminAction('Додано нового клієнта "${_nameController.text.trim()}" ($generatedLogin)', admin.id);
         }
+        if (!mounted) return;
         ref.invalidate(adminDashboardProvider);
         setState(() {
           _isSuccess = true;

@@ -50,10 +50,15 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     return trimmed.toUpperCase();
   }
 
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _coachesStream;
+
   @override
   void initState() {
     super.initState();
-    ensureDefaultCoachInFirestore();
+    _coachesStream = FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'coach')
+        .snapshots();
   }
 
   @override
@@ -142,7 +147,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
         messenger.showSnackBar(
           SnackBar(
-            content: Text('admin.clients_deleted_success'.tr(args: [name])),
+            content: Text('Тренера "$name" успішно видалено'),
             backgroundColor: const Color(0xFF10B981),
           ),
         );
@@ -296,11 +301,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
                 // 3. Coaches List
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .where('role', isEqualTo: 'coach')
-                        .snapshots(),
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _coachesStream,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator(color: currentTheme.accentPrimary));
@@ -319,7 +321,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       var coaches = isAllLocations
                           ? rawCoaches
                           : rawCoaches.where((c) {
-                              final d = c.data() as Map<String, dynamic>;
+                              final d = c.data();
                               final bId = d['branchId'] as String? ?? 'kyiv';
                               final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
                               return bId == activeBranchId || bIds.contains(activeBranchId);
@@ -327,7 +329,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
                       if (_searchQuery.isNotEmpty) {
                         coaches = coaches.where((c) {
-                          final data = c.data() as Map<String, dynamic>;
+                          final data = c.data();
                           final name = data['name']?.toString().toLowerCase() ?? '';
                           final loginId = data['loginId']?.toString().toLowerCase() ?? '';
                           final phone = data['phone']?.toString().toLowerCase() ?? '';
@@ -343,39 +345,41 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                             : _buildEmptyState(currentTheme, activeBranchId: activeBranchId, branchName: branchName);
                       }
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: coaches.length,
-                        separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final doc = coaches[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final coachId = doc.id;
-                          final name = data['name'] ?? 'Невідомо';
-                          final phone = data['phone'] ?? 'Немає номеру';
-                          final loginId = data['loginId'] ?? 'Не призначено';
-                          final rateGroup = (data['rateGroup'] as num?)?.toInt() ?? 400;
-                          final rateIndividual = (data['rateIndividual'] as num?)?.toInt() ?? 450;
-                          final rateSplit = (data['rateSplit'] as num?)?.toInt() ?? 600;
+                      return RepaintBoundary(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: coaches.length,
+                          separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final doc = coaches[index];
+                            final data = doc.data();
+                            final coachId = doc.id;
+                            final name = data['name'] ?? 'Невідомо';
+                            final phone = data['phone'] ?? 'Немає номеру';
+                            final loginId = data['loginId'] ?? 'Не призначено';
+                            final rateGroup = (data['rateGroup'] as num?)?.toInt() ?? 400;
+                            final rateIndividual = (data['rateIndividual'] as num?)?.toInt() ?? 450;
+                            final rateSplit = (data['rateSplit'] as num?)?.toInt() ?? 600;
 
-                          final branchId = data['branchId'] as String? ?? 'kyiv';
-                          final branchIds = data['branchIds'] as List<dynamic>?;
+                            final branchId = data['branchId'] as String? ?? 'kyiv';
+                            final branchIds = data['branchIds'] as List<dynamic>?;
 
-                          return _buildCoachCard(
-                            coachId: coachId,
-                            name: name,
-                            phone: phone,
-                            loginId: loginId,
-                            rateGroup: rateGroup,
-                            rateIndividual: rateIndividual,
-                            rateSplit: rateSplit,
-                            branchId: branchId,
-                            branchIds: branchIds,
-                            index: index,
-                            currentTheme: currentTheme,
-                          );
-                        },
+                            return _buildCoachCard(
+                              coachId: coachId,
+                              name: name,
+                              phone: phone,
+                              loginId: loginId,
+                              rateGroup: rateGroup,
+                              rateIndividual: rateIndividual,
+                              rateSplit: rateSplit,
+                              branchId: branchId,
+                              branchIds: branchIds,
+                              index: index,
+                              currentTheme: currentTheme,
+                            );
+                          },
+                        ),
                       );
                     },
                   ),
@@ -1276,7 +1280,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
             ],
           ),
         ),
-      ).animate().fadeIn(delay: (60 * index).ms).slideY(begin: 0.06);
+      ).animate().fadeIn(delay: (60 * (index < 6 ? index : 0)).ms, duration: 250.ms).slideY(begin: 0.05);
   }
 
   Widget _buildRateChip({
@@ -1345,8 +1349,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(32),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: currentTheme.isDark
@@ -1435,14 +1439,17 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       children: [
                         const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
                         const SizedBox(width: 8),
-                        Text(
-                          isVienna
-                              ? 'Завантажити тренерів Відня (Maria & Stefan)'
-                              : 'Завантажити тренерів за замовчуванням',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: Text(
+                            isVienna
+                                ? 'Завантажити тренерів Відня'
+                                : 'Завантажити базових тренерів',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
@@ -1457,7 +1464,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
   Future<void> _seedBranchCoaches(String? branchId) async {
     try {
-      await ensureDefaultCoachInFirestore();
+      await ensureDefaultCoachInFirestore(force: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

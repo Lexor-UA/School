@@ -323,6 +323,8 @@
   "parent.save": "Save",
   "parent.client_account": "Client Account",
   "admin": {
+    "edit": "Edit",
+    "close": "Close",
     "hello": "Hello",
     "search_hint": "Search clients and coaches",
     "today": "Today",
@@ -716,6 +718,7 @@
   "theme_light_azure_title": "Ocean Pearl",
   "theme_light_azure_sub": "Luxury glassmorphic light design with crystal living water",
   "common": {
+    "loading": "Loading...",
     "error": "Error"
   }
 }

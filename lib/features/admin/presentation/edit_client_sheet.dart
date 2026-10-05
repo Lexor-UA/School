@@ -119,6 +119,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         updateData['age'] = age;
       }
 
+      await ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.clientId)

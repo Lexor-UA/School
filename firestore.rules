@@ -21,6 +21,10 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isAuthenticated() && (
         request.auth.token.role == 'superAdmin' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'superadmin@cityswim.app' ||
+          request.auth.token.email.matches('^superadmin.*@cityswim\\.app$')
+        )) ||
         (hasUserData() && getUserData().role == 'superAdmin')
       );
     }
@@ -28,6 +32,10 @@ service cloud.firestore {
     function isOwner() {
       return isAuthenticated() && (
         request.auth.token.role == 'owner' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'owner@cityswim.app' ||
+          request.auth.token.email.matches('^owner.*@cityswim\\.app$')
+        )) ||
         (hasUserData() && getUserData().role == 'owner')
       );
     }
@@ -35,6 +43,11 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.role == 'admin' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'admin.kyiv@cityswim.app' ||
+          request.auth.token.email == 'admin.vienna@cityswim.app' ||
+          request.auth.token.email.matches('^admin.*@cityswim\\.app$')
+        )) ||
         (hasUserData() && getUserData().role == 'admin')
       );
     }
@@ -42,6 +55,11 @@ service cloud.firestore {
     function isCoach() {
       return isAuthenticated() && (
         request.auth.token.role == 'coach' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'coach.kyiv@cityswim.app' ||
+          request.auth.token.email == 'coach.vienna@cityswim.app' ||
+          request.auth.token.email.matches('^coach.*@cityswim\\.app$')
+        )) ||
         (hasUserData() && getUserData().role == 'coach')
       );
     }
@@ -57,6 +75,22 @@ service cloud.firestore {
       return isStaff() && (
         isSuperAdmin() ||
         isOwner() ||
+        branchId == null ||
+        branchId == '' ||
+        (request.auth.token.email != null && (
+          (branchId == 'kyiv' && (
+            request.auth.token.email == 'admin.kyiv@cityswim.app' ||
+            request.auth.token.email == 'coach.kyiv@cityswim.app' ||
+            request.auth.token.email.matches('^admin.*kyiv.*@cityswim\\.app$') ||
+            request.auth.token.email.matches('^coach.*kyiv.*@cityswim\\.app$')
+          )) ||
+          (branchId == 'vienna' && (
+            request.auth.token.email == 'admin.vienna@cityswim.app' ||
+            request.auth.token.email == 'coach.vienna@cityswim.app' ||
+            request.auth.token.email.matches('^admin.*vienna.*@cityswim\\.app$') ||
+            request.auth.token.email.matches('^coach.*vienna.*@cityswim\\.app$')
+          ))
+        )) ||
         (hasUserData() && (
           getUserData().branchId == branchId ||
           (getUserData().branchIds != null && getUserData().branchIds.hasAny([branchId]))
@@ -88,27 +122,50 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       
-      // Create: user self-registers as parent OR staff creates user for authorized branch
+      // Create: user self-registers as parent OR staff creates user for authorized branch OR staff syncs their own profile
       allow create: if (
         request.auth.uid == userId && 
-        (request.resource.data.role == 'parent' || !('role' in request.resource.data))
+        (request.resource.data.role == 'parent' || !('role' in request.resource.data) || isStaff())
       ) || isSuperAdmin() || isOwner() || (
-        isAdmin() && staffBelongsToBranch(request.resource.data.branchId)
+        isAdmin() && (
+          !('branchId' in request.resource.data) ||
+          request.resource.data.branchId == null ||
+          request.resource.data.branchId == '' ||
+          staffBelongsToBranch(request.resource.data.branchId)
+        )
       );
 
       // Update: user can update own profile WITHOUT mutating role or branchId OR staff updates
       allow update: if (
-        request.auth.uid == userId &&
-        (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
-        (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
+        request.auth.uid == userId && (
+          isStaff() || (
+            (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
+            (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
+          )
+        )
       ) || isSuperAdmin() || isOwner() || (
-        isAdmin() && 
-        staffBelongsToBranch(resource.data.branchId) && 
-        (!('branchId' in request.resource.data) || staffBelongsToBranch(request.resource.data.branchId))
+        isAdmin() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        ) && (
+          !('branchId' in request.resource.data) ||
+          request.resource.data.branchId == null ||
+          request.resource.data.branchId == '' ||
+          staffBelongsToBranch(request.resource.data.branchId)
+        )
       );
 
-      // Delete: only superAdmin or owner
-      allow delete: if isSuperAdmin() || isOwner();
+      // Delete: superAdmin, owner, OR admin for their branch (or missing branch)
+      allow delete: if isSuperAdmin() || isOwner() || (
+        isAdmin() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        )
+      );
     }
 
     // ==========================================
@@ -135,14 +192,24 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       
       allow create: if isSuperAdmin() || isOwner() || (
-        isStaff() && staffBelongsToBranch(request.resource.data.branchId)
+        isStaff() && (
+          !('branchId' in request.resource.data) ||
+          request.resource.data.branchId == null ||
+          request.resource.data.branchId == '' ||
+          staffBelongsToBranch(request.resource.data.branchId)
+        )
       ) || (
         isAuthenticated() && 
         request.resource.data.parentId == request.auth.uid
       );
 
       allow update: if isSuperAdmin() || isOwner() || (
-        isStaff() && staffBelongsToBranch(resource.data.branchId)
+        isStaff() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        )
       ) || (
         isAuthenticated() && 
         resource.data.parentId == request.auth.uid &&
@@ -150,7 +217,12 @@ service cloud.firestore {
       );
 
       allow delete: if isSuperAdmin() || isOwner() || (
-        isStaff() && staffBelongsToBranch(resource.data.branchId)
+        isStaff() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        )
       ) || (
         isAuthenticated() && resource.data.parentId == request.auth.uid
       );
@@ -172,20 +244,37 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       
       allow create: if isSuperAdmin() || isOwner() || (
-        isAdmin() && staffBelongsToBranch(request.resource.data.branchId)
+        isAdmin() && (
+          !('branchId' in request.resource.data) ||
+          request.resource.data.branchId == null ||
+          request.resource.data.branchId == '' ||
+          staffBelongsToBranch(request.resource.data.branchId)
+        )
       ) || isAuthenticated();
 
       allow update: if isSuperAdmin() || isOwner() || (
-        isStaff() && 
-        staffBelongsToBranch(resource.data.branchId) &&
-        (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
+        isStaff() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        ) && (
+          !('branchId' in request.resource.data) ||
+          request.resource.data.branchId == resource.data.branchId ||
+          staffBelongsToBranch(request.resource.data.branchId)
+        )
       ) || (
         isAuthenticated() && 
         (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
       );
 
       allow delete: if isSuperAdmin() || isOwner() || (
-        isAdmin() && staffBelongsToBranch(resource.data.branchId)
+        isAdmin() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        )
       );
     }
 

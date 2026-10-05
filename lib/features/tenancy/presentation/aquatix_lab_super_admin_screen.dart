@@ -4,8 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/tenancy/models/white_label_config.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/tenancy/presentation/widgets/create_branch_sheet.dart';
+import 'package:swimming_school_app/features/tenancy/presentation/widgets/edit_branch_sheet.dart';
+import 'package:swimming_school_app/features/tenancy/presentation/widgets/delete_branch_dialog.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
@@ -124,10 +128,18 @@ class _AquatixLabSuperAdminScreenState
 
   @override
   Widget build(BuildContext context) {
-    final kyivConfig = BranchConfig.kyivConfig;
-    final viennaConfig = BranchConfig.viennaConfig;
+    final availableBranches = ref.watch(availableBranchesProvider);
     final themeConfig = ref.watch(appThemeControllerProvider);
     final isDark = themeConfig.isDark;
+
+    int totalPools = 0;
+    int totalLanes = 0;
+    for (final b in availableBranches) {
+      final cfg = BranchConfig.forBranch(b.id, b.name, b.city);
+      final pools = cfg.locations.expand((l) => l.pools);
+      totalPools += pools.length;
+      totalLanes += pools.expand((p) => p.lanes).length;
+    }
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF070B14) : themeConfig.scaffoldBg,
@@ -348,15 +360,15 @@ class _AquatixLabSuperAdminScreenState
                               title: 'Організації',
                               value: '1 Active',
                               subtitle: 'CitySwim Global',
-                              icon: LucideIcons.building,
+                              icon: LucideIcons.building2,
                               accentColor: const Color(0xFF00E5FF),
                               isDark: isDark,
                             ),
                             const SizedBox(width: 12),
                             _MetricCard(
                               title: 'Філії школи',
-                              value: '2 Вузли',
-                              subtitle: 'Kyiv 🇺🇦 & Vienna 🇦🇹',
+                              value: '${availableBranches.length} Вузли',
+                              subtitle: availableBranches.map((b) => '${b.name} ${b.flagEmoji}').join(' · '),
                               icon: LucideIcons.network,
                               accentColor: const Color(0xFF10B981),
                               isDark: isDark,
@@ -368,8 +380,8 @@ class _AquatixLabSuperAdminScreenState
                           children: [
                             _MetricCard(
                               title: 'Басейни / Доріжки',
-                              value: '4 Басейни',
-                              subtitle: '12 активних доріжок',
+                              value: '$totalPools Басейни',
+                              subtitle: '$totalLanes активних доріжок',
                               icon: LucideIcons.waves,
                               accentColor: const Color(0xFF38BDF8),
                               isDark: isDark,
@@ -440,41 +452,50 @@ class _AquatixLabSuperAdminScreenState
                         ),
                         const SizedBox(height: 12),
 
-                        // CitySwim Kyiv Node
-                        _BranchNodeCard(
-                          flag: '🇺🇦',
-                          name: 'CitySwim Kyiv',
-                          city: 'Київ, Україна',
-                          currency: 'UAH (₴)',
-                          timezone: 'Europe/Kyiv (UTC+2 / UTC+3)',
-                          gateway: 'LiqPay Mock (Картка, Apple Pay, Privat24)',
-                          locationsCount: kyivConfig.locations.length,
-                          poolsCount: kyivConfig.locations.expand((l) => l.pools).length,
-                          poolsNames: kyivConfig.locations
-                              .expand((l) => l.pools.map((p) => p.name))
-                              .join(' · '),
-                          accentColor: const Color(0xFF00E5FF),
-                          isDark: isDark,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // CitySwim Vienna Node
-                        _BranchNodeCard(
-                          flag: '🇦🇹',
-                          name: 'CitySwim Vienna',
-                          city: 'Klosterneuburg, Wien, Австрія',
-                          currency: 'EUR (€)',
-                          timezone: 'Europe/Vienna (UTC+1 / UTC+2)',
-                          gateway: 'Stripe Mock (Картка, Apple Pay, SEPA, EPS)',
-                          locationsCount: viennaConfig.locations.length,
-                          poolsCount: viennaConfig.locations.expand((l) => l.pools).length,
-                          poolsNames: viennaConfig.locations
-                              .expand((l) => l.pools.map((p) => p.name))
-                              .join(' · '),
-                          accentColor: const Color(0xFF10B981),
-                          isDark: isDark,
-                        ),
+                        // Dynamic Branches Listing
+                        for (final branch in availableBranches) ...[
+                          Builder(builder: (context) {
+                            final config = BranchConfig.forBranch(branch.id, branch.name, branch.city);
+                            final accentColor = branch.id == 'kyiv'
+                                ? const Color(0xFF00E5FF)
+                                : (branch.id == 'vienna'
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFA855F7));
+                            return _BranchNodeCard(
+                              branch: branch,
+                              flag: branch.flagEmoji,
+                              name: branch.name.startsWith('CitySwim')
+                                  ? branch.name
+                                  : 'CitySwim ${branch.name}',
+                              city: '${branch.city}, ${branch.country}',
+                              currency: '${branch.currency} (${branch.currencySymbol})',
+                              timezone: branch.timezone,
+                              gateway: branch.paymentProvider == 'liqpay'
+                                  ? 'LiqPay Mock (Картка, Apple Pay, Privat24)'
+                                  : 'Stripe Mock (Картка, Apple Pay, SEPA, EPS)',
+                              locationsCount: config.locations.length,
+                              poolsCount: config.locations.expand((l) => l.pools).length,
+                              poolsNames: config.locations
+                                  .expand((l) => l.pools.map((p) => p.name))
+                                  .join(' · '),
+                              accentColor: accentColor,
+                              isDark: isDark,
+                              onEdit: () {
+                                HapticFeedback.lightImpact();
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => EditBranchSheet(branch: branch),
+                                );
+                              },
+                              onDelete: () {
+                                DeleteBranchDialog.show(context, branch);
+                              },
+                            );
+                          }),
+                          const SizedBox(height: 12),
+                        ],
                       ],
                     ),
                   ),
@@ -799,6 +820,7 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _BranchNodeCard extends StatelessWidget {
+  final Branch branch;
   final String flag;
   final String name;
   final String city;
@@ -810,8 +832,11 @@ class _BranchNodeCard extends StatelessWidget {
   final String poolsNames;
   final Color accentColor;
   final bool isDark;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _BranchNodeCard({
+    required this.branch,
     required this.flag,
     required this.name,
     required this.city,
@@ -823,6 +848,8 @@ class _BranchNodeCard extends StatelessWidget {
     required this.poolsNames,
     required this.accentColor,
     required this.isDark,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -891,6 +918,37 @@ class _BranchNodeCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (branch.isProtected || branch.isSystemDefault)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: isDark ? 0.15 : 0.18),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.amber.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.shieldCheck,
+                        size: 11,
+                        color: isDark ? Colors.amberAccent : Colors.amber.shade900,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        branch.isSystemDefault ? 'Базова' : 'Захищена',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.amberAccent : Colors.amber.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -944,6 +1002,130 @@ class _BranchNodeCard extends StatelessWidget {
             label: 'Басейни ($poolsCount)',
             value: poolsNames,
             isDark: isDark,
+          ),
+          const SizedBox(height: 14),
+          Divider(
+            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+            height: 1,
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Edit Button
+              InkWell(
+                onTap: onEdit,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : const Color(0xFFBAE6FD),
+                    ),
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.pencil,
+                        size: 13,
+                        color: isDark ? Colors.white : const Color(0xFF0284C7),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Редагувати',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Delete Button (Locked for system defaults, active for custom)
+              if (branch.isSystemDefault)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: isDark ? 0.03 : 0.5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.lock,
+                        size: 13,
+                        color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Системна',
+                        style: TextStyle(
+                          color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                InkWell(
+                  onTap: onDelete,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.12 : 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.35 : 0.4),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LucideIcons.trash2,
+                          size: 13,
+                          color: Color(0xFFEF4444),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Видалити',
+                          style: TextStyle(
+                            color: Color(0xFFEF4444),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

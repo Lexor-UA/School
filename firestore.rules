@@ -20,47 +20,47 @@ service cloud.firestore {
 
     function isSuperAdmin() {
       return isAuthenticated() && (
-        request.auth.token.role == 'superAdmin' ||
-        (request.auth.token.email != null && (
+        ('role' in request.auth.token && request.auth.token.role == 'superAdmin') ||
+        ('email' in request.auth.token && request.auth.token.email != null && (
           request.auth.token.email == 'superadmin@cityswim.app' ||
           request.auth.token.email.matches('^superadmin.*@cityswim\\.app$')
         )) ||
-        (hasUserData() && getUserData().role == 'superAdmin')
+        (hasUserData() && 'role' in getUserData() && getUserData().role == 'superAdmin')
       );
     }
 
     function isOwner() {
       return isAuthenticated() && (
-        request.auth.token.role == 'owner' ||
-        (request.auth.token.email != null && (
+        ('role' in request.auth.token && request.auth.token.role == 'owner') ||
+        ('email' in request.auth.token && request.auth.token.email != null && (
           request.auth.token.email == 'owner@cityswim.app' ||
           request.auth.token.email.matches('^owner.*@cityswim\\.app$')
         )) ||
-        (hasUserData() && getUserData().role == 'owner')
+        (hasUserData() && 'role' in getUserData() && getUserData().role == 'owner')
       );
     }
 
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.role == 'admin' ||
-        (request.auth.token.email != null && (
+        ('role' in request.auth.token && request.auth.token.role == 'admin') ||
+        ('email' in request.auth.token && request.auth.token.email != null && (
           request.auth.token.email == 'admin.kyiv@cityswim.app' ||
           request.auth.token.email == 'admin.vienna@cityswim.app' ||
           request.auth.token.email.matches('^admin.*@cityswim\\.app$')
         )) ||
-        (hasUserData() && getUserData().role == 'admin')
+        (hasUserData() && 'role' in getUserData() && getUserData().role == 'admin')
       );
     }
     
     function isCoach() {
       return isAuthenticated() && (
-        request.auth.token.role == 'coach' ||
-        (request.auth.token.email != null && (
+        ('role' in request.auth.token && request.auth.token.role == 'coach') ||
+        ('email' in request.auth.token && request.auth.token.email != null && (
           request.auth.token.email == 'coach.kyiv@cityswim.app' ||
           request.auth.token.email == 'coach.vienna@cityswim.app' ||
           request.auth.token.email.matches('^coach.*@cityswim\\.app$')
         )) ||
-        (hasUserData() && getUserData().role == 'coach')
+        (hasUserData() && 'role' in getUserData() && getUserData().role == 'coach')
       );
     }
 
@@ -77,7 +77,7 @@ service cloud.firestore {
         isOwner() ||
         branchId == null ||
         branchId == '' ||
-        (request.auth.token.email != null && (
+        ('email' in request.auth.token && request.auth.token.email != null && (
           (branchId == 'kyiv' && (
             request.auth.token.email == 'admin.kyiv@cityswim.app' ||
             request.auth.token.email == 'coach.kyiv@cityswim.app' ||
@@ -92,8 +92,8 @@ service cloud.firestore {
           ))
         )) ||
         (hasUserData() && (
-          getUserData().branchId == branchId ||
-          (getUserData().branchIds != null && getUserData().branchIds.hasAny([branchId]))
+          ('branchId' in getUserData() && getUserData().branchId == branchId) ||
+          ('branchIds' in getUserData() && getUserData().branchIds != null && getUserData().branchIds.hasAny([branchId]))
         ))
       );
     }
@@ -243,14 +243,23 @@ service cloud.firestore {
     match /subscriptions/{subscriptionId} {
       allow read: if isAuthenticated();
       
-      allow create: if isSuperAdmin() || isOwner() || (
+      // Allow creation by authenticated users, valid client purchase payloads, or branch administrators
+      allow create: if isAuthenticated() || (
+        'userId' in request.resource.data && 
+        request.resource.data.userId != null &&
+        request.resource.data.userId != ''
+      ) || (
+        'user_id' in request.resource.data &&
+        request.resource.data.user_id != null &&
+        request.resource.data.user_id != ''
+      ) || isSuperAdmin() || isOwner() || (
         isAdmin() && (
           !('branchId' in request.resource.data) ||
           request.resource.data.branchId == null ||
           request.resource.data.branchId == '' ||
           staffBelongsToBranch(request.resource.data.branchId)
         )
-      ) || isAuthenticated();
+      );
 
       allow update: if isSuperAdmin() || isOwner() || (
         isStaff() && (
@@ -355,12 +364,21 @@ service cloud.firestore {
         )
       );
       
-      allow create: if isSuperAdmin() || isOwner() || (
+      // Allow creation of payment records by authenticated users, client purchase payloads, or administrators
+      allow create: if isAuthenticated() || (
+        'clientId' in request.resource.data &&
+        request.resource.data.clientId != null &&
+        request.resource.data.clientId != ''
+      ) || (
+        'client_id' in request.resource.data &&
+        request.resource.data.client_id != null &&
+        request.resource.data.client_id != ''
+      ) || isSuperAdmin() || isOwner() || (
         isAdmin() && (
           staffBelongsToBranch(request.resource.data.branchId) ||
           ('branch_id' in request.resource.data && staffBelongsToBranch(request.resource.data.branch_id))
         )
-      ) || isAuthenticated();
+      );
 
       allow update: if isSuperAdmin() || isOwner() || (
         isAdmin() && (
@@ -377,6 +395,19 @@ service cloud.firestore {
       allow read: if isSuperAdmin() || isOwner() || (
         isCoach() && resource.data.coachId == request.auth.uid
       );
+      allow write: if isSuperAdmin() || isOwner();
+    }
+
+    // ==========================================
+    // Branches & Branch Configurations
+    // ==========================================
+    match /branches/{branchId} {
+      allow read: if true; // Public read so new clients can select branch during registration
+      allow write: if isSuperAdmin() || isOwner();
+    }
+
+    match /branch_configs/{branchId} {
+      allow read: if true;
       allow write: if isSuperAdmin() || isOwner();
     }
 

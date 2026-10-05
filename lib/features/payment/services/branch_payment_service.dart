@@ -105,7 +105,25 @@ class BranchPaymentService {
     // Ensure authenticated session if available
     try {
       if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance.signInAnonymously();
+        final safeId = clientId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+        final clientEmail = 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
+        try {
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: clientEmail,
+            password: 'client123456',
+          );
+        } catch (_) {
+          try {
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+              email: clientEmail,
+              password: 'client123456',
+            );
+          } catch (_) {
+            try {
+              await FirebaseAuth.instance.signInAnonymously();
+            } catch (_) {}
+          }
+        }
       }
     } catch (_) {}
 

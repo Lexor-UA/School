@@ -13,6 +13,7 @@ class Branch {
   final String defaultLanguage; // 'uk', 'de', 'en'
   final String paymentProvider; // 'liqpay', 'stripe'
   final String status; // 'active', 'inactive'
+  final bool isProtected; // Захист від випадкового видалення
   final DateTime createdAt;
 
   const Branch({
@@ -27,8 +28,12 @@ class Branch {
     required this.defaultLanguage,
     required this.paymentProvider,
     this.status = 'active',
+    this.isProtected = false,
     required this.createdAt,
   });
+
+  /// Чи є філія базовою системною (Київ або Відень)
+  bool get isSystemDefault => id == 'kyiv' || id == 'vienna';
 
   String get currencyCode => currency;
 
@@ -45,6 +50,7 @@ class Branch {
     defaultLanguage: 'uk',
     paymentProvider: 'liqpay',
     status: 'active',
+    isProtected: true,
     createdAt: DateTime(2025, 1, 1),
   );
 
@@ -61,6 +67,7 @@ class Branch {
     defaultLanguage: 'de',
     paymentProvider: 'stripe',
     status: 'active',
+    isProtected: true,
     createdAt: DateTime(2025, 1, 1),
   );
 
@@ -69,33 +76,42 @@ class Branch {
 
   /// Емодзі прапора країни
   String get flagEmoji {
-    switch (country.toUpperCase()) {
+    final code = country.toUpperCase();
+    switch (code) {
       case 'UA':
         return '🇺🇦';
       case 'AT':
         return '🇦🇹';
       case 'DE':
         return '🇩🇪';
+      case 'PL':
+        return '🇵🇱';
       case 'AE':
         return '🇦🇪';
       case 'ES':
         return '🇪🇸';
+      case 'US':
+        return '🇺🇸';
+      case 'GB':
+        return '🇬🇧';
+      case 'FR':
+        return '🇫🇷';
+      case 'IT':
+        return '🇮🇹';
       default:
+        if (code.length == 2 && code.codeUnits.every((c) => c >= 65 && c <= 90)) {
+          final first = String.fromCharCode(0x1F1E6 + code.codeUnitAt(0) - 65);
+          final second = String.fromCharCode(0x1F1E6 + code.codeUnitAt(1) - 65);
+          return '$first$second';
+        }
         return '📍';
     }
   }
 
   String get flag => flagEmoji;
 
-  /// Підтримувані мови для філії
-  List<String> get supportedLanguages {
-    if (id == 'kyiv' || country.toUpperCase() == 'UA') {
-      return const ['uk', 'en']; // Тільки Українська та Англійська для України
-    } else if (id == 'vienna' || country.toUpperCase() == 'AT') {
-      return const ['de', 'en', 'uk'];
-    }
-    return const ['uk', 'en'];
-  }
+  /// Підтримувані мови для філії (всі 4 мови доступні в будь-якій філії)
+  List<String> get supportedLanguages => const ['uk', 'ru', 'en', 'de'];
 
   /// Локалізована назва міста для UI
   String localizedCity(String languageCode) {
@@ -103,6 +119,8 @@ class Branch {
       switch (languageCode) {
         case 'uk':
           return 'Київ';
+        case 'ru':
+          return 'Киев';
         case 'de':
           return 'Kiew';
         default:
@@ -112,6 +130,8 @@ class Branch {
       switch (languageCode) {
         case 'uk':
           return 'Відень';
+        case 'ru':
+          return 'Вена';
         case 'de':
           return 'Wien';
         default:
@@ -133,6 +153,7 @@ class Branch {
     String? defaultLanguage,
     String? paymentProvider,
     String? status,
+    bool? isProtected,
     DateTime? createdAt,
   }) {
     return Branch(
@@ -147,6 +168,7 @@ class Branch {
       defaultLanguage: defaultLanguage ?? this.defaultLanguage,
       paymentProvider: paymentProvider ?? this.paymentProvider,
       status: status ?? this.status,
+      isProtected: isProtected ?? this.isProtected,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -163,12 +185,15 @@ class Branch {
     'defaultLanguage': defaultLanguage,
     'paymentProvider': paymentProvider,
     'status': status,
+    'isProtected': isProtected,
     'createdAt': createdAt.toIso8601String(),
   };
 
   factory Branch.fromJson(Map<String, dynamic> json) {
+    final branchId = json['id'] as String? ?? 'kyiv';
+    final isSystem = branchId == 'kyiv' || branchId == 'vienna';
     return Branch(
-      id: json['id'] as String? ?? 'kyiv',
+      id: branchId,
       organizationId: json['organizationId'] as String? ?? 'cityswim',
       name: json['name'] as String? ?? 'Kyiv',
       country: json['country'] as String? ?? 'UA',
@@ -179,6 +204,7 @@ class Branch {
       defaultLanguage: json['defaultLanguage'] as String? ?? 'uk',
       paymentProvider: json['paymentProvider'] as String? ?? 'liqpay',
       status: json['status'] as String? ?? 'active',
+      isProtected: json['isProtected'] as bool? ?? isSystem,
       createdAt: json['createdAt'] != null
           ? (DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now())
           : DateTime.now(),

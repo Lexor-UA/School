@@ -1451,6 +1451,8 @@ class ScheduleController extends _$ScheduleController {
     required int maxCapacity,
     required String category,
     required String lane,
+    String? locationId,
+    String? poolId,
   }) async {
     final conflict = await checkAuthoritativeConflict(
       startTime: startTime,
@@ -1466,11 +1468,14 @@ class ScheduleController extends _$ScheduleController {
     }
     lastConflict = null;
 
+    final activeBranch = ref.read(effectiveBranchProvider);
+
     // Multi-tenancy coach assignment guard (TZ Point 30)
     if (coachId != 'unassigned' && coachId.isNotEmpty) {
       try {
         final classDoc = await FirebaseFirestore.instance.collection('classes').doc(classId).get();
-        final classBranchId = (classDoc.data()?['branchId'] as String?) ?? 'kyiv';
+        final inMem = (state.value ?? []).firstWhereOrNull((c) => c.id == classId);
+        final classBranchId = (classDoc.data()?['branchId'] as String?) ?? inMem?.branchId ?? activeBranch.id;
         final coachDoc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
         if (coachDoc.exists) {
           final coachData = Map<String, dynamic>.from(coachDoc.data() as Map);
@@ -1494,7 +1499,36 @@ class ScheduleController extends _$ScheduleController {
     }
 
     try {
-      await FirebaseFirestore.instance.collection('classes').doc(classId).update({
+      final docRef = FirebaseFirestore.instance.collection('classes').doc(classId);
+      final docSnap = await docRef.get();
+      final existingData = docSnap.exists ? (docSnap.data() ?? {}) : <String, dynamic>{};
+
+      final inMem = (state.value ?? []).firstWhereOrNull((c) => c.id == classId);
+
+      final currentBranchId = existingData['branchId'] as String? ??
+          inMem?.branchId ??
+          activeBranch.id;
+      final currentOrgId = existingData['organizationId'] as String? ??
+          inMem?.organizationId ??
+          activeBranch.organizationId;
+      final currentTimezone = existingData['timezone'] as String? ??
+          inMem?.timezone ??
+          activeBranch.timezone;
+      final currentEnrolled = List<String>.from(
+          existingData['enrolledChildIds'] ?? inMem?.enrolledChildIds ?? []);
+      final currentAttended = List<String>.from(
+          existingData['attendedChildIds'] ?? inMem?.attendedChildIds ?? []);
+      final currentLocationId = locationId ??
+          existingData['locationId'] as String? ??
+          inMem?.locationId ??
+          '';
+      final currentPoolId = poolId ??
+          existingData['poolId'] as String? ??
+          inMem?.poolId ??
+          '';
+
+      final classMap = {
+        'id': classId,
         'title': title,
         'startTime': startTime.toIso8601String(),
         'endTime': endTime.toIso8601String(),
@@ -1503,7 +1537,48 @@ class ScheduleController extends _$ScheduleController {
         'maxCapacity': maxCapacity,
         'category': category,
         'lane': lane,
-      });
+        'branchId': currentBranchId,
+        'organizationId': currentOrgId,
+        'timezone': currentTimezone,
+        'enrolledChildIds': currentEnrolled,
+        'attendedChildIds': currentAttended,
+        'locationId': currentLocationId,
+        'poolId': currentPoolId,
+      };
+
+      await docRef.set(classMap, SetOptions(merge: true));
+
+      final updatedClass = GroupClass(
+        id: classId,
+        title: title,
+        startTime: startTime,
+        endTime: endTime,
+        coachId: coachId,
+        coachName: coachName,
+        maxCapacity: maxCapacity,
+        category: category,
+        lane: lane,
+        branchId: currentBranchId,
+        organizationId: currentOrgId,
+        timezone: currentTimezone,
+        enrolledChildIds: currentEnrolled,
+        attendedChildIds: currentAttended,
+        locationId: currentLocationId,
+        poolId: currentPoolId,
+      );
+
+      // Optimistically update in-memory state & cachedClasses
+      final currentList = state.value ?? <GroupClass>[];
+      final Map<String, GroupClass> dedup = {};
+      for (final c in currentList) {
+        dedup[c.id] = c;
+      }
+      dedup[classId] = updatedClass;
+      final newList = dedup.values.toList()
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      state = AsyncData(newList);
+      cachedClasses = newList;
+
       final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
       _logActivity(
         type: ClassActivityType.rescheduled,
@@ -1513,9 +1588,81 @@ class ScheduleController extends _$ScheduleController {
         coachName: coachName,
         message: 'Зміна в розкладі: «$title» ($timeStr${lane.isNotEmpty ? ", $lane" : ""})',
       );
+
+      // Send notifications to enrolled clients
+      if (currentEnrolled.isNotEmpty) {
+        _notifyEnrolledClientsAboutChange(
+          classId: classId,
+          title: title,
+          startTime: startTime,
+          coachId: coachId,
+          coachName: coachName,
+          enrolledChildIds: currentEnrolled,
+        );
+      }
+
       return true;
     } catch (e) {
+      debugPrint('Error in updateClass: $e');
       return false;
+    }
+  }
+
+  Future<void> _notifyEnrolledClientsAboutChange({
+    required String classId,
+    required String title,
+    required DateTime startTime,
+    required String coachId,
+    required String coachName,
+    required List<String> enrolledChildIds,
+  }) async {
+    try {
+      final Set<String> targetRecipientUserIds = {};
+      for (final attId in enrolledChildIds) {
+        try {
+          final childDoc = await FirebaseFirestore.instance.collection('children').doc(attId).get();
+          if (childDoc.exists) {
+            final parentId = childDoc.data()?['parentId'] as String?;
+            if (parentId != null && parentId.isNotEmpty) {
+              targetRecipientUserIds.add(parentId);
+            }
+          } else {
+            targetRecipientUserIds.add(attId);
+          }
+        } catch (_) {
+          targetRecipientUserIds.add(attId);
+        }
+      }
+
+      final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+      final dateStr = '${startTime.day.toString().padLeft(2, '0')}.${startTime.month.toString().padLeft(2, '0')}';
+      final coachStr = (coachId != 'unassigned' && coachName.isNotEmpty && !coachName.toLowerCase().contains('не призначен'))
+          ? coachName
+          : 'уточнюється';
+
+      final notifTitle = '🕒 Зміни у розкладі: $title';
+      final notifMessage = 'Розклад тренування «$title» ($dateStr) оновлено: новий час $timeStr, тренер: $coachStr.';
+
+      for (final recipientId in targetRecipientUserIds) {
+        try {
+          await FirebaseFirestore.instance.collection('notifications').add({
+            'userId': recipientId,
+            'title': notifTitle,
+            'message': notifMessage,
+            'timestamp': FieldValue.serverTimestamp(),
+            'icon': 'calendarClock',
+            'iconColor': 0xFF00E5FF,
+            'isRead': false,
+            'status': 'unread',
+            'actionType': 'calendar',
+            'classId': classId,
+          });
+        } catch (e) {
+          debugPrint('Failed to send reschedule notification to $recipientId: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _notifyEnrolledClientsAboutChange: $e');
     }
   }
 
@@ -1621,6 +1768,13 @@ class ScheduleController extends _$ScheduleController {
       }
 
       await FirebaseFirestore.instance.collection('classes').doc(classId).delete();
+
+      // Optimistically remove from in-memory state & cachedClasses
+      final current = state.value ?? [];
+      final updated = current.where((c) => c.id != classId).toList();
+      state = AsyncData(updated);
+      cachedClasses = updated;
+
       _logActivity(
         type: ClassActivityType.classCancelled,
         classId: classId,

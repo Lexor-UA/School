@@ -217,12 +217,25 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
   }
 
   Future<void> _toggleAttendance(CoachAttendeeInfo attendee) async {
+    HapticFeedback.mediumImpact();
     final currentUser = ref.read(authControllerProvider);
+    final isMyClass = currentUser != null && (
+      currentUser.id == _currentClass.coachId ||
+      currentUser.name.trim().toLowerCase() == _currentClass.coachName.trim().toLowerCase() ||
+      currentUser.role == UserRole.admin ||
+      currentUser.role == UserRole.owner ||
+      currentUser.role == UserRole.superAdmin
+    );
+
     if (currentUser != null && currentUser.role == UserRole.coach) {
       final coachBranch = currentUser.branchId;
       final coachBranches = currentUser.branchIds;
       final classBranch = _currentClass.branchId;
-      final hasAccess = coachBranch == classBranch || coachBranches.contains(classBranch);
+      final hasAccess = isMyClass ||
+          coachBranch.isEmpty ||
+          classBranch.isEmpty ||
+          coachBranch == classBranch ||
+          coachBranches.contains(classBranch);
       if (!hasAccess) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -253,9 +266,46 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
     });
 
     try {
-      await FirebaseFirestore.instance.collection('classes').doc(_currentClass.id).update({
-        'attendedChildIds': updatedAttended,
-      });
+      final classDocRef = FirebaseFirestore.instance.collection('classes').doc(_currentClass.id);
+      final docSnap = await classDocRef.get();
+      if (docSnap.exists) {
+        await classDocRef.update({
+          'attendedChildIds': updatedAttended,
+        });
+      } else {
+        // Document doesn't exist yet in Firestore (e.g. seed/cached class)
+        // Persist full class document with updated attended list!
+        final classData = {
+          'id': _currentClass.id,
+          'title': _currentClass.title,
+          'category': _currentClass.category,
+          'startTime': _currentClass.startTime.toIso8601String(),
+          'endTime': _currentClass.endTime.toIso8601String(),
+          'coachId': _currentClass.coachId,
+          'coachName': _currentClass.coachName,
+          'lane': _currentClass.lane,
+          'maxCapacity': _currentClass.maxCapacity,
+          'enrolledChildIds': _currentClass.enrolledChildIds,
+          'attendedChildIds': updatedAttended,
+          'branchId': _currentClass.branchId,
+          'organizationId': _currentClass.organizationId,
+          'timezone': _currentClass.timezone,
+          'locationId': _currentClass.locationId,
+          'poolId': _currentClass.poolId,
+        };
+        await classDocRef.set(classData, SetOptions(merge: true));
+      }
+
+      // Update cached classes in ScheduleController so schedule tab immediately reflects attendance
+      if (ScheduleController.cachedClasses != null) {
+        ScheduleController.cachedClasses = ScheduleController.cachedClasses!.map((c) {
+          if (c.id == _currentClass.id) {
+            return c.copyWith(attendedChildIds: updatedAttended);
+          }
+          return c;
+        }).toList();
+      }
+      ref.invalidate(scheduleControllerProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -500,16 +550,26 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           children: [
                             Expanded(
                               child: Text(
-                                _currentClass.title,
+                                _currentClass.title.replaceFirst(
+                                  RegExp(r'^(Групове плавання|Індивідуальне тренування|Спліт-тренування|Групове|Індивідуальне|Спліт)\s*:\s*', caseSensitive: false),
+                                  '',
+                                ).trim().isNotEmpty
+                                    ? _currentClass.title.replaceFirst(
+                                        RegExp(r'^(Групове плавання|Індивідуальне тренування|Спліт-тренування|Групове|Індивідуальне|Спліт)\s*:\s*', caseSensitive: false),
+                                        '',
+                                      ).trim()
+                                    : _currentClass.title,
                                 style: TextStyle(
                                   color: isDark ? Colors.white : currentTheme.textPrimary,
-                                  fontSize: 18,
+                                  fontSize: 17.5,
                                   fontWeight: FontWeight.w800,
+                                  height: 1.2,
                                 ),
-                                maxLines: 1,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                               decoration: BoxDecoration(
@@ -781,24 +841,24 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            attendee.name,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : currentTheme.textPrimary,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                              letterSpacing: 0.1,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3.5),
                           Row(
                             children: [
-                              Flexible(
-                                child: Text(
-                                  attendee.name,
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white : currentTheme.textPrimary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
                               if (attendee.age != null) ...[
-                                const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                   decoration: BoxDecoration(
                                     color: isDark
                                         ? const Color(0xFF00E5FF).withValues(alpha: 0.16)
@@ -808,77 +868,94 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                       color: isDark
                                           ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
                                           : const Color(0xFFBAE6FD),
+                                      width: 0.8,
                                     ),
                                   ),
                                   child: Text(
                                     '${attendee.age} р.',
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 6),
                               ],
+                              if (attendee.parentName != null && attendee.parentName!.isNotEmpty)
+                                Expanded(
+                                  child: Text(
+                                    'Батьки: ${attendee.parentName}',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                             ],
                           ),
-                          const SizedBox(height: 2),
-                          if (attendee.parentName != null && attendee.parentName!.isNotEmpty)
-                            Text(
-                              'Батьки: ${attendee.parentName}',
-                              style: TextStyle(
-                                color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
                         ],
                       ),
                     ),
 
                     const SizedBox(width: 8),
 
-                    // Quick Attendance Button
-                    GestureDetector(
-                      onTap: () => _toggleAttendance(attendee),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isPresent
-                              ? const Color(0xFF10B981)
-                              : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF)),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
+                    // Quick Attendance Button (Capsule Style)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _toggleAttendance(attendee),
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7.5),
+                          decoration: BoxDecoration(
                             color: isPresent
                                 ? const Color(0xFF10B981)
-                                : (isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFBAE6FD)),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isPresent ? LucideIcons.check : LucideIcons.userCheck,
-                              size: 14,
+                                : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.12) : const Color(0xFFE0F2FE)),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
                               color: isPresent
-                                  ? Colors.white
-                                  : (isDark ? Colors.white70 : const Color(0xFF0284C7)),
+                                  ? const Color(0xFF10B981)
+                                  : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD)),
+                              width: 1.1,
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              isPresent ? 'Присутній' : 'Відмітити',
-                              style: TextStyle(
+                            boxShadow: isPresent
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.40),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isPresent ? LucideIcons.check : LucideIcons.userCheck,
+                                size: 14.5,
                                 color: isPresent
                                     ? Colors.white
-                                    : (isDark ? Colors.white70 : const Color(0xFF0284C7)),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                                    : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 5.5),
+                              Text(
+                                isPresent ? 'Присутній' : 'Відмітити',
+                                style: TextStyle(
+                                  color: isPresent
+                                      ? Colors.white
+                                      : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

@@ -111,10 +111,22 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
 
   Future<void> _toggleAttendance(GroupClass gClass, String childId) async {
     final user = ref.read(authControllerProvider);
+    final isMyClass = user != null && (
+      user.id == gClass.coachId ||
+      user.name.trim().toLowerCase() == gClass.coachName.trim().toLowerCase() ||
+      user.role == UserRole.admin ||
+      user.role == UserRole.owner ||
+      user.role == UserRole.superAdmin
+    );
+
     if (user != null && user.role == UserRole.coach) {
       final coachBranch = user.branchId;
       final coachBranches = user.branchIds;
-      final hasAccess = coachBranch == gClass.branchId || coachBranches.contains(gClass.branchId);
+      final hasAccess = isMyClass ||
+          coachBranch.isEmpty ||
+          gClass.branchId.isEmpty ||
+          coachBranch == gClass.branchId ||
+          coachBranches.contains(gClass.branchId);
       if (!hasAccess) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -135,9 +147,44 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
         : (List<String>.from(gClass.attendedChildIds)..add(childId));
 
     try {
-      await FirebaseFirestore.instance.collection('classes').doc(gClass.id).update({
-        'attendedChildIds': newAttended,
-      });
+      final classDocRef = FirebaseFirestore.instance.collection('classes').doc(gClass.id);
+      final docSnap = await classDocRef.get();
+      if (docSnap.exists) {
+        await classDocRef.update({
+          'attendedChildIds': newAttended,
+        });
+      } else {
+        final classData = {
+          'id': gClass.id,
+          'title': gClass.title,
+          'category': gClass.category,
+          'startTime': gClass.startTime.toIso8601String(),
+          'endTime': gClass.endTime.toIso8601String(),
+          'coachId': gClass.coachId,
+          'coachName': gClass.coachName,
+          'lane': gClass.lane,
+          'maxCapacity': gClass.maxCapacity,
+          'enrolledChildIds': gClass.enrolledChildIds,
+          'attendedChildIds': newAttended,
+          'branchId': gClass.branchId,
+          'organizationId': gClass.organizationId,
+          'timezone': gClass.timezone,
+          'locationId': gClass.locationId,
+          'poolId': gClass.poolId,
+        };
+        await classDocRef.set(classData, SetOptions(merge: true));
+      }
+
+      if (ScheduleController.cachedClasses != null) {
+        ScheduleController.cachedClasses = ScheduleController.cachedClasses!.map((c) {
+          if (c.id == gClass.id) {
+            return c.copyWith(attendedChildIds: newAttended);
+          }
+          return c;
+        }).toList();
+      }
+      ref.invalidate(scheduleControllerProvider);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1243,31 +1290,33 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: themeConfig.isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : const Color(0xFFE0F2FE),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: themeConfig.isDark ? Colors.transparent : const Color(0xFFBAE6FD),
+                      if ((child.currentAge ?? child.age ?? 0) > 0) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: themeConfig.isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : const Color(0xFFE0F2FE),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: themeConfig.isDark ? Colors.transparent : const Color(0xFFBAE6FD),
+                                ),
+                              ),
+                              child: Text(
+                                '${child.currentAge ?? child.age} р.',
+                                style: TextStyle(
+                                  color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '${'coach.level_label'.tr()} ${child.level}',
-                              style: TextStyle(
-                                color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -305,7 +305,9 @@ void showSwimmerDetailsSheet(
                                               ),
                                             ),
                                             child: Text(
-                                              '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
+                                              ((child.currentAge ?? child.age ?? 0) > 0)
+                                                  ? '${child.currentAge ?? child.age} р.'
+                                                  : 'Учень',
                                               style: TextStyle(
                                                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
                                                 fontSize: 11,
@@ -313,17 +315,6 @@ void showSwimmerDetailsSheet(
                                               ),
                                             ),
                                           ),
-                                          if ((child.currentAge ?? child.age ?? 0) > 0) ...[
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              '${child.currentAge ?? child.age} р.',
-                                              style: TextStyle(
-                                                color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
                                         ],
                                       ),
                                     if (canViewContacts && phone != null && phone.trim().isNotEmpty) ...[

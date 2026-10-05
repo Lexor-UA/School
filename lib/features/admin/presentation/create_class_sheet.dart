@@ -177,6 +177,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           c.coachName.toLowerCase().contains('не призначен');
       if (isUnassigned) {
         _selectedCoach = unassignedCoach;
+      } else {
+        _selectedCoach = AppUser(
+          id: c.coachId.isNotEmpty ? c.coachId : 'unassigned',
+          name: c.coachName,
+          role: UserRole.coach,
+          branchId: c.branchId,
+        );
       }
       _titleController = TextEditingController(text: c.title);
       _selectedDate = c.startTime;
@@ -414,7 +421,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
 
   Future<void> _save() async {
     if (_isSaving) return;
-    if (_titleController.text.trim().isEmpty || _selectedCoach == null) return;
+    if (_titleController.text.trim().isEmpty) return;
+    _selectedCoach ??= unassignedCoach;
 
     _isSaving = true;
     setState(() {});
@@ -527,6 +535,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         maxCapacity: _maxCapacity,
         category: _selectedCategory,
         lane: _selectedLane,
+        locationId: _currentLocation?.id,
+        poolId: _selectedPoolId ?? _activePool?.id,
       );
 
       if (success) {
@@ -535,6 +545,44 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           final timeFmt = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
           await logAdminAction('Оновлено заняття "${_titleController.text.trim()}" на $timeFmt', admin.id);
         }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(LucideIcons.check, color: Colors.white, size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Заняття успішно оновлено!'),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          );
+          Navigator.pop(context);
+        }
+        return;
+      } else {
+        setState(() => _isSaving = false);
+        final lastConf = ref.read(scheduleControllerProvider.notifier).lastConflict;
+        if (mounted) {
+          if (lastConf != null) {
+            _showConflictDialog(context, lastConf, isDark);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Не вдалося зберегти зміни. Перевірте зайнятість тренера або доріжки.'),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            );
+          }
+        }
+        return;
       }
     } else if (_isRecurring) {
       if (_selectedWeekdays.isEmpty) {
@@ -879,8 +927,20 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             _buildLabel('admin.class_coach'.tr(), isDark: isDark),
                             coachesAsync.when(
                               data: (rawCoachesList) {
-                                final coachesList = rawCoachesList.where((c) => c.branchId == activeBranch.id).toList();
-                                final availableCoaches = [unassignedCoach, ...coachesList];
+                                final coachesList = rawCoachesList.where((c) =>
+                                  c.branchId == activeBranch.id ||
+                                  c.branchIds.contains(activeBranch.id)
+                                ).toList();
+
+                                final List<AppUser> availableCoaches = [unassignedCoach];
+                                if (_selectedCoach != null && _selectedCoach!.id != 'unassigned') {
+                                  availableCoaches.add(_selectedCoach!);
+                                }
+                                for (final coach in coachesList) {
+                                  if (!availableCoaches.any((c) => c.id == coach.id)) {
+                                    availableCoaches.add(coach);
+                                  }
+                                }
 
                                 if (_selectedCoach == null) {
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -899,7 +959,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                             (c) => c.id == widget.classToEdit!.coachId ||
                                                    (widget.classToEdit!.coachName.isNotEmpty &&
                                                     c.name.toLowerCase() == widget.classToEdit!.coachName.toLowerCase()),
-                                            orElse: () => unassignedCoach,
+                                            orElse: () => _selectedCoach ?? unassignedCoach,
                                           );
                                           setState(() => _selectedCoach = target);
                                         }

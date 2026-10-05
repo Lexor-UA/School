@@ -682,13 +682,119 @@ class SubscriptionPackageCatalog {
     ),
   ];
 
+  static final Map<String, List<SubscriptionPackage>> _customBranchPackages = {};
+
+  static void registerCustomPackages(String branchId, List<SubscriptionPackage> packages) {
+    _customBranchPackages[branchId] = packages;
+  }
+
+  static void removeCustomPackages(String branchId) {
+    _customBranchPackages.remove(branchId);
+  }
+
+  /// Автоматична генерація базового каталогу абонементів для нової філії у її валюті
+  static List<SubscriptionPackage> generateDefaultPackages({
+    required String branchId,
+    required String currency,
+    required String currencySymbol,
+  }) {
+    final isEuroOrDollar = currency == 'EUR' || currency == 'USD' || currency == 'GBP';
+    final singlePrice = isEuroOrDollar ? 25 : (currency == 'PLN' ? 100 : 450);
+    final month4Price = isEuroOrDollar ? 75 : (currency == 'PLN' ? 320 : 1600);
+    final month8Price = isEuroOrDollar ? 140 : (currency == 'PLN' ? 600 : 3000);
+    final month12Price = isEuroOrDollar ? 195 : (currency == 'PLN' ? 850 : 4200);
+    final indivPrice = isEuroOrDollar ? 45 : (currency == 'PLN' ? 180 : 800);
+
+    return [
+      SubscriptionPackage(
+        id: '${branchId}_trial',
+        name: 'Пробне заняття',
+        branchId: branchId,
+        price: 0,
+        currency: currency,
+        currencySymbol: currencySymbol,
+        classes: 1,
+        validityDays: 14,
+        description: 'Безкоштовне перше ознайомче тренування',
+      ),
+      SubscriptionPackage(
+        id: '${branchId}_single',
+        name: 'Разове заняття',
+        branchId: branchId,
+        price: singlePrice,
+        currency: currency,
+        currencySymbol: currencySymbol,
+        classes: 1,
+        validityDays: 30,
+        description: 'Одноразове відвідування тренування',
+      ),
+      SubscriptionPackage(
+        id: '${branchId}_month_4',
+        name: '4 заняття на місяць',
+        branchId: branchId,
+        price: month4Price,
+        currency: currency,
+        currencySymbol: currencySymbol,
+        classes: 4,
+        validityDays: 30,
+        description: 'Абонемент на 4 заняття протягом 30 днів',
+      ),
+      SubscriptionPackage(
+        id: '${branchId}_month_8',
+        name: '8 занять на місяць',
+        branchId: branchId,
+        price: month8Price,
+        currency: currency,
+        currencySymbol: currencySymbol,
+        classes: 8,
+        validityDays: 30,
+        description: 'Абонемент на 8 занять протягом 30 днів',
+      ),
+      SubscriptionPackage(
+        id: '${branchId}_month_12',
+        name: '12 занять на місяць',
+        branchId: branchId,
+        price: month12Price,
+        currency: currency,
+        currencySymbol: currencySymbol,
+        classes: 12,
+        validityDays: 30,
+        description: 'Абонемент на 12 занять протягом 30 днів',
+      ),
+      SubscriptionPackage(
+        id: '${branchId}_individual',
+        name: 'Індивідуальне заняття',
+        branchId: branchId,
+        price: indivPrice,
+        currency: currency,
+        currencySymbol: currencySymbol,
+        classes: 1,
+        validityDays: 30,
+        isIndividual: true,
+        description: 'Персональне тренування з тренером 1-на-1',
+      ),
+    ];
+  }
+
   static List<SubscriptionPackage> forBranch(String branchId) => getPackagesForBranch(branchId);
 
-  static List<SubscriptionPackage> getPackagesForBranch(String branchId) {
+  static List<SubscriptionPackage> getPackagesForBranch(String branchId, [String? currency, String? currencySymbol]) {
     if (branchId == 'vienna') {
       return viennaPackages;
     }
-    return kyivPackages;
+    if (branchId == 'kyiv') {
+      return kyivPackages;
+    }
+    if (_customBranchPackages.containsKey(branchId)) {
+      return _customBranchPackages[branchId]!;
+    }
+    final pkgs = generateDefaultPackages(
+      branchId: branchId,
+      currency: currency ?? 'EUR',
+      currencySymbol: currencySymbol ?? (currency == 'UAH' ? '₴' : '€'),
+    );
+    _customBranchPackages[branchId] = pkgs;
+    return pkgs;
   }
 
   static List<Map<String, dynamic>> getServicesMapForBranch(String branchId) {
@@ -707,19 +813,29 @@ class SubscriptionPackageCatalog {
             'vienna_monat_12',
             'vienna_einzelunterricht',
           ]
-        : const [
-            'kyiv_trial',
-            'kyiv_single',
-            'kyiv_month_4',
-            'kyiv_month_8',
-            'kyiv_month_12',
-            'kyiv_individual',
-          ];
+        : branchId == 'kyiv'
+            ? const [
+                'kyiv_trial',
+                'kyiv_single',
+                'kyiv_month_4',
+                'kyiv_month_8',
+                'kyiv_month_12',
+                'kyiv_individual',
+              ]
+            : [
+                '${branchId}_trial',
+                '${branchId}_single',
+                '${branchId}_month_4',
+                '${branchId}_month_8',
+                '${branchId}_month_12',
+                '${branchId}_individual',
+              ];
     return list.where((p) => coreIds.contains(p.id)).toList();
   }
 
   /// Знайти пакет за унікальним id
   static SubscriptionPackage? getById(String id) {
-    return [...kyivPackages, ...viennaPackages].firstWhereOrNull((p) => p.id == id);
+    final customList = _customBranchPackages.values.expand((l) => l).toList();
+    return [...kyivPackages, ...viennaPackages, ...customList].firstWhereOrNull((p) => p.id == id);
   }
 }

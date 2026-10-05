@@ -130,21 +130,15 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               todayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
               final upcomingClass = todayClasses.where((c) => c.endTime.isAfter(now)).firstOrNull;
 
-              final uniqueStudentIds = <String>{};
-              for (final c in coachClasses) {
-                uniqueStudentIds.addAll(c.enrolledChildIds);
-              }
-              final activeStudentsCount = uniqueStudentIds.length;
-
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 112),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 76),
                 child: Column(
                   children: [
                     // 1. Coach Identity Card (with integrated Theme Switcher)
                     _buildIdentityCard(user),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 9),
 
                     // 2. Interactive Salary Card (VisionOS Compact Executive)
                     _buildSalaryCard(
@@ -164,45 +158,22 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                       allFilteredClasses: filteredClasses,
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 9),
 
                     // 3. Communication Center (Admin & Clients)
                     _buildCommunicationCenter(context, user),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 9),
 
-                    // 4. Performance KPI Grid (2x2 Compact Horizontal Mini-Tiles)
+                    // 4. Performance KPI (Single Compact Horizontal Row: Attendance & Rating)
                     Row(
                       children: [
-                        Expanded(
-                          child: _buildKpiCard(
-                            '$totalConducted',
-                            'Тренувань',
-                            LucideIcons.calendarCheck,
-                            _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
                           child: _buildKpiCard(
                             '96%',
                             'Відвідуваність',
                             LucideIcons.trendingUp,
                             _isLight ? const Color(0xFF059669) : const Color(0xFF10B981),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildKpiCard(
-                            '$activeStudentsCount',
-                            'Активні учні',
-                            LucideIcons.users,
-                            _isLight ? const Color(0xFFD97706) : const Color(0xFFF59E0B),
-                            onTap: () => ref.read(coachTabProvider.notifier).setTab(2),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -232,11 +203,11 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
                     // 5. Today's Express Mission / Upcoming Class (Visible ONLY if there is an upcoming class today)
                     if (upcomingClass != null) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 9),
                       _buildTodayMissionCard(upcomingClass, context),
                     ],
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 11),
 
                     // 6. Logout Action & System Version
                     _buildLogoutSection(context, ref),
@@ -466,6 +437,11 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
   Widget _buildTodayMissionCard(GroupClass upcomingClass, BuildContext context) {
     final durationMins = upcomingClass.endTime.difference(upcomingClass.startTime).inMinutes;
+    final cleanTitle = upcomingClass.title.replaceFirst(
+      RegExp(r'^(Індивідуальне|Групове|Спліт)\s*тренування:\s*', caseSensitive: false),
+      '',
+    ).trim();
+    final displayTitle = cleanTitle.isNotEmpty ? cleanTitle : upcomingClass.title;
 
     return Container(
       width: double.infinity,
@@ -540,7 +516,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        upcomingClass.title,
+                        displayTitle,
                         style: TextStyle(
                           color: _isLight ? const Color(0xFF0F172A) : Colors.white,
                           fontSize: 12,
@@ -719,38 +695,66 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 1. Concentric Glowing Avatar
-          Container(
-            padding: const EdgeInsets.all(2.5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: _isLight
-                    ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
-                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
-                      .withValues(alpha: _isLight ? 0.35 : 0.45),
-                  blurRadius: 12,
-                  spreadRadius: 1,
+          // 1. Concentric Glowing Avatar with Status Beacon
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: _isLight
+                        ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
+                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                          .withValues(alpha: _isLight ? 0.35 : 0.45),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _isLight ? Colors.white : const Color(0xFF05172A),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isLight ? Colors.white : const Color(0xFF05172A),
+                  ),
+                  child: const AvatarPicker(
+                    heroTag: 'hero_avatar_Тренерам_profile',
+                    radius: 28,
+                  ),
+                ),
               ),
-              child: const AvatarPicker(
-                heroTag: 'hero_avatar_Тренерам_profile',
-                radius: 28,
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _isLight ? Colors.white : const Color(0xFF0F172A),
+                      width: 2.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.60),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           const SizedBox(width: 14),
 
@@ -760,74 +764,22 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Row 1: Coach Name & Online Status Beacon
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayName,
-                        style: TextStyle(
-                          color: _isLight ? const Color(0xFF0F172A) : Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Clean Minimalist Online Status Chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _isLight
-                            ? const Color(0xFFECFDF5)
-                            : const Color(0xFF10B981).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: _isLight ? 0.35 : 0.40),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0xFF10B981),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 4.5),
-                          Text(
-                            'Онлайн',
-                            style: TextStyle(
-                              color: _isLight ? const Color(0xFF047857) : const Color(0xFF34D399),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                // Row 1: Coach Name gets 100% full width
+                Text(
+                  displayName,
+                  style: TextStyle(
+                    color: _isLight ? const Color(0xFF0F172A) : Colors.white,
+                    fontSize: 18.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
 
                 const SizedBox(height: 5),
 
-                // Row 2: Light Premium Pro Rank Title
+                // Row 2: Pro Rank Title · Online Status
                 Row(
                   children: [
                     Icon(
@@ -835,8 +787,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                       color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                       size: 13,
                     ),
-                    const SizedBox(width: 5),
-                    Expanded(
+                    const SizedBox(width: 4),
+                    Flexible(
                       child: Text(
                         'coach.pro_rank'.tr(),
                         style: TextStyle(
@@ -847,6 +799,22 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      ' · ',
+                      style: TextStyle(
+                        color: _isLight ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      'Онлайн',
+                      style: TextStyle(
+                        color: _isLight ? const Color(0xFF059669) : const Color(0xFF34D399),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
@@ -1137,7 +1105,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Заплановано до кінця місяця: ${_formatClassesCount(totalScheduled)} (+${_isIncomeHidden ? '•••' : currencyFormat.format(scheduledSum)} грн)',
+                            'До кінця місяця: ${_formatClassesCount(totalScheduled)} (+${_isIncomeHidden ? '•••' : currencyFormat.format(scheduledSum)} грн)',
                             style: TextStyle(
                               color: _isLight ? const Color(0xFF92400E) : const Color(0xFFFBBF24),
                               fontSize: 10,

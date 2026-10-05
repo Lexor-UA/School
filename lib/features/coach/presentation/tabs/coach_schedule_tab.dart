@@ -599,7 +599,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
           // 2. Потім зміни. Потім журнал відвідування.
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
+              padding: EdgeInsets.fromLTRB(20, 4, 20, MediaQuery.paddingOf(context).bottom + 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

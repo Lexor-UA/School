@@ -407,8 +407,6 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
   // ==========================================
   Widget _buildMySwimmersSliver() {
     final coach = ref.watch(authControllerProvider);
-    final coachId = coach?.id ?? '';
-    final coachName = (coach?.name ?? '').trim().toLowerCase();
 
     final scheduleAsync = ref.watch(scheduleControllerProvider);
     final allClasses = scheduleAsync.value ?? ScheduleController.cachedClasses ?? [];
@@ -1247,8 +1245,6 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             }
 
             final coach = ref.watch(authControllerProvider);
-            final coachId = coach?.id ?? '';
-            final coachName = (coach?.name ?? '').trim().toLowerCase();
             final coachBranch = coach?.branchId ?? 'kyiv';
             final coachBranches = coach?.branchIds ?? [coachBranch];
 
@@ -1835,9 +1831,9 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                         ),
                                       ),
                                       child: Text(
-                                        (child.age != null && child.age! > 0)
-                                            ? '${_coachTr('coach.level_label', 'Рівень')} ${child.level} • ${child.age} р.'
-                                            : '${_coachTr('coach.level_label', 'Рівень')} ${child.level}',
+                                        (child.currentAge ?? child.age ?? 0) > 0
+                                            ? '${child.currentAge ?? child.age} р.'
+                                            : 'Учень',
                                         style: TextStyle(
                                           color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
                                           fontSize: 10.5,

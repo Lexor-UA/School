@@ -168,35 +168,24 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                   ),
                   const SizedBox(height: 18),
 
-                // Branch 1: Vienna
-                _buildBranchOption(
-                  context: ctx,
-                  branch: Branch.vienna,
-                  title: 'CitySwim Vienna',
-                  subtitle: 'In der Au 1, Klosterneuburg • EUR (€)',
-                  flag: '🇦🇹',
-                  isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == 'vienna',
-                  onTap: () {
-                    ref.read(tenancyControllerProvider.notifier).switchBranch('vienna');
-                    Navigator.of(ctx).pop();
-                  },
-                ),
-                const SizedBox(height: 10),
-
-                // Branch 2: Kyiv
-                _buildBranchOption(
-                  context: ctx,
-                  branch: Branch.kyiv,
-                  title: 'CitySwim Kyiv',
-                  subtitle: 'CitySwim Kyiv Center • UAH (₴)',
-                  flag: '🇺🇦',
-                  isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == 'kyiv',
-                  onTap: () {
-                    ref.read(tenancyControllerProvider.notifier).switchBranch('kyiv');
-                    Navigator.of(ctx).pop();
-                  },
-                ),
-                const SizedBox(height: 14),
+                  // Dynamic Available Branches
+                  for (final branch in tenancyState.availableBranches) ...[
+                    _buildBranchOption(
+                      context: ctx,
+                      branch: branch,
+                      title: branch.name.startsWith('CitySwim')
+                          ? branch.name
+                          : 'CitySwim ${branch.name}',
+                      subtitle: '${branch.city} • ${branch.currency} (${branch.currencySymbol})',
+                      flag: branch.flagEmoji,
+                      isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == branch.id,
+                      onTap: () {
+                        ref.read(tenancyControllerProvider.notifier).switchBranch(branch.id);
+                        Navigator.of(ctx).pop();
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
                 // Divider
                 Divider(

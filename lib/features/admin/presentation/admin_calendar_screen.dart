@@ -1464,7 +1464,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final enrolledCount = c.enrolledChildIds.length;
     final progress = c.maxCapacity > 0 ? (enrolledCount / c.maxCapacity).clamp(0.0, 1.0) : 0.0;
     final spotsLeft = (c.maxCapacity - enrolledCount).clamp(0, c.maxCapacity);
-    final isUnassigned = c.coachName.isEmpty ||
+    final isUnassigned = c.coachId == 'unassigned' ||
+        c.coachId.isEmpty ||
+        c.coachName.isEmpty ||
         c.coachName == 'Тренер не призначений' ||
         c.coachName.toLowerCase().contains('не призначен');
 

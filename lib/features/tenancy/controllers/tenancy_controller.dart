@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
 import '../../../core/providers/shared_prefs_provider.dart';
@@ -5,6 +7,8 @@ import '../../auth/controllers/auth_controller.dart';
 import '../../auth/models/app_user.dart';
 import '../models/organization.dart';
 import '../models/branch.dart';
+import '../models/branch_config.dart';
+import '../../subscription/models/subscription_package.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Провайдер філії поточного авторизованого користувача (якщо не Owner)
@@ -88,9 +92,16 @@ class TenancyState {
 /// Контролер управління мультитенантністю (Riverpod 3 Notifier)
 class TenancyNotifier extends Notifier<TenancyState> {
   static const String _prefBranchKey = 'selected_branch_id';
+  StreamSubscription? _branchesSub;
 
   @override
   TenancyState build() {
+    ref.onDispose(() {
+      _branchesSub?.cancel();
+    });
+
+    _initFirestoreBranches();
+
     final prefs = ref.watch(sharedPrefsProvider);
     final savedBranchId = prefs.getString(_prefBranchKey);
 
@@ -148,6 +159,51 @@ class TenancyNotifier extends Notifier<TenancyState> {
     );
   }
 
+  /// Ініціалізація та слухання колекції філій у Firestore в реальному часі
+  void _initFirestoreBranches() {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      _branchesSub?.cancel();
+      _branchesSub = firestore.collection('branches').snapshots().listen((snapshot) {
+        if (snapshot.docs.isEmpty) return;
+
+        final Map<String, Branch> branchMap = {
+          for (final b in Branch.defaultBranches) b.id: b,
+        };
+
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            data['id'] = doc.id;
+            final branch = Branch.fromJson(data);
+            branchMap[branch.id] = branch;
+
+            // Реєстрація конфігурацій басейнів та абонементів
+            BranchConfig.forBranch(branch.id, branch.name, branch.city);
+            SubscriptionPackageCatalog.getPackagesForBranch(branch.id, branch.currency, branch.currencySymbol);
+          } catch (e) {
+            debugPrint('[TenancyNotifier] Помилка парсингу філії: $e');
+          }
+        }
+
+        final updatedList = branchMap.values.toList();
+        Branch? nextActive = state.activeBranch;
+        if (state.activeBranch != null) {
+          nextActive = branchMap[state.activeBranch!.id] ?? state.activeBranch;
+        }
+
+        state = state.copyWith(
+          availableBranches: updatedList,
+          activeBranch: nextActive,
+        );
+      }, onError: (err) {
+        debugPrint('[TenancyNotifier] Помилка стріму філій Firestore: $err');
+      });
+    } catch (e) {
+      debugPrint('[TenancyNotifier] Firestore недоступний (offline/test mode): $e');
+    }
+  }
+
   /// Перемикання поточної філії (тільки для Owner або SuperAdmin)
   Future<void> switchBranch(String branchId) async {
     try {
@@ -184,12 +240,26 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
   /// Додавання нової філії (для масштабування майбутнього AquatixLab)
   void registerBranch(Branch branch) {
-    if (state.availableBranches.any((b) => b.id == branch.id)) return;
+    if (state.availableBranches.any((b) => b.id == branch.id)) {
+      updateBranchInMemory(branch);
+      return;
+    }
     final updatedList = [...state.availableBranches, branch];
     state = state.copyWith(availableBranches: updatedList);
   }
 
-  /// Створення нової філії та автоматичне створення її адміністратора у Firestore
+  /// Оновлення філії в локальному стані
+  void updateBranchInMemory(Branch branch) {
+    final updatedList = state.availableBranches
+        .map((b) => b.id == branch.id ? branch : b)
+        .toList();
+    if (!updatedList.any((b) => b.id == branch.id)) {
+      updatedList.add(branch);
+    }
+    state = state.copyWith(availableBranches: updatedList);
+  }
+
+  /// Створення нової філії та автоматичне створення її адміністратора та конфігурації басейнів у Firestore
   Future<void> createBranch(
     Branch branch, {
     int? adminSalary,
@@ -204,7 +274,22 @@ class TenancyNotifier extends Notifier<TenancyState> {
           .doc(branch.id)
           .set(branch.toJson());
 
-      // 2. Автоматичне створення адміністратора нової філії у колекції 'users'
+      // 2. Автоматичне створення окремої конфігурації басейну та локації для філії
+      final branchConfig = BranchConfig.createDefault(
+        branchId: branch.id,
+        branchName: branch.name,
+        city: branch.city,
+      );
+      await firestore
+          .collection('branch_configs')
+          .doc(branch.id)
+          .set(branchConfig.toJson(), SetOptions(merge: true));
+      BranchConfig.registerConfig(branchConfig);
+
+      // 3. Ініціалізація каталогу абонементів для валюти філії
+      SubscriptionPackageCatalog.getPackagesForBranch(branch.id, branch.currency, branch.currencySymbol);
+
+      // 4. Автоматичне створення адміністратора нової філії у колекції 'users'
       final adminDocId = 'admin_${branch.id}';
       final isEuro = branch.currency == 'EUR';
       final defaultSalary = branch.currency == 'UAH' ? 20000 : 1800;
@@ -229,8 +314,109 @@ class TenancyNotifier extends Notifier<TenancyState> {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // 3. Оновлення локального стану
+      // 5. Оновлення локального стану
       registerBranch(branch);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Оновлення параметрів існуючої філії
+  Future<void> updateBranch(
+    Branch branch, {
+    int? adminSalary,
+    String? adminName,
+  }) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // 1. Оновлення документа філії у Firestore
+      await firestore
+          .collection('branches')
+          .doc(branch.id)
+          .set(branch.toJson(), SetOptions(merge: true));
+
+      // 2. Оновлення даних адміністратора (якщо змінювалися)
+      final adminDocId = 'admin_${branch.id}';
+      final adminRef = firestore.collection('users').doc(adminDocId);
+      final adminSnap = await adminRef.get();
+      if (adminSnap.exists) {
+        final updates = <String, dynamic>{
+          'currency': branch.currencySymbol,
+        };
+        if (adminSalary != null) updates['adminSalary'] = adminSalary;
+        if (adminName != null && adminName.trim().isNotEmpty) {
+          updates['name'] = adminName.trim();
+        }
+        await adminRef.set(updates, SetOptions(merge: true));
+      }
+
+      // 3. Оновлення конфігурацій
+      BranchConfig.forBranch(branch.id, branch.name, branch.city);
+      SubscriptionPackageCatalog.getPackagesForBranch(branch.id, branch.currency, branch.currencySymbol);
+
+      // 4. Оновлення локального списку філій
+      final updatedList = state.availableBranches
+          .map((b) => b.id == branch.id ? branch : b)
+          .toList();
+      if (!updatedList.any((b) => b.id == branch.id)) {
+        updatedList.add(branch);
+      }
+
+      Branch? nextActive = state.activeBranch;
+      if (state.activeBranch?.id == branch.id) {
+        nextActive = branch;
+      }
+
+      state = state.copyWith(
+        availableBranches: updatedList,
+        activeBranch: nextActive,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Видалення філії зі всіма її налаштуваннями
+  Future<void> deleteBranch(String branchId) async {
+    // 1. Захист системних базових філій
+    if (branchId == 'kyiv' || branchId == 'vienna') {
+      throw Exception('Неможливо видалити базову системну філію ($branchId). Вона є кореневою для додатку.');
+    }
+
+    final target = state.availableBranches.firstWhereOrNull((b) => b.id == branchId);
+    if (target != null && target.isProtected) {
+      throw Exception('Філія "${target.name}" захищена від видалення. Щоб видалити, спочатку вимкніть захист у картці філії.');
+    }
+
+    try {
+      try {
+        final firestore = FirebaseFirestore.instance;
+
+        // 2. Видалення з Firestore
+        await firestore.collection('branches').doc(branchId).delete();
+        await firestore.collection('branch_configs').doc(branchId).delete();
+        await firestore.collection('users').doc('admin_$branchId').delete();
+      } catch (firestoreErr) {
+        debugPrint('[TenancyNotifier] Помилка видалення з Firestore (offline/test mode): $firestoreErr');
+      }
+
+      // 3. Очищення кешів
+      BranchConfig.removeConfig(branchId);
+      SubscriptionPackageCatalog.removeCustomPackages(branchId);
+
+      // 4. Оновлення локального стану
+      final updatedList = state.availableBranches.where((b) => b.id != branchId).toList();
+      Branch? nextActive = state.activeBranch;
+      if (state.activeBranch?.id == branchId) {
+        nextActive = updatedList.firstWhereOrNull((b) => b.id == 'kyiv') ??
+            (updatedList.isNotEmpty ? updatedList.first : Branch.kyiv);
+      }
+
+      state = state.copyWith(
+        availableBranches: updatedList,
+        activeBranch: nextActive,
+      );
     } catch (e) {
       rethrow;
     }

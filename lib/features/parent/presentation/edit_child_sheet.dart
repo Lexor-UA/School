@@ -309,15 +309,18 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              Text(
-                                'До 15 років (16+ — окремий акаунт)',
-                                style: TextStyle(
-                                  color: isDark ? Colors.white54 : Colors.black54,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'До 15 років (16+ — окремий акаунт)',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white54 : Colors.black54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: -0.2,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),

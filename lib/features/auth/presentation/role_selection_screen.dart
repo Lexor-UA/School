@@ -15,6 +15,7 @@ import 'package:swimming_school_app/shared/widgets/premium_loading_indicator.dar
 import 'package:swimming_school_app/features/auth/presentation/password_recovery_screen.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' as swimming_school_app;
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   final bool skipSplash;
@@ -633,9 +634,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   }
 
   void _showLanguageSelector(BuildContext context) {
-    final activeBranch = ref.read(tenancyControllerProvider).effectiveBranch;
-    final supportedCodes = activeBranch.supportedLanguages;
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -693,38 +691,34 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  if (supportedCodes.contains('uk'))
-                    _buildLangItem(
-                      context,
-                      'Українська',
-                      'UKR',
-                      const Locale('uk'),
-                      currentLocale == 'uk',
-                    ),
-                  if (supportedCodes.contains('en'))
-                    _buildLangItem(
-                      context,
-                      'English',
-                      'ENG',
-                      const Locale('en'),
-                      currentLocale == 'en',
-                    ),
-                  if (supportedCodes.contains('de'))
-                    _buildLangItem(
-                      context,
-                      'Deutsch',
-                      'DEU',
-                      const Locale('de'),
-                      currentLocale == 'de',
-                    ),
-                  if (supportedCodes.contains('ru'))
-                    _buildLangItem(
-                      context,
-                      'Русский',
-                      'RUS',
-                      const Locale('ru'),
-                      currentLocale == 'ru',
-                    ),
+                  _buildLangItem(
+                    context,
+                    'Українська',
+                    '🇺🇦 UKR',
+                    const Locale('uk'),
+                    currentLocale == 'uk',
+                  ),
+                  _buildLangItem(
+                    context,
+                    'Русский',
+                    '🇷🇺 RUS',
+                    const Locale('ru'),
+                    currentLocale == 'ru',
+                  ),
+                  _buildLangItem(
+                    context,
+                    'English',
+                    '🇬🇧 ENG',
+                    const Locale('en'),
+                    currentLocale == 'en',
+                  ),
+                  _buildLangItem(
+                    context,
+                    'Deutsch',
+                    '🇩🇪 DEU',
+                    const Locale('de'),
+                    currentLocale == 'de',
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -1250,7 +1244,12 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                             // Branch Invitation Details Banner
                                             Builder(
                                               builder: (context) {
-                                                final isVienna = selectedBranchId == 'vienna';
+                                                final availableBranches = ref.watch(tenancyControllerProvider).availableBranches;
+                                                final currentBranch = availableBranches.firstWhere(
+                                                  (b) => b.id == selectedBranchId,
+                                                  orElse: () => availableBranches.first,
+                                                );
+                                                final isVienna = currentBranch.id == 'vienna';
                                                 return Container(
                                                   margin: const EdgeInsets.only(bottom: 12),
                                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1274,14 +1273,16 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                   ),
                                                   child: Row(
                                                     children: [
-                                                      Text(isVienna ? '🇦🇹' : '🇺🇦', style: const TextStyle(fontSize: 18)),
+                                                      Text(currentBranch.flagEmoji, style: const TextStyle(fontSize: 18)),
                                                       const SizedBox(width: 8),
                                                       Expanded(
                                                         child: Column(
                                                           crossAxisAlignment: CrossAxisAlignment.start,
                                                           children: [
                                                             Text(
-                                                              isVienna ? 'CitySwim Відень' : 'CitySwim Київ',
+                                                              currentBranch.name.startsWith('CitySwim')
+                                                                  ? currentBranch.name
+                                                                  : 'CitySwim ${currentBranch.name}',
                                                               style: const TextStyle(
                                                                 color: Colors.white,
                                                                 fontSize: 12.5,
@@ -1289,9 +1290,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                               ),
                                                             ),
                                                             Text(
-                                                              isVienna
-                                                                  ? 'In der Au 1, Klosterneuburg · Валюта: EUR (€)'
-                                                                  : 'вул. Спортивна, 1 · Валюта: UAH (₴)',
+                                                              '${currentBranch.city} · Валюта: ${currentBranch.currency} (${currentBranch.currencySymbol})',
                                                               style: TextStyle(
                                                                 color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
                                                                 fontSize: 11,
@@ -1329,101 +1328,82 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                     ],
                                                   ),
                                                 ),
-                                                Container(
-                                                  padding: const EdgeInsets.all(3.5),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white.withValues(alpha: 0.08),
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.white.withValues(alpha: 0.16),
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    children: [
-                                                      // Kyiv
-                                                      Expanded(
-                                                        child: GestureDetector(
-                                                          onTap: () => setModalState(() => selectedBranchId = 'kyiv'),
-                                                          child: AnimatedContainer(
-                                                            duration: const Duration(milliseconds: 200),
-                                                            padding: const EdgeInsets.symmetric(vertical: 9),
-                                                            decoration: BoxDecoration(
-                                                              gradient: selectedBranchId == 'kyiv'
-                                                                  ? const LinearGradient(
-                                                                      colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
-                                                                    )
-                                                                  : null,
-                                                              borderRadius: BorderRadius.circular(13),
-                                                              boxShadow: selectedBranchId == 'kyiv'
-                                                                  ? [
-                                                                      BoxShadow(
-                                                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                                                        blurRadius: 8,
-                                                                      ),
-                                                                    ]
-                                                                  : null,
-                                                            ),
-                                                            child: const Row(
-                                                              mainAxisAlignment: MainAxisAlignment.center,
-                                                              children: [
-                                                                Text('🇺🇦', style: TextStyle(fontSize: 15)),
-                                                                SizedBox(width: 6),
-                                                                Text(
-                                                                  'Київ',
-                                                                  style: TextStyle(
-                                                                    color: Colors.white,
-                                                                    fontSize: 13,
-                                                                    fontWeight: FontWeight.w700,
-                                                                  ),
+                                                Consumer(
+                                                  builder: (context, ref, _) {
+                                                    final branches = ref.watch(tenancyControllerProvider).availableBranches;
+                                                    final useExpanded = branches.length <= 2;
+
+                                                    Widget buildBranchItem(Branch b) {
+                                                      final isSelected = selectedBranchId == b.id;
+                                                      return GestureDetector(
+                                                        onTap: () => setModalState(() => selectedBranchId = b.id),
+                                                        child: AnimatedContainer(
+                                                          duration: const Duration(milliseconds: 200),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                                          decoration: BoxDecoration(
+                                                            gradient: isSelected
+                                                                ? const LinearGradient(
+                                                                    colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                                                                  )
+                                                                : null,
+                                                            borderRadius: BorderRadius.circular(13),
+                                                            boxShadow: isSelected
+                                                                ? [
+                                                                    BoxShadow(
+                                                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                                                      blurRadius: 8,
+                                                                    ),
+                                                                  ]
+                                                                : null,
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Text(b.flagEmoji, style: const TextStyle(fontSize: 15)),
+                                                              const SizedBox(width: 6),
+                                                              Text(
+                                                                b.city,
+                                                                style: const TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 13,
+                                                                  fontWeight: FontWeight.w700,
                                                                 ),
-                                                              ],
-                                                            ),
+                                                              ),
+                                                            ],
                                                           ),
                                                         ),
-                                                      ),
-                                                      // Vienna
-                                                      Expanded(
-                                                        child: GestureDetector(
-                                                          onTap: () => setModalState(() => selectedBranchId = 'vienna'),
-                                                          child: AnimatedContainer(
-                                                            duration: const Duration(milliseconds: 200),
-                                                            padding: const EdgeInsets.symmetric(vertical: 9),
-                                                            decoration: BoxDecoration(
-                                                              gradient: selectedBranchId == 'vienna'
-                                                                  ? const LinearGradient(
-                                                                      colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
-                                                                    )
-                                                                  : null,
-                                                              borderRadius: BorderRadius.circular(13),
-                                                              boxShadow: selectedBranchId == 'vienna'
-                                                                  ? [
-                                                                      BoxShadow(
-                                                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                                                                        blurRadius: 8,
-                                                                      ),
-                                                                    ]
-                                                                  : null,
-                                                            ),
-                                                            child: const Row(
-                                                              mainAxisAlignment: MainAxisAlignment.center,
-                                                              children: [
-                                                                Text('🇦🇹', style: TextStyle(fontSize: 15)),
-                                                                SizedBox(width: 6),
-                                                                Text(
-                                                                  'Відень',
-                                                                  style: TextStyle(
-                                                                    color: Colors.white,
-                                                                    fontSize: 13,
-                                                                    fontWeight: FontWeight.w700,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
+                                                      );
+                                                    }
+
+                                                    return Container(
+                                                      padding: const EdgeInsets.all(3.5),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.08),
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        border: Border.all(
+                                                          color: Colors.white.withValues(alpha: 0.16),
                                                         ),
                                                       ),
-                                                    ],
-                                                  ),
+                                                      child: useExpanded
+                                                          ? Row(
+                                                              children: branches.map((b) => Expanded(child: buildBranchItem(b))).toList(),
+                                                            )
+                                                          : SingleChildScrollView(
+                                                              scrollDirection: Axis.horizontal,
+                                                              child: Row(
+                                                                children: branches
+                                                                    .map(
+                                                                      (b) => Padding(
+                                                                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                                                                        child: buildBranchItem(b),
+                                                                      ),
+                                                                    )
+                                                                    .toList(),
+                                                              ),
+                                                            ),
+                                                    );
+                                                  },
                                                 ),
                                               ],
                                             ),

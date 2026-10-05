@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 

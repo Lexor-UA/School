@@ -1547,11 +1547,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 12),
             
             // Filters (Visible only when multiple family members exist)
             if (filterOwners.length > 1) ...[
@@ -1667,7 +1666,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
             if (currentSub == null)
               Container(
                 width: double.infinity,
-                height: 236,
+                height: 200,
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(26),
@@ -1702,14 +1701,14 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // 3D Concentric Glowing Orb badge
                     Container(
-                      width: 72,
-                      height: 72,
+                      width: 58,
+                      height: 58,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
@@ -1743,21 +1742,21 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                         child: Icon(
                           LucideIcons.creditCard,
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                          size: 32,
+                          size: 26,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Text(
                       'Немає активного абонемента',
                       style: TextStyle(
                         color: isDark ? Colors.white : themeConfig.textPrimary,
-                        fontSize: 16.5,
+                        fontSize: 15.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       effectiveOwner.isNotEmpty && effectiveOwner != 'Мій абонемент'
                           ? 'Для "$effectiveOwner" абонемент ще не оформлено'
@@ -1765,9 +1764,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: isDark ? const Color(0xFFE2E8F0) : themeConfig.textSecondary,
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w500,
-                        height: 1.3,
+                        height: 1.25,
                       ),
                     ),
                   ],
@@ -1775,7 +1774,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               )
             else
               SizedBox(
-                height: 240,
+                height: 200,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -1783,14 +1782,14 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 ),
               ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // Info Details (Oceanic Sapphire Liquid Glass Panel)
             if (currentSub != null)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(22),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1822,7 +1821,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Column(
                   children: [
                     // Row 1: Власник
@@ -1993,15 +1992,15 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 ),
               ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.08),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // Action Button or Active Subscription Status Card
             if (hasActiveSubscription)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(18),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -2036,7 +2035,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
                         color: const Color(0xFF10B981).withValues(alpha: 0.22),
                         border: Border.all(
@@ -2048,10 +2047,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                       child: Icon(
                         isDark ? LucideIcons.checkCircle2 : LucideIcons.check,
                         color: const Color(0xFF10B981),
-                        size: isDark ? 22 : 20,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2060,19 +2059,19 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                             'Абонемент активний',
                             style: TextStyle(
                               color: isDark ? Colors.white : const Color(0xFF064E3B),
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 2),
                           if (isDark)
                             Text(
                               'Для "$effectiveOwner" вже діє абонемент (залишилось ${_pluralizeClasses(safeRemaining)}). Новий абонемент буде доступний після завершення занять.',
                               style: const TextStyle(
                                 color: Color(0xFFE2E8F0),
-                                fontSize: 12.5,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
-                                height: 1.25,
+                                height: 1.2,
                               ),
                             )
                           else
@@ -2080,9 +2079,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               text: TextSpan(
                                 style: const TextStyle(
                                   color: Color(0xFF334155),
-                                  fontSize: 12.5,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w500,
-                                  height: 1.3,
+                                  height: 1.2,
                                 ),
                                 children: [
                                   const TextSpan(text: 'Для '),
@@ -2188,7 +2187,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 ),
               ),
             
-            const SizedBox(height: 120), // spacing for bottom nav bar
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -2214,7 +2213,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(7),
+              padding: const EdgeInsets.all(5.5),
               decoration: BoxDecoration(
                 color: effectiveIconBg,
                 borderRadius: BorderRadius.circular(10),
@@ -2227,16 +2226,16 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               ),
               child: Icon(
                 icon,
-                size: 15,
+                size: 14,
                 color: effectiveIconColor,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 9),
             Text(
               label,
               style: TextStyle(
                 color: isDark ? const Color(0xFFE2E8F0) : themeConfig.textSecondary,
-                fontSize: 13.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,
               ),
@@ -2256,7 +2255,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
   Widget _buildRowDivider(bool isDark) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.symmetric(vertical: 5),
       height: 1,
       decoration: BoxDecoration(
         gradient: LinearGradient(

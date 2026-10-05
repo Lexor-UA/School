@@ -154,8 +154,56 @@ class BranchConfig {
     );
   }
 
-  static BranchConfig forBranch(String branchId) {
+  static final Map<String, BranchConfig> _customConfigs = {};
+
+  static void registerConfig(BranchConfig config) {
+    _customConfigs[config.branchId] = config;
+  }
+
+  static void removeConfig(String branchId) {
+    _customConfigs.remove(branchId);
+  }
+
+  /// Створення стандартної локації та 25м басейну для нової філії
+  static BranchConfig createDefault({
+    required String branchId,
+    required String branchName,
+    required String city,
+  }) {
+    final locId = 'loc_${branchId}_main';
+    final poolId = 'pool_${branchId}_25m';
+    return BranchConfig(
+      branchId: branchId,
+      locations: [
+        BranchLocation(
+          id: locId,
+          name: '$branchName Center',
+          address: city.isNotEmpty ? 'вул. Спортивна, 1, $city' : 'вул. Спортивна, 1',
+          pools: [
+            BranchPool(
+              id: poolId,
+              name: 'Головний басейн 25м',
+              lanes: const ['Доріжка 1', 'Доріжка 2', 'Доріжка 3', 'Доріжка 4'],
+              lengthMeters: 25.0,
+            ),
+          ],
+        ),
+      ],
+      contactPhone: '+380 00 000 0000',
+      contactEmail: '$branchId@cityswim.app',
+    );
+  }
+
+  static BranchConfig forBranch(String branchId, [String? branchName, String? city]) {
     if (branchId == 'vienna') return viennaConfig;
-    return kyivConfig;
+    if (branchId == 'kyiv') return kyivConfig;
+    if (_customConfigs.containsKey(branchId)) return _customConfigs[branchId]!;
+    final created = createDefault(
+      branchId: branchId,
+      branchName: branchName ?? branchId,
+      city: city ?? '',
+    );
+    _customConfigs[branchId] = created;
+    return created;
   }
 }

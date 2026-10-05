@@ -112,7 +112,10 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       }
       final generatedLogin = 'client${maxClientNum + 1}';
 
-      final userRef = FirebaseFirestore.instance.collection('users').doc();
+      final db = FirebaseFirestore.instance;
+      final batch = db.batch();
+
+      final userRef = db.collection('users').doc();
       final effectiveBranch = ref.read(effectiveBranchProvider);
       final branchId = _selectedBranchId ?? effectiveBranch.id;
       final organizationId = effectiveBranch.organizationId;
@@ -132,10 +135,10 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         userData['age'] = clientAge;
       }
 
-      await userRef.set(userData).timeout(const Duration(seconds: 15));
+      batch.set(userRef, userData);
 
       for (var entry in validChildren) {
-        final childRef = FirebaseFirestore.instance.collection('children').doc();
+        final childRef = db.collection('children').doc();
         final childAge = int.tryParse(entry.ageController.text.trim());
         final childData = <String, dynamic>{
           'id': childRef.id,
@@ -152,8 +155,10 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         if (childAge != null) {
           childData['age'] = childAge;
         }
-        await childRef.set(childData).timeout(const Duration(seconds: 15));
+        batch.set(childRef, childData);
       }
+
+      await batch.commit().timeout(const Duration(seconds: 15));
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);

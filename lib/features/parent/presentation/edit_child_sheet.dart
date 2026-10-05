@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
+import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 
 const List<String> _ukMonths = [
   'січня',
@@ -198,29 +199,37 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    final futures = <Future>[];
-    for (int i = 0; i < _childCount; i++) {
-      final name = _nameControllers[i].text.trim();
-      final bDate = _birthDates[i]!;
-      final age = calculateAgeFromDate(bDate);
-      final color = _selectedColors[i];
+    try {
+      setState(() => _isLoading = true);
+      final futures = <Future>[];
+      for (int i = 0; i < _childCount; i++) {
+        final name = _nameControllers[i].text.trim();
+        final bDate = _birthDates[i]!;
+        final age = calculateAgeFromDate(bDate);
+        final color = _selectedColors[i];
 
-      futures.add(ref.read(childrenControllerProvider.notifier).addChild(
-            name,
-            age: age,
-            birthDate: bDate,
-            colorHex: color,
-          ));
-    }
+        futures.add(ref.read(childrenControllerProvider.notifier).addChild(
+              name,
+              age: age,
+              birthDate: bDate,
+              colorHex: color,
+            ));
+      }
 
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
+      }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pop(context);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppSnackBar.showSuccess(context, _childCount > 1 ? 'Дітей успішно додано' : 'Дитину успішно додано');
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppSnackBar.showError(context, 'Не вдалося зберегти: $e');
+      }
     }
   }
 
@@ -862,18 +871,26 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    await ref.read(childrenControllerProvider.notifier).updateChild(
-          widget.child.id,
-          name,
-          age: age,
-          birthDate: _birthDate,
-          colorHex: _selectedColorHex,
-        );
+    try {
+      setState(() => _isLoading = true);
+      await ref.read(childrenControllerProvider.notifier).updateChild(
+            widget.child.id,
+            name,
+            age: age,
+            birthDate: _birthDate,
+            colorHex: _selectedColorHex,
+          );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pop(context);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppSnackBar.showSuccess(context, 'Дані дитини оновлено');
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppSnackBar.showError(context, 'Не вдалося оновити дані: $e');
+      }
     }
   }
 
@@ -935,11 +952,19 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
     );
 
     if (confirmed == true && mounted) {
-      setState(() => _isLoading = true);
-      await ref.read(childrenControllerProvider.notifier).deleteChild(widget.child.id);
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.pop(context);
+      try {
+        setState(() => _isLoading = true);
+        await ref.read(childrenControllerProvider.notifier).deleteChild(widget.child.id);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          AppSnackBar.showSuccess(context, 'Профіль дитини видалено');
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          AppSnackBar.showError(context, 'Не вдалося видалити профіль: $e');
+        }
       }
     }
   }

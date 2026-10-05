@@ -85,9 +85,12 @@ class ChildrenController extends _$ChildrenController {
     final user = ref.read(authControllerProvider);
     if (user == null) return;
 
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
     try {
       // 1. Clean up child from any scheduled classes
-      final classesSnap = await FirebaseFirestore.instance
+      final classesSnap = await db
           .collection('classes')
           .where('enrolledChildIds', arrayContains: childId)
           .get();
@@ -118,11 +121,11 @@ class ChildrenController extends _$ChildrenController {
             }
             if (startTime == null || startTime.isAfter(DateTime.now())) {
               try {
-                final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(bookedSubId);
+                final subRef = db.collection('subscriptions').doc(bookedSubId);
                 final subDoc = await subRef.get();
                 if (subDoc.exists) {
                   final cur = subDoc.data()?['remainingClasses'] as int? ?? 0;
-                  await subRef.update({
+                  batch.update(subRef, {
                     'remainingClasses': cur + 1,
                     'isActive': true,
                   });
@@ -135,15 +138,15 @@ class ChildrenController extends _$ChildrenController {
         }
         final isCustomBooking = data['isCustomBooking'] == true || data['createdByRole'] == 'parent';
         if (enrolled.isEmpty && isCustomBooking) {
-          await doc.reference.delete();
+          batch.delete(doc.reference);
         } else {
-          await doc.reference.update(updates);
+          batch.update(doc.reference, updates);
         }
       }
 
       // Also clean up any past classes where child was in attendedChildIds
       try {
-        final attendedSnap = await FirebaseFirestore.instance
+        final attendedSnap = await db
             .collection('classes')
             .where('attendedChildIds', arrayContains: childId)
             .get();
@@ -151,12 +154,14 @@ class ChildrenController extends _$ChildrenController {
           final aData = aDoc.data();
           final attList = List<String>.from(aData['attendedChildIds'] ?? []);
           attList.remove(childId);
-          await aDoc.reference.update({'attendedChildIds': attList});
+          batch.update(aDoc.reference, {'attendedChildIds': attList});
         }
       } catch (_) {}
 
       // 2. Delete child document
-      await FirebaseFirestore.instance.collection('children').doc(childId).delete();
+      batch.delete(db.collection('children').doc(childId));
+      
+      await batch.commit();
     } catch (e) {
       debugPrint('Error deleting child $childId: $e');
       rethrow;
@@ -220,8 +225,9 @@ class ChildrenController extends _$ChildrenController {
     String? password,
     bool transferRemainingSubscriptions = true,
   }) async {
+    final db = FirebaseFirestore.instance;
     // 1. Отримання даних дитини
-    final childDoc = await FirebaseFirestore.instance.collection('children').doc(childId).get();
+    final childDoc = await db.collection('children').doc(childId).get();
     if (!childDoc.exists || childDoc.data() == null) {
       throw Exception('Картку дитини не знайдено в базі даних');
     }
@@ -242,8 +248,10 @@ class ChildrenController extends _$ChildrenController {
     }
     final last9 = rawDigits.substring(rawDigits.length - 9);
 
+    final batch = db.batch();
+
     // 3. Перевірка наявності користувача в колекції users
-    final allUsers = await FirebaseFirestore.instance.collection('users').get();
+    final allUsers = await db.collection('users').get();
     final existingUserDoc = allUsers.docs.firstWhereOrNull((d) {
       final p = (d.data()['phone'] as String? ?? '').replaceAll(RegExp(r'\D'), '');
       return p.endsWith(last9);
@@ -287,7 +295,7 @@ class ChildrenController extends _$ChildrenController {
         updates['achievements'] = existingAch;
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(targetUserId).update(updates);
+      batch.update(db.collection('users').doc(targetUserId), updates);
     } else {
       // Створення нового дорослого користувача AppUser
       int maxClientNum = 0;
@@ -302,7 +310,7 @@ class ChildrenController extends _$ChildrenController {
         }
       }
       final assignedLoginId = 'client${maxClientNum + 1}';
-      final newDocRef = FirebaseFirestore.instance.collection('users').doc();
+      final newDocRef = db.collection('users').doc();
       targetUserId = newDocRef.id;
 
       final parts = child.name.trim().split(' ').where((s) => s.isNotEmpty).toList();
@@ -336,7 +344,7 @@ class ChildrenController extends _$ChildrenController {
         newUserData['birthDate'] = child.birthDate!.toIso8601String();
       }
 
-      await newDocRef.set(newUserData);
+      batch.set(newDocRef, newUserData);
     }
 
     // 4. Автоматичний перенос залишку занять з дитячого абонементу на дорослий
@@ -347,7 +355,7 @@ class ChildrenController extends _$ChildrenController {
           ? family.parentIds
           : (parentUser != null ? [parentUser.id] : [child.parentId]);
 
-      final subsSnap = await FirebaseFirestore.instance
+      final subsSnap = await db
           .collection('subscriptions')
           .where('userId', whereIn: parentIds)
           .where('isActive', isEqualTo: true)
@@ -370,7 +378,7 @@ class ChildrenController extends _$ChildrenController {
               ? 'Індивідуальні заняття (дорослі)'
               : 'Групові заняття (дорослі 16+)';
 
-          final newSubRef = FirebaseFirestore.instance.collection('subscriptions').doc();
+          final newSubRef = db.collection('subscriptions').doc();
           final expiry = subData['expiryDate'];
 
           final newSubData = <String, dynamic>{
@@ -393,11 +401,11 @@ class ChildrenController extends _$ChildrenController {
             newSubData['expiryDate'] = Timestamp.fromDate(DateTime.now().add(const Duration(days: 30)));
           }
 
-          await newSubRef.set(newSubData);
+          batch.set(newSubRef, newSubData);
           totalTransferredClasses += remaining;
 
           // Оновлюємо батьківський абонемент: списуємо перенесені заняття
-          await doc.reference.update({
+          batch.update(doc.reference, {
             'remainingClasses': 0,
             'isActive': false,
             'notes': 'Залишок ($remaining занять) перенесено у дорослий акаунт ${child.name} ($targetUserId)',
@@ -410,7 +418,7 @@ class ChildrenController extends _$ChildrenController {
     }
 
     // 5. Оновлення майбутніх занять у розкладі (classes)
-    final classesSnap = await FirebaseFirestore.instance
+    final classesSnap = await db
         .collection('classes')
         .where('enrolledChildIds', arrayContains: child.id)
         .get();
@@ -438,21 +446,21 @@ class ChildrenController extends _$ChildrenController {
           updates['bookedSubscriptions'] = booked;
         }
       }
-      await doc.reference.update(updates);
+      batch.update(doc.reference, updates);
     }
 
     // 6. Архівування дитини та видалення з активних дітей
-    await FirebaseFirestore.instance.collection('graduated_children').doc(child.id).set({
+    batch.set(db.collection('graduated_children').doc(child.id), {
       ...childData,
       'graduatedToUserId': targetUserId,
       'graduatedAt': FieldValue.serverTimestamp(),
     });
-    await FirebaseFirestore.instance.collection('children').doc(child.id).delete();
+    batch.delete(db.collection('children').doc(child.id));
 
     // 7. Створення вітальних сповіщень
     final currentUser = ref.read(authControllerProvider);
     if (currentUser != null) {
-      await FirebaseFirestore.instance.collection('notifications').add({
+      batch.set(db.collection('notifications').doc(), {
         'userId': currentUser.id,
         'title': '🎓 Випуск у дорослий акаунт!',
         'message': 'Вітаємо! ${child.name} успішно випущено у дорослий акаунт. Номер для входу: $cleanPhone. Всі досягнення та залишок занять збережено.',
@@ -463,7 +471,7 @@ class ChildrenController extends _$ChildrenController {
       });
     }
 
-    await FirebaseFirestore.instance.collection('notifications').add({
+    batch.set(db.collection('notifications').doc(), {
       'userId': targetUserId,
       'title': '🏊 Ласкаво просимо до дорослої спільноти!',
       'message': 'Вітаємо з випуском у дорослий акаунт! Твій рівень (${child.level}), накопичений досвід та заняття перенесені. Тобі відкриті дорослі та спліт-тренування!',
@@ -472,6 +480,8 @@ class ChildrenController extends _$ChildrenController {
       'iconColor': 0xFF0284C7,
       'status': 'unread',
     });
+
+    await batch.commit();
 
     return targetUserId;
   }

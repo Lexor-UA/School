@@ -66,16 +66,7 @@ class ParentCalendarCard extends ConsumerWidget {
     }
 
     final now = DateTime.now();
-    final DateTime maxAllowedDate;
-    if (maxExpiry != null) {
-      maxAllowedDate = DateTime(maxExpiry.year, maxExpiry.month + 1, 1).subtract(const Duration(seconds: 1));
-    } else {
-      maxAllowedDate = DateTime(now.year, now.month + 3, 1).subtract(const Duration(seconds: 1));
-    }
-
-    final nextMonthFirstDay = DateTime(selectedDate.year, selectedDate.month + 1, 1);
-    final bool canGoNextMonth = nextMonthFirstDay.isBefore(maxAllowedDate) ||
-        (nextMonthFirstDay.year == maxAllowedDate.year && nextMonthFirstDay.month == maxAllowedDate.month);
+    final bool canGoNextMonth = true;
     final bool canGoPrevMonth = selectedDate.year > now.year || (selectedDate.year == now.year && selectedDate.month >= now.month);
 
     return ClipRRect(

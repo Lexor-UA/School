@@ -1779,25 +1779,16 @@ class ScheduleController extends _$ScheduleController {
         }
       }
 
-      // Auto-refund each enrolled attendee accurately
+      // Pre-resolve subscriptions to refund
+      final Set<String> targetSubIds = {};
+      
       if (enrolledChildIds.isNotEmpty) {
-        final Set<String> refundedSubIds = {};
         for (final childId in enrolledChildIds) {
           try {
             final bookedSubId = bookedSubMap?[childId] as String?;
-            if (bookedSubId != null && !refundedSubIds.contains(bookedSubId)) {
-              refundedSubIds.add(bookedSubId);
-              final subDoc = await FirebaseFirestore.instance.collection('subscriptions').doc(bookedSubId).get();
-              if (subDoc.exists) {
-                final subData = subDoc.data()!;
-                final curRemaining = (subData['remainingClasses'] as int? ?? 0);
-                final totalClasses = (subData['totalClasses'] as int? ?? curRemaining + 1);
-                await subDoc.reference.update({
-                  'remainingClasses': (curRemaining + 1).clamp(0, totalClasses),
-                  'isActive': true,
-                });
-                continue; // Successfully refunded directly
-              }
+            if (bookedSubId != null) {
+              targetSubIds.add(bookedSubId);
+              continue;
             }
 
             // Fallback lookup if not tracked in bookedSubscriptions
@@ -1842,25 +1833,46 @@ class ScheduleController extends _$ScheduleController {
                   orElse: () => subsSnap.docs.first,
                 );
 
-                if (!refundedSubIds.contains(targetSub.id)) {
-                  refundedSubIds.add(targetSub.id);
-                  final subData = targetSub.data() as Map<String, dynamic>;
-                  final curRemaining = (subData['remainingClasses'] as int? ?? 0);
-                  final totalClasses = (subData['totalClasses'] as int? ?? curRemaining + 1);
-                  await targetSub.reference.update({
-                    'remainingClasses': (curRemaining + 1).clamp(0, totalClasses),
-                    'isActive': true,
-                  });
+                if (targetSub != null) {
+                  targetSubIds.add(targetSub.id);
                 }
               }
             }
           } catch (refundErr) {
-            debugPrint('Error refunding attendee $childId: $refundErr');
+            debugPrint('Error resolving attendee $childId for refund: $refundErr');
           }
         }
       }
 
-      await FirebaseFirestore.instance.collection('classes').doc(classId).delete();
+      // Perform atomic refund and deletion
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final classRef = FirebaseFirestore.instance.collection('classes').doc(classId);
+        
+        // Fetch all subscriptions in transaction
+        final Map<String, DocumentSnapshot> subDocs = {};
+        for (final subId in targetSubIds) {
+          final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subId);
+          subDocs[subId] = await transaction.get(subRef);
+        }
+        
+        // Apply refunds
+        for (final subId in targetSubIds) {
+          final subDoc = subDocs[subId];
+          if (subDoc != null && subDoc.exists) {
+            final subData = subDoc.data() as Map<String, dynamic>;
+            final curRemaining = (subData['remainingClasses'] as int? ?? 0);
+            final totalClasses = (subData['totalClasses'] as int? ?? curRemaining + 1);
+            if (curRemaining < totalClasses) {
+              transaction.update(subDoc.reference, {
+                'remainingClasses': (curRemaining + 1).clamp(0, totalClasses),
+                'isActive': true,
+              });
+            }
+          }
+        }
+        
+        transaction.delete(classRef);
+      });
 
       // Optimistically remove from in-memory state & cachedClasses
       final current = state.value ?? [];

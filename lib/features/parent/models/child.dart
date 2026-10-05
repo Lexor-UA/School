@@ -13,7 +13,7 @@ abstract class Child with _$Child {
     required String parentId,
     required String name,
     int? age,
-    DateTime? birthDate,
+    @TimestampConverter() DateTime? birthDate,
     @Default('0xFF40C4FF') String colorHex, // Default cyan-ish
     @Default(1) int level,
     @Default(0) int xp,
@@ -23,12 +23,26 @@ abstract class Child with _$Child {
     @Default('kyiv') String branchId,
   }) = _Child;
 
-  factory Child.fromJson(Map<String, dynamic> json) {
-    final copy = Map<String, dynamic>.from(json);
-    if (copy['birthDate'] is Timestamp) {
-      copy['birthDate'] = (copy['birthDate'] as Timestamp).toDate().toIso8601String();
+  factory Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);
+}
+
+class TimestampConverter implements JsonConverter<DateTime?, Object?> {
+  const TimestampConverter();
+
+  @override
+  DateTime? fromJson(Object? timestamp) {
+    if (timestamp is Timestamp) {
+      return timestamp.toDate();
+    } else if (timestamp is String) {
+      return DateTime.tryParse(timestamp);
     }
-    return _$ChildFromJson(copy);
+    return null;
+  }
+
+  @override
+  Object? toJson(DateTime? date) {
+    if (date == null) return null;
+    return date.toIso8601String(); // or Timestamp.fromDate(date) depending on Firestore needs
   }
 }
 

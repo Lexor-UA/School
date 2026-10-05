@@ -11,9 +11,7 @@ _Child _$ChildFromJson(Map<String, dynamic> json) => _Child(
   parentId: json['parentId'] as String,
   name: json['name'] as String,
   age: (json['age'] as num?)?.toInt(),
-  birthDate: json['birthDate'] == null
-      ? null
-      : DateTime.parse(json['birthDate'] as String),
+  birthDate: const TimestampConverter().fromJson(json['birthDate']),
   colorHex: json['colorHex'] as String? ?? '0xFF40C4FF',
   level: (json['level'] as num?)?.toInt() ?? 1,
   xp: (json['xp'] as num?)?.toInt() ?? 0,
@@ -32,7 +30,7 @@ Map<String, dynamic> _$ChildToJson(_Child instance) => <String, dynamic>{
   'parentId': instance.parentId,
   'name': instance.name,
   'age': instance.age,
-  'birthDate': instance.birthDate?.toIso8601String(),
+  'birthDate': const TimestampConverter().toJson(instance.birthDate),
   'colorHex': instance.colorHex,
   'level': instance.level,
   'xp': instance.xp,

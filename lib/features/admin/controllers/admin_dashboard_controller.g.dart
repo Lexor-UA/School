@@ -9,45 +9,6 @@ part of 'admin_dashboard_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(todayClasses)
-final todayClassesProvider = TodayClassesProvider._();
-
-final class TodayClassesProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<GroupClass>>,
-          List<GroupClass>,
-          Stream<List<GroupClass>>
-        >
-    with $FutureModifier<List<GroupClass>>, $StreamProvider<List<GroupClass>> {
-  TodayClassesProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'todayClassesProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$todayClassesHash();
-
-  @$internal
-  @override
-  $StreamProviderElement<List<GroupClass>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
-
-  @override
-  Stream<List<GroupClass>> create(Ref ref) {
-    return todayClasses(ref);
-  }
-}
-
-String _$todayClassesHash() => r'49ac638a68aa18248f67c12dbfd9c7099f195e92';
-
 @ProviderFor(recentActions)
 final recentActionsProvider = RecentActionsProvider._();
 
@@ -287,4 +248,4 @@ final class AdminDashboardProvider
   }
 }
 
-String _$adminDashboardHash() => r'44d32d90ca2b286bf92d52eb9e702d7063f8221f';
+String _$adminDashboardHash() => r'4fc3e52c1d5a1bb49b45cd44409c7ecbd555a29d';

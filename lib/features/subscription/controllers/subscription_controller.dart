@@ -383,15 +383,25 @@ class SubscriptionController extends _$SubscriptionController {
       return false;
     }
 
-    final newRemaining = sub.remainingClasses - 1;
-    final newIsActive = newRemaining > 0;
-    
     try {
-      await FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
-        'remainingClasses': newRemaining,
-        'isActive': newIsActive,
+      final success = await FirebaseFirestore.instance.runTransaction<bool>((transaction) async {
+        final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(sub.id);
+        final subDoc = await transaction.get(subRef);
+        
+        if (!subDoc.exists) return false;
+        
+        final currentRemaining = subDoc.data()?['remainingClasses'] as int? ?? 0;
+        if (currentRemaining <= 0) return false;
+        
+        final newRemaining = currentRemaining - 1;
+        transaction.update(subRef, {
+          'remainingClasses': newRemaining,
+          'isActive': newRemaining > 0,
+        });
+        
+        return true;
       });
-      return true;
+      return success;
     } catch (e) {
       debugPrint('Error deducting class: $e');
       return false;

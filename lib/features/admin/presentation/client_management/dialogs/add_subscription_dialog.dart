@@ -261,17 +261,16 @@ void showAddSubscriptionDialog({
                   final validityDays = serviceDetails['validityDays'] as int;
                   final expiry = DateTime.now().add(Duration(days: validityDays));
                   
+                  final db = FirebaseFirestore.instance;
+                  final batch = db.batch();
+
                   // Deactivate any previous active subscription for selectedOwner
                   final currentSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == clientId).toList();
                   for (final oldSub in currentSubs.where((s) {
                     final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? initialName : s.ownerName!;
                     return owner.trim() == selectedOwner.trim() && s.isActive;
                   })) {
-                    try {
-                      await FirebaseFirestore.instance.collection('subscriptions').doc(oldSub.id).update({'isActive': false});
-                    } catch (e) {
-                      debugPrint('Error deactivating old sub: $e');
-                    }
+                    batch.update(db.collection('subscriptions').doc(oldSub.id), {'isActive': false});
                   }
 
                   final effectiveBranch = ref.read(effectiveBranchProvider);
@@ -292,7 +291,8 @@ void showAddSubscriptionDialog({
                   );
                   
                   try {
-                    await FirebaseFirestore.instance.collection('subscriptions').doc(newSub.id).set(newSub.toJson());
+                    batch.set(db.collection('subscriptions').doc(newSub.id), newSub.toJson());
+                    await batch.commit();
                     
                     final admin = ref.read(authControllerProvider);
                     if (admin != null) {

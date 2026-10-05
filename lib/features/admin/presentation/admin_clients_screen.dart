@@ -11,6 +11,7 @@ import 'package:swimming_school_app/shared/widgets/animated_water_background.dar
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
+import 'package:swimming_school_app/features/admin/controllers/admin_client_operations_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
@@ -137,221 +138,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         // 0. Ensure current Firebase Auth user has admin privileges synced in Firestore
         await ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
 
-        // 1. Check if client is part of any family
-        final clientDoc = await FirebaseFirestore.instance.collection('users').doc(clientId).get();
-        final clientData = clientDoc.data();
-        final directFamilyId = clientData?['familyId'] as String?;
-
-        final List<DocumentSnapshot<Map<String, dynamic>>> familyDocs = [];
-
-        if (directFamilyId != null && directFamilyId.isNotEmpty) {
-          final fDoc = await FirebaseFirestore.instance.collection('families').doc(directFamilyId).get();
-          if (fDoc.exists) familyDocs.add(fDoc);
-        }
-
-        final snapByParentIds = await FirebaseFirestore.instance
-            .collection('families')
-            .where('parentIds', arrayContains: clientId)
-            .get();
-        for (final doc in snapByParentIds.docs) {
-          if (!familyDocs.any((f) => f.id == doc.id)) {
-            familyDocs.add(doc);
-          }
-        }
-
-        final snapByPrimary = await FirebaseFirestore.instance
-            .collection('families')
-            .where('primaryParentId', isEqualTo: clientId)
-            .get();
-        for (final doc in snapByPrimary.docs) {
-          if (!familyDocs.any((f) => f.id == doc.id)) {
-            familyDocs.add(doc);
-          }
-        }
-
-        String? survivingSpouseId;
-        final List<String> affectedFamilyIds = [];
-
-        for (final familyDoc in familyDocs) {
-          affectedFamilyIds.add(familyDoc.id);
-          final fData = familyDoc.data() ?? {};
-          final parentIds = List<String>.from(fData['parentIds'] ?? []);
-          parentIds.remove(clientId);
-
-          final parentNames = Map<String, dynamic>.from(fData['parentNames'] ?? {});
-          parentNames.remove(clientId);
-
-          final parentPhones = Map<String, dynamic>.from(fData['parentPhones'] ?? {});
-          parentPhones.remove(clientId);
-
-          // Verify which surviving parent IDs actually still exist in `users`
-          final List<String> activeSurvivingParentIds = [];
-          for (final pId in parentIds) {
-            final pUserDoc = await FirebaseFirestore.instance.collection('users').doc(pId).get();
-            if (pUserDoc.exists) {
-              activeSurvivingParentIds.add(pId);
-            }
-          }
-
-          if (activeSurvivingParentIds.isNotEmpty) {
-            survivingSpouseId = activeSurvivingParentIds.first;
-            final currentPrimary = fData['primaryParentId'] as String?;
-            final newPrimary = (currentPrimary == clientId || !activeSurvivingParentIds.contains(currentPrimary))
-                ? survivingSpouseId
-                : currentPrimary;
-
-            await familyDoc.reference.update({
-              'parentIds': activeSurvivingParentIds,
-              'parentNames': parentNames,
-              'parentPhones': parentPhones,
-              'primaryParentId': newPrimary,
-            });
-          } else {
-            // No living parents exist in this family! Delete the family document completely!
-            await familyDoc.reference.delete();
-          }
-        }
-
-        // 2. Delete the user document
-        await FirebaseFirestore.instance.collection('users').doc(clientId).delete();
-
-        // 3. Query all children linked by parentId, parentIds, or affected family IDs
-        final Map<String, DocumentSnapshot<Map<String, dynamic>>> childDocsMap = {};
-
-        final cSnap1 = await FirebaseFirestore.instance
-            .collection('children')
-            .where('parentId', isEqualTo: clientId)
-            .get();
-        for (final doc in cSnap1.docs) {
-          childDocsMap[doc.id] = doc;
-        }
-
-        final cSnap2 = await FirebaseFirestore.instance
-            .collection('children')
-            .where('parentIds', arrayContains: clientId)
-            .get();
-        for (final doc in cSnap2.docs) {
-          childDocsMap[doc.id] = doc;
-        }
-
-        for (final fId in affectedFamilyIds) {
-          final cSnapFam = await FirebaseFirestore.instance
-              .collection('children')
-              .where('familyId', isEqualTo: fId)
-              .get();
-          for (final doc in cSnapFam.docs) {
-            childDocsMap[doc.id] = doc;
-          }
-        }
-
-        List<String> allRelatedIds = [clientId];
-        for (final childDoc in childDocsMap.values) {
-          final cData = childDoc.data() ?? {};
-          final cParentIds = List<String>.from(cData['parentIds'] ?? []);
-          cParentIds.remove(clientId);
-
-          if (survivingSpouseId != null) {
-            // Re-assign child to the surviving spouse so they are not lost
-            await childDoc.reference.update({
-              'parentId': survivingSpouseId,
-              'parentIds': cParentIds.isNotEmpty ? cParentIds : [survivingSpouseId],
-            });
-          } else {
-            allRelatedIds.add(childDoc.id);
-            await childDoc.reference.delete();
-          }
-        }
-
-        // 4. Clean up or transfer subscriptions
-        final subsSnap = await FirebaseFirestore.instance
-            .collection('subscriptions')
-            .where('userId', isEqualTo: clientId)
-            .get();
-        for (var doc in subsSnap.docs) {
-          final sData = doc.data();
-          final isChildOrSplit = sData['ownerName'] != null && sData['ownerName'] != name;
-          if (survivingSpouseId != null && isChildOrSplit) {
-            // Transfer children's paid passes to the surviving spouse
-            await doc.reference.update({'userId': survivingSpouseId});
-          } else {
-            await doc.reference.delete();
-          }
-        }
-
-        // Delete any subscriptions belonging to deleted children
-        for (final relId in allRelatedIds) {
-          if (relId == clientId) continue;
-          try {
-            final childSubs = await FirebaseFirestore.instance
-                .collection('subscriptions')
-                .where('childId', isEqualTo: relId)
-                .get();
-            for (final sDoc in childSubs.docs) {
-              await sDoc.reference.delete().catchError((_) {});
-            }
-          } catch (_) {}
-        }
-
-        // 5. Remove enrollments, attendance, and booked subscriptions from scheduled classes
-        for (var i = 0; i < allRelatedIds.length; i += 30) {
-          final chunk = allRelatedIds.sublist(i, math.min(i + 30, allRelatedIds.length));
-          try {
-            final classesSnap = await FirebaseFirestore.instance
-                .collection('classes')
-                .where('enrolledChildIds', arrayContainsAny: chunk)
-                .get();
-            for (var doc in classesSnap.docs) {
-              try {
-                final data = doc.data();
-                List<dynamic> enrolled = List.from(data['enrolledChildIds'] ?? []);
-                enrolled.removeWhere((id) => allRelatedIds.contains(id));
-                List<dynamic> attended = List.from(data['attendedChildIds'] ?? []);
-                attended.removeWhere((id) => allRelatedIds.contains(id));
-                final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map? ?? {});
-                for (final relId in allRelatedIds) {
-                  bookedMap.remove(relId);
-                }
-
-                final isCustomBooking = data['isCustomBooking'] == true || data['createdByRole'] == 'parent';
-                if (enrolled.isEmpty && isCustomBooking) {
-                  await doc.reference.delete();
-                } else {
-                  await doc.reference.set({
-                    'enrolledChildIds': enrolled,
-                    'attendedChildIds': attended,
-                    'bookedSubscriptions': bookedMap,
-                  }, SetOptions(merge: true));
-                }
-              } catch (cErr) {
-                debugPrint('Error updating class ${doc.id} on client delete: $cErr');
-              }
-            }
-
-            // Also clean up attendedChildIds for past classes
-            final attendedSnap = await FirebaseFirestore.instance
-                .collection('classes')
-                .where('attendedChildIds', arrayContainsAny: chunk)
-                .get();
-            for (var doc in attendedSnap.docs) {
-              try {
-                final data = doc.data();
-                List<dynamic> attended = List.from(data['attendedChildIds'] ?? []);
-                attended.removeWhere((id) => allRelatedIds.contains(id));
-                await doc.reference.update({
-                  'attendedChildIds': attended,
-                });
-              } catch (_) {}
-            }
-          } catch (chunkErr) {
-            debugPrint('Error querying classes for deletion chunk: $chunkErr');
-          }
-        }
-
-        // Optimistically clean in-memory schedule and trigger refresh
-        ref.read(scheduleControllerProvider.notifier).removeParticipantsFromClasses(allRelatedIds);
-
-        // 6. Purge any remaining orphaned families without active parents
-        await ref.read(familyControllerProvider).cleanupOrphanedFamilies();
+        // Import is handled at top of file, but I need to make sure I add it.
+        await ref.read(adminClientOperationsProvider).deleteClientCompletely(clientId, name);
 
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
@@ -942,58 +730,62 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
       statusDotColor = const Color(0xFFF43F5E);
     }
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _selectedFilterIndex = index);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        gradient: isSelected
+            ? const LinearGradient(
+                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: isSelected
+            ? null
+            : (isDark ? const Color(0xFF0C2238).withValues(alpha: 0.85) : Colors.white),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
           color: isSelected
-              ? null
-              : (isDark ? const Color(0xFF0C2238).withValues(alpha: 0.85) : Colors.white),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? Colors.white.withValues(alpha: 0.50)
-                : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD)),
-            width: isSelected ? 1.2 : 1.1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : (isDark
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.20),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: const Color(0xFF003B73).withValues(alpha: 0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]),
+              ? Colors.white.withValues(alpha: 0.50)
+              : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.22) : const Color(0xFFBAE6FD)),
+          width: isSelected ? 1.2 : 1.1,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : (isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF003B73).withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _selectedFilterIndex = index);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
           children: [
             if (statusDotColor != null) ...[
               Container(
@@ -1055,6 +847,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
@@ -1413,45 +1207,51 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _copyCredentials(loginId, name, password);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.40),
-                              width: 0.8,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                                blurRadius: 6,
-                              ),
-                            ],
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(LucideIcons.copy, color: Colors.white, size: 11),
-                              const SizedBox(width: 4),
-                              Text(
-                                'admin.clients_copy'.tr(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.40),
+                            width: 0.8,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _copyCredentials(loginId, name, password);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(LucideIcons.copy, color: Colors.white, size: 11),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'admin.clients_copy'.tr(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -1524,40 +1324,44 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                 const SizedBox(height: 10),
 
                 // 4. Quick Subscription Status Banner
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => PaymentSheet(initialSearchQuery: name),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
-                    decoration: BoxDecoration(
-                      color: currentTheme.isDark
-                          ? (hasActiveSubs
-                              ? const Color(0xFF041812).withValues(alpha: 0.75)
-                              : const Color(0xFF1A0A10).withValues(alpha: 0.75))
-                          : (hasActiveSubs ? currentTheme.statusActiveBadgeBg : currentTheme.statusErrorBadgeBg),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: (hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E))
-                            .withValues(alpha: currentTheme.isDark ? 0.35 : 0.25),
-                        width: 1.1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.20 : 0.03),
-                          blurRadius: 6,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ],
+                Container(
+                  decoration: BoxDecoration(
+                    color: currentTheme.isDark
+                        ? (hasActiveSubs
+                            ? const Color(0xFF041812).withValues(alpha: 0.75)
+                            : const Color(0xFF1A0A10).withValues(alpha: 0.75))
+                        : (hasActiveSubs ? currentTheme.statusActiveBadgeBg : currentTheme.statusErrorBadgeBg),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: (hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E))
+                          .withValues(alpha: currentTheme.isDark ? 0.35 : 0.25),
+                      width: 1.1,
                     ),
-                    child: Row(
-                      children: [
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: currentTheme.isDark ? 0.20 : 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1.5),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => PaymentSheet(initialSearchQuery: name),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+                        child: Row(
+                          children: [
                         Icon(
                           hasActiveSubs ? LucideIcons.walletCards : LucideIcons.alertCircle,
                           size: 14.5,
@@ -1635,10 +1439,12 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           size: 13,
                           color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
                         ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
+              ),
 
                 const SizedBox(height: 12),
 

@@ -156,7 +156,8 @@ class FamilyController {
     }
 
     try {
-      final snap = await FirebaseFirestore.instance
+      final db = FirebaseFirestore.instance;
+      final snap = await db
           .collection('families')
           .where('inviteCode', isEqualTo: cleanCode)
           .limit(1)
@@ -177,6 +178,8 @@ class FamilyController {
         return 'У цій родині вже є 2 батьків.';
       }
 
+      final batch = db.batch();
+
       // Check if current user is already in another family
       final myExistingFamily = await getCurrentFamily();
       if (myExistingFamily != null && myExistingFamily.id != family.id) {
@@ -184,7 +187,7 @@ class FamilyController {
           return 'Ви вже є учасником іншої активної сім\'ї. Спочатку від\'єднайтеся від неї.';
         } else {
           // It was a solitary family, safely remove it
-          await FirebaseFirestore.instance.collection('families').doc(myExistingFamily.id).delete();
+          batch.delete(db.collection('families').doc(myExistingFamily.id));
         }
       }
 
@@ -202,7 +205,7 @@ class FamilyController {
       for (final pId in updatedParentIds) {
         if (!updatedParentNames.containsKey(pId) || updatedParentNames[pId]!.trim().isEmpty) {
           try {
-            final uDoc = await FirebaseFirestore.instance.collection('users').doc(pId).get();
+            final uDoc = await db.collection('users').doc(pId).get();
             if (uDoc.exists && uDoc.data() != null) {
               final n = uDoc.data()!['name'] as String? ?? '';
               final p = uDoc.data()!['phone'] as String? ?? '';
@@ -217,21 +220,21 @@ class FamilyController {
         }
       }
 
-      await FirebaseFirestore.instance.collection('families').doc(family.id).update({
+      batch.update(db.collection('families').doc(family.id), {
         'parentIds': updatedParentIds,
         'parentNames': updatedParentNames,
         'parentPhones': updatedParentPhones,
       });
 
       // Synchronize existing children of both parents
-      final childrenSnap = await FirebaseFirestore.instance
+      final childrenSnap = await db
           .collection('children')
           .where('parentId', whereIn: updatedParentIds)
           .get();
 
       for (final childDoc in childrenSnap.docs) {
         try {
-          await childDoc.reference.update({
+          batch.update(childDoc.reference, {
             'parentIds': updatedParentIds,
             'familyId': family.id,
           });
@@ -239,6 +242,8 @@ class FamilyController {
           debugPrint('Error updating child ${childDoc.id} with parentIds: $e');
         }
       }
+
+      await batch.commit();
 
       return null; // Success
     } catch (e) {
@@ -260,15 +265,35 @@ class FamilyController {
     final updatedParentNames = Map<String, String>.from(family.parentNames)..remove(idToRemove);
     final updatedParentPhones = Map<String, String>.from(family.parentPhones)..remove(idToRemove);
 
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
     if (updatedParentIds.isEmpty) {
-      await FirebaseFirestore.instance.collection('families').doc(family.id).delete();
+      batch.delete(db.collection('families').doc(family.id));
     } else {
-      await FirebaseFirestore.instance.collection('families').doc(family.id).update({
+      batch.update(db.collection('families').doc(family.id), {
         'parentIds': updatedParentIds,
         'parentNames': updatedParentNames,
         'parentPhones': updatedParentPhones,
       });
     }
+
+    // Remove the leaving parent from the family's children
+    final childrenSnap = await db
+        .collection('children')
+        .where('familyId', isEqualTo: family.id)
+        .get();
+
+    for (final childDoc in childrenSnap.docs) {
+      final childData = childDoc.data();
+      final childParentIds = List<String>.from(childData['parentIds'] ?? []);
+      childParentIds.remove(idToRemove);
+      batch.update(childDoc.reference, {
+        'parentIds': childParentIds,
+      });
+    }
+
+    await batch.commit();
   }
 
   Future<({String? error, String? targetUserName})> invitePartnerByPhone(String rawPhone) async {
@@ -377,9 +402,10 @@ class FamilyController {
     if (parentAId == parentBId) return 'Не можна об\'єднати один і той самий акаунт';
 
     try {
+      final db = FirebaseFirestore.instance;
       // 1. Fetch both users
-      final userADoc = await FirebaseFirestore.instance.collection('users').doc(parentAId).get();
-      final userBDoc = await FirebaseFirestore.instance.collection('users').doc(parentBId).get();
+      final userADoc = await db.collection('users').doc(parentAId).get();
+      final userBDoc = await db.collection('users').doc(parentBId).get();
       if (!userADoc.exists || !userBDoc.exists) return 'Клієнта не знайдено';
 
       final userA = userADoc.data()!;
@@ -390,12 +416,14 @@ class FamilyController {
       final phoneB = userB['phone'] as String? ?? '';
 
       // 2. Remove solitary families if any
-      final existingFamiliesSnap = await FirebaseFirestore.instance
+      final existingFamiliesSnap = await db
           .collection('families')
           .where('parentIds', arrayContainsAny: [parentAId, parentBId])
           .get();
 
       String? targetFamilyId;
+      final batch = db.batch();
+
       for (final doc in existingFamiliesSnap.docs) {
         final data = doc.data();
         final pIds = List<String>.from(data['parentIds'] ?? []);
@@ -409,13 +437,13 @@ class FamilyController {
         if (targetFamilyId == null) {
           targetFamilyId = doc.id;
         } else {
-          await doc.reference.delete();
+          batch.delete(doc.reference);
         }
       }
 
       final docRef = targetFamilyId != null
-          ? FirebaseFirestore.instance.collection('families').doc(targetFamilyId)
-          : FirebaseFirestore.instance.collection('families').doc();
+          ? db.collection('families').doc(targetFamilyId)
+          : db.collection('families').doc();
 
       final code = targetFamilyId != null && existingFamiliesSnap.docs.isNotEmpty
           ? (existingFamiliesSnap.docs.first.data()['inviteCode'] as String? ?? _generateInviteCode())
@@ -437,20 +465,22 @@ class FamilyController {
         createdAt: DateTime.now(),
       );
 
-      await docRef.set(family.toJson());
+      batch.set(docRef, family.toJson());
 
       // 3. Update all children of both parents
-      final childrenSnap = await FirebaseFirestore.instance
+      final childrenSnap = await db
           .collection('children')
           .where('parentId', whereIn: parentIds)
           .get();
 
       for (final cDoc in childrenSnap.docs) {
-        await cDoc.reference.update({
+        batch.update(cDoc.reference, {
           'parentIds': parentIds,
           'familyId': docRef.id,
         });
       }
+
+      await batch.commit();
 
       return null;
     } catch (e) {
@@ -470,7 +500,8 @@ class FamilyController {
   /// Automatically purges families whose parents no longer exist in the `users` collection.
   Future<int> cleanupOrphanedFamilies() async {
     try {
-      final familiesSnap = await FirebaseFirestore.instance.collection('families').get();
+      final db = FirebaseFirestore.instance;
+      final familiesSnap = await db.collection('families').get();
       int cleanedCount = 0;
       for (final doc in familiesSnap.docs) {
         final data = doc.data();
@@ -478,7 +509,7 @@ class FamilyController {
 
         bool hasActiveParent = false;
         for (final pId in parentIds) {
-          final uDoc = await FirebaseFirestore.instance.collection('users').doc(pId).get();
+          final uDoc = await db.collection('users').doc(pId).get();
           if (uDoc.exists) {
             hasActiveParent = true;
             break;
@@ -486,18 +517,20 @@ class FamilyController {
         }
 
         if (!hasActiveParent) {
+          final batch = db.batch();
           // No living parents exist in `users` collection!
-          await doc.reference.delete();
+          batch.delete(doc.reference);
           cleanedCount++;
 
           // Clean up any remaining children for this orphaned family
-          final childrenSnap = await FirebaseFirestore.instance
+          final childrenSnap = await db
               .collection('children')
               .where('familyId', isEqualTo: doc.id)
               .get();
           for (final cDoc in childrenSnap.docs) {
-            await cDoc.reference.delete();
+            batch.delete(cDoc.reference);
           }
+          await batch.commit();
         }
       }
       if (cleanedCount > 0) {

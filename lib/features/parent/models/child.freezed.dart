@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Child {
 
- String get id; String get parentId; String get name; int? get age; DateTime? get birthDate; String get colorHex; int get level; int get xp; int get maxXp; List<Achievement> get achievements; String get organizationId; String get branchId;
+ String get id; String get parentId; String get name; int? get age;@TimestampConverter() DateTime? get birthDate; String get colorHex; int get level; int get xp; int get maxXp; List<Achievement> get achievements; String get organizationId; String get branchId;
 /// Create a copy of Child
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +54,7 @@ abstract mixin class $ChildCopyWith<$Res>  {
   factory $ChildCopyWith(Child value, $Res Function(Child) _then) = _$ChildCopyWithImpl;
 @useResult
 $Res call({
- String id, String parentId, String name, int? age, DateTime? birthDate, String colorHex, int level, int xp, int maxXp, List<Achievement> achievements, String organizationId, String branchId
+ String id, String parentId, String name, int? age,@TimestampConverter() DateTime? birthDate, String colorHex, int level, int xp, int maxXp, List<Achievement> achievements, String organizationId, String branchId
 });
 
 
@@ -170,7 +170,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age,  DateTime? birthDate,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String organizationId,  String branchId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age, @TimestampConverter()  DateTime? birthDate,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String organizationId,  String branchId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Child() when $default != null:
 return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_that.colorHex,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.organizationId,_that.branchId);case _:
@@ -191,7 +191,7 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age,  DateTime? birthDate,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String organizationId,  String branchId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parentId,  String name,  int? age, @TimestampConverter()  DateTime? birthDate,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String organizationId,  String branchId)  $default,) {final _that = this;
 switch (_that) {
 case _Child():
 return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_that.colorHex,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.organizationId,_that.branchId);case _:
@@ -211,7 +211,7 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parentId,  String name,  int? age,  DateTime? birthDate,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String organizationId,  String branchId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parentId,  String name,  int? age, @TimestampConverter()  DateTime? birthDate,  String colorHex,  int level,  int xp,  int maxXp,  List<Achievement> achievements,  String organizationId,  String branchId)?  $default,) {final _that = this;
 switch (_that) {
 case _Child() when $default != null:
 return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_that.colorHex,_that.level,_that.xp,_that.maxXp,_that.achievements,_that.organizationId,_that.branchId);case _:
@@ -226,14 +226,14 @@ return $default(_that.id,_that.parentId,_that.name,_that.age,_that.birthDate,_th
 @JsonSerializable()
 
 class _Child implements Child {
-  const _Child({required this.id, required this.parentId, required this.name, this.age, this.birthDate, this.colorHex = '0xFF40C4FF', this.level = 1, this.xp = 0, this.maxXp = 100,  List<Achievement> achievements = const [], this.organizationId = 'cityswim', this.branchId = 'kyiv'}): _achievements = achievements;
+  const _Child({required this.id, required this.parentId, required this.name, this.age, @TimestampConverter() this.birthDate, this.colorHex = '0xFF40C4FF', this.level = 1, this.xp = 0, this.maxXp = 100,  List<Achievement> achievements = const [], this.organizationId = 'cityswim', this.branchId = 'kyiv'}): _achievements = achievements;
   factory _Child.fromJson(Map<String, dynamic> json) => _$ChildFromJson(json);
 
 @override final  String id;
 @override final  String parentId;
 @override final  String name;
 @override final  int? age;
-@override final  DateTime? birthDate;
+@override@TimestampConverter() final  DateTime? birthDate;
 @override@JsonKey() final  String colorHex;
 @override@JsonKey() final  int level;
 @override@JsonKey() final  int xp;
@@ -283,7 +283,7 @@ abstract mixin class _$ChildCopyWith<$Res> implements $ChildCopyWith<$Res> {
   factory _$ChildCopyWith(_Child value, $Res Function(_Child) _then) = __$ChildCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String parentId, String name, int? age, DateTime? birthDate, String colorHex, int level, int xp, int maxXp, List<Achievement> achievements, String organizationId, String branchId
+ String id, String parentId, String name, int? age,@TimestampConverter() DateTime? birthDate, String colorHex, int level, int xp, int maxXp, List<Achievement> achievements, String organizationId, String branchId
 });
 
 

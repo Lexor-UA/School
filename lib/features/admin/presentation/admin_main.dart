@@ -600,60 +600,67 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   Widget _buildSearchBar() {
     final currentTheme = ref.watch(appThemeControllerProvider);
 
-    return GestureDetector(
-      onTap: () => _openGlobalSearch(initialCategoryIndex: 0),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: currentTheme.isDark
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF1B385C).withValues(alpha: 0.75),
-                    const Color(0xFF102640).withValues(alpha: 0.80),
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white,
-                    Color(0xFFF8FAFC),
-                  ],
-                ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: currentTheme.isDark
-                ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
-                : const Color(0xFFBAE6FD),
-            width: 1.2,
-          ),
-          boxShadow: [
-            if (currentTheme.isDark) ...[
-              // Layer 1: Deep cyan-tinted shadow
-              BoxShadow(
-                color: const Color(0xFF003B73).withValues(alpha: 0.22),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: currentTheme.isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1B385C).withValues(alpha: 0.75),
+                  const Color(0xFF102640).withValues(alpha: 0.80),
+                ],
+              )
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  Color(0xFFF8FAFC),
+                ],
               ),
-            ] else ...[
-              // Premium glassmorphism shadow
-              BoxShadow(
-                color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.05),
-                blurRadius: 12,
-              ),
-            ]
-          ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: currentTheme.isDark
+              ? const Color(0xFF38BDF8).withValues(alpha: 0.30)
+              : const Color(0xFFBAE6FD),
+          width: 1.2,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        boxShadow: [
+          if (currentTheme.isDark) ...[
+            // Layer 1: Deep cyan-tinted shadow
+            BoxShadow(
+              color: const Color(0xFF003B73).withValues(alpha: 0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ] else ...[
+            // Premium glassmorphism shadow
+            BoxShadow(
+              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.05),
+              blurRadius: 12,
+            ),
+          ]
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _openGlobalSearch(initialCategoryIndex: 0);
+            },
+            splashColor: currentTheme.accentPrimary.withValues(alpha: 0.1),
+            highlightColor: currentTheme.accentPrimary.withValues(alpha: 0.05),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   Container(
@@ -692,52 +699,58 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      _openGlobalSearch(initialCategoryIndex: 1);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: currentTheme.isDark
-                            ? const Color(0xFF38BDF8).withValues(alpha: 0.12)
-                            : const Color(0xFFE0F2FE),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _openGlobalSearch(initialCategoryIndex: 1);
+                      },
+                      splashColor: currentTheme.accentPrimary.withValues(alpha: 0.2),
+                      highlightColor: currentTheme.accentPrimary.withValues(alpha: 0.1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
                           color: currentTheme.isDark
-                              ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
-                              : const Color(0xFFBAE6FD),
-                          width: 1.1,
+                              ? const Color(0xFF38BDF8).withValues(alpha: 0.12)
+                              : const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: currentTheme.isDark
+                                ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
+                                : const Color(0xFFBAE6FD),
+                            width: 1.1,
+                          ),
+                          boxShadow: currentTheme.isDark
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                         ),
-                        boxShadow: currentTheme.isDark
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.slidersHorizontal,
-                            color: currentTheme.accentPrimary,
-                            size: 13,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'admin.filter_btn'.tr(),
-                            style: TextStyle(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.slidersHorizontal,
                               color: currentTheme.accentPrimary,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
+                              size: 13,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 5),
+                            Text(
+                              'admin.filter_btn'.tr(),
+                              style: TextStyle(
+                                color: currentTheme.accentPrimary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -746,7 +759,8 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 
   String _formatPulseBeaconTitle(bool isSessionActive) {

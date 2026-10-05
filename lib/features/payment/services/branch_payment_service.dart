@@ -127,12 +127,11 @@ class BranchPaymentService {
       }
     } catch (_) {}
 
+    final batch = _db.batch();
+
     // 4. Збереження транзакції в Firestore
-    try {
-      await _db.collection('payments').doc(transaction.id).set(transaction.toMap());
-    } catch (e) {
-      debugPrint('Notice: Firestore payments log warning: $e');
-    }
+    final paymentRef = _db.collection('payments').doc(transaction.id);
+    batch.set(paymentRef, transaction.toMap());
 
     // 5. Активація абонемента для користувача
     final subId = 'sub_${epoch}_${(childName ?? clientName).hashCode}';
@@ -164,11 +163,14 @@ class BranchPaymentService {
       'createdAt': FieldValue.serverTimestamp(),
     };
 
+    final subRef = _db.collection('subscriptions').doc(newSubscription.id);
+    batch.set(subRef, subData);
+
     try {
-      await _db.collection('subscriptions').doc(newSubscription.id).set(subData);
-      debugPrint('BranchPaymentService: Subscription $subId successfully created in Firestore for $clientId (${childName ?? clientName})');
+      await batch.commit();
+      debugPrint('BranchPaymentService: Payment ${transaction.id} and Subscription $subId successfully created atomically.');
     } catch (e) {
-      debugPrint('Notice: Firestore subscription activation error: $e');
+      debugPrint('Notice: Firestore batch commit error: $e');
       if (!e.toString().contains('no-app')) {
         rethrow;
       }

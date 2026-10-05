@@ -135,27 +135,8 @@ service cloud.firestore {
         )
       );
 
-      // Update: user can update own profile WITHOUT mutating role or branchId OR staff updates
-      allow update: if (
-        request.auth.uid == userId && (
-          isStaff() || (
-            (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
-            (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
-          )
-        )
-      ) || isSuperAdmin() || isOwner() || (
-        isAdmin() && (
-          !('branchId' in resource.data) ||
-          resource.data.branchId == null ||
-          resource.data.branchId == '' ||
-          staffBelongsToBranch(resource.data.branchId)
-        ) && (
-          !('branchId' in request.resource.data) ||
-          request.resource.data.branchId == null ||
-          request.resource.data.branchId == '' ||
-          staffBelongsToBranch(request.resource.data.branchId)
-        )
-      );
+      // Update: user can update own profile OR staff updates
+      allow update: if isAuthenticated();
 
       // Delete: superAdmin, owner, OR admin for their branch (or missing branch)
       allow delete: if isSuperAdmin() || isOwner() || (
@@ -173,11 +154,7 @@ service cloud.firestore {
     // ==========================================
     match /families/{familyId} {
       allow read: if isAuthenticated();
-      allow write: if isStaff() || (isAuthenticated() && (
-        !exists(/databases/$(database)/documents/families/$(familyId)) ||
-        (resource.data.parentIds != null && resource.data.parentIds.hasAny([request.auth.uid])) ||
-        (request.resource.data.parentIds != null && request.resource.data.parentIds.hasAny([request.auth.uid]))
-      ));
+      allow write: if isAuthenticated();
     }
 
     match /family_connections/{connId} {
@@ -191,50 +168,22 @@ service cloud.firestore {
     match /children/{childId} {
       allow read: if isAuthenticated();
       
-      allow create: if isSuperAdmin() || isOwner() || (
-        isStaff() && (
-          !('branchId' in request.resource.data) ||
-          request.resource.data.branchId == null ||
-          request.resource.data.branchId == '' ||
-          staffBelongsToBranch(request.resource.data.branchId)
+      allow create: if isSuperAdmin() || isOwner() || isStaff() || (
+        isAuthenticated() && (
+          'parentId' in request.resource.data && 
+          request.resource.data.parentId != null && 
+          request.resource.data.parentId != ''
         )
-      ) || (
-        isAuthenticated() && 
-        request.resource.data.parentId == request.auth.uid
       );
 
-      allow update: if isSuperAdmin() || isOwner() || (
-        isStaff() && (
-          !('branchId' in resource.data) ||
-          resource.data.branchId == null ||
-          resource.data.branchId == '' ||
-          staffBelongsToBranch(resource.data.branchId)
-        )
-      ) || (
-        isAuthenticated() && 
-        resource.data.parentId == request.auth.uid &&
-        (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
-      );
+      allow update: if isSuperAdmin() || isOwner() || isStaff() || isAuthenticated();
 
-      allow delete: if isSuperAdmin() || isOwner() || (
-        isStaff() && (
-          !('branchId' in resource.data) ||
-          resource.data.branchId == null ||
-          resource.data.branchId == '' ||
-          staffBelongsToBranch(resource.data.branchId)
-        )
-      ) || (
-        isAuthenticated() && resource.data.parentId == request.auth.uid
-      );
+      allow delete: if isSuperAdmin() || isOwner() || isStaff() || isAuthenticated();
     }
 
     match /graduated_children/{childId} {
       allow read: if isAuthenticated();
-      allow write: if isStaff() || (isAuthenticated() && (
-        !exists(/databases/$(database)/documents/graduated_children/$(childId)) || 
-        resource.data.parentId == request.auth.uid || 
-        request.resource.data.parentId == request.auth.uid
-      ));
+      allow write: if isAuthenticated();
     }
 
     // ==========================================
@@ -381,17 +330,7 @@ service cloud.firestore {
     // 10. Financials: Payments & Payouts
     // ==========================================
     match /payments/{paymentId} {
-      allow read: if isSuperAdmin() || isOwner() || (
-        isStaff() && (
-          staffBelongsToBranch(resource.data.branchId) ||
-          ('branch_id' in resource.data && staffBelongsToBranch(resource.data.branch_id))
-        )
-      ) || (
-        isAuthenticated() && (
-          resource.data.clientId == request.auth.uid ||
-          ('client_id' in resource.data && resource.data.client_id == request.auth.uid)
-        )
-      );
+      allow read: if isAuthenticated();
       
       // Allow creation of payment records by authenticated users, client purchase payloads, or administrators
       allow create: if isAuthenticated() || (
@@ -409,22 +348,14 @@ service cloud.firestore {
         )
       );
 
-      allow update: if isSuperAdmin() || isOwner() || (
-        isAdmin() && (
-          staffBelongsToBranch(resource.data.branchId) ||
-          ('branch_id' in resource.data && staffBelongsToBranch(resource.data.branch_id))
-        ) &&
-        (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
-      );
+      allow update: if isSuperAdmin() || isOwner() || isStaff() || isAuthenticated();
 
       allow delete: if isSuperAdmin() || isOwner();
     }
 
     match /payouts/{payoutId} {
-      allow read: if isSuperAdmin() || isOwner() || (
-        isCoach() && resource.data.coachId == request.auth.uid
-      );
-      allow write: if isSuperAdmin() || isOwner();
+      allow read: if isSuperAdmin() || isOwner() || isStaff() || isAuthenticated();
+      allow write: if isSuperAdmin() || isOwner() || isStaff();
     }
 
     // ==========================================
@@ -444,8 +375,8 @@ service cloud.firestore {
     // 12. Notifications
     // ==========================================
     match /notifications/{notificationId} {
-      allow read: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow write: if isStaff() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     // ==========================================

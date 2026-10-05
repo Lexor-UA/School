@@ -20,6 +20,7 @@ import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'widgets/branch_selector_pill.dart';
 
 class AdminClientsScreen extends ConsumerStatefulWidget {
@@ -277,36 +278,49 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
         // Delete any subscriptions belonging to deleted children
         for (final relId in allRelatedIds) {
           if (relId == clientId) continue;
-          final childSubs = await FirebaseFirestore.instance
-              .collection('subscriptions')
-              .where('childId', isEqualTo: relId)
-              .get();
-          for (final sDoc in childSubs.docs) {
-            await sDoc.reference.delete();
-          }
+          try {
+            final childSubs = await FirebaseFirestore.instance
+                .collection('subscriptions')
+                .where('childId', isEqualTo: relId)
+                .get();
+            for (final sDoc in childSubs.docs) {
+              await sDoc.reference.delete().catchError((_) {});
+            }
+          } catch (_) {}
         }
 
         // 5. Remove enrollments and booked subscriptions from scheduled classes
         for (var i = 0; i < allRelatedIds.length; i += 30) {
           final chunk = allRelatedIds.sublist(i, math.min(i + 30, allRelatedIds.length));
-          final classesSnap = await FirebaseFirestore.instance
-              .collection('classes')
-              .where('enrolledChildIds', arrayContainsAny: chunk)
-              .get();
-          for (var doc in classesSnap.docs) {
-            final data = doc.data();
-            List<dynamic> enrolled = List.from(data['enrolledChildIds'] ?? []);
-            enrolled.removeWhere((id) => allRelatedIds.contains(id));
-            final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map? ?? {});
-            for (final relId in allRelatedIds) {
-              bookedMap.remove(relId);
+          try {
+            final classesSnap = await FirebaseFirestore.instance
+                .collection('classes')
+                .where('enrolledChildIds', arrayContainsAny: chunk)
+                .get();
+            for (var doc in classesSnap.docs) {
+              try {
+                final data = doc.data();
+                List<dynamic> enrolled = List.from(data['enrolledChildIds'] ?? []);
+                enrolled.removeWhere((id) => allRelatedIds.contains(id));
+                final bookedMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map? ?? {});
+                for (final relId in allRelatedIds) {
+                  bookedMap.remove(relId);
+                }
+                await doc.reference.set({
+                  'enrolledChildIds': enrolled,
+                  'bookedSubscriptions': bookedMap,
+                }, SetOptions(merge: true));
+              } catch (cErr) {
+                debugPrint('Error updating class ${doc.id} on client delete: $cErr');
+              }
             }
-            await doc.reference.update({
-              'enrolledChildIds': enrolled,
-              'bookedSubscriptions': bookedMap,
-            });
+          } catch (chunkErr) {
+            debugPrint('Error querying classes for deletion chunk: $chunkErr');
           }
         }
+
+        // Optimistically clean in-memory schedule and trigger refresh
+        ref.read(scheduleControllerProvider.notifier).removeParticipantsFromClasses(allRelatedIds);
 
         // 6. Purge any remaining orphaned families without active parents
         await ref.read(familyControllerProvider).cleanupOrphanedFamilies();

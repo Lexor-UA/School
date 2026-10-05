@@ -734,9 +734,31 @@ class AuthController extends _$AuthController {
         serverClientId: kIsWeb ? null : '720928546774-fm9fipmt88b2uqp2n5cbogq6r0gg1l1u.apps.googleusercontent.com',
       );
       
-      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.attemptLightweightAuthentication() ??
-          await GoogleSignIn.instance.authenticate();
-          
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await GoogleSignIn.instance.attemptLightweightAuthentication() ??
+            await GoogleSignIn.instance.authenticate();
+      } catch (authErr) {
+        final errStr = authErr.toString();
+        final isNetworkOrTokenErr = errStr.contains('-1017') ||
+            errStr.contains('org.openid.appauth.general') ||
+            errStr.contains('Connection error') ||
+            errStr.contains('Network') ||
+            errStr.contains('network_error') ||
+            errStr.contains('kCFErrorDomainCFNetwork');
+        if (isNetworkOrTokenErr) {
+          debugPrint('Retrying Google Sign In after network token error: $authErr');
+          await GoogleSignIn.instance.signOut().catchError((_) {});
+          await Future.delayed(const Duration(milliseconds: 1000));
+          await GoogleSignIn.instance.initialize(
+            clientId: clientId,
+            serverClientId: kIsWeb ? null : '720928546774-fm9fipmt88b2uqp2n5cbogq6r0gg1l1u.apps.googleusercontent.com',
+          );
+          googleUser = await GoogleSignIn.instance.authenticate();
+        } else {
+          rethrow;
+        }
+      }
 
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(

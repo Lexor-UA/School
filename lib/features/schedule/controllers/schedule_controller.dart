@@ -1789,6 +1789,27 @@ class ScheduleController extends _$ScheduleController {
     }
   }
 
+  /// Optimistically removes participants from all scheduled classes in memory and state.
+  void removeParticipantsFromClasses(List<String> participantIds) {
+    if (participantIds.isEmpty) return;
+    final currentList = state.value ?? cachedClasses ?? [];
+    final updated = currentList.map((c) {
+      final hasEnrolled = c.enrolledChildIds.any((id) => participantIds.contains(id));
+      final hasAttended = c.attendedChildIds.any((id) => participantIds.contains(id));
+      if (hasEnrolled || hasAttended) {
+        final newEnrolled = c.enrolledChildIds.where((id) => !participantIds.contains(id)).toList();
+        final newAttended = c.attendedChildIds.where((id) => !participantIds.contains(id)).toList();
+        return c.copyWith(
+          enrolledChildIds: newEnrolled,
+          attendedChildIds: newAttended,
+        );
+      }
+      return c;
+    }).toList();
+    cachedClasses = updated;
+    state = AsyncData(updated);
+  }
+
   Future<void> _logActivity({
     required ClassActivityType type,
     required String classId,

@@ -490,8 +490,37 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               }
             } catch (e) {
               if (!context.mounted) return;
+              final errStr = e.toString();
+              if (errStr.contains('canceled') || errStr.contains('cancelled') || errStr.contains('sign_in_canceled')) {
+                return;
+              }
+              String friendlyMsg = 'Помилка Google Sign In: $e';
+              if (errStr.contains('-1017') ||
+                  errStr.contains('Connection error') ||
+                  errStr.contains('org.openid.appauth.general: -5') ||
+                  errStr.contains('network_error') ||
+                  errStr.contains('kCFErrorDomainCFNetwork')) {
+                friendlyMsg = 'Помилка зв\'язку із сервером Google (код -1017). Будь ласка, перевірте з\'єднання з Інтернетом, вимкніть VPN та спробуйте ще раз.';
+              }
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Помилка Google Sign In: $e')),
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(LucideIcons.alertTriangle, color: Colors.white, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          friendlyMsg,
+                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFFE11D48),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 5),
+                ),
               );
             } finally {
               if (mounted) setState(() => _isLoading = false);
@@ -518,8 +547,29 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               }
             } catch (e) {
               if (!context.mounted) return;
+              final errStr = e.toString();
+              if (errStr.contains('canceled') || errStr.contains('cancelled') || errStr.contains('sign_in_canceled')) {
+                return;
+              }
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Помилка Apple Sign In: $e')),
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(LucideIcons.alertTriangle, color: Colors.white, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Помилка Apple Sign In: $e',
+                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFFE11D48),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 4),
+                ),
               );
             } finally {
               if (mounted) setState(() => _isLoading = false);

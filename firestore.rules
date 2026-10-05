@@ -305,28 +305,46 @@ service cloud.firestore {
       
       // Creating classes is allowed for branch admin/owner/superAdmin, or authenticated clients booking personal/custom trainings
       allow create: if isSuperAdmin() || isOwner() || (
-        isAdmin() && staffBelongsToBranch(request.resource.data.branchId)
+        isAdmin() && (
+          !('branchId' in request.resource.data) ||
+          request.resource.data.branchId == null ||
+          request.resource.data.branchId == '' ||
+          staffBelongsToBranch(request.resource.data.branchId)
+        )
       ) || (
         isAuthenticated() && 
         (!('branchId' in request.resource.data) || request.resource.data.branchId != '')
       );
 
-      // Updating classes allowed for branch staff (e.g. coach check-in) or authenticated clients booking/cancelling classes without mutating branchId
+      // Updating classes allowed for staff (admin/coach) or authenticated clients booking/cancelling classes
       allow update: if isSuperAdmin() || isOwner() || (
+        isAdmin() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        )
+      ) || (
         isStaff() && 
-        staffBelongsToBranch(resource.data.branchId) &&
-        (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
+        (!('branchId' in resource.data) || staffBelongsToBranch(resource.data.branchId)) &&
+        (!('branchId' in request.resource.data) || !('branchId' in resource.data) || request.resource.data.branchId == resource.data.branchId)
       ) || (
         isAuthenticated() &&
-        (!('branchId' in request.resource.data) || request.resource.data.branchId == resource.data.branchId)
+        (!('branchId' in request.resource.data) || !('branchId' in resource.data) || request.resource.data.branchId == resource.data.branchId)
       );
 
       // Deleting classes allowed for branch admin/owner/superAdmin, or clients deleting their own custom bookings
       allow delete: if isSuperAdmin() || isOwner() || (
-        isAdmin() && staffBelongsToBranch(resource.data.branchId)
+        isAdmin() && (
+          !('branchId' in resource.data) ||
+          resource.data.branchId == null ||
+          resource.data.branchId == '' ||
+          staffBelongsToBranch(resource.data.branchId)
+        )
       ) || (
         isAuthenticated() && 
-        (resource.data.isCustomBooking == true || resource.data.createdByRole == 'parent')
+        (('isCustomBooking' in resource.data && resource.data.isCustomBooking == true) || 
+         ('createdByRole' in resource.data && resource.data.createdByRole == 'parent'))
       );
     }
     

@@ -496,7 +496,10 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                   const Icon(LucideIcons.checkCircle2, color: Colors.greenAccent, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Масову виплату $totalDisplay для $count працівників успішно збережено'),
+                    child: Text(
+                      'Масову виплату $totalDisplay для $count працівників успішно збережено',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
                   ),
                 ],
               ),
@@ -1938,7 +1941,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           ),
         ),
       ),
-    ).animate().fadeIn(delay: (index * 60).ms).slideX(begin: 0.05);
+    );
   }
 
   Widget _buildHistoryItem(String title, String date, String amount, Color color, int delay, AppThemeConfig themeConfig) {
@@ -2009,7 +2012,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: delay.ms).slideX(begin: 0.05);
+    );
   }
 
   Widget _buildEmptyState(AppThemeConfig themeConfig) {

@@ -91,6 +91,13 @@ extension SubscriptionAudienceX on Subscription {
     if (age <= 5) {
       return isIndividualSubscription && !isAdultOnlySubscription;
     }
+    // З 16 років — дорослий, заборонено використовувати дитячий абонемент
+    if (age >= 16 && isChildOnlySubscription) {
+      return false;
+    }
+    if (age < 16 && isAdultOnlySubscription) {
+      return false;
+    }
     // Від 6 років — індивідуальні, групові або спліт відповідно до вікових груп
     final range = ageRange;
     if (range == null) return true;

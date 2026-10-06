@@ -59,5 +59,18 @@ extension ChildAgeX on Child {
     return age;
   }
 
+  int? ageAt(DateTime date) {
+    if (birthDate != null) {
+      int years = date.year - birthDate!.year;
+      if (date.month < birthDate!.month || (date.month == birthDate!.month && date.day < birthDate!.day)) {
+        years--;
+      }
+      return years >= 0 ? years : 0;
+    }
+    return age;
+  }
+
+  bool isAdultAt(DateTime date) => (ageAt(date) ?? 0) >= 16;
+
   bool get isAdultAge => (currentAge ?? 0) >= 16;
 }

@@ -811,7 +811,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                               int conductedG = 0, conductedI = 0, conductedS = 0;
 
                               for (final c in coachClasses) {
-                                final isConducted = c.startTime.isBefore(now) || c.attendedChildIds.isNotEmpty;
+                                final isConducted = c.attendedChildIds.isNotEmpty;
                                 if (!isConducted) continue;
 
                                 final tLower = c.title.toLowerCase();

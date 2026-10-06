@@ -32,12 +32,55 @@ abstract class GroupClass with _$GroupClass {
 
   static Map<String, dynamic> _normalizeJson(Map<String, dynamic> json) {
     final copy = Map<String, dynamic>.from(json);
+    copy['id'] = copy['id']?.toString() ?? '';
+    copy['title'] = (copy['title'] != null && copy['title'].toString().trim().isNotEmpty)
+        ? copy['title'].toString()
+        : (copy['category']?.toString() ?? 'Тренування');
+    copy['coachId'] = copy['coachId']?.toString() ?? '';
+    copy['coachName'] = (copy['coachName'] != null && copy['coachName'].toString().trim().isNotEmpty)
+        ? copy['coachName'].toString()
+        : 'Тренер';
+    copy['category'] = (copy['category'] != null && copy['category'].toString().trim().isNotEmpty)
+        ? copy['category'].toString()
+        : 'Плавання';
+    copy['maxCapacity'] = (copy['maxCapacity'] is num)
+        ? (copy['maxCapacity'] as num).toInt()
+        : (int.tryParse(copy['maxCapacity']?.toString() ?? '') ?? 8);
+
     if (copy['startTime'] is Timestamp) {
       copy['startTime'] = (copy['startTime'] as Timestamp).toDate().toIso8601String();
+    } else if (copy['startTime'] is DateTime) {
+      copy['startTime'] = (copy['startTime'] as DateTime).toIso8601String();
+    } else if (copy['startTime'] == null || copy['startTime'].toString().trim().isEmpty) {
+      copy['startTime'] = DateTime.now().toIso8601String();
     }
+
     if (copy['endTime'] is Timestamp) {
       copy['endTime'] = (copy['endTime'] as Timestamp).toDate().toIso8601String();
+    } else if (copy['endTime'] is DateTime) {
+      copy['endTime'] = (copy['endTime'] as DateTime).toIso8601String();
+    } else if (copy['endTime'] == null || copy['endTime'].toString().trim().isEmpty) {
+      copy['endTime'] = DateTime.now().add(const Duration(minutes: 45)).toIso8601String();
     }
+
+    if (copy['enrolledChildIds'] is List) {
+      copy['enrolledChildIds'] = (copy['enrolledChildIds'] as List)
+          .where((e) => e != null)
+          .map((e) => e.toString())
+          .toList();
+    } else {
+      copy['enrolledChildIds'] = const <String>[];
+    }
+
+    if (copy['attendedChildIds'] is List) {
+      copy['attendedChildIds'] = (copy['attendedChildIds'] as List)
+          .where((e) => e != null)
+          .map((e) => e.toString())
+          .toList();
+    } else {
+      copy['attendedChildIds'] = const <String>[];
+    }
+
     return copy;
   }
 }
@@ -100,6 +143,14 @@ extension GroupClassAudienceX on GroupClass {
     if (age <= 5) {
       return isIndividual && isChildOnly;
     }
+    // З 16 років — дорослий! Заборонено запис у дитячі групи (потрібен окремий дорослий акаунт)
+    if (age >= 16 && isChildOnly) {
+      return false;
+    }
+    // Для дорослих занять — вік від 16 років
+    if (age < 16 && isAdultOnly) {
+      return false;
+    }
     // Від 6 років дозволено індивідуально, в групах та спліт (за діапазоном віку)
     final range = ageRange;
     if (range == null) return true;
@@ -125,10 +176,18 @@ bool isServiceAgeCompatible(String title, int? age) {
   final isIndividual = lower.contains('індивідуал') || lower.contains('персон') || lower.contains('individual');
   final isSplit = lower.contains('спліт') || lower.contains('split');
   final isAdult = lower.contains('доросла') || lower.contains('дорослих') || lower.contains('adult');
+  final isChild = lower.contains('діт') || lower.contains('дит') || lower.contains('junior') || lower.contains('kids') || lower.contains('підлітк');
 
   // До 5 років включно — дозволені лише персональні індивідуальні заняття/абонементи для дітей
   if (age <= 5) {
     return isIndividual && !isSplit && !isAdult;
+  }
+  // З 16 років — дорослий
+  if (age >= 16 && isChild) {
+    return false;
+  }
+  if (age < 16 && isAdult) {
+    return false;
   }
 
   // Від 6 років

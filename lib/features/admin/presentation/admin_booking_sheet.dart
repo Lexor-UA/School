@@ -74,6 +74,8 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
       
       if (mounted) {
         if (result.isSuccess) {
+          ref.invalidate(subscriptionControllerProvider);
+          ref.invalidate(scheduleControllerProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
@@ -410,19 +412,26 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.cyanAccent));
                 
-                final allClasses = snapshot.data!.docs.map((d) {
-                  final data = d.data() as Map<String, dynamic>;
-                  data['id'] = d.id;
-                  return GroupClass.fromJson(data);
-                }).where((c) {
+                final allClasses = <GroupClass>[];
+                for (final d in snapshot.data!.docs) {
+                  try {
+                    final data = Map<String, dynamic>.from(d.data() as Map);
+                    data['id'] = d.id;
+                    allClasses.add(GroupClass.fromJson(data));
+                  } catch (e) {
+                    debugPrint('Skipping malformed class doc ${d.id}: $e');
+                  }
+                }
+
+                final dayClasses = allClasses.where((c) {
                   final d1 = c.startTime;
                   final d2 = _selectedDate;
                   return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
                 }).toList();
                 
-                allClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
+                dayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
 
-                final filteredClasses = allClasses.where((c) {
+                final filteredClasses = dayClasses.where((c) {
                   switch (_audienceFilter) {
                     case ClassAudienceFilter.all:
                       return true;

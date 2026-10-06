@@ -67,6 +67,40 @@ class SubscriptionPackage {
     if (ageGroup != null) 'ageGroup': ageGroup,
     if (description != null) 'description': description,
   };
+
+  SubscriptionPackage copyWith({
+    String? id,
+    String? name,
+    String? branchId,
+    int? price,
+    String? currency,
+    String? currencySymbol,
+    int? classes,
+    int? validityDays,
+    bool? isAdult,
+    bool? isIndividual,
+    bool? isSplit,
+    String? ageGroup,
+    Map<String, String>? localizedNames,
+    String? description,
+  }) {
+    return SubscriptionPackage(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      branchId: branchId ?? this.branchId,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      currencySymbol: currencySymbol ?? this.currencySymbol,
+      classes: classes ?? this.classes,
+      validityDays: validityDays ?? this.validityDays,
+      isAdult: isAdult ?? this.isAdult,
+      isIndividual: isIndividual ?? this.isIndividual,
+      isSplit: isSplit ?? this.isSplit,
+      ageGroup: ageGroup ?? this.ageGroup,
+      localizedNames: localizedNames ?? this.localizedNames,
+      description: description ?? this.description,
+    );
+  }
 }
 
 class SubscriptionPackageCatalog {

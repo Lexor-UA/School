@@ -52,7 +52,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
 
     final repo = ref.read(chatRepositoryProvider);
     repo.sendMessage(
-      dialogId: widget.clientId, // using clientId as dialogId
+      dialogId: _effectiveDialogId,
       clientId: widget.clientId,
       clientName: widget.clientName,
       clientAvatar: '',
@@ -124,7 +124,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
 
       final repo = ref.read(chatRepositoryProvider);
       await repo.sendMessage(
-        dialogId: widget.clientId,
+        dialogId: _effectiveDialogId,
         clientId: widget.clientId,
         clientName: widget.clientName,
         clientAvatar: '',

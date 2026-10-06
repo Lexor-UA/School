@@ -1014,9 +1014,15 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                 );
                 context.go(uri.toString());
               } else {
-                context.go(
-                  '/admin/chat?clientName=${Uri.encodeComponent(dialog.clientName)}&clientId=${dialog.clientId}',
+                final uri = Uri(
+                  path: '/admin/chat',
+                  queryParameters: {
+                    'dialogId': dialog.id.isNotEmpty ? dialog.id : dialog.clientId,
+                    'clientName': dialog.clientName,
+                    'clientId': dialog.clientId,
+                  },
                 );
+                context.go(uri.toString());
               }
             },
             borderRadius: BorderRadius.circular(20),

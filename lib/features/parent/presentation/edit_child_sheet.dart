@@ -459,6 +459,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                             // Name field
                             TextField(
                               controller: _nameControllers[index],
+                              textCapitalization: TextCapitalization.words,
                               style: TextStyle(color: isDark ? Colors.white : Colors.black),
                               decoration: InputDecoration(
                                 labelText: "Ім'я дитини",
@@ -1242,6 +1243,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                             // Name field
                             TextField(
                               controller: _nameController,
+                              textCapitalization: TextCapitalization.words,
                               style: TextStyle(color: isDark ? Colors.white : Colors.black),
                               decoration: InputDecoration(
                                 labelText: "Ім'я дитини",

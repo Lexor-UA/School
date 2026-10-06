@@ -18,6 +18,7 @@ part 'subscription_controller.g.dart';
 @Riverpod(keepAlive: true)
 class SubscriptionController extends _$SubscriptionController {
   StreamSubscription<QuerySnapshot>? _subSubscription;
+  final Set<String> _attemptedSubIds = {};
 
   @override
   List<Subscription> build() {
@@ -135,9 +136,10 @@ class SubscriptionController extends _$SubscriptionController {
       }
 
       // Auto-extend single-class subscriptions to 1 year if they were created with short 1-2 days validity
-      if (sub.isActive && sub.totalClasses == 1 && sub.expiryDate != null) {
+      if (sub.isActive && sub.totalClasses == 1 && sub.expiryDate != null && !_attemptedSubIds.contains(sub.id)) {
         final daysUntilExpiry = sub.expiryDate!.difference(now).inDays;
         if (daysUntilExpiry < 30) {
+          _attemptedSubIds.add(sub.id);
           final oneYearFromNow = now.add(const Duration(days: 365));
           FirebaseFirestore.instance.collection('subscriptions').doc(sub.id).update({
             'expiryDate': Timestamp.fromDate(oneYearFromNow),

@@ -381,7 +381,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                               int scheduledG = 0, scheduledI = 0, scheduledS = 0;
 
                               for (final c in coachClasses) {
-                                final isConducted = c.startTime.isBefore(now) || c.attendedChildIds.isNotEmpty;
+                                final isConducted = c.attendedChildIds.isNotEmpty;
                                 final tLower = c.title.toLowerCase();
                                 final cLower = c.category.toLowerCase();
                                 final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);
@@ -1570,7 +1570,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
           ),
         ),
       ),
-    ).animate().fadeIn(delay: (index * 70).ms).slideX(begin: 0.05);
+    );
   }
 
   Widget _buildRateBadge(String title, String rate, IconData icon, Color color, bool isDark) {

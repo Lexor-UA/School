@@ -88,7 +88,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               int scheduledSplit = 0;
 
               for (final c in filteredClasses) {
-                final isConducted = c.startTime.isBefore(now) || c.attendedChildIds.isNotEmpty;
+                final isConducted = c.attendedChildIds.isNotEmpty;
                 final tLower = c.title.toLowerCase();
                 final cLower = c.category.toLowerCase();
                 final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);
@@ -1383,8 +1383,6 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final now = DateTime.now();
-
         return Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           decoration: BoxDecoration(
@@ -1496,7 +1494,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         itemCount: classes.length,
                         itemBuilder: (context, index) {
                           final c = classes[index];
-                          final isConducted = c.startTime.isBefore(now) || c.attendedChildIds.isNotEmpty;
+                          final isConducted = c.attendedChildIds.isNotEmpty;
                           final tLower = c.title.toLowerCase();
                           final cLower = c.category.toLowerCase();
                           final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);

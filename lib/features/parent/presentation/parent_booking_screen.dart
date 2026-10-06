@@ -288,7 +288,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         final showPartner = partnerId != null && partnerName != null && !isChildClass;
         final eligibleChildren = isAdultClass 
             ? <Child>[] 
-            : children.where((ch) => selectedClass?.isAgeCompatible(ch.currentAge) ?? true).toList();
+            : children.where((ch) => selectedClass?.isAgeCompatible(selectedClass != null ? ch.ageAt(selectedClass!.startTime) : ch.currentAge) ?? true).toList();
 
         if (!showParent && eligibleChildren.isEmpty) {
           final hasUnder6 = children.any((c) => (c.currentAge ?? 0) <= 5);
@@ -601,12 +601,14 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         final isUidAdult = uid == user.id || familyParentIds.contains(uid);
         if (!isUidAdult) {
           final child = children.where((c) => c.id == uid).firstOrNull;
-          final childAge = child?.currentAge;
+          final childAge = child?.ageAt(selectedClass!.startTime) ?? child?.currentAge;
           if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
             final range = selectedClass!.ageRange;
-            final msg = childAge <= 5
-                ? 'Для дітей до 6 років (1–5 років включно) (${child?.name ?? ''}, $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
-                : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
+            final msg = childAge >= 16 && selectedClass!.isChildOnly
+                ? 'Дитині ${child?.name ?? ''} на дату заняття виповнюється $childAge р. З 16 років відвідування дитячих груп заборонено — потрібно створити окремий дорослий акаунт.'
+                : (childAge <= 5
+                    ? 'Для дітей до 6 років (1–5 років включно) (${child?.name ?? ''}, $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+                    : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).');
             AppSnackBar.showWarning(context, msg);
             return;
           }
@@ -688,12 +690,14 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
 
     if (selectedUserId != user.id) {
       final child = children.where((c) => c.id == selectedUserId).firstOrNull;
-      final childAge = child?.currentAge;
+      final childAge = child?.ageAt(selectedClass!.startTime) ?? child?.currentAge;
       if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
         final range = selectedClass!.ageRange;
-        final msg = childAge <= 5
-            ? 'Для дітей до 6 років (1–5 років включно) ($childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
-            : 'Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).';
+        final msg = childAge >= 16 && selectedClass!.isChildOnly
+            ? 'Дитині ${child?.name ?? ''} на дату заняття виповнюється $childAge р. З 16 років відвідування дитячих груп заборонено — потрібно створити окремий дорослий акаунт.'
+            : (childAge <= 5
+                ? 'Для дітей до 6 років (1–5 років включно) ($childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+                : 'Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).');
         AppSnackBar.showWarning(context, msg);
         return;
       }

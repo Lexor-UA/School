@@ -356,10 +356,11 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                             final d = c.data();
                             final role = (d['role'] as String?)?.toLowerCase();
                             // Exclude coaches, admins, owners, superadmins, and staff auth aliases
-                            if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin' || role == 'staff_auth' || d['aliasOf'] != null) {
+                            final isStaffAlias = d['aliasOf'] != null && d['aliasOf'] != c.id && d['aliasOf'] != d['id'];
+                            if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin' || role == 'staff_auth' || isStaffAlias) {
                               return false;
                             }
-                            if (isAllLocations) return true;
+                            if (isAllLocations || activeBranchId == null) return true;
                             final bId = d['branchId'] as String? ?? 'kyiv';
                             final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
                             return bId == activeBranchId || bIds.contains(activeBranchId);
@@ -431,7 +432,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                                     final clientDoc = clients[index];
                                                     final data = clientDoc.data();
                                                     final clientId = clientDoc.id;
-                                                    final name = data['name'] ?? 'Невідомо';
+                                                    final rawName = (data['name'] as String?)?.trim();
+                                                    final name = (rawName != null && rawName.isNotEmpty && rawName != 'Невідомо')
+                                                        ? rawName
+                                                        : ((data['displayName'] as String?)?.trim().isNotEmpty == true
+                                                            ? (data['displayName'] as String).trim()
+                                                            : ((data['email'] as String?)?.trim().isNotEmpty == true
+                                                                ? (data['email'] as String).trim()
+                                                                : 'Невідомо'));
                                                     final phone = data['phone'] ?? 'Немає номеру';
                                                     final loginId = data['loginId'] ?? 'Не призначено';
                                                     final password = (data['password'] as String?) ?? '1';

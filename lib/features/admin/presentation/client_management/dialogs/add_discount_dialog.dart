@@ -34,7 +34,13 @@ Future<void> showAddDiscountDialog({
       (e) => e['name'] == serviceName,
       orElse: () => {},
     );
-    return s['price'] as int? ?? 0;
+    if (s.isEmpty) return 0;
+    if (s['priceNum'] is num) return (s['priceNum'] as num).toInt();
+    if (s['price'] is num) return (s['price'] as num).toInt();
+    if (s['price'] is String) {
+      return int.tryParse((s['price'] as String).replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    }
+    return 0;
   }
 
   showDialog(
@@ -184,42 +190,57 @@ Future<void> showAddDiscountDialog({
                                       : const Color(0xFF0284C7),
                                 ),
                                 const SizedBox(width: 8),
-                                const Text(
-                                  'Вся сім\'я (будь-хто з членів родини)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                                const Expanded(
+                                  child: Text(
+                                    'Вся сім\'я (будь-хто з членів родини)',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          ...familyMembers.map((m) {
-                            final name = m['name'] as String;
-                            final isParent = m['isParent'] as bool;
-                            final age = m['age'];
-                            return DropdownMenuItem(
-                              value: name,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isParent
-                                        ? LucideIcons.user
-                                        : LucideIcons.baby,
-                                    size: 16,
-                                    color: isParent
-                                        ? const Color(0xFF38BDF8)
-                                        : const Color(0xFF34D399),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '$name (${isParent ? "дорослий" : "дитина, $age р."})',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
+                          ...(() {
+                            final seen = <String>{};
+                            final uniqueMembers = familyMembers.where((m) {
+                              final n = m['name']?.toString() ?? '';
+                              return n.isNotEmpty && seen.add(n);
+                            }).toList();
+                            return uniqueMembers.map((m) {
+                              final name = m['name'] as String;
+                              final isParent = m['isParent'] as bool? ?? false;
+                              final age = m['age'];
+                              return DropdownMenuItem(
+                                value: name,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isParent
+                                          ? LucideIcons.user
+                                          : LucideIcons.baby,
+                                      size: 16,
+                                      color: isParent
+                                          ? const Color(0xFF38BDF8)
+                                          : const Color(0xFF34D399),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '$name (${isParent ? "дорослий" : "дитина, $age р."})',
+                                        style: const TextStyle(fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            });
+                          })(),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -231,104 +252,7 @@ Future<void> showAddDiscountDialog({
                   ),
                   const SizedBox(height: 14),
 
-                  // 2. Target Subscription
-                  Text(
-                    'Абонемент:',
-                    style: TextStyle(
-                      color: isDark ? Colors.white70 : const Color(0xFF475569),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.15)
-                            : const Color(0xFFCBD5E1),
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        dropdownColor: isDark
-                            ? const Color(0xFF1E293B)
-                            : Colors.white,
-                        isExpanded: true,
-                        value: selectedService,
-                        icon: Icon(
-                          LucideIcons.chevronDown,
-                          size: 18,
-                          color: isDark
-                              ? const Color(0xFF00E5FF)
-                              : const Color(0xFF0284C7),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: 'all',
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  LucideIcons.sparkles,
-                                  size: 16,
-                                  color: Color(0xFFF59E0B),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Будь-який абонемент',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ...services.map((s) {
-                            final name = s['name'] as String;
-                            final price =
-                                s['price'] as int? ?? s['priceNum'] as int?;
-                            return DropdownMenuItem(
-                              value: name,
-                              child: Text(
-                                '$name — ${price ?? 0} $currSymbol',
-                                style: const TextStyle(fontSize: 12),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setStateDialog(() {
-                              selectedService = val;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  if (basePrice > 0) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Базова вартість: $basePrice $currSymbol',
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFF38BDF8)
-                            : const Color(0xFF0284C7),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-
-                  // 3. Discount Mode Selector (Tabs)
+                  // 2. Discount Mode Selector (Tabs)
                   Text(
                     'Спосіб розрахунку знижки:',
                     style: TextStyle(
@@ -377,7 +301,7 @@ Future<void> showAddDiscountDialog({
                               ),
                               child: Center(
                                 child: Text(
-                                  'Нова ціна (грн)',
+                                  'Нова ціна ($currSymbol)',
                                   style: TextStyle(
                                     color: discountMode == 'fixedPrice'
                                         ? (isDark
@@ -644,7 +568,7 @@ Future<void> showAddDiscountDialog({
                             children: [
                               if (basePrice > 0) ...[
                                 Text(
-                                  '$basePrice грн',
+                                  '$basePrice $currSymbol',
                                   style: TextStyle(
                                     decoration: TextDecoration.lineThrough,
                                     decorationColor: Colors.redAccent,

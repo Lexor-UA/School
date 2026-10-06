@@ -101,7 +101,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
     return SubscriptionPackageCatalog.getServicesMapForBranch(effectiveBranch.id);
   }
 
-  void _payForSubscription(String userId, String owner, String selectedService) async {
+  void _payForSubscription(String userId, String owner, String selectedService, {int? customPrice}) async {
     setState(() => _isLoading = true);
 
     try {
@@ -236,19 +236,21 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
       final validityDays = serviceDetails['validityDays'] as int;
       final effectiveBranch = ref.read(effectiveBranchProvider);
       
-      // Оформлення абонемента та логування платежу через BranchPaymentService (ТЗ п. 20, 21)
-      final pkg = SubscriptionPackageCatalog.getPackagesForBranch(effectiveBranch.id)
-          .firstWhereOrNull((p) => p.name == selectedService) ??
-          SubscriptionPackage(
-            id: 'pkg_${selectedService.hashCode}',
-            name: selectedService,
-            branchId: effectiveBranch.id,
-            price: (serviceDetails['priceNum'] as num?)?.toInt() ?? 0,
-            currency: effectiveBranch.currencyCode,
-            currencySymbol: effectiveBranch.currencySymbol,
-            classes: classes,
-            validityDays: validityDays,
-          );
+      final basePkg = SubscriptionPackageCatalog.getPackagesForBranch(effectiveBranch.id)
+          .firstWhereOrNull((p) => p.name == selectedService);
+      final pkg = (basePkg != null && customPrice != null && customPrice > 0)
+          ? basePkg.copyWith(price: customPrice)
+          : (basePkg ??
+              SubscriptionPackage(
+                id: 'pkg_${selectedService.hashCode}',
+                name: selectedService,
+                branchId: effectiveBranch.id,
+                price: customPrice ?? (serviceDetails['priceNum'] as num?)?.toInt() ?? 0,
+                currency: effectiveBranch.currencyCode,
+                currencySymbol: effectiveBranch.currencySymbol,
+                classes: classes,
+                validityDays: validityDays,
+              ));
 
       await ref.read(branchPaymentServiceProvider).processMockPayment(
         branchId: effectiveBranch.id,
@@ -1151,10 +1153,13 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
 
                                   final package = SubscriptionPackageCatalog.getPackagesForBranch(branch.id)
                                       .firstWhereOrNull((p) => p.name == selectedService);
-                                  if (package != null && context.mounted) {
+                                  final payablePackage = (package != null && totalPrice > 0 && totalPrice != package.price)
+                                      ? package.copyWith(price: totalPrice)
+                                      : package;
+                                  if (payablePackage != null && context.mounted) {
                                     await BranchPaymentModal.show(
                                       context: context,
-                                      package: package,
+                                      package: payablePackage,
                                       clientId: targetUserId,
                                       clientName: currentUser?.name ?? effectiveOwner,
                                       childName: isOwnerAdult ? null : effectiveOwner,
@@ -1163,7 +1168,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                                       },
                                     );
                                   } else {
-                                    _payForSubscription(targetUserId, effectiveOwner, selectedService!);
+                                    _payForSubscription(targetUserId, effectiveOwner, selectedService!, customPrice: totalPrice);
                                   }
                                 }
                               : null,

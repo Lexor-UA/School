@@ -702,12 +702,20 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     List<Child> children, [
     Family? family,
   ]) {
-    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
-    final partnerName = user != null
-        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+    final partnerId = (user != null && family != null) ? family.getOtherParentId(user.id) : null;
+    final partnerName = (user != null && family != null && partnerId != null)
+        ? (family.getOtherParentName(user.id) ?? family.parentNames[partnerId] ?? 'Партнер')
         : null;
 
-    final enrolledMembers = nextClass.enrolledChildIds.map((id) {
+    final familyIds = {
+      if (user != null) user.id,
+      if (family != null) ...family.parentIds,
+      ...children.map((ch) => ch.id),
+    };
+
+    final enrolledMembers = nextClass.enrolledChildIds
+        .where((id) => familyIds.contains(id))
+        .map((id) {
       if (user != null && id == user.id) {
         return (id: user.id, name: user.name, isParent: true);
       }
@@ -725,10 +733,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
         final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? 'Партнер';
         return (id: id, name: name, isParent: true);
       }
-      if (partnerName != null && partnerName.isNotEmpty && partnerName != 'Партнер') {
-        return (id: id, name: partnerName, isParent: true);
-      }
-      return (id: id, name: 'Партнер', isParent: true);
+      return (id: id, name: user?.name ?? 'Я', isParent: true);
     }).toList();
 
     final bool isMultiple = enrolledMembers.length > 1;

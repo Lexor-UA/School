@@ -335,6 +335,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       if (sub?.expiryDate != null) {
                         final endOfExpiryDay = DateTime(sub!.expiryDate!.year, sub.expiryDate!.month, sub.expiryDate!.day, 23, 59, 59);
                         if (selectedDateOnly.isAfter(endOfExpiryDay)) {
+                          Navigator.pop(ctx);
                           final expiryStr = DateFormat('dd.MM.yyyy').format(sub.expiryDate!);
                           final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
                           AppSnackBar.showError(

@@ -252,9 +252,9 @@ class ParentEnrolledClassCard extends ConsumerWidget {
     final timeFormatted =
         "${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}";
 
-    final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
-    final partnerName = user != null
-        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+    final partnerId = (user != null && family != null) ? family.getOtherParentId(user.id) : null;
+    final partnerName = (user != null && family != null && partnerId != null)
+        ? (family.getOtherParentName(user.id) ?? family.parentNames[partnerId] ?? 'Партнер')
         : null;
 
     final familyIds = {
@@ -326,7 +326,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
 
       return (
         id: id,
-        name: 'Партнер',
+        name: user?.name ?? 'Я',
         isParent: true,
         color: const Color(0xFFA78BFA),
       );
@@ -348,7 +348,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           color: const Color(0xFFA78BFA),
         ),
       ...children
-          .where((ch) => !c.enrolledChildIds.contains(ch.id) && !c.isAdultOnly)
+          .where((ch) => !c.enrolledChildIds.contains(ch.id) && !c.isAdultOnly && c.isAgeCompatible(ch.ageAt(c.startTime)))
           .map((ch) => (
                 id: ch.id,
                 name: ch.name,
@@ -1178,7 +1178,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
     final isAdultTarget = targetChildId == user?.id || (partnerId != null && targetChildId == partnerId);
     final targetChild = (!isAdultTarget && targetChildId != 'all') ? children.where((ch) => ch.id == targetChildId).firstOrNull : null;
-    final childAge = targetChild?.currentAge;
+    final childAge = targetChild?.ageAt(c.startTime) ?? targetChild?.currentAge;
     final bool isAgeMismatch = childAge != null && !c.isAgeCompatible(childAge);
 
     return Padding(
@@ -1791,13 +1791,16 @@ void showChildPickerForQuickBooking(
       if (includeChildren)
         ...children
             .where((ch) => !c.enrolledChildIds.contains(ch.id))
-            .where((ch) => c.isAgeCompatible(ch.currentAge))
-            .map((ch) => (
-                  id: ch.id,
-                  name: ch.currentAge != null ? '${ch.name} (${ch.currentAge} р.)' : ch.name,
-                  isParent: false,
-                  color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
-                )),
+            .where((ch) => c.isAgeCompatible(ch.ageAt(c.startTime)))
+            .map((ch) {
+              final age = ch.ageAt(c.startTime) ?? ch.currentAge;
+              return (
+                id: ch.id,
+                name: age != null ? '${ch.name} ($age р.)' : ch.name,
+                isParent: false,
+                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+              );
+            }),
     ];
 
     if (availableMembers.isEmpty) {
@@ -2008,13 +2011,16 @@ void showSplitBookingSheet(
       if (partnerId != null && partnerName != null)
         (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       ...children
-          .where((ch) => c.isAgeCompatible(ch.currentAge))
-          .map((ch) => (
-                id: ch.id,
-                name: ch.currentAge != null ? '${ch.name} (${ch.currentAge} р.)' : ch.name,
-                isParent: false,
-                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
-              )),
+          .where((ch) => c.isAgeCompatible(ch.ageAt(c.startTime)))
+          .map((ch) {
+            final age = ch.ageAt(c.startTime) ?? ch.currentAge;
+            return (
+              id: ch.id,
+              name: age != null ? '${ch.name} ($age р.)' : ch.name,
+              isParent: false,
+              color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+            );
+          }),
     ];
 
     if (availableMembers.length < 2) {

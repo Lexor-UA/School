@@ -158,7 +158,7 @@ class _ClientDiscountsSectionState
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('children')
-          .where('parentId', whereIn: parentIds)
+          .where('parentId', whereIn: parentIds.isNotEmpty ? parentIds : ['__empty__'])
           .snapshots(),
       builder: (context, childSnap) {
         List<Map<String, dynamic>> familyMembers = [
@@ -188,12 +188,14 @@ class _ClientDiscountsSectionState
           for (var doc in childSnap.data!.docs) {
             final cData = doc.data() as Map<String, dynamic>;
             final cName = (cData['name'] as String? ?? 'Дитина').trim();
-            familyMembers.add({
-              'name': cName,
-              'isParent': false,
-              'age': cData['age'],
-            });
-            availableOwners.add(cName);
+            if (!availableOwners.contains(cName)) {
+              familyMembers.add({
+                'name': cName,
+                'isParent': false,
+                'age': cData['age'],
+              });
+              availableOwners.add(cName);
+            }
           }
         }
 

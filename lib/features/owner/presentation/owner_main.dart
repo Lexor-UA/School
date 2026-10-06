@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
@@ -38,6 +38,7 @@ class OwnerMain extends ConsumerStatefulWidget {
 class _OwnerMainState extends ConsumerState<OwnerMain> {
   int _selectedTabIndex = 0;
   String _selectedTimeframe = 'Місяць';
+  int? _selectedChartPointIndex;
 
   String _formatClientsCount(int count) {
     final mod10 = count % 10;
@@ -301,7 +302,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Glowing Spline Chart
-                _buildGlowingChart(themeConfig)
+                _buildGlowingChart(themeConfig, tenancyState, analytics)
                     .animate()
                     .fadeIn(delay: 100.ms)
                     .slideY(begin: 0.08),
@@ -1937,8 +1938,58 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
   // ==========================================
   // 6. PROFIT DYNAMICS CHART
   // ==========================================
-  Widget _buildGlowingChart(AppThemeConfig themeConfig) {
+  Widget _buildGlowingChart(
+    AppThemeConfig themeConfig,
+    TenancyState tenancyState,
+    OwnerAnalyticsState analytics,
+  ) {
     final isDark = themeConfig.isDark;
+
+    final isVienna = tenancyState.activeBranchId == 'vienna';
+    final currency = isVienna ? '€' : '₴';
+    final totalRev = isVienna
+        ? analytics.vienna.totalRevenue
+        : (tenancyState.isAllLocations
+            ? (analytics.kyiv.totalRevenue + analytics.vienna.totalRevenue)
+            : analytics.kyiv.totalRevenue);
+    final effectiveTotal = totalRev > 0 ? totalRev : (isVienna ? 14850.0 : 25500.0);
+
+    String fmt(double val) {
+      final formatted = val.round().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]} ',
+      );
+      return currency == '€' ? '€ $formatted' : '$formatted ₴';
+    }
+
+    final List<OwnerChartPoint> points;
+    if (_selectedTimeframe == 'День') {
+      points = [
+        OwnerChartPoint(dateLabel: '09:00', amountLabel: fmt(effectiveTotal * 0.18), xFraction: 0.10, yFraction: 0.82),
+        OwnerChartPoint(dateLabel: '13:00', amountLabel: fmt(effectiveTotal * 0.45), xFraction: 0.40, yFraction: 0.58),
+        OwnerChartPoint(dateLabel: '17:00', amountLabel: fmt(effectiveTotal * 0.76), xFraction: 0.70, yFraction: 0.32),
+        OwnerChartPoint(dateLabel: '21:00', amountLabel: fmt(effectiveTotal * 1.00), xFraction: 1.00, yFraction: 0.12),
+      ];
+    } else if (_selectedTimeframe == 'Тиждень') {
+      points = [
+        OwnerChartPoint(dateLabel: 'Пн', amountLabel: fmt(effectiveTotal * 0.15), xFraction: 0.05, yFraction: 0.88),
+        OwnerChartPoint(dateLabel: 'Ср', amountLabel: fmt(effectiveTotal * 0.38), xFraction: 0.35, yFraction: 0.65),
+        OwnerChartPoint(dateLabel: 'Пт', amountLabel: fmt(effectiveTotal * 0.62), xFraction: 0.60, yFraction: 0.45),
+        OwnerChartPoint(dateLabel: 'Сб', amountLabel: fmt(effectiveTotal * 0.85), xFraction: 0.80, yFraction: 0.22),
+        OwnerChartPoint(dateLabel: 'Нд', amountLabel: fmt(effectiveTotal * 1.00), xFraction: 1.00, yFraction: 0.08),
+      ];
+    } else {
+      points = [
+        OwnerChartPoint(dateLabel: '1 тижд', amountLabel: fmt(effectiveTotal * 0.22), xFraction: 0.0, yFraction: 0.80),
+        OwnerChartPoint(dateLabel: '2 тижд', amountLabel: fmt(effectiveTotal * 0.48), xFraction: 0.40, yFraction: 0.40),
+        OwnerChartPoint(dateLabel: '3 тижд', amountLabel: fmt(effectiveTotal * 0.76), xFraction: 0.80, yFraction: 0.20),
+        OwnerChartPoint(dateLabel: '4 тижд', amountLabel: fmt(effectiveTotal * 1.00), xFraction: 1.00, yFraction: 0.05),
+      ];
+    }
+
+    final activePointIndex = (_selectedChartPointIndex != null && _selectedChartPointIndex! < points.length)
+        ? _selectedChartPointIndex!
+        : points.length - 1;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(26),
@@ -2007,7 +2058,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       return GestureDetector(
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          setState(() => _selectedTimeframe = periodVal);
+                          setState(() {
+                            _selectedTimeframe = periodVal;
+                            _selectedChartPointIndex = null;
+                          });
+                          ref.read(ownerAnalyticsControllerProvider.notifier).setTimeframe(periodVal);
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
@@ -2043,13 +2098,42 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 ],
               ),
               const Spacer(),
-              SizedBox(
-                height: 140,
-                width: double.infinity,
-                child: CustomPaint(
-                  key: ValueKey(_selectedTimeframe),
-                  painter: SplineChartPainter(isDark: isDark),
-                ).animate().fadeIn(duration: 350.ms),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const double pad = 8.0;
+                  final double w = constraints.maxWidth - (pad * 2);
+
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (details) {
+                      HapticFeedback.selectionClick();
+                      final double touchX = details.localPosition.dx;
+                      int bestIdx = 0;
+                      double bestDist = double.infinity;
+                      for (int i = 0; i < points.length; i++) {
+                        final px = pad + (w * points[i].xFraction);
+                        final dist = (touchX - px).abs();
+                        if (dist < bestDist) {
+                          bestDist = dist;
+                          bestIdx = i;
+                        }
+                      }
+                      setState(() => _selectedChartPointIndex = bestIdx);
+                    },
+                    child: SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: CustomPaint(
+                        key: ValueKey('$_selectedTimeframe-$activePointIndex'),
+                        painter: SplineChartPainter(
+                          isDark: isDark,
+                          points: points,
+                          selectedIndex: activePointIndex,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -2209,13 +2293,34 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
   }
 }
 
+class OwnerChartPoint {
+  final String dateLabel;
+  final String amountLabel;
+  final double xFraction;
+  final double yFraction;
+
+  const OwnerChartPoint({
+    required this.dateLabel,
+    required this.amountLabel,
+    required this.xFraction,
+    required this.yFraction,
+  });
+}
+
 class SplineChartPainter extends CustomPainter {
   final bool isDark;
+  final List<OwnerChartPoint> points;
+  final int? selectedIndex;
 
-  SplineChartPainter({this.isDark = true});
+  SplineChartPainter({
+    this.isDark = true,
+    this.points = const [],
+    this.selectedIndex,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
     const double padding = 8.0;
     final double w = size.width - (padding * 2);
     final double h = size.height;
@@ -2229,14 +2334,16 @@ class SplineChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
+    final firstPt = Offset(padding + (w * points.first.xFraction), h * points.first.yFraction);
+    path.moveTo(firstPt.dx, firstPt.dy);
 
-    // Smooth curve points with padding
-    path.moveTo(padding, h * 0.8);
-    path.cubicTo(
-        padding + (w * 0.2), h * 0.8, padding + (w * 0.2), h * 0.3, padding + (w * 0.4), h * 0.4);
-    path.cubicTo(
-        padding + (w * 0.6), h * 0.5, padding + (w * 0.7), h * 0.1, padding + (w * 0.8), h * 0.2);
-    path.cubicTo(padding + (w * 0.9), h * 0.3, padding + (w * 0.95), h * 0.1, padding + w, 0);
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = Offset(padding + (w * points[i].xFraction), h * points[i].yFraction);
+      final p1 = Offset(padding + (w * points[i + 1].xFraction), h * points[i + 1].yFraction);
+      final c1 = Offset((p0.dx + p1.dx) / 2, p0.dy);
+      final c2 = Offset((p0.dx + p1.dx) / 2, p1.dy);
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p1.dx, p1.dy);
+    }
 
     // Glow effect
     if (isDark) {
@@ -2246,9 +2353,10 @@ class SplineChartPainter extends CustomPainter {
     }
 
     // Gradient fill below line
+    final lastPt = Offset(padding + (w * points.last.xFraction), h * points.last.yFraction);
     final fillPath = Path.from(path)
-      ..lineTo(padding + w, h)
-      ..lineTo(padding, h)
+      ..lineTo(lastPt.dx, h)
+      ..lineTo(firstPt.dx, h)
       ..close();
 
     final fillPaint = Paint()
@@ -2270,32 +2378,102 @@ class SplineChartPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Draw dots
-    final dotPoints = [
-      Offset(padding + (w * 0.4), h * 0.4),
-      Offset(padding + (w * 0.8), h * 0.2),
-      Offset(padding + w, 0),
-    ];
+    for (int i = 0; i < points.length; i++) {
+      final pt = points[i];
+      final offset = Offset(padding + (w * pt.xFraction), h * pt.yFraction);
+      final isSelected = selectedIndex == i;
 
-    if (isDark) {
-      final dotPaint = Paint()..color = Colors.white..style = PaintingStyle.fill;
-      for (final pt in dotPoints) {
-        canvas.drawCircle(pt, 4, dotPaint);
+      if (isSelected) {
+        final haloPaint = Paint()
+          ..color = (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35);
+        canvas.drawCircle(offset, 9, haloPaint);
       }
-    } else {
-      final outerDotPaint = Paint()
-        ..color = const Color(0xFF0284C7)
+
+      if (isDark) {
+        final dotPaint = Paint()..color = Colors.white..style = PaintingStyle.fill;
+        canvas.drawCircle(offset, isSelected ? 5.0 : 4.0, dotPaint);
+      } else {
+        final outerDotPaint = Paint()
+          ..color = const Color(0xFF0284C7)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isSelected ? 3.0 : 2.5;
+        final innerDotPaint = Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(offset, isSelected ? 5.5 : 4.5, innerDotPaint);
+        canvas.drawCircle(offset, isSelected ? 5.5 : 4.5, outerDotPaint);
+      }
+    }
+
+    // Draw Tooltip for selected point
+    if (selectedIndex != null && selectedIndex! >= 0 && selectedIndex! < points.length) {
+      final sel = points[selectedIndex!];
+      final dotOffset = Offset(padding + (w * sel.xFraction), h * sel.yFraction);
+
+      final textSpan = TextSpan(
+        children: [
+          TextSpan(
+            text: '${sel.dateLabel}: ',
+            style: TextStyle(
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextSpan(
+            text: sel.amountLabel,
+            style: TextStyle(
+              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      );
+
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      const double padH = 8.0;
+      const double padV = 5.0;
+      final tooltipW = textPainter.width + (padH * 2);
+      final tooltipH = textPainter.height + (padV * 2);
+
+      double tooltipX = dotOffset.dx - (tooltipW / 2);
+      if (tooltipX < padding) tooltipX = padding;
+      if (tooltipX + tooltipW > size.width - padding) {
+        tooltipX = size.width - padding - tooltipW;
+      }
+
+      double tooltipY = dotOffset.dy - tooltipH - 8;
+      if (tooltipY < 0) {
+        tooltipY = dotOffset.dy + 12;
+      }
+
+      final tooltipRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(tooltipX, tooltipY, tooltipW, tooltipH),
+        const Radius.circular(8),
+      );
+
+      final bgPaint = Paint()
+        ..color = isDark ? const Color(0xFF0A1E34) : Colors.white;
+      final borderPaint = Paint()
+        ..color = isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFFBAE6FD)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5;
-      final innerDotPaint = Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill;
-      for (final pt in dotPoints) {
-        canvas.drawCircle(pt, 4.5, innerDotPaint);
-        canvas.drawCircle(pt, 4.5, outerDotPaint);
-      }
+        ..strokeWidth = 1.0;
+
+      canvas.drawRRect(tooltipRect, bgPaint);
+      canvas.drawRRect(tooltipRect, borderPaint);
+
+      textPainter.paint(canvas, Offset(tooltipX + padH, tooltipY + padV));
     }
   }
 
   @override
-  bool shouldRepaint(covariant SplineChartPainter oldDelegate) => oldDelegate.isDark != isDark;
+  bool shouldRepaint(covariant SplineChartPainter oldDelegate) =>
+      oldDelegate.isDark != isDark ||
+      oldDelegate.selectedIndex != selectedIndex ||
+      oldDelegate.points != points;
 }

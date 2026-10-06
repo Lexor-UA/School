@@ -283,7 +283,7 @@ class AuthController extends _$AuthController {
           'name': user.name,
           if (user.phone != null && user.phone!.isNotEmpty) 'phone': user.phone,
           if (fbUser.email != null) 'email': fbUser.email,
-          'aliasOf': user.id,
+          if (user.id != fbUser.uid) 'aliasOf': user.id,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true)).catchError((e) {
           debugPrint('Error syncing auth user doc: $e');
@@ -675,7 +675,7 @@ class AuthController extends _$AuthController {
 
     // Determine final effective properties
     final existingName = (mergedData['name'] as String?)?.trim();
-    final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User' && existingName != 'Користувач')
+    final effectiveName = (existingName != null && existingName.isNotEmpty && existingName != 'New User' && existingName != 'Користувач' && existingName != 'Невідомо')
         ? existingName
         : name;
 
@@ -743,10 +743,18 @@ class AuthController extends _$AuthController {
       
       GoogleSignInAccount? googleUser;
       try {
-        googleUser = await GoogleSignIn.instance.attemptLightweightAuthentication() ??
-            await GoogleSignIn.instance.authenticate();
+        googleUser = await GoogleSignIn.instance.authenticate();
       } catch (authErr) {
         final errStr = authErr.toString();
+        if (errStr.contains('canceled') ||
+            errStr.contains('cancelled') ||
+            errStr.contains('sign_in_canceled') ||
+            errStr.contains('GetCredentialCancellationException') ||
+            errStr.contains('The user canceled') ||
+            errStr.contains('popup_closed_by_user') ||
+            (errStr.contains('16') && errStr.contains('cancel'))) {
+          return;
+        }
         final isNetworkOrTokenErr = errStr.contains('-1017') ||
             errStr.contains('org.openid.appauth.general') ||
             errStr.contains('Connection error') ||

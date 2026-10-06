@@ -848,9 +848,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
 
     // Category filter: 0: All, 1: Kids, 2: Adults
     groups = groups.where((g) {
-      final isAdult = g.category.toLowerCase().contains('доросла') ||
-          g.title.toLowerCase().contains('доросла') ||
-          g.title.toLowerCase().contains('аквафітнес');
+      final isAdult = g.isAdultOnly;
       if (_categoryFilter == 1 && isAdult) return false;
       if (_categoryFilter == 2 && !isAdult) return false;
       if (_searchQuery.isNotEmpty) {
@@ -910,9 +908,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
   }
 
   Widget _buildGroupCard(GroupClass group, int index) {
-    final isAdult = group.category.toLowerCase().contains('доросла') ||
-        group.title.toLowerCase().contains('доросла') ||
-        group.title.toLowerCase().contains('аквафітнес');
+    final isAdult = group.isAdultOnly;
     final enrolledCount = group.enrolledChildIds.length;
     final capacity = group.maxCapacity > 0 ? group.maxCapacity : 10;
     final fillRatio = (enrolledCount / capacity).clamp(0.0, 1.0);

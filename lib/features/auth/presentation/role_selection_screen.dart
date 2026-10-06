@@ -1584,6 +1584,15 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 setModalState(() => isStaffLoading = true);
                 final notifier = ref.read(authControllerProvider.notifier);
                 await notifier.signInWithEmail(login, password);
+                if (modalContext.mounted) {
+                  Navigator.of(modalContext, rootNavigator: true).pop();
+                }
+                if (mounted) {
+                  final currentUser = ref.read(authControllerProvider);
+                  if (currentUser != null) {
+                    _navigateBasedOnRole(currentUser.role, currentUser);
+                  }
+                }
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isStaffLoading = false);

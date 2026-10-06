@@ -40,8 +40,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     _selectedCoachId = widget.initialCoachId;
     _selectedCoachName = widget.initialCoachName;
 
-    // Automatically check and clean up any duplicate ghost classes from the database
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Automatically check and clean up any duplicate ghost classes from the database (delayed so route transition is smooth)
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         ref.read(scheduleControllerProvider.notifier).cleanupDuplicateClasses();
       }
@@ -171,35 +171,33 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
           // 3. Screen content
           SafeArea(
-            child: RepaintBoundary(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 6),
-                    // Month Header & Calendar Card
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildCalendarCard(branchClasses, currentTheme),
-                    ),
-                    const SizedBox(height: 10),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 6),
+                  // Month Header & Calendar Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildCalendarCard(branchClasses, currentTheme),
+                  ),
+                  const SizedBox(height: 10),
 
-                    // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
-                    _buildCoachFilterBar(currentTheme),
+                  // Coach Filter Bar (Allows Admin to manage specific coach's schedule)
+                  _buildCoachFilterBar(currentTheme),
 
-                    const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                    // Selected Day Schedule Section (Directly on screen!)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildDayScheduleSection(dayClasses, currentTheme),
-                    ),
+                  // Selected Day Schedule Section (Directly on screen!)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildDayScheduleSection(dayClasses, currentTheme),
+                  ),
 
-                    // Comfortable bottom breathing room
-                    SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
-                  ],
-                ),
+                  // Comfortable bottom breathing room
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
+                ],
               ),
             ),
           ),

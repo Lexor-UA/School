@@ -20,6 +20,8 @@ class TestAssetLoader extends AssetLoader {
     'auth': {
       'staff_portal': 'Вхід для співробітників',
       'login_google': 'Увійти через Google',
+      'login_apple': 'Увійти через Apple',
+      'login_email': 'Увійти через Email / Логін',
       'or': 'або',
       'tab_login': 'Увійти',
       'tab_register': 'Реєстрація',
@@ -29,6 +31,8 @@ class TestAssetLoader extends AssetLoader {
     },
     'auth.staff_portal': 'Вхід для співробітників',
     'auth.login_google': 'Увійти через Google',
+    'auth.login_apple': 'Увійти через Apple',
+    'auth.login_email': 'Увійти через Email / Логін',
     'auth.or': 'або',
     'auth.tab_login': 'Увійти',
     'auth.tab_register': 'Реєстрація',

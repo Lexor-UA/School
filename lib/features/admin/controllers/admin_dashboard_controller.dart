@@ -187,6 +187,10 @@ Stream<List<Subscription>> allSubscriptions(Ref ref) {
   return query.snapshots().map((snapshot) {
     final List<Subscription> list = [];
     for (final doc in snapshot.docs) {
+      if (doc.id == 'demo_sub_1' || doc.data()['userId'] == 'mock_active_client') {
+        doc.reference.delete();
+        continue;
+      }
       try {
         final data = Map<String, dynamic>.from(doc.data());
         data['id'] = doc.id;

@@ -107,14 +107,20 @@ class AdminClientOperationsController {
       final Map<String, DocumentSnapshot<Map<String, dynamic>>> childDocsMap = {};
 
       final cSnap1 = await db.collection('children').where('parentId', isEqualTo: clientId).get();
-      for (final doc in cSnap1.docs) childDocsMap[doc.id] = doc;
+      for (final doc in cSnap1.docs) {
+        childDocsMap[doc.id] = doc;
+      }
 
       final cSnap2 = await db.collection('children').where('parentIds', arrayContains: clientId).get();
-      for (final doc in cSnap2.docs) childDocsMap[doc.id] = doc;
+      for (final doc in cSnap2.docs) {
+        childDocsMap[doc.id] = doc;
+      }
 
       for (final fId in affectedFamilyIds) {
         final cSnapFam = await db.collection('children').where('familyId', isEqualTo: fId).get();
-        for (final doc in cSnapFam.docs) childDocsMap[doc.id] = doc;
+        for (final doc in cSnapFam.docs) {
+          childDocsMap[doc.id] = doc;
+        }
       }
 
       List<String> allRelatedIds = [clientId];

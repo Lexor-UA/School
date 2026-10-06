@@ -171,7 +171,10 @@ class ParentCalendarCard extends ConsumerWidget {
                         const SizedBox(width: 8),
                         _buildMonthNavButton(
                           icon: LucideIcons.chevronRight,
-                          onTap: canGoNextMonth ? () { HapticFeedback.selectionClick(); onDateSelected(DateTime(selectedDate.year, selectedDate.month + 1, 1)); } : null,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onDateSelected(DateTime(selectedDate.year, selectedDate.month + 1, 1));
+                          },
                           currentTheme: currentTheme,
                           isEnabled: canGoNextMonth,
                         ),
@@ -245,7 +248,8 @@ class ParentCalendarCard extends ConsumerWidget {
                           c.startTime.month == cellDate.month &&
                           c.startTime.day == cellDate.day &&
                           !c.enrolledChildIds.any((id) => allFamilyIds.contains(id)) &&
-                          c.enrolledChildIds.length < c.maxCapacity);
+                          c.enrolledChildIds.length < c.maxCapacity &&
+                          c.branchStartTime.isAfter(now));
                     } else {
                       hasEnrolledClasses = allClasses.any((c) =>
                           c.startTime.year == cellDate.year &&
@@ -258,7 +262,8 @@ class ParentCalendarCard extends ConsumerWidget {
                           c.startTime.month == cellDate.month &&
                           c.startTime.day == cellDate.day &&
                           !c.enrolledChildIds.contains(targetChildId) &&
-                          c.enrolledChildIds.length < c.maxCapacity);
+                          c.enrolledChildIds.length < c.maxCapacity &&
+                          c.branchStartTime.isAfter(now));
                     }
 
                     return Material(

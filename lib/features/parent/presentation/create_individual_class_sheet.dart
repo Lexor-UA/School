@@ -57,31 +57,11 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     if (widget.isAdult) {
       _availableServices = [
         'Індивідуальні тренування для дорослих',
-        'Групові заняття для дорослих',
-        'Спліт тренування ( 2 особи ) діти / дорослі',
-        'Аквааеробіка',
       ];
     } else {
-      final children = ref.read(childrenControllerProvider).value ?? [];
-      final currentChild = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
-      final age = currentChild?.currentAge;
-
-      if (age != null && age <= 5) {
-        // До 5 років включно — ТІЛЬКИ індивідуальні заняття для дітей
-        _availableServices = [
-          'Індивідуальні тренування для дітей',
-        ];
-      } else {
-        // Від 6 років — індивідуально, в групах та спліт
-        _availableServices = [
-          'Індивідуальні тренування для дітей',
-          if (age == null || age >= 9)
-            'Групові заняття для дітей (старша група 9-15 років)',
-          if (age == null || (age >= 6 && age < 9))
-            'Групові заняття для дітей (молодша група 6-8 років)',
-          'Спліт тренування ( 2 особи ) діти / дорослі',
-        ];
-      }
+      _availableServices = [
+        'Індивідуальні тренування для дітей',
+      ];
     }
     _selectedService = _availableServices.first;
     _initParticipantsForService(_selectedService!);

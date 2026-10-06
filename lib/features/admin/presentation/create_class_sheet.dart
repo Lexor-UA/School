@@ -16,12 +16,9 @@ import 'package:swimming_school_app/features/tenancy/controllers/tenancy_control
 import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
 import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
 import 'widgets/apple_time_wheel_picker.dart';
-
-enum ClassAudience {
-  adult,
-  child,
-  split,
-}
+import 'widgets/class_audience_selector.dart';
+import 'widgets/class_conflict_dialog.dart';
+import 'widgets/class_pool_lane_selector.dart';
 
 class CreateClassSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
@@ -374,109 +371,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   void _showConflictDialog(BuildContext context, ClassConflict conflict, bool isDark, {String? extraInfo}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: Colors.amberAccent.withValues(alpha: isDark ? 0.4 : 0.6),
-            width: 1.2,
-          ),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amberAccent.withValues(alpha: isDark ? 0.2 : 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                conflict.type == ClassConflictType.laneConflict
-                    ? 'Конфлікт доріжки'
-                    : (conflict.type == ClassConflictType.coachConflict
-                        ? 'Конфлікт тренера'
-                        : 'Конфлікт у розкладі'),
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              conflict.message,
-              style: TextStyle(
-                color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF334155),
-                fontSize: 13.5,
-                height: 1.4,
-              ),
-            ),
-            if (extraInfo != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                extraInfo,
-                style: const TextStyle(
-                  color: Colors.orangeAccent,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.info, size: 16, color: Color(0xFF38BDF8)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Будь ласка, оберіть іншу вільну доріжку, змініть час або призначте іншого тренера.',
-                      style: TextStyle(
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(
-              'admin.close'.tr(),
-              style: TextStyle(
-                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+    ClassConflictDialog.show(
+      context,
+      conflict: conflict,
+      isDark: isDark,
+      extraInfo: extraInfo,
     );
   }
 
@@ -599,6 +498,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         final original = widget.classToEdit!;
         await ref.read(scheduleControllerProvider.notifier).updateClassSeries(
           originalTitle: original.title,
+          originalStartTime: original.startTime,
+          branchId: original.branchId,
           coachId: original.coachId,
           lane: original.lane,
           newTitle: _titleController.text.trim(),
@@ -607,6 +508,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           newCoachId: effectiveCoachId,
           newCoachName: effectiveCoachName,
           newLane: _selectedLane,
+          newStartTime: startTime,
+          newEndTime: endTime,
           locationId: _currentLocation?.id,
           poolId: _selectedPoolId ?? _activePool?.id,
         );
@@ -2024,38 +1927,61 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     final activePool = _activePool;
     final currentLanes = _currentLanes;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final activeConflict = _checkConflictFor(
+      lane: _selectedLane,
+      date: _selectedDate,
+      time: _selectedTime,
+      coachId: _selectedCoach?.id,
+    );
+
+    Widget? conflictBanner;
+    if (activeConflict != null) {
+      conflictBanner = Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFFEF4444).withValues(alpha: isDark ? 0.22 : 0.12),
+              const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.16 : 0.08),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.amberAccent.withValues(alpha: 0.6),
+            width: 1.1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLabel('Басейн та місце проведення', isDark: isDark),
-            // Branch badge pill
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.14) : const Color(0xFFE0F2FE),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFF7DD3FC),
-                  width: 0.9,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+            const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    activeBranch.flag,
-                    style: const TextStyle(fontSize: 12),
+                    activeConflict.type == ClassConflictType.laneConflict
+                        ? 'Доріжка вже зайнята в цей час!'
+                        : (activeConflict.type == ClassConflictType.coachConflict
+                            ? 'Тренер вже веде інше заняття в цей час!'
+                            : 'Конфлікт у розкладі!'),
+                    style: const TextStyle(
+                      color: Colors.amberAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12.5,
+                    ),
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(height: 3),
                   Text(
-                    location?.name ?? activeBranch.name,
+                    activeConflict.message,
                     style: TextStyle(
-                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF78350F),
+                      fontSize: 11.5,
+                      height: 1.35,
                     ),
                   ),
                 ],
@@ -2063,333 +1989,50 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+      );
+    }
 
-        // 1. Primary Pool Selector (Tabs / Pills)
-        if (pools.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0A1625) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1),
-              ),
-            ),
-            child: Row(
-              children: pools.map((pool) {
-                final isSelected = activePool?.id == pool.id;
-                final isWellen = pool.id.contains('wellen') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('baby');
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _selectedPoolId = pool.id;
-                        final isBaby = pool.id.contains('baby') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('wellen');
-                        if (isBaby) {
-                          _selectedAudience = ClassAudience.child;
-                          if (_isDefaultTitle(_titleController.text)) {
-                            _titleController.text = _getDefaultTitleFor(ClassAudience.child);
-                          }
-                        }
-                        if (pool.lanes.isNotEmpty && !pool.lanes.contains(_selectedLane)) {
-                          _selectedLane = pool.lanes.first;
-                        }
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                      decoration: BoxDecoration(
-                        gradient: isSelected
-                            ? const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFF0E3D64), Color(0xFF082038)],
-                              )
-                            : null,
-                        color: isSelected
-                            ? null
-                            : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF00E5FF)
-                              : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
-                          width: isSelected ? 1.3 : 1.0,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isWellen ? LucideIcons.baby : LucideIcons.waves,
-                            size: 16,
-                            color: isSelected
-                                ? const Color(0xFF00E5FF)
-                                : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
-                          ),
-                          const SizedBox(width: 7),
-                          Flexible(
-                            child: Text(
-                              pool.name,
-                              maxLines: 2,
-                              softWrap: true,
-                              textAlign: TextAlign.center,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // 2. Sub-section: Lanes / Zones Selector
-        if (currentLanes.isNotEmpty) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Оберіть доріжку / зону:',
-                style: TextStyle(
-                  color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-                      : const Color(0xFFE0F2FE),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _selectedLane.isNotEmpty ? _selectedLane : (currentLanes.first),
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: currentLanes.map((lane) {
-                final isSelected = _selectedLane == lane;
-                final conflictForThisLane = _checkConflictFor(
-                  lane: lane,
-                  date: _selectedDate,
-                  time: _selectedTime,
-                  coachId: '',
-                );
-                final isLaneBusy = conflictForThisLane?.type == ClassConflictType.laneConflict;
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _selectedLane = lane);
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? (isLaneBusy
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
-                                    )
-                                  : const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [Color(0xFF0E3D64), Color(0xFF082038)],
-                                    ))
-                              : null,
-                          color: isSelected
-                              ? null
-                              : (isLaneBusy
-                                  ? Colors.orangeAccent.withValues(alpha: isDark ? 0.16 : 0.12)
-                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9))),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? (isLaneBusy ? const Color(0xFFF87171) : const Color(0xFF00E5FF))
-                                : (isLaneBusy
-                                    ? Colors.orangeAccent.withValues(alpha: 0.6)
-                                    : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1))),
-                            width: isSelected || isLaneBusy ? 1.3 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: (isLaneBusy ? const Color(0xFFEF4444) : const Color(0xFF00E5FF)).withValues(alpha: 0.28),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isSelected) ...[
-                              Icon(LucideIcons.check, size: 13, color: isLaneBusy ? Colors.white : const Color(0xFF00E5FF)),
-                              const SizedBox(width: 5),
-                            ],
-                            Text(
-                              isLaneBusy ? '$lane ⚠️' : lane,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isLaneBusy
-                                        ? (isDark ? Colors.orangeAccent : const Color(0xFFD97706))
-                                        : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155))),
-                                fontSize: 13,
-                                fontWeight: (isSelected || isLaneBusy) ? FontWeight.w700 : FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ] else ...[
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1B385D).withValues(alpha: 0.55) : const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark ? const Color(0xFF38BDF8).withValues(alpha: 0.30) : const Color(0xFFBAE6FD),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(LucideIcons.sparkles, color: Color(0xFF38BDF8), size: 16),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Басейн без додаткового поділу на доріжки',
-                    style: TextStyle(
-                      color: isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0369A1),
-                      fontSize: 12,
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-
-        // Active conflict warning banner
-        Builder(
-          builder: (context) {
-            final activeConflict = _checkConflictFor(
-              lane: _selectedLane,
-              date: _selectedDate,
-              time: _selectedTime,
-              coachId: _selectedCoach?.id,
-            );
-            if (activeConflict == null) return const SizedBox.shrink();
-
-            return Container(
-              margin: const EdgeInsets.only(top: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFFEF4444).withValues(alpha: isDark ? 0.22 : 0.12),
-                    const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.16 : 0.08),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.amberAccent.withValues(alpha: 0.6),
-                  width: 1.1,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          activeConflict.type == ClassConflictType.laneConflict
-                              ? 'Доріжка вже зайнята в цей час!'
-                              : (activeConflict.type == ClassConflictType.coachConflict
-                                  ? 'Тренер вже веде інше заняття в цей час!'
-                                  : 'Конфлікт у розкладі!'),
-                          style: const TextStyle(
-                            color: Colors.amberAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          activeConflict.message,
-                          style: TextStyle(
-                            color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF78350F),
-                            fontSize: 11.5,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
+    return ClassPoolLaneSelector(
+      activeBranch: activeBranch,
+      location: location,
+      pools: pools,
+      activePool: activePool,
+      currentLanes: currentLanes,
+      selectedLane: _selectedLane,
+      isDark: isDark,
+      activeConflictBanner: conflictBanner,
+      onPoolSelected: (pool) {
+        setState(() {
+          _selectedPoolId = pool.id;
+          final isBaby = pool.id.contains('baby') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('wellen');
+          if (isBaby) {
+            _selectedAudience = ClassAudience.child;
+            if (_isDefaultTitle(_titleController.text)) {
+              _titleController.text = _getDefaultTitleFor(ClassAudience.child);
+            }
+          } else {
+            if (_selectedAudience == ClassAudience.child && _isDefaultTitle(_titleController.text)) {
+              _selectedAudience = ClassAudience.adult;
+              _titleController.text = _getDefaultTitleFor(ClassAudience.adult);
+            }
+          }
+          if (pool.lanes.isNotEmpty && !pool.lanes.contains(_selectedLane)) {
+            _selectedLane = pool.lanes.first;
+          }
+        });
+      },
+      onLaneSelected: (lane) {
+        setState(() => _selectedLane = lane);
+      },
+      isLaneConflict: (lane) {
+        final conflict = _checkConflictFor(
+          lane: lane,
+          date: _selectedDate,
+          time: _selectedTime,
+          coachId: '',
+        );
+        return conflict?.type == ClassConflictType.laneConflict;
+      },
     );
   }
 
@@ -2398,124 +2041,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     final isBabyPool = pool != null &&
         (pool.id.contains('baby') || pool.name.toLowerCase().contains('дитяч') || pool.name.toLowerCase().contains('wellen'));
 
-    final options = [
-      (
-        audience: ClassAudience.adult,
-        label: 'Для дорослих',
-        icon: LucideIcons.user,
-        disabled: isBabyPool,
-      ),
-      (
-        audience: ClassAudience.child,
-        label: 'Для дітей',
-        icon: LucideIcons.baby,
-        disabled: false,
-      ),
-      (
-        audience: ClassAudience.split,
-        label: 'Спліт',
-        icon: LucideIcons.users,
-        disabled: isBabyPool,
-      ),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0A1625) : const Color(0xFFE2E8F0).withValues(alpha: 0.60),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1),
-        ),
-      ),
-      child: Row(
-        children: options.map((opt) {
-          final isSelected = _selectedAudience == opt.audience;
-          final flex = switch (opt.audience) {
-            ClassAudience.adult => 13,
-            ClassAudience.child => 11,
-            ClassAudience.split => 9,
-          };
-          return Expanded(
-            flex: flex,
-            child: GestureDetector(
-              onTap: opt.disabled
-                  ? () {
-                      HapticFeedback.lightImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Дитячий басейн призначений лише для дитячих тренувань.'),
-                          backgroundColor: Colors.orangeAccent,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    }
-                  : () => _setAudience(opt.audience),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 3),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(12),
-                  border: isSelected
-                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
-                      : Border.all(color: Colors.transparent, width: 1.3),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
-                            blurRadius: 10,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      opt.icon,
-                      size: 14,
-                      color: isSelected
-                          ? const Color(0xFF00E5FF)
-                          : (opt.disabled
-                              ? (isDark ? Colors.white24 : Colors.black26)
-                              : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B))),
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          opt.label,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : (opt.disabled
-                                    ? (isDark ? Colors.white24 : Colors.black26)
-                                    : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B))),
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            letterSpacing: -0.2,
-                          ),
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return ClassAudienceSelector(
+      selectedAudience: _selectedAudience,
+      onAudienceSelected: _setAudience,
+      isDark: isDark,
+      isBabyPool: isBabyPool,
     );
   }
 

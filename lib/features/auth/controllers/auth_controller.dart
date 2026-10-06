@@ -269,6 +269,9 @@ class AuthController extends _$AuthController {
     try {
       final fbUser = FirebaseAuth.instance.currentUser;
       if (fbUser != null) {
+        if (user.id != fbUser.uid && user.role != UserRole.parent) {
+          return;
+        }
         final roleStr = user.role.name;
         final branch = (user.branchId.isNotEmpty) ? user.branchId : 'kyiv';
         final branchList = (user.branchIds.isNotEmpty) ? user.branchIds : [branch];
@@ -406,7 +409,11 @@ class AuthController extends _$AuthController {
           state = AppUser(
             id: uid,
             name: name,
-            role: UserRole.parent,
+            role: currentAuthUser.email?.contains('coach') == true
+                ? UserRole.coach
+                : (currentAuthUser.email?.contains('admin') == true
+                    ? UserRole.admin
+                    : (currentAuthUser.email?.contains('owner') == true ? UserRole.owner : UserRole.parent)),
             avatarUrl: avatar,
             branchId: branchId,
             branchIds: [branchId],
@@ -865,6 +872,7 @@ class AuthController extends _$AuthController {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
+    _isLoggingIn = true;
     try {
       // Hardcoded test credentials for testing different portals
       final login = email.trim().toLowerCase();
@@ -1002,6 +1010,11 @@ class AuthController extends _$AuthController {
         return;
       } else if (login == 'coach' || login == 'coach1' || login == 'тренер' || login == 'coach@cityswim.com' || login == 'coach@gmail.com' || login.startsWith('coach') || login.contains('coach') || login.endsWith('@cityswim.at') || login.contains('maria') || login.contains('stefan')) {
         try {
+          final coachAuthEmail = login.contains('maria')
+              ? 'coach.maria@cityswim.app'
+              : (login.contains('stefan') ? 'coach.stefan@cityswim.app' : 'coach.kyiv@cityswim.app');
+          await _ensureStaffFirebaseAuth(email: coachAuthEmail, password: 'coach123456');
+
           var usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
           if (usersSnap.docs.isEmpty) {
             if (login == 'maria' || login == 'coach_maria' || login.contains('maria')) {
@@ -1016,7 +1029,7 @@ class AuthController extends _$AuthController {
               }
             }
           }
-          if (usersSnap.docs.isEmpty && (login == 'coach' || login == 'coach1' || login == 'тренер' || login.startsWith('coach'))) {
+          if (usersSnap.docs.isEmpty && (login == 'coach' || login == 'тренер')) {
             final fallbackDoc = await FirebaseFirestore.instance.collection('users').doc('default_coach').get();
             if (fallbackDoc.exists) {
               final userData = fallbackDoc.data()!;
@@ -1025,44 +1038,6 @@ class AuthController extends _$AuthController {
                 throw Exception('Невірний пароль');
               }
               state = AppUser.fromJson(userData);
-              await _syncRoleToPrefs(state);
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('clientId', state!.id);
-              await prefs.setString('mockUserId', state!.id);
-              await _ensureCoachFirebaseAuth(login, state);
-              return;
-            } else {
-              final defaultCoachData = {
-                'id': 'default_coach',
-                'name': 'Олена Коваль',
-                'role': 'coach',
-                'loginId': 'coach',
-                'password': '1',
-                'phone': '+380 (99) 000-00-02',
-                'branchId': 'kyiv',
-                'branchIds': ['kyiv'],
-                'organizationId': 'cityswim',
-                'rateGroup': 400,
-                'rateIndividual': 450,
-                'rateSplit': 600,
-                'avatarUrl': 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
-                'createdAt': FieldValue.serverTimestamp(),
-              };
-              await FirebaseFirestore.instance.collection('users').doc('default_coach').set(defaultCoachData, SetOptions(merge: true));
-              if (password != '1') {
-                throw Exception('Невірний пароль');
-              }
-              state = const AppUser(
-                id: 'default_coach',
-                name: 'Олена Коваль',
-                role: UserRole.coach,
-                phone: '+380 (99) 000-00-02',
-                loginId: 'coach',
-                branchId: 'kyiv',
-                branchIds: ['kyiv'],
-                organizationId: 'cityswim',
-                avatarUrl: 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
-              );
               await _syncRoleToPrefs(state);
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString('clientId', state!.id);
@@ -1086,13 +1061,14 @@ class AuthController extends _$AuthController {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('clientId', state!.id);
             await prefs.setString('mockUserId', state!.id);
+            await prefs.setBool('needsOnboarding', false);
             await _ensureCoachFirebaseAuth(login, state);
             return;
           } else {
             throw Exception('Тренера з логіном $login не знайдено');
           }
         } catch (e) {
-          if (e.toString().contains('Невірний пароль')) rethrow;
+          if (e.toString().contains('Невірний пароль') || e.toString().contains('не знайдено')) rethrow;
           debugPrint('Firestore coach check error, using local fallback: $e');
           if (password != '1') {
             throw Exception('Невірний пароль');
@@ -1121,7 +1097,7 @@ class AuthController extends _$AuthController {
               organizationId: 'cityswim',
               avatarUrl: 'https://ui-avatars.com/api/?name=Stefan+Gruber&background=0284c7&color=ffffff',
             );
-          } else {
+          } else if (login == 'coach' || login == 'тренер') {
             state = const AppUser(
               id: 'default_coach',
               name: 'Олена Коваль',
@@ -1133,6 +1109,8 @@ class AuthController extends _$AuthController {
               organizationId: 'cityswim',
               avatarUrl: 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
             );
+          } else {
+            rethrow;
           }
           await _syncRoleToPrefs(state);
           final prefs = await SharedPreferences.getInstance();
@@ -1336,6 +1314,8 @@ class AuthController extends _$AuthController {
     } catch (e) {
       debugPrint('Error during Email Sign In: $e');
       rethrow;
+    } finally {
+      _isLoggingIn = false;
     }
   }
 
@@ -2052,20 +2032,8 @@ Future<void> ensureDefaultClassesForCoachInFirestore() async {
       'medicalCertificate': true,
     }, SetOptions(merge: true));
 
-    // Ensure sample subscription exists
-    await firestore.collection('subscriptions').doc('demo_sub_1').set({
-      'id': 'demo_sub_1',
-      'userId': 'mock_active_client',
-      'childId': 'demo_child_1',
-      'clientName': 'Андрій',
-      'type': 'Стандарт (8 занять)',
-      'totalClasses': 8,
-      'remainingClasses': 7,
-      'isActive': true,
-      'branchId': 'kyiv',
-      'expiryDate': now.add(const Duration(days: 30)).toIso8601String(),
-      'purchaseDate': now.subtract(const Duration(days: 2)).toIso8601String(),
-    }, SetOptions(merge: true));
+    // Remove legacy demo subscription so ghost clients without phone/name never appear
+    await firestore.collection('subscriptions').doc('demo_sub_1').delete();
 
     // Seed 2 classes for today:
     // 1. Group class at 10:00 - 11:00

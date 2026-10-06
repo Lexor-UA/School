@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,7 @@ class CoachRatingState {
 
 class CoachRatingNotifier extends Notifier<CoachRatingState> {
   static const String _prefKey = 'cached_coach_ratings_v1';
+  StreamSubscription? _firestoreSub;
 
   @override
   CoachRatingState build() {
@@ -47,6 +49,22 @@ class CoachRatingNotifier extends Notifier<CoachRatingState> {
     } catch (e) {
       debugPrint('[CoachRatingNotifier] build error: $e');
     }
+
+    try {
+      _firestoreSub?.cancel();
+      _firestoreSub = FirebaseFirestore.instance
+          .collection('coach_ratings')
+          .snapshots()
+          .listen((snapshot) {
+        final updated = Map<String, CoachRating>.from(state.ratings);
+        for (final doc in snapshot.docs) {
+          updated[doc.id] = CoachRating.fromMap(doc.data(), doc.id);
+        }
+        state = state.copyWith(ratings: updated);
+      }, onError: (_) {});
+      ref.onDispose(() => _firestoreSub?.cancel());
+    } catch (_) {}
+
     return CoachRatingState(ratings: map);
   }
 
@@ -190,7 +208,7 @@ final coachAverageRatingProvider = Provider.family<({double rating, int count}),
   }).toList();
 
   if (coachRatings.isEmpty) {
-    return (rating: 5.0, count: 0);
+    return (rating: 0.0, count: 0);
   }
 
   final total = coachRatings.fold<double>(0.0, (acc, r) => acc + r.stars);

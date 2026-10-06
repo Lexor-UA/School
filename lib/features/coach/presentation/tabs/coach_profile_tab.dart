@@ -183,7 +183,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               final coachRatingData = ref.watch(
                                 coachAverageRatingProvider(user.id.isNotEmpty ? user.id : user.name),
                               );
-                              final ratingString = '${coachRatingData.rating.toStringAsFixed(1)} ★';
+                              final ratingString = coachRatingData.count > 0
+                                  ? '${coachRatingData.rating.toStringAsFixed(1)} ★'
+                                  : '— ★';
                               final ratingLabel = coachRatingData.count > 0
                                   ? 'Рейтинг (${coachRatingData.count})'
                                   : 'Рейтинг тренера';

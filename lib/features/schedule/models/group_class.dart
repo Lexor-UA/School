@@ -49,7 +49,7 @@ extension GroupClassAudienceX on GroupClass {
   }
 
   bool get isChildOnly {
-    if (isSplit) return false;
+    if (isSplit || isAdultOnly) return false;
     final t = title.toLowerCase();
     final c = category.toLowerCase();
     return t.contains('діт') ||

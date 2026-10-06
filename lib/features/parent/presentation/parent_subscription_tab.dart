@@ -1419,20 +1419,24 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
               width: 1,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 13, color: isSelected ? Colors.white : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569))),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569)),
-                  fontSize: 11.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 13, color: isSelected ? Colors.white : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569))),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569)),
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1778,7 +1782,10 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: SubscriptionFlipCard(currentSub: currentSub),
+                  child: SubscriptionFlipCard(
+                    key: ValueKey(currentSub.id),
+                    currentSub: currentSub,
+                  ),
                 ),
               ),
             

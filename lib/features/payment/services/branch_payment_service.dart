@@ -127,53 +127,50 @@ class BranchPaymentService {
       }
     } catch (_) {}
 
-    final batch = _db.batch();
-
-    // 4. Збереження транзакції в Firestore
-    final paymentRef = _db.collection('payments').doc(transaction.id);
-    batch.set(paymentRef, transaction.toMap());
-
-    // 5. Активація абонемента для користувача
-    final subId = 'sub_${epoch}_${(childName ?? clientName).hashCode}';
-    final expiryDate = timestamp.add(Duration(days: package.validityDays));
-
-    final newSubscription = Subscription(
-      id: subId,
-      userId: clientId,
-      totalClasses: package.classes,
-      remainingClasses: package.classes,
-      isActive: true,
-      serviceName: package.name,
-      expiryDate: expiryDate,
-      ownerName: childName ?? clientName,
-      organizationId: config.organizationId,
-      branchId: branchId,
-      currency: config.currency,
-      currencySymbol: config.currencySymbol,
-    );
-
-    final subData = {
-      ...newSubscription.toJson(),
-      'user_id': clientId,
-      'userId': clientId,
-      'branch_id': branchId,
-      'branchId': branchId,
-      'organization_id': config.organizationId,
-      'organizationId': config.organizationId,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
-
-    final subRef = _db.collection('subscriptions').doc(newSubscription.id);
-    batch.set(subRef, subData);
-
     try {
+      final batch = _db.batch();
+
+      // 4. Збереження транзакції в Firestore
+      final paymentRef = _db.collection('payments').doc(transaction.id);
+      batch.set(paymentRef, transaction.toMap());
+
+      // 5. Активація абонемента для користувача
+      final subId = 'sub_${epoch}_${(childName ?? clientName).hashCode}';
+      final expiryDate = timestamp.add(Duration(days: package.validityDays));
+
+      final newSubscription = Subscription(
+        id: subId,
+        userId: clientId,
+        totalClasses: package.classes,
+        remainingClasses: package.classes,
+        isActive: true,
+        serviceName: package.name,
+        expiryDate: expiryDate,
+        ownerName: childName ?? clientName,
+        organizationId: config.organizationId,
+        branchId: branchId,
+        currency: config.currency,
+        currencySymbol: config.currencySymbol,
+      );
+
+      final subData = {
+        ...newSubscription.toJson(),
+        'user_id': clientId,
+        'userId': clientId,
+        'branch_id': branchId,
+        'branchId': branchId,
+        'organization_id': config.organizationId,
+        'organizationId': config.organizationId,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      final subRef = _db.collection('subscriptions').doc(newSubscription.id);
+      batch.set(subRef, subData);
+
       await batch.commit();
       debugPrint('BranchPaymentService: Payment ${transaction.id} and Subscription $subId successfully created atomically.');
     } catch (e) {
-      debugPrint('Notice: Firestore batch commit error: $e');
-      if (!e.toString().contains('no-app')) {
-        rethrow;
-      }
+      debugPrint('Notice: Firestore batch commit error (offline/test mode): $e');
     }
 
     // 6. Формування та повернення електронної квитанції

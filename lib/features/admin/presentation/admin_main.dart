@@ -127,100 +127,98 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
           SafeArea(
             bottom: false,
-            child: RepaintBoundary(
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                slivers: [
-                  _buildAppBar(context, ref, dashboardState.recentActions),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              slivers: [
+                _buildAppBar(context, ref, dashboardState.recentActions),
 
-                  // 0. Селектор філій для Owner та бейдж філії для персоналу
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          BranchSelectorPill(),
-                          BranchInvitationQrButton(),
-                        ],
+                // 0. Селектор філій для Owner та бейдж філії для персоналу
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 6.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        BranchSelectorPill(),
+                        BranchInvitationQrButton(),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Search Bar
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
+                    child: _buildSearchBar(),
+                  ),
+                ),
+
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      // 1. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок під пошуком)
+                      _buildSectionTitle(
+                        'admin.quick_actions'.tr(),
+                        LucideIcons.zap,
+                        currentTheme.accentPrimary,
+                        gradientColors: currentTheme.accentGradient,
                       ),
-                    ),
-                  ),
+                      const SizedBox(height: 10),
+                      RepaintBoundary(
+                        child: _buildQuickActions(context),
+                      ),
+                      const SizedBox(height: 18),
 
-                  // Search Bar
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
-                      child: _buildSearchBar(),
-                    ),
-                  ),
-
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        // 1. Швидкі дії (3x2 ідеально збалансована сітка з 6 кнопок під пошуком)
+                      // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
+                      if (dashboardState.unpaidSubscriptions > 0) ...[
                         _buildSectionTitle(
-                          'admin.quick_actions'.tr(),
-                          LucideIcons.zap,
+                          'admin.needs_attention'.tr(),
+                          LucideIcons.alertTriangle,
+                          const Color(0xFFF43F5E),
+                          gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
+                          badgeText: '${dashboardState.unpaidSubscriptions} ${'admin.debtors_short'.tr()}',
+                          badgeColor: const Color(0xFFF43F5E),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions),
+                        const SizedBox(height: 18),
+                      ],
+
+                      // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
+                      RepaintBoundary(
+                        child: _buildLivePulseBar(dashboardState),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
+                      _buildSupportCenterCard(unreadCount),
+                      const SizedBox(height: 20),
+
+                      // 5. Найближче заняття з аватарками учнів
+                      if (dashboardState.nearestClass != null) ...[
+                        _buildSectionTitle(
+                          'admin.nearest_class'.tr(),
+                          LucideIcons.clock,
                           currentTheme.accentPrimary,
                           gradientColors: currentTheme.accentGradient,
+                          badgeText: 'admin.today'.tr(),
+                          badgeColor: currentTheme.accentPrimary,
                         ),
                         const SizedBox(height: 10),
                         RepaintBoundary(
-                          child: _buildQuickActions(context),
+                          child: _buildNearestClass(dashboardState.nearestClass!),
                         ),
-                        const SizedBox(height: 18),
-
-                        // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
-                        if (dashboardState.unpaidSubscriptions > 0) ...[
-                          _buildSectionTitle(
-                            'admin.needs_attention'.tr(),
-                            LucideIcons.alertTriangle,
-                            const Color(0xFFF43F5E),
-                            gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
-                            badgeText: '${dashboardState.unpaidSubscriptions} ${'admin.debtors_short'.tr()}',
-                            badgeColor: const Color(0xFFF43F5E),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions),
-                          const SizedBox(height: 18),
-                        ],
-
-                        // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
-                        RepaintBoundary(
-                          child: _buildLivePulseBar(dashboardState),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
-                        _buildSupportCenterCard(unreadCount),
                         const SizedBox(height: 20),
+                      ],
 
-                        // 5. Найближче заняття з аватарками учнів
-                        if (dashboardState.nearestClass != null) ...[
-                          _buildSectionTitle(
-                            'admin.nearest_class'.tr(),
-                            LucideIcons.clock,
-                            currentTheme.accentPrimary,
-                            gradientColors: currentTheme.accentGradient,
-                            badgeText: 'admin.today'.tr(),
-                            badgeColor: currentTheme.accentPrimary,
-                          ),
-                          const SizedBox(height: 10),
-                          RepaintBoundary(
-                            child: _buildNearestClass(dashboardState.nearestClass!),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-
-                        // Generous bottom buffer ensuring the entire screen can be scrolled comfortably above the home indicator
-                        SizedBox(height: MediaQuery.of(context).padding.bottom + 64),
-                      ]),
-                    ),
+                      // Generous bottom buffer ensuring the entire screen can be scrolled comfortably above the home indicator
+                      SizedBox(height: MediaQuery.of(context).padding.bottom + 64),
+                    ]),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,7 +20,6 @@ import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
-import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'widgets/branch_selector_pill.dart';
 
 class AdminClientsScreen extends ConsumerStatefulWidget {
@@ -57,8 +55,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   void initState() {
     super.initState();
     _clientsStream = FirebaseFirestore.instance.collection('users').snapshots();
-    Future.microtask(() {
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
       ref.read(familyControllerProvider).cleanupOrphanedFamilies();
+      FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'staff_auth').get().then((snap) {
+        for (final doc in snap.docs) {
+          doc.reference.delete().catchError((_) {});
+        }
+      }).catchError((_) {});
     });
   }
 
@@ -351,8 +355,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           final allClients = rawDocs.where((c) {
                             final d = c.data();
                             final role = (d['role'] as String?)?.toLowerCase();
-                            // Exclude coaches, admins, owners, superadmins
-                            if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin') {
+                            // Exclude coaches, admins, owners, superadmins, and staff auth aliases
+                            if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin' || role == 'staff_auth' || d['aliasOf'] != null) {
                               return false;
                             }
                             if (isAllLocations) return true;

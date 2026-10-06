@@ -108,7 +108,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
   Future<void> _pickDate(int index) async {
     final now = DateTime.now();
     final initial = _birthDates[index] ?? DateTime(now.year - 7, now.month, now.day);
-    final first = DateTime(now.year - 18, 1, 1);
+    final first = DateTime(now.year - 16, now.month, now.day + 1);
     final last = now;
 
     final picked = await showDatePicker(
@@ -237,7 +237,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
     final now = DateTime.now();
-    final yearList = List.generate(18, (i) => now.year - 1 - i);
+    final yearList = List.generate(16, (i) => now.year - 1 - i);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -585,8 +585,12 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                     onTap: () {
                                       HapticFeedback.selectionClick();
                                       final current = _birthDates[index] ?? DateTime(year, now.month, now.day);
+                                      var target = DateTime(year, current.month, current.day);
+                                      if (calculateAgeFromDate(target) > 15) {
+                                        target = DateTime(year, 12, 31);
+                                      }
                                       setState(() {
-                                        _birthDates[index] = DateTime(year, current.month, current.day);
+                                        _birthDates[index] = target;
                                         _errors[index] = null;
                                       });
                                     },
@@ -804,7 +808,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final initial = _birthDate ?? DateTime(now.year - (widget.child.currentAge ?? 7), now.month, now.day);
-    final first = DateTime(now.year - 18, 1, 1);
+    final first = DateTime(now.year - 16, now.month, now.day + 1);
     final last = now;
 
     final picked = await showDatePicker(
@@ -973,7 +977,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
     final now = DateTime.now();
-    final yearList = List.generate(18, (i) => now.year - 1 - i);
+    final yearList = List.generate(16, (i) => now.year - 1 - i);
     final age = _birthDate != null ? calculateAgeFromDate(_birthDate!) : widget.child.currentAge;
     final childColor = Color(int.tryParse(_selectedColorHex) ?? 0xFF00E5FF);
 
@@ -1363,8 +1367,12 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                     onTap: () {
                                       HapticFeedback.selectionClick();
                                       final current = _birthDate ?? DateTime(year, now.month, now.day);
+                                      var target = DateTime(year, current.month, current.day);
+                                      if (calculateAgeFromDate(target) > 15) {
+                                        target = DateTime(year, 12, 31);
+                                      }
                                       setState(() {
-                                        _birthDate = DateTime(year, current.month, current.day);
+                                        _birthDate = target;
                                         _error = null;
                                       });
                                     },

@@ -1629,6 +1629,8 @@ class ScheduleController extends _$ScheduleController {
   /// Batch update all classes belonging to the same recurring series
   Future<int> updateClassSeries({
     required String originalTitle,
+    DateTime? originalStartTime,
+    String? branchId,
     required String coachId,
     required String lane,
     required String newTitle,
@@ -1637,16 +1639,23 @@ class ScheduleController extends _$ScheduleController {
     String? newCoachId,
     String? newCoachName,
     String? newLane,
+    DateTime? newStartTime,
+    DateTime? newEndTime,
     String? locationId,
     String? poolId,
   }) async {
     try {
       final currentList = state.value ?? <GroupClass>[];
       final matchingClasses = currentList.where((c) {
+        final isBranchMatch = branchId == null || branchId.isEmpty || c.branchId == branchId;
         final isTitleMatch = c.title.trim().toLowerCase() == originalTitle.trim().toLowerCase();
         final isCoachMatch = coachId.isEmpty || coachId == 'unassigned' || c.coachId == coachId;
         final isLaneMatch = lane.isEmpty || c.lane == lane;
-        return isTitleMatch && isCoachMatch && isLaneMatch;
+        final isTimeMatch = originalStartTime == null ||
+            (c.startTime.hour == originalStartTime.hour && c.startTime.minute == originalStartTime.minute);
+        final isDateMatch = originalStartTime == null ||
+            !c.startTime.isBefore(DateTime(originalStartTime.year, originalStartTime.month, originalStartTime.day));
+        return isBranchMatch && isTitleMatch && isCoachMatch && isLaneMatch && isTimeMatch && isDateMatch;
       }).toList();
 
       if (matchingClasses.isEmpty) return 0;
@@ -1654,16 +1663,26 @@ class ScheduleController extends _$ScheduleController {
       final batch = FirebaseFirestore.instance.batch();
       for (final c in matchingClasses) {
         final docRef = FirebaseFirestore.instance.collection('classes').doc(c.id);
+        final newStart = newStartTime != null
+            ? DateTime(c.startTime.year, c.startTime.month, c.startTime.day, newStartTime.hour, newStartTime.minute)
+            : c.startTime;
+        final duration = (newStartTime != null && newEndTime != null)
+            ? newEndTime.difference(newStartTime)
+            : c.endTime.difference(c.startTime);
+        final newEnd = newStart.add(duration);
+
         final updates = <String, dynamic>{
           'title': newTitle,
           'category': newCategory,
           'maxCapacity': newMaxCapacity,
+          'startTime': newStart.toIso8601String(),
+          'endTime': newEnd.toIso8601String(),
         };
         if (newCoachId != null && newCoachName != null) {
           updates['coachId'] = newCoachId;
           updates['coachName'] = newCoachName;
         }
-        if (newLane != null && newLane.isNotEmpty) {
+        if (newLane != null) {
           updates['lane'] = newLane;
         }
         if (locationId != null) {
@@ -1680,13 +1699,23 @@ class ScheduleController extends _$ScheduleController {
       final updatedList = currentList.map((c) {
         final isMatch = matchingClasses.any((m) => m.id == c.id);
         if (!isMatch) return c;
+        final newStart = newStartTime != null
+            ? DateTime(c.startTime.year, c.startTime.month, c.startTime.day, newStartTime.hour, newStartTime.minute)
+            : c.startTime;
+        final duration = (newStartTime != null && newEndTime != null)
+            ? newEndTime.difference(newStartTime)
+            : c.endTime.difference(c.startTime);
+        final newEnd = newStart.add(duration);
+
         return c.copyWith(
           title: newTitle,
           category: newCategory,
           maxCapacity: newMaxCapacity,
+          startTime: newStart,
+          endTime: newEnd,
           coachId: (newCoachId != null && newCoachName != null) ? newCoachId : c.coachId,
           coachName: (newCoachId != null && newCoachName != null) ? newCoachName : c.coachName,
-          lane: (newLane != null && newLane.isNotEmpty) ? newLane : c.lane,
+          lane: newLane ?? c.lane,
           locationId: locationId ?? c.locationId,
           poolId: poolId ?? c.poolId,
         );
@@ -1833,9 +1862,7 @@ class ScheduleController extends _$ScheduleController {
                   orElse: () => subsSnap.docs.first,
                 );
 
-                if (targetSub != null) {
-                  targetSubIds.add(targetSub.id);
-                }
+                targetSubIds.add(targetSub.id);
               }
             }
           } catch (refundErr) {

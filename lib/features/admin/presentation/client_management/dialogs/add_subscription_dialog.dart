@@ -264,33 +264,35 @@ void showAddSubscriptionDialog({
                   final db = FirebaseFirestore.instance;
                   final batch = db.batch();
 
-                  // Deactivate any previous active subscription for selectedOwner
-                  final currentSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == clientId).toList();
-                  for (final oldSub in currentSubs.where((s) {
-                    final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? initialName : s.ownerName!;
-                    return owner.trim() == selectedOwner.trim() && s.isActive;
-                  })) {
-                    batch.update(db.collection('subscriptions').doc(oldSub.id), {'isActive': false});
-                  }
-
-                  final effectiveBranch = ref.read(effectiveBranchProvider);
-
-                  final newSub = Subscription(
-                    id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${selectedOwner.hashCode}',
-                    userId: clientId,
-                    totalClasses: classes,
-                    remainingClasses: classes,
-                    isActive: true,
-                    serviceName: selectedService,
-                    expiryDate: expiry,
-                    ownerName: selectedOwner,
-                    organizationId: effectiveBranch.organizationId,
-                    branchId: effectiveBranch.id,
-                    currency: effectiveBranch.currencyCode,
-                    currencySymbol: effectiveBranch.currencySymbol,
-                  );
-                  
                   try {
+                    await ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
+
+                    // Deactivate any previous active subscription for selectedOwner
+                    final currentSubs = ref.read(subscriptionControllerProvider).where((s) => s.userId == clientId).toList();
+                    for (final oldSub in currentSubs.where((s) {
+                      final owner = (s.ownerName == null || s.ownerName!.isEmpty) ? initialName : s.ownerName!;
+                      return owner.trim() == selectedOwner.trim() && s.isActive;
+                    })) {
+                      batch.set(db.collection('subscriptions').doc(oldSub.id), {'isActive': false}, SetOptions(merge: true));
+                    }
+
+                    final effectiveBranch = ref.read(effectiveBranchProvider);
+
+                    final newSub = Subscription(
+                      id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${selectedOwner.hashCode}',
+                      userId: clientId,
+                      totalClasses: classes,
+                      remainingClasses: classes,
+                      isActive: true,
+                      serviceName: selectedService,
+                      expiryDate: expiry,
+                      ownerName: selectedOwner,
+                      organizationId: effectiveBranch.organizationId,
+                      branchId: effectiveBranch.id,
+                      currency: effectiveBranch.currencyCode,
+                      currencySymbol: effectiveBranch.currencySymbol,
+                    );
+                    
                     batch.set(db.collection('subscriptions').doc(newSub.id), newSub.toJson());
                     await batch.commit();
                     

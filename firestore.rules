@@ -363,7 +363,7 @@ service cloud.firestore {
     // 13. Administrative Audits & Tasks
     // ==========================================
     match /activity_logs/{logId} {
-      allow read: if isSuperAdmin() || isOwner();
+      allow read: if isStaff();
       allow write: if isStaff();
     }
 

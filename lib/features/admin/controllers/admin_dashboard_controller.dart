@@ -130,6 +130,8 @@ Stream<List<ActivityLog>> recentActions(Ref ref) {
       // Convert Firestore Timestamp to IsoString for Freezed
       if (data['timestamp'] is Timestamp) {
          data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
+      } else if (data['timestamp'] is! String) {
+         data['timestamp'] = DateTime.now().toIso8601String();
       }
       return ActivityLog.fromJson(data);
     }).toList();

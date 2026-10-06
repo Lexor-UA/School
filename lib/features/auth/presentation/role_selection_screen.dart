@@ -36,6 +36,71 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   late bool _splashFinished = widget.skipSplash;
   bool _isAuthenticatingBiometrics = false;
   final LocalAuthentication _auth = LocalAuthentication();
+  OverlayEntry? _activeModalSnack;
+
+  void _showModalToast(BuildContext ctx, String message, {Color color = const Color(0xFFEF4444)}) {
+    _clearModalToast();
+    if (!ctx.mounted) return;
+    final overlay = Overlay.of(ctx, rootOverlay: true);
+    final cleanMsg = message.replaceAll('Exception: ', '');
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (c) {
+        final bottomInset = MediaQuery.of(c).viewInsets.bottom;
+        return Positioned(
+          bottom: bottomInset > 0 ? bottomInset + 16 : 24,
+          left: 16,
+          right: 16,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black38,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                cleanMsg,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    _activeModalSnack = entry;
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 4), () {
+      if (entry == _activeModalSnack && entry.mounted) {
+        entry.remove();
+        _activeModalSnack = null;
+      }
+    });
+  }
+
+  void _clearModalToast() {
+    if (_activeModalSnack?.mounted == true) {
+      _activeModalSnack?.remove();
+    }
+    _activeModalSnack = null;
+  }
+
+  @override
+  void dispose() {
+    _clearModalToast();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -152,6 +217,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   }
 
   void _navigateBasedOnRole(UserRole role, [AppUser? user]) {
+    _clearModalToast();
+    ScaffoldMessenger.of(context).clearSnackBars();
     final prefs = ref.read(swimming_school_app.sharedPrefsProvider);
     final needsOnboardingPref = prefs.getBool('needsOnboarding');
     final needsOnboarding = needsOnboardingPref == true ||
@@ -194,6 +261,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       // Only navigate from ref.listen if an external manual login occurred (e.g. from modal)
       // Do not navigate while Google Sign-In is loading (_isLoading == true), as Google Sign-In handles its own navigation on completion.
       if (next != null && !_isLoading && (previous == null || previous.id != next.id)) {
+        _clearModalToast();
+        ScaffoldMessenger.of(context).clearSnackBars();
         final rootNav = Navigator.of(context, rootNavigator: true);
         if (rootNav.canPop()) {
           rootNav.pop();
@@ -862,14 +931,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               final login = loginController.text.trim();
               final password = loginPasswordController.text.trim();
               if (login.isEmpty || password.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Будь ласка, заповніть усі поля для входу'),
-                    backgroundColor: Colors.amber.shade800,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
+                _showModalToast(modalContext, 'Будь ласка, заповніть усі поля для входу', color: Colors.amber.shade800);
                 return;
               }
 
@@ -880,16 +942,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);
-                }
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Помилка входу: $e'),
-                      backgroundColor: Colors.redAccent,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
+                  _showModalToast(modalContext, 'Помилка входу: $e');
                 }
               }
             }
@@ -900,38 +953,17 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               final password = regPasswordController.text.trim();
 
               if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text("Введіть ваше ім'я та прізвище"),
-                    backgroundColor: Colors.amber.shade800,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
+                _showModalToast(modalContext, "Введіть ваше ім'я та прізвище", color: Colors.amber.shade800);
                 return;
               }
 
               if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Введіть коректну електронну пошту (email)'),
-                    backgroundColor: Colors.amber.shade800,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
+                _showModalToast(modalContext, 'Введіть коректну електронну пошту (email)', color: Colors.amber.shade800);
                 return;
               }
 
               if (password.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Пароль має містити щонайменше 6 символів'),
-                    backgroundColor: Colors.amber.shade800,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
+                _showModalToast(modalContext, 'Пароль має містити щонайменше 6 символів', color: Colors.amber.shade800);
                 return;
               }
 
@@ -947,17 +979,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);
-                }
-                if (context.mounted) {
-                  final errorMsg = e.toString().replaceAll('Exception: ', '');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Помилка реєстрації: $errorMsg'),
-                      backgroundColor: Colors.redAccent,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
+                  _showModalToast(modalContext, 'Помилка реєстрації: $e');
                 }
               }
             }
@@ -1547,7 +1569,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
           },
         );
       },
-    );
+    ).whenComplete(_clearModalToast);
   }
 
   void _showStaffLoginModal(BuildContext context, WidgetRef ref) {
@@ -1569,14 +1591,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               final login = staffLoginController.text.trim();
               final password = staffPasswordController.text.trim();
               if (login.isEmpty || password.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Введіть службовий логін та пароль'),
-                    backgroundColor: Colors.amber.shade800,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
+                _showModalToast(modalContext, 'Введіть службовий логін та пароль', color: Colors.amber.shade800);
                 return;
               }
 
@@ -1596,16 +1611,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isStaffLoading = false);
-                }
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Помилка службового входу: $e'),
-                      backgroundColor: Colors.redAccent,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
+                  _showModalToast(modalContext, 'Помилка службового входу: $e');
                 }
               }
             }
@@ -1822,7 +1828,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
           },
         );
       },
-    );
+    ).whenComplete(_clearModalToast);
   }
 
   InputDecoration _modalInputDecoration({

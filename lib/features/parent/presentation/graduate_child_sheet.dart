@@ -427,7 +427,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Рівень плавця ${child.level} • ${child.achievements.length} нагород',
+                      'Рівень плавця ${child.level}',
                       style: TextStyle(
                         color: subColor,
                         fontSize: 12,
@@ -669,7 +669,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
     final privileges = [
       (LucideIcons.compass, 'Самостійний запис на дорослі тренування у розкладі'),
       (LucideIcons.users, 'Доступ до спліт-занять (право брати друга чи дружину)'),
-      (LucideIcons.award, 'Повне збереження рівня плавця, нагород та накопичених XP'),
+      (LucideIcons.award, 'Повне збереження рівня плавця та накопичених XP'),
       (LucideIcons.shieldCheck, 'Власне керування сім\'єю та абонементами'),
     ];
 
@@ -811,7 +811,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Акаунт для ${widget.child.name} успішно створено. Усі нагороди, рівень плавця та заняття перенесені!',
+            'Акаунт для ${widget.child.name} успішно створено. Рівень плавця, накопичені XP та заняття перенесені!',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: subColor,

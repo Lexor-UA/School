@@ -1151,7 +1151,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '${widget.child.name} вже виповнилося 16 років. Переведіть плавця у дорослий акаунт: залишок занять, спортивний рівень та нагороди будуть збережені.',
+                                '${widget.child.name} вже виповнилося 16 років. Переведіть плавця у дорослий акаунт: залишок занять, спортивний рівень та накопичений досвід будуть збережені.',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,

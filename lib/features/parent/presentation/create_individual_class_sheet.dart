@@ -1117,7 +1117,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       final isUnder6 = age != null && age <= 5;
                       final ageGroup = isUnder6
                           ? 'Тільки індивідуальні заняття (до 6 р.)'
-                          : ((age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)');
+                          : ((age != null && age >= 16)
+                              ? 'Доросла категорія (16+ р.)'
+                              : ((age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)'));
                       return Container(
                         margin: const EdgeInsets.only(top: 8, bottom: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),

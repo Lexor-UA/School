@@ -12,6 +12,7 @@ import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:flutter/services.dart';
 import 'package:swimming_school_app/features/parent/presentation/edit_child_sheet.dart';
+import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
@@ -190,7 +191,13 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             : 'Мій розклад');
     if (!isAdult) {
       final ch = children.firstWhereOrNull((c) => c.id == selectedChildId);
-      if (ch != null) memberName = ch.name;
+      if (ch != null) {
+        memberName = ch.name;
+        if (ch.isAdultAge) {
+          GraduateChildSheet.show(context, ch);
+          return;
+        }
+      }
     } else if (selectedChildId == partnerId) {
       memberName = family?.getOtherParentName(user?.id ?? '') ?? 'Партнер';
     }
@@ -217,6 +224,14 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
   }
 
   void _openIndividualClassSheet(String targetId, bool isAdult) {
+    if (!isAdult) {
+      final children = ref.read(childrenControllerProvider).value ?? [];
+      final ch = children.firstWhereOrNull((c) => c.id == targetId);
+      if (ch != null && ch.isAdultAge) {
+        GraduateChildSheet.show(context, ch);
+        return;
+      }
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -327,6 +342,14 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       final isAdult = m.isParent;
                       final memberId = m.id;
                       final memberName = m.name;
+                      if (!isAdult) {
+                        final ch = children.firstWhereOrNull((c) => c.id == memberId);
+                        if (ch != null && ch.isAdultAge) {
+                          Navigator.pop(ctx);
+                          GraduateChildSheet.show(context, ch);
+                          return;
+                        }
+                      }
                       final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
                       final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
                       final familyParentIds = (family != null && family.parentIds.isNotEmpty) ? family.parentIds : [if (user != null) user.id];

@@ -1170,7 +1170,7 @@ class ParentProfileTab extends ConsumerWidget {
                             ),
                             const SizedBox(height: 1.5),
                             Text(
-                              'Час перевести у дорослий акаунт зі збереженням занять та нагород',
+                              'Час перевести у дорослий акаунт зі збереженням занять та рівня',
                               style: TextStyle(
                                 color: isDark ? const Color(0xFFB0D4EC) : subColor,
                                 fontSize: 11.5,

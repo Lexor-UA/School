@@ -61,15 +61,16 @@ class ClientClassesSection extends ConsumerWidget {
               stream: FirebaseFirestore.instance
                   .collection('classes')
                   .where('enrolledChildIds', arrayContainsAny: allRelatedIds)
-                  .where(
-                    'date',
-                    isGreaterThanOrEqualTo: Timestamp.fromDate(
-                      DateTime.now().subtract(const Duration(days: 1)),
-                    ),
-                  )
                   .snapshots(),
               builder: (context, classSnap) {
-                if (!classSnap.hasData || classSnap.data!.docs.isEmpty) {
+                final cutoff = DateTime.now().subtract(const Duration(days: 1));
+                final classes = (classSnap.data?.docs ?? []).map((d) {
+                  final data = d.data() as Map<String, dynamic>;
+                  data['id'] = d.id;
+                  return GroupClass.fromJson(data);
+                }).where((c) => c.startTime.isAfter(cutoff)).toList();
+
+                if (classes.isEmpty) {
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -101,12 +102,6 @@ class ClientClassesSection extends ConsumerWidget {
                     ),
                   );
                 }
-
-                final classes = classSnap.data!.docs.map((d) {
-                  final data = d.data() as Map<String, dynamic>;
-                  data['id'] = d.id;
-                  return GroupClass.fromJson(data);
-                }).toList();
 
                 classes.sort((a, b) => a.startTime.compareTo(b.startTime));
 

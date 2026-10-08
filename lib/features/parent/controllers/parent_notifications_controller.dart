@@ -173,11 +173,11 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
       });
     }
 
-    // 2. Chat dialog with admin (unread message or reminder message)
+    // 2. Chat dialogs with admin or coach (unread messages or reminders)
     if (user != null) {
-      final clientDialogAsync = ref.watch(clientChatDialogStreamProvider(user.id));
-      clientDialogAsync.whenData((dialog) {
-        if (dialog != null) {
+      final clientDialogsAsync = ref.watch(clientAllDialogsStreamProvider(user.id));
+      clientDialogsAsync.whenData((dialogs) {
+        for (final dialog in dialogs) {
           final isUnread = dialog.unreadClientCount > 0;
           final msgText = dialog.lastMessage.toLowerCase();
           final isReminder = msgText.contains('абонемент') ||
@@ -187,16 +187,24 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
           if (isUnread || isReminder) {
             final id = 'chat_dialog_${dialog.id}_${dialog.lastMessageTime.millisecondsSinceEpoch}';
             final isRead = !isUnread || savedReadIds.contains(id);
+            final isCoach = dialog.type == 'coach_client';
+            final coachName = (dialog.coachName != null && dialog.coachName!.isNotEmpty) ? ' ${dialog.coachName}' : '';
             allNotifications.add(
               ParentNotification(
                 id: id,
-                title: isReminder ? 'Нагадування від адміністратора' : 'Повідомлення від адміністратора',
+                title: isReminder
+                    ? 'Нагадування від адміністратора'
+                    : (isCoach ? 'Повідомлення від тренера$coachName' : 'Повідомлення від адміністратора'),
                 message: dialog.lastMessage.isNotEmpty
                     ? dialog.lastMessage
-                    : 'У вас нове повідомлення у чаті підтримки',
+                    : (isCoach ? 'У вас нове повідомлення від тренера' : 'У вас нове повідомлення у чаті підтримки'),
                 timestamp: dialog.lastMessageTime,
-                icon: isReminder ? LucideIcons.creditCard : LucideIcons.messageSquare,
-                iconColor: isReminder ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF),
+                icon: isReminder
+                    ? LucideIcons.creditCard
+                    : (isCoach ? LucideIcons.userCheck : LucideIcons.messageSquare),
+                iconColor: isReminder
+                    ? const Color(0xFFF59E0B)
+                    : (isCoach ? const Color(0xFF10B981) : const Color(0xFF00E5FF)),
                 isRead: isRead,
                 actionType: isReminder ? 'subscription' : 'chat',
               ),

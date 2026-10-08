@@ -1917,11 +1917,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   ? themeConfig.accentPrimary.withValues(alpha: 0.30)
                   : const Color(0xFF0284C7).withValues(alpha: 0.12),
               color: themeConfig.isDark ? Colors.white60 : const Color(0xFF64748B),
-              tabs: const [
-                GButton(icon: LucideIcons.layoutDashboard, text: 'Пульс'),
-                GButton(icon: LucideIcons.trendingUp, text: 'Фінанси'),
-                GButton(icon: LucideIcons.users, text: 'Команда'),
-                GButton(icon: LucideIcons.banknote, text: 'Виплати'),
+              tabs: [
+                GButton(icon: LucideIcons.layoutDashboard, text: 'owner.tab_pulse'.tr()),
+                GButton(icon: LucideIcons.trendingUp, text: 'owner.tab_finances'.tr()),
+                GButton(icon: LucideIcons.users, text: 'owner.tab_team'.tr()),
+                GButton(icon: LucideIcons.banknote, text: 'owner.tab_payouts'.tr()),
               ],
               selectedIndex: _selectedTabIndex,
               onTabChange: (i) {

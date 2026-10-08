@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:swimming_school_app/features/chat/models/chat_dialog.dart';
@@ -12,16 +11,15 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   return ChatRepository();
 });
 
-final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) async* {
+final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) {
   final user = ref.watch(authControllerProvider);
-  if (user == null || FirebaseAuth.instance.currentUser == null) {
-    yield const [];
-    return;
+  if (user == null) {
+    return const Stream.empty();
   }
   final repo = ref.watch(chatRepositoryProvider);
   final tenancy = ref.watch(tenancyControllerProvider);
   final branchId = tenancy.isAllLocationsSelected ? null : tenancy.activeBranchId;
-  yield* repo.streamAdminDialogs(branchId: branchId);
+  return repo.streamAdminDialogs(branchId: branchId);
 });
 
 final clientChatDialogStreamProvider = StreamProvider.family<ChatDialog?, String>((ref, clientId) {
@@ -47,7 +45,7 @@ final chatMessagesStreamProvider = StreamProvider.family<List<ChatMessage>, Stri
 // A provider that maps userId and name to user role ('coach', 'parent', 'admin')
 final usersRoleMapProvider = StreamProvider<Map<String, String>>((ref) {
   final user = ref.watch(authControllerProvider);
-  if (user == null || FirebaseAuth.instance.currentUser == null) {
+  if (user == null) {
     return const Stream.empty();
   }
   return FirebaseFirestore.instance.collection('users').snapshots().map((snapshot) {

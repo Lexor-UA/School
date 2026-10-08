@@ -111,10 +111,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       // Pre-warm schedule controller in background so coach and parent tabs load instantly
       ref.read(scheduleControllerProvider);
 
-      final activeBranch = ref.read(tenancyControllerProvider).effectiveBranch;
-      if (!activeBranch.supportedLanguages.contains(context.locale.languageCode)) {
-        context.setLocale(Locale(activeBranch.defaultLanguage));
-      }
       if (widget.initialBranchId != null) {
         _showClientAuthModal(context, ref, initialTab: 1);
       }

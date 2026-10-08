@@ -450,7 +450,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                           child: Row(
                             children: [
                               _buildCategoryTab(
-                                label: 'Всі',
+                                label: 'admin.all'.tr(),
                                 count: dialogs.length,
                                 isSelected: _selectedCategoryIndex == 0,
                                 isDark: isDark,
@@ -462,7 +462,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               ),
                               const SizedBox(width: 8),
                               _buildCategoryTab(
-                                label: 'Тренери',
+                                label: 'admin.cat_coaches'.tr(),
                                 icon: '🏊',
                                 count: coachesCount,
                                 isSelected: _selectedCategoryIndex == 1,
@@ -476,7 +476,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               ),
                               const SizedBox(width: 8),
                               _buildCategoryTab(
-                                label: 'Клієнти',
+                                label: 'admin.clients_menu'.tr(),
                                 icon: '👤',
                                 count: clientsCount,
                                 isSelected: _selectedCategoryIndex == 2,
@@ -490,7 +490,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               ),
                               const SizedBox(width: 8),
                               _buildCategoryTab(
-                                label: 'Нагляд',
+                                label: 'admin.tab_monitoring'.tr(),
                                 icon: '👁️',
                                 count: coachClientCount,
                                 isSelected: _selectedCategoryIndex == 3,

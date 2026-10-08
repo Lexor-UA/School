@@ -10,6 +10,7 @@ import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/admin/presentation/create_class_sheet.dart';
+import 'package:swimming_school_app/features/coach/presentation/coach_class_attendees_sheet.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
@@ -1547,14 +1548,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           borderRadius: BorderRadius.circular(18),
           onTap: () {
             HapticFeedback.lightImpact();
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => CreateClassSheet(
-                classToEdit: c,
-              ),
-            );
+            showCoachClassAttendeesSheet(context, c);
           },
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -1709,7 +1703,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       ),
                       onSelected: (value) async {
                         HapticFeedback.lightImpact();
-                        if (value == 'edit') {
+                        if (value == 'attendees') {
+                          showCoachClassAttendeesSheet(context, c);
+                        } else if (value == 'edit') {
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -1771,6 +1767,23 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                         }
                       },
                       itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'attendees',
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.users, size: 16, color: currentTheme.accentPrimary),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Список клієнтів',
+                                style: TextStyle(
+                                  color: currentTheme.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         PopupMenuItem(
                           value: 'edit',
                           child: Row(

@@ -371,13 +371,13 @@ class ScheduleController extends _$ScheduleController {
     final user = ref.read(authControllerProvider);
     if (user == null) return BookingResult.error;
 
-    final effectiveUserId = targetUserId ?? user.id;
-    final childrenAsync = ref.read(childrenControllerProvider);
-    final children = childrenAsync.value ?? [];
     final family = ref.read(familyStreamProvider).value;
     final familyParentIds = (family != null && family.parentIds.isNotEmpty)
         ? family.parentIds
         : [user.id];
+    final effectiveUserId = targetUserId ?? (familyParentIds.contains(childId) ? childId : user.id);
+    final childrenAsync = ref.read(childrenControllerProvider);
+    final children = childrenAsync.value ?? [];
 
     String getMemberName(String id) {
       if (id == user.id) return user.name;
@@ -426,7 +426,13 @@ class ScheduleController extends _$ScheduleController {
         }
       }
     } else {
-      subscription = subscriptionController.getSubscriptionForOwner(effectiveUserId, ownerName, isAdult: isAdult, isSplit: false);
+      subscription = subscriptionController.getSubscriptionForOwner(
+        effectiveUserId,
+        ownerName,
+        isAdult: isAdult,
+        isSplit: false,
+        familyUserIds: familyParentIds,
+      );
       if (subscription?.isSplitSubscription == true) {
         subscription = null;
       }

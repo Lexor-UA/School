@@ -10,6 +10,9 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/core/router/app_router.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
+import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
+import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
+import 'widgets/coach_dialogs_sheet.dart';
 import 'coach_dashboard.dart';
 
 class CoachMain extends ConsumerStatefulWidget {
@@ -22,12 +25,35 @@ class CoachMain extends ConsumerStatefulWidget {
 class _CoachMainState extends ConsumerState<CoachMain> {
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authControllerProvider);
+
     ref.listen<AppUser?>(authControllerProvider, (previous, next) {
       if (next == null && mounted) {
         ref.read(coachTabProvider.notifier).setTab(0);
         ref.read(goRouterProvider).go('/?skipSplash=true');
       }
     });
+
+    final unreadCount = user != null ? ref.watch(coachUnreadBadgeProvider(user.id)) : 0;
+
+    if (user != null) {
+      ref.listen<int>(coachUnreadBadgeProvider(user.id), (previous, next) {
+        if (previous != null && next > previous && mounted) {
+          HapticFeedback.mediumImpact();
+          AppSnackBar.show(
+            context,
+            message: 'У вас нове повідомлення від клієнта',
+            icon: LucideIcons.messageSquare,
+            backgroundColor: const Color(0xFF0284C7),
+            action: SnackBarAction(
+              label: 'Відкрити',
+              textColor: Colors.white,
+              onPressed: () => showCoachDialogsSheet(context),
+            ),
+          );
+        }
+      });
+    }
 
     final selectedTab = ref.watch(coachTabProvider);
     final themeConfig = ref.watch(appThemeControllerProvider);
@@ -159,7 +185,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                   _buildDockItem(
                     index: 2,
                     icon: LucideIcons.users,
-                    label: 'Мої учні',
+                    label: 'coach.nav_swimmers'.tr(),
                     isSelected: selectedTab == 2,
                     themeConfig: themeConfig,
                   ),
@@ -169,6 +195,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     label: 'coach.nav_cabinet'.tr(),
                     isSelected: selectedTab == 3,
                     themeConfig: themeConfig,
+                    badgeCount: unreadCount,
                   ),
                 ],
               ),
@@ -185,6 +212,7 @@ class _CoachMainState extends ConsumerState<CoachMain> {
     required String label,
     required bool isSelected,
     required AppThemeConfig themeConfig,
+    int badgeCount = 0,
   }) {
     return GestureDetector(
       onTap: () {
@@ -240,12 +268,49 @@ class _CoachMainState extends ConsumerState<CoachMain> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected
-                  ? Colors.white
-                  : (themeConfig.isDark ? const Color(0xFF7DD3FC).withValues(alpha: 0.75) : const Color(0xFF64748B)),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected
+                      ? Colors.white
+                      : (themeConfig.isDark ? const Color(0xFF7DD3FC).withValues(alpha: 0.75) : const Color(0xFF64748B)),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                      child: Center(
+                        child: Text(
+                          '$badgeCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             if (isSelected) ...[
               const SizedBox(width: 7),

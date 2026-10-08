@@ -94,6 +94,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       type: isCoachClient ? 'coach_client' : 'support',
       clientRole: user.role == UserRole.coach ? 'coach' : 'parent',
       text: text,
+      branchId: user.branchId,
+      organizationId: user.organizationId,
     );
 
     _messageController.clear();
@@ -414,6 +416,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
         clientRole: user.role == UserRole.coach ? 'coach' : 'parent',
         text: caption,
         imageUrl: imageUrl,
+        branchId: user.branchId,
+        organizationId: user.organizationId,
       );
 
       Future.delayed(const Duration(milliseconds: 100), () {

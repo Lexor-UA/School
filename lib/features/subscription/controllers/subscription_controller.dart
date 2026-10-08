@@ -169,13 +169,11 @@ class SubscriptionController extends _$SubscriptionController {
 
     return state.any((sub) {
       final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
-      final matchesOwner = subOwner == cleanOwner;
+      final matchesOwner = subOwner == cleanOwner || (subOwner.isEmpty && sub.userId == userId);
       final isSubActive = sub.isActive && sub.remainingClasses > 0 && (sub.expiryDate == null || sub.expiryDate!.isAfter(now));
       if (!isSubActive) return false;
 
-      final isCompatibleUser = !sub.isAdultOnlySubscription
-          ? effectiveFamilyIds.contains(sub.userId)
-          : sub.userId == userId;
+      final isCompatibleUser = effectiveFamilyIds.contains(sub.userId);
 
       return isCompatibleUser && matchesOwner;
     });
@@ -192,13 +190,11 @@ class SubscriptionController extends _$SubscriptionController {
         if (!isSplit && sub.isSplitSubscription) return false;
 
         final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
-        final matchesOwner = subOwner == cleanOwner;
+        final matchesOwner = subOwner == cleanOwner || (subOwner.isEmpty && sub.userId == userId);
         final isSubActive = sub.isActive && sub.remainingClasses > 0 && (sub.expiryDate == null || sub.expiryDate!.isAfter(now));
         if (!isSubActive) return false;
 
-        final isCompatibleUser = !sub.isAdultOnlySubscription
-            ? effectiveFamilyIds.contains(sub.userId)
-            : sub.userId == userId;
+        final isCompatibleUser = effectiveFamilyIds.contains(sub.userId);
 
         return isCompatibleUser && matchesOwner;
       });
@@ -215,11 +211,7 @@ class SubscriptionController extends _$SubscriptionController {
       if (isSplit && !sub.isSplitSubscription) return false;
       if (!isSplit && sub.isSplitSubscription) return false;
 
-      if (sub.isAdultOnlySubscription) {
-        return sub.userId == userId;
-      } else {
-        return effectiveFamilyIds.contains(sub.userId);
-      }
+      return effectiveFamilyIds.contains(sub.userId);
     }).toList();
 
     if (userSubs.isEmpty) return null;
@@ -230,7 +222,7 @@ class SubscriptionController extends _$SubscriptionController {
     try {
       final directMatch = userSubs.firstWhere((sub) {
         final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
-        return subOwner == cleanOwner;
+        return subOwner == cleanOwner || (subOwner.isEmpty && sub.userId == userId);
       });
       if (isAdult != null) {
         if (isAdult && directMatch.isChildOnlySubscription) {
@@ -281,11 +273,7 @@ class SubscriptionController extends _$SubscriptionController {
     final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
 
     final userSubs = state.where((sub) {
-      if (sub.isAdultOnlySubscription) {
-        return sub.userId == userId;
-      } else {
-        return effectiveFamilyIds.contains(sub.userId);
-      }
+      return effectiveFamilyIds.contains(sub.userId);
     }).toList();
 
     if (userSubs.isEmpty) return null;
@@ -296,7 +284,7 @@ class SubscriptionController extends _$SubscriptionController {
     try {
       return userSubs.firstWhere((sub) {
         final subOwner = (sub.ownerName ?? '').replaceAll(RegExp(r'\s*\([я|i|me]\)', caseSensitive: false), '').trim().toLowerCase();
-        return subOwner == cleanOwner;
+        return subOwner == cleanOwner || (subOwner.isEmpty && sub.userId == userId);
       });
     } catch (_) {}
 
@@ -316,11 +304,7 @@ class SubscriptionController extends _$SubscriptionController {
     final effectiveFamilyIds = _resolveFamilyUserIds(userId, familyUserIds);
 
     return state.where((sub) {
-      if (sub.isAdultSubscription) {
-        return sub.userId == userId;
-      } else {
-        return effectiveFamilyIds.contains(sub.userId);
-      }
+      return effectiveFamilyIds.contains(sub.userId);
     }).toList();
   }
 

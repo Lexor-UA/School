@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -106,6 +107,47 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
     });
 
     try {
+      final branchChanged =
+          widget.initialBranchId != null &&
+          widget.initialBranchId != _selectedBranchId;
+
+      if (branchChanged) {
+        final familySnap = await FirebaseFirestore.instance
+            .collection('families')
+            .where('parentIds', arrayContains: widget.clientId)
+            .limit(1)
+            .get();
+        final List<String> userIdsToCheck = [widget.clientId];
+        if (familySnap.docs.isNotEmpty) {
+          final fData = familySnap.docs.first.data();
+          final pIds = (fData['parentIds'] as List?)
+              ?.map((e) => e.toString())
+              .toList();
+          if (pIds != null && pIds.isNotEmpty) {
+            userIdsToCheck.addAll(pIds);
+          }
+        }
+
+        final subsSnap = await FirebaseFirestore.instance
+            .collection('subscriptions')
+            .where('userId', whereIn: userIdsToCheck.toSet().toList())
+            .get();
+        final hasActive = subsSnap.docs.any((d) {
+          final data = d.data();
+          return (data['isActive'] as bool? ?? false) &&
+              (data['remainingClasses'] as int? ?? 0) > 0;
+        });
+
+        if (hasActive) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage =
+                'Для зміни філії необхідно спочатку обнулити всі активні абонементи клієнта (залишок занять має бути 0).';
+          });
+          return;
+        }
+      }
+
       final age = int.tryParse(_ageController.text.trim());
       final updateData = <String, dynamic>{
         'name': _nameController.text.trim(),
@@ -127,12 +169,26 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           .set(updateData, SetOptions(merge: true))
           .timeout(const Duration(seconds: 15));
 
+      if (branchChanged) {
+        final childrenSnap = await FirebaseFirestore.instance
+            .collection('children')
+            .where('parentId', isEqualTo: widget.clientId)
+            .get();
+        for (final doc in childrenSnap.docs) {
+          await doc.reference.update({'branchId': _selectedBranchId});
+        }
+        final familySnap = await FirebaseFirestore.instance
+            .collection('families')
+            .where('parentIds', arrayContains: widget.clientId)
+            .get();
+        for (final doc in familySnap.docs) {
+          await doc.reference.update({'branchId': _selectedBranchId});
+        }
+      }
+
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          final branchChanged =
-              widget.initialBranchId != null &&
-              widget.initialBranchId != _selectedBranchId;
           final branchNote = branchChanged
               ? ' (філію змінено на ${_selectedBranchId == 'vienna' ? 'Відень 🇦🇹' : 'Київ 🇺🇦'})'
               : '';
@@ -271,61 +327,101 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           }
         }
 
-        final userSubs = ref
-            .watch(subscriptionControllerProvider)
-            .where((s) => parentIds.contains(s.userId))
-            .toList();
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('subscriptions')
+              .where('userId', whereIn: parentIds)
+              .snapshots(),
+          builder: (context, subSnapshot) {
+            final userSubs = <Subscription>[];
+            if (subSnapshot.hasData) {
+              for (final doc in subSnapshot.data!.docs) {
+                try {
+                  final data = Map<String, dynamic>.from(doc.data() as Map);
+                  data['id'] = doc.id;
+                  if (data['expiryDate'] is Timestamp) {
+                    data['expiryDate'] = (data['expiryDate'] as Timestamp)
+                        .toDate()
+                        .toIso8601String();
+                  }
+                  userSubs.add(Subscription.fromJson(data));
+                } catch (_) {}
+              }
+            } else {
+              userSubs.addAll(
+                ref
+                    .watch(subscriptionControllerProvider)
+                    .where((s) => parentIds.contains(s.userId)),
+              );
+            }
 
-        return Column(
-          children: [
-            _buildTextField(
-              controller: _nameController,
-              label: 'admin.add_client_name_hint'.tr(),
-              icon: LucideIcons.user,
-              isDark: isDark,
-            ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
-            const SizedBox(height: 16),
+            final hasActiveSubs = userSubs.any(
+              (s) => s.isActive && s.remainingClasses > 0,
+            );
 
-            _buildTextField(
-              controller: _phoneController,
-              label: 'admin.add_client_phone_hint'.tr(),
-              icon: LucideIcons.phone,
-              keyboardType: TextInputType.phone,
-              isDark: isDark,
-            ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
-            const SizedBox(height: 16),
+            return Column(
+              children: [
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'admin.add_client_name_hint'.tr(),
+                  icon: LucideIcons.user,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
+                const SizedBox(height: 16),
 
-            _buildTextField(
-              controller: _ageController,
-              label: 'Вік клієнта (років)',
-              icon: LucideIcons.calendar,
-              keyboardType: TextInputType.number,
-              isDark: isDark,
-            ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1),
-            const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: 'admin.add_client_phone_hint'.tr(),
+                  icon: LucideIcons.phone,
+                  keyboardType: TextInputType.phone,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
+                const SizedBox(height: 16),
 
-            _buildTextField(
-              controller: _loginIdController,
-              label: '${'admin.clients_login_label'.tr()} (Client1)',
-              icon: LucideIcons.key,
-              isDark: isDark,
-            ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
-            const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _ageController,
+                  label: 'Вік клієнта (років)',
+                  icon: LucideIcons.calendar,
+                  keyboardType: TextInputType.number,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1),
+                const SizedBox(height: 16),
 
-            // Password & Access Management Section
-            ClientCredentialsForm(
-              passwordController: _passwordController,
-              loginIdController: _loginIdController,
-              isDark: isDark,
-            ).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
-            const SizedBox(height: 24),
+                _buildTextField(
+                  controller: _loginIdController,
+                  label: '${'admin.clients_login_label'.tr()} (Client1)',
+                  icon: LucideIcons.key,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+                const SizedBox(height: 16),
 
-            // Branch Assignment Section
-            ClientBranchSelector(
-              selectedBranchId: _selectedBranchId,
-              onBranchChanged: (id) => setState(() => _selectedBranchId = id),
-              isDark: isDark,
-            ).animate().fadeIn(delay: 355.ms).slideX(begin: -0.1),
+                // Password & Access Management Section
+                ClientCredentialsForm(
+                  passwordController: _passwordController,
+                  loginIdController: _loginIdController,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
+                const SizedBox(height: 24),
+
+                // Branch Assignment Section
+                ClientBranchSelector(
+                  selectedBranchId: _selectedBranchId,
+                  onBranchChanged: (id) {
+                    final origBranch = widget.initialBranchId ?? 'kyiv';
+                    if (id != origBranch && hasActiveSubs) {
+                      setState(() {
+                        _errorMessage =
+                            'Для зміни філії необхідно спочатку обнулити всі активні абонементи клієнта (залишок занять має бути 0).';
+                      });
+                      return;
+                    }
+                    setState(() {
+                      _selectedBranchId = id;
+                      _errorMessage = null;
+                    });
+                  },
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 355.ms).slideX(begin: -0.1),
             const SizedBox(height: 32),
 
             // FAMILY ACCOUNT SECTION
@@ -452,6 +548,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                 .scale(begin: const Offset(0.95, 0.95)),
             const SizedBox(height: 40),
           ],
+        );
+          },
         );
       },
     );

@@ -35,7 +35,11 @@ class AppSnackBar {
     // Instantly wipe all pending and active snackbars to prevent spam queueing
     messenger.clearSnackBars();
 
-    messenger.showSnackBar(
+    final effectiveDuration = action != null && duration.inMilliseconds <= 2500
+        ? const Duration(milliseconds: 3500)
+        : duration;
+
+    final controller = messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -57,7 +61,7 @@ class AppSnackBar {
           ],
         ),
         backgroundColor: backgroundColor,
-        duration: duration,
+        duration: effectiveDuration,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.only(bottom: bottomMargin, left: 16, right: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -65,6 +69,14 @@ class AppSnackBar {
         action: action,
       ),
     );
+
+    if (action != null) {
+      Future.delayed(effectiveDuration, () {
+        try {
+          controller.close();
+        } catch (_) {}
+      });
+    }
   }
 
   static void showWarning(

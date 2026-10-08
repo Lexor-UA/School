@@ -294,11 +294,11 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     ),
                     child: Row(
                       children: [
-                        _buildSegmentItem(0, 'Мої учні', LucideIcons.userCheck),
+                        _buildSegmentItem(0, 'coach.segment_my_swimmers'.tr(), LucideIcons.userCheck),
                         const SizedBox(width: 4),
-                        _buildSegmentItem(1, 'Групи', LucideIcons.layers),
+                        _buildSegmentItem(1, 'coach.segment_groups'.tr(), LucideIcons.layers),
                         const SizedBox(width: 4),
-                        _buildSegmentItem(2, 'Всі плавці', LucideIcons.users),
+                        _buildSegmentItem(2, 'coach.segment_all_swimmers'.tr(), LucideIcons.users),
                       ],
                     ),
                   ),

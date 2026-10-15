@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
 
 part 'children_controller.g.dart';
 
@@ -52,7 +54,7 @@ class ChildrenController extends _$ChildrenController {
     }
 
     if (calculatedAge != null && calculatedAge > 15) {
-      throw ArgumentError('Діти від 16 років вважаються дорослими та реєструють власний окремий акаунт.');
+      throw ArgumentError('parent.child_age_over_15_err'.tr());
     }
 
     final family = await ref.read(familyControllerProvider).getCurrentFamily();
@@ -189,7 +191,7 @@ class ChildrenController extends _$ChildrenController {
     }
 
     if (calculatedAge != null && calculatedAge > 15) {
-      throw ArgumentError('Діти від 16 років вважаються дорослими та реєструють власний окремий акаунт.');
+      throw ArgumentError('parent.child_age_over_15_err'.tr());
     }
 
     final updates = <String, dynamic>{
@@ -204,8 +206,19 @@ class ChildrenController extends _$ChildrenController {
     await FirebaseFirestore.instance.collection('children').doc(childId).update(updates);
   }
 
-  String _normalizePhone(String phone) {
-    String digits = phone.replaceAll(RegExp(r'\D'), '');
+  String _normalizePhone(String phone, {String? branchId}) {
+    final trimmed = phone.trim();
+    String digits = trimmed.replaceAll(RegExp(r'\D'), '');
+    if (trimmed.startsWith('+')) {
+      return '+$digits';
+    }
+    if (branchId == 'vienna' || digits.startsWith('43')) {
+      if (digits.startsWith('43') && digits.length >= 10) {
+        return '+$digits';
+      } else if (digits.startsWith('0') && digits.length >= 9) {
+        return '+43${digits.substring(1)}';
+      }
+    }
     if (digits.startsWith('380') && digits.length >= 12) {
       return '+$digits';
     } else if (digits.startsWith('0') && digits.length == 10) {
@@ -213,12 +226,11 @@ class ChildrenController extends _$ChildrenController {
     } else if (digits.length == 9) {
       return '+380$digits';
     }
-    return phone.trim();
+    return trimmed;
   }
 
   /// Випуск дитини (16+ років) у дорослий акаунт
-  /// Переносить досягнення, рівень, XP та автоматично конвертує
-  /// залишок дитячих абонементів у дорослий абонемент
+  /// Автоматично конвертує залишок дитячих абонементів цієї дитини у дорослий абонемент
   Future<String> graduateChildToAdult({
     required String childId,
     required String teenPhone,
@@ -229,7 +241,7 @@ class ChildrenController extends _$ChildrenController {
     // 1. Отримання даних дитини
     final childDoc = await db.collection('children').doc(childId).get();
     if (!childDoc.exists || childDoc.data() == null) {
-      throw Exception('Картку дитини не знайдено в базі даних');
+      throw Exception('graduate.child_not_found_err'.tr());
     }
 
     final childData = Map<String, dynamic>.from(childDoc.data()!);
@@ -237,16 +249,18 @@ class ChildrenController extends _$ChildrenController {
     final child = Child.fromJson(childData);
 
     if (!child.isAdultAge && (child.currentAge ?? 0) < 16) {
-      throw Exception('Випуск у дорослий акаунт доступний лише для осіб віком від 16 років');
+      throw Exception('graduate.age_under_16_err'.tr());
     }
 
     // 2. Валідація та нормалізація номеру телефону підлітка
-    final cleanPhone = _normalizePhone(teenPhone);
+    final cleanPhone = _normalizePhone(teenPhone, branchId: child.branchId);
     final rawDigits = cleanPhone.replaceAll(RegExp(r'\D'), '');
     if (rawDigits.length < 9) {
-      throw Exception('Введіть коректний номер телефону підлітка (мінімум 9 цифр)');
+      throw Exception('graduate.invalid_phone_err'.tr());
     }
     final last9 = rawDigits.substring(rawDigits.length - 9);
+    final rawPassword = (password != null && password.trim().isNotEmpty) ? password.trim() : '1';
+    final hashedPassword = PasswordSecurityHelper.hashPassword(rawPassword);
 
     final batch = db.batch();
 
@@ -266,33 +280,16 @@ class ChildrenController extends _$ChildrenController {
         'isAdultOnly': true,
         'graduatedFromChildId': child.id,
         'graduatedAt': FieldValue.serverTimestamp(),
+        'password': hashedPassword,
+        'branchId': existingData['branchId'] ?? child.branchId,
+        'organizationId': existingData['organizationId'] ?? child.organizationId,
       };
 
-      // Якщо в існуючого користувача початковий рівень (1) та 0 XP, переносимо рівень дитини
-      final existingLevel = existingData['level'] as int? ?? 1;
-      final existingXp = existingData['xp'] as int? ?? 0;
-      if (existingLevel <= 1 && existingXp == 0) {
-        updates['level'] = child.level;
-        updates['xp'] = child.xp;
-        updates['maxXp'] = child.maxXp;
-      }
       if (child.birthDate != null && existingData['birthDate'] == null) {
         updates['birthDate'] = child.birthDate!.toIso8601String();
       }
       if (child.currentAge != null && existingData['age'] == null) {
         updates['age'] = child.currentAge;
-      }
-
-      // Перенесення нагород
-      if (child.achievements.isNotEmpty) {
-        final existingAch = List<Map<String, dynamic>>.from(existingData['achievements'] ?? []);
-        final existingIds = existingAch.map((a) => a['id']).toSet();
-        for (final a in child.achievements) {
-          if (!existingIds.contains(a.id)) {
-            existingAch.add(a.toJson());
-          }
-        }
-        updates['achievements'] = existingAch;
       }
 
       batch.update(db.collection('users').doc(targetUserId), updates);
@@ -324,11 +321,9 @@ class ChildrenController extends _$ChildrenController {
         'role': 'parent', // Повноправний дорослий клієнт
         'phone': cleanPhone,
         'loginId': assignedLoginId,
-        'password': (password != null && password.trim().isNotEmpty) ? password.trim() : '1',
-        'level': child.level,
-        'xp': child.xp,
-        'maxXp': child.maxXp,
-        'achievements': child.achievements.map((a) => a.toJson()).toList(),
+        'password': hashedPassword,
+        'branchId': child.branchId,
+        'organizationId': child.organizationId,
         'avatarUrl': 'https://ui-avatars.com/api/?name=$avatarInitials&background=0284c7&color=ffffff',
         'isAdultOnly': true,
         'graduatedFromChildId': child.id,
@@ -347,13 +342,21 @@ class ChildrenController extends _$ChildrenController {
       batch.set(newDocRef, newUserData);
     }
 
-    // 4. Автоматичний перенос залишку занять з дитячого абонементу на дорослий
+    // 4. Автоматичний перенос залишку занять з дитячого абонементу цієї дитини на дорослий
+    String? lastCreatedAdultSubId;
     if (transferRemainingSubscriptions) {
       final parentUser = ref.read(authControllerProvider);
       final family = await ref.read(familyControllerProvider).getCurrentFamily();
       final parentIds = (family != null && family.parentIds.isNotEmpty)
           ? family.parentIds
           : (parentUser != null ? [parentUser.id] : [child.parentId]);
+
+      final allFamilyChildrenSnap = await db
+          .collection('children')
+          .where('parentId', whereIn: parentIds)
+          .get();
+      final familyChildrenCount = allFamilyChildrenSnap.docs.length;
+      final targetChildName = child.name.trim().toLowerCase();
 
       final subsSnap = await db
           .collection('subscriptions')
@@ -367,6 +370,11 @@ class ChildrenController extends _$ChildrenController {
         final remaining = subData['remainingClasses'] as int? ?? 0;
         if (remaining <= 0) continue;
 
+        final subOwner = (subData['ownerName'] as String? ?? '').trim().toLowerCase();
+        final belongsToGraduatingChild = subOwner == targetChildName ||
+            (subOwner == 'всі' && familyChildrenCount <= 1);
+        if (!belongsToGraduatingChild) continue;
+
         final serviceName = (subData['serviceName'] as String? ?? '').toLowerCase();
         final isSplit = serviceName.contains('спліт') || serviceName.contains('split');
         final isAdult = serviceName.contains('доросл') || serviceName.contains('adult');
@@ -379,6 +387,7 @@ class ChildrenController extends _$ChildrenController {
               : 'Групові заняття (дорослі 16+)';
 
           final newSubRef = db.collection('subscriptions').doc();
+          lastCreatedAdultSubId = newSubRef.id;
           final expiry = subData['expiryDate'];
 
           final newSubData = <String, dynamic>{
@@ -391,8 +400,8 @@ class ChildrenController extends _$ChildrenController {
             'isActive': true,
             'organizationId': subData['organizationId'] ?? child.organizationId,
             'branchId': subData['branchId'] ?? child.branchId,
-            'currency': subData['currency'] ?? 'UAH',
-            'currencySymbol': subData['currencySymbol'] ?? '₴',
+            'currency': subData['currency'] ?? (child.branchId == 'vienna' ? 'EUR' : 'UAH'),
+            'currencySymbol': subData['currencySymbol'] ?? (child.branchId == 'vienna' ? '€' : '₴'),
             'createdAt': FieldValue.serverTimestamp(),
           };
           if (expiry != null) {
@@ -426,22 +435,34 @@ class ChildrenController extends _$ChildrenController {
     for (final doc in classesSnap.docs) {
       final data = doc.data();
       final enrolled = List<String>.from(data['enrolledChildIds'] ?? []);
-      enrolled.remove(child.id);
+      final enrolledIdx = enrolled.indexOf(child.id);
+      if (enrolledIdx != -1) {
+        if (!enrolled.contains(targetUserId)) {
+          enrolled[enrolledIdx] = targetUserId;
+        } else {
+          enrolled.removeAt(enrolledIdx);
+        }
+      }
 
-      final enrolledParents = List<String>.from(data['enrolledParentIds'] ?? []);
-      if (!enrolledParents.contains(targetUserId)) {
-        enrolledParents.add(targetUserId);
+      final attended = List<String>.from(data['attendedChildIds'] ?? []);
+      final attendedIdx = attended.indexOf(child.id);
+      if (attendedIdx != -1) {
+        if (!attended.contains(targetUserId)) {
+          attended[attendedIdx] = targetUserId;
+        } else {
+          attended.removeAt(attendedIdx);
+        }
       }
 
       final updates = <String, dynamic>{
         'enrolledChildIds': enrolled,
-        'enrolledParentIds': enrolledParents,
+        'attendedChildIds': attended,
       };
 
       if (data['bookedSubscriptions'] is Map) {
         final booked = Map<String, dynamic>.from(data['bookedSubscriptions']);
         if (booked.containsKey(child.id)) {
-          booked[targetUserId] = booked[child.id];
+          booked[targetUserId] = lastCreatedAdultSubId ?? booked[child.id];
           booked.remove(child.id);
           updates['bookedSubscriptions'] = booked;
         }
@@ -462,8 +483,8 @@ class ChildrenController extends _$ChildrenController {
     if (currentUser != null) {
       batch.set(db.collection('notifications').doc(), {
         'userId': currentUser.id,
-        'title': '🎓 Випуск у дорослий акаунт!',
-        'message': 'Вітаємо! ${child.name} успішно випущено у дорослий акаунт. Номер для входу: $cleanPhone. Всі досягнення та залишок занять збережено.',
+        'title': 'graduate.parent_notif_title'.tr(),
+        'message': 'graduate.parent_notif_msg'.tr(args: [child.name, cleanPhone]),
         'timestamp': FieldValue.serverTimestamp(),
         'icon': 'graduationCap',
         'iconColor': 0xFF10B981,
@@ -473,8 +494,8 @@ class ChildrenController extends _$ChildrenController {
 
     batch.set(db.collection('notifications').doc(), {
       'userId': targetUserId,
-      'title': '🏊 Ласкаво просимо до дорослої спільноти!',
-      'message': 'Вітаємо з випуском у дорослий акаунт! Твій рівень (${child.level}), накопичений досвід та заняття перенесені. Тобі відкриті дорослі та спліт-тренування!',
+      'title': 'graduate.teen_notif_title'.tr(),
+      'message': 'graduate.teen_notif_msg'.tr(),
       'timestamp': FieldValue.serverTimestamp(),
       'icon': 'award',
       'iconColor': 0xFF0284C7,

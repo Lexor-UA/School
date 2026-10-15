@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +18,8 @@ import 'admin_calendar_screen.dart';
 import 'admin_clients_screen.dart';
 import 'admin_coaches_screen.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class AdminGlobalSearchSheet extends ConsumerStatefulWidget {
@@ -52,10 +53,10 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   ];
 
   String _formatClassesGenitive(int total) {
-    if (total % 10 == 1 && total % 100 != 11) {
-      return '$total заняття';
+    if (total == 1) {
+      return 'admin.search_classes_count_1'.tr(namedArgs: {'count': '$total'});
     }
-    return '$total занять';
+    return 'admin.search_classes_count_many'.tr(namedArgs: {'count': '$total'});
   }
 
   String _getInitials(String name, [String fallback = 'К']) {
@@ -102,9 +103,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
+      child: Container(
           constraints: BoxConstraints(maxHeight: maxHeight),
           decoration: BoxDecoration(
             color: _isDark ? null : Colors.white,
@@ -149,9 +148,13 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                   final allUsers = usersSnapshot.data?.docs ?? [];
                   final allChildren = childrenSnapshot.data?.docs ?? [];
 
+                  final currentUser = ref.watch(authControllerProvider);
                   final tenancyState = ref.watch(tenancyControllerProvider);
-                  final activeBranchId = tenancyState.activeBranchId;
-                  final isAllLocations = tenancyState.isAllLocationsSelected;
+                  final effectiveBranch = ref.watch(effectiveBranchProvider);
+                  final isOwnerOrSuper = currentUser?.role == UserRole.owner ||
+                      currentUser?.role == UserRole.superAdmin;
+                  final isAllLocations = isOwnerOrSuper && tenancyState.isAllLocationsSelected;
+                  final activeBranchId = isAllLocations ? tenancyState.activeBranchId : effectiveBranch.id;
 
                   // Categorize users with branch isolation
                   final clients = allUsers.where((u) {
@@ -284,7 +287,6 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             },
           ),
         ),
-      ),
     );
   }
 
@@ -389,15 +391,15 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   String _getSearchHint() {
     switch (_selectedCategoryIndex) {
       case 1:
-        return 'Пошук клієнтів (ім\'я, телефон, логін)...';
+        return 'admin.search_hint_clients'.tr();
       case 2:
-        return 'Пошук абонементів (клієнт, тип, ID)...';
+        return 'admin.search_hint_subs'.tr();
       case 3:
-        return 'Пошук груп (назва, тренер, доріжка)...';
+        return 'admin.search_hint_groups'.tr();
       case 4:
-        return 'Пошук за іменем дитини...';
+        return 'admin.search_hint_children'.tr();
       case 5:
-        return 'Пошук тренерів (ім\'я, телефон)...';
+        return 'admin.search_hint_coaches'.tr();
       default:
         return 'admin.smart_search_hint'.tr();
     }
@@ -583,7 +585,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
         children: [
           // Section: Швидкі розділи
           Text(
-            'Швидкий перехід за категоріями',
+            'admin.search_quick_nav_title'.tr(),
             style: TextStyle(color: _theme.textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -593,8 +595,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.users,
-                  title: 'Всі клієнти',
-                  subtitle: 'База батьків та дітей',
+                  title: 'admin.search_quick_all_clients'.tr(),
+                  subtitle: 'admin.search_quick_all_clients_sub'.tr(),
                   color: const Color(0xFF0EA5E9),
                   gradientColors: const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
                   onTap: () {
@@ -607,8 +609,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.award,
-                  title: 'Тренери школи',
-                  subtitle: 'Команда та контакти',
+                  title: 'admin.search_quick_coaches_nav'.tr(),
+                  subtitle: 'admin.search_quick_coaches_nav_sub'.tr(),
                   color: const Color(0xFFA855F7),
                   gradientColors: const [Color(0xFFA855F7), Color(0xFF7C3AED)],
                   onTap: () {
@@ -625,8 +627,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.creditCard,
-                  title: 'Абонементи',
-                  subtitle: 'Активні та боржники',
+                  title: 'admin.cat_subscriptions'.tr(),
+                  subtitle: 'admin.search_quick_subs_nav_sub'.tr(),
                   color: const Color(0xFF10B981),
                   gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
                   onTap: () {
@@ -644,8 +646,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Expanded(
                 child: _buildQuickNavButton(
                   icon: LucideIcons.calendar,
-                  title: 'Розклад груп',
-                  subtitle: 'Календар басейну',
+                  title: 'admin.search_quick_schedule_nav'.tr(),
+                  subtitle: 'admin.search_quick_schedule_nav_sub'.tr(),
                   color: const Color(0xFF06B6D4),
                   gradientColors: const [Color(0xFF06B6D4), Color(0xFF0284C7)],
                   onTap: () {
@@ -693,7 +695,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               final d = c.data() as Map<String, dynamic>;
               return _buildClientResultRow(
                 clientId: c.id,
-                name: d['name'] ?? 'Клієнт',
+                name: d['name'] ?? 'admin.client_default_name'.tr(),
                 phone: d['phone'] ?? '',
                 loginId: d['loginId'] ?? '',
                 password: (d['password'] as String?) ?? '1',
@@ -706,7 +708,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
           // Section: Найближчі заняття
           if (upcomingClasses.isNotEmpty) ...[
             Text(
-              'Найближчі тренування',
+              'admin.search_upcoming_trainings'.tr(),
               style: TextStyle(
                 color: _isDark ? Colors.white : _theme.textPrimary,
                 fontSize: 14,
@@ -850,13 +852,13 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               Icon(LucideIcons.searchX, size: 48, color: _isDark ? Colors.white.withValues(alpha: 0.30) : _theme.textMuted),
               const SizedBox(height: 14),
               Text(
-                'Нічого не знайдено за запитом "$_query"',
+                'admin.search_nothing_found_query'.tr(namedArgs: {'query': _query}),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _theme.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
               Text(
-                'Спробуйте змінити пошуковий запит або обрати іншу категорію',
+                'admin.search_try_changing_query'.tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _theme.textSecondary, fontSize: 12.5),
               ),
@@ -885,8 +887,8 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             children: [
               Text(
                 _query.trim().isEmpty
-                    ? 'ВСЬОГО: $totalResults'
-                    : 'ЗНАЙДЕНО: $totalResults',
+                    ? 'admin.search_total_count'.tr(namedArgs: {'count': '$totalResults'})
+                    : 'admin.search_found_count'.tr(namedArgs: {'count': '$totalResults'}),
                 style: TextStyle(
                   color: _theme.accentPrimary,
                   fontSize: 11,
@@ -898,7 +900,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 GestureDetector(
                   onTap: () => setState(() => _selectedCategoryIndex = 0),
                   child: Text(
-                    'Показати всі категорії',
+                    'admin.show_all_categories'.tr(),
                     style: TextStyle(
                       color: _isDark ? const Color(0xFF38BDF8) : _theme.accentPrimary,
                       fontSize: 11,
@@ -912,12 +914,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
         // 1. Клієнти
         if (showClients) ...[
-          _buildResultSectionHeader('Клієнти / Батьки', LucideIcons.users, const Color(0xFF00B4D8), matchingClients.length),
+          _buildResultSectionHeader('admin.search_section_clients'.tr(), LucideIcons.users, const Color(0xFF00B4D8), matchingClients.length),
           ...matchingClients.map((c) {
             final d = c.data() as Map<String, dynamic>;
             return _buildClientResultRow(
               clientId: c.id,
-              name: d['name'] ?? 'Клієнт',
+              name: d['name'] ?? 'admin.client_default_name'.tr(),
               phone: d['phone'] ?? '',
               loginId: d['loginId'] ?? '',
               password: (d['password'] as String?) ?? '1',
@@ -928,27 +930,27 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
         // 2. Абонементи
         if (showSubs) ...[
-          _buildResultSectionHeader('Абонементи', LucideIcons.creditCard, const Color(0xFFF59E0B), matchingSubs.length),
+          _buildResultSectionHeader('admin.cat_subscriptions'.tr(), LucideIcons.creditCard, const Color(0xFFF59E0B), matchingSubs.length),
           ...matchingSubs.map((s) => _buildSubResultRow(s)),
           const SizedBox(height: 14),
         ],
 
         // 3. Групи та розклад
         if (showClasses) ...[
-          _buildResultSectionHeader('Групи та розклад', LucideIcons.users, const Color(0xFF10B981), matchingClasses.length),
+          _buildResultSectionHeader('admin.search_section_schedule'.tr(), LucideIcons.users, const Color(0xFF10B981), matchingClasses.length),
           ...matchingClasses.map((cl) => _buildClassResultRow(cl)),
           const SizedBox(height: 14),
         ],
 
         // 4. Діти
         if (showChildren) ...[
-          _buildResultSectionHeader('Діти / Учні', LucideIcons.waves, const Color(0xFF38BDF8), matchingChildren.length),
+          _buildResultSectionHeader('admin.search_section_children'.tr(), LucideIcons.waves, const Color(0xFF38BDF8), matchingChildren.length),
           ...matchingChildren.map((ch) {
             final d = ch.data() as Map<String, dynamic>;
             final parentId = d['parentId'] as String?;
-            final parentName = parentId != null ? (allUsersMap[parentId]?['name'] ?? 'Батьки') : 'Невідомо';
+            final parentName = parentId != null ? (allUsersMap[parentId]?['name'] ?? 'admin.parents_label'.tr()) : 'admin.unknown_label'.tr();
             return _buildChildResultRow(
-              childName: d['name'] ?? 'Учень',
+              childName: d['name'] ?? 'admin.swimmer_default_name'.tr(),
               level: d['level'] ?? 1,
               xp: d['xp'] ?? 0,
               parentName: parentName,
@@ -959,12 +961,12 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
 
         // 5. Тренери
         if (showCoaches) ...[
-          _buildResultSectionHeader('Тренери школи', LucideIcons.award, const Color(0xFF8B5CF6), matchingCoaches.length),
+          _buildResultSectionHeader('admin.search_quick_coaches_nav'.tr(), LucideIcons.award, const Color(0xFF8B5CF6), matchingCoaches.length),
           ...matchingCoaches.map((co) {
             final d = co.data() as Map<String, dynamic>;
             return _buildCoachResultRow(
               coachId: co.id,
-              name: d['name'] ?? 'Тренер',
+              name: d['name'] ?? 'admin.coach_default_name'.tr(),
               phone: d['phone'] ?? '',
               loginId: d['loginId'] ?? '',
             );
@@ -1121,7 +1123,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             ],
             if (loginId.isNotEmpty) ...[
               Text(
-                'Логін: ',
+                'admin.search_login_prefix'.tr(),
                 style: TextStyle(
                   color: _isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF64748B),
                   fontSize: 11.5,
@@ -1318,7 +1320,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Батьки: $parentName',
+                  'admin.search_parents_prefix'.tr(namedArgs: {'name': parentName}),
                   style: TextStyle(
                     color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                     fontSize: 12,
@@ -1351,7 +1353,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ],
             ),
             child: Text(
-              'Рівень $level',
+              'admin.search_level_badge'.tr(namedArgs: {'level': '$level'}),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
@@ -1477,7 +1479,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
             ],
             if (loginId.isNotEmpty) ...[
               Text(
-                'Логін: ',
+                'admin.search_login_prefix'.tr(),
                 style: TextStyle(
                   color: _isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.70) : const Color(0xFF64748B),
                   fontSize: 11.5,
@@ -1633,7 +1635,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Тренер: ${cl.coachName} • ${cl.lane}',
+                  'admin.search_coach_lane_row'.tr(namedArgs: {'coach': cl.coachName, 'lane': cl.lane}),
                   style: TextStyle(
                     color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                     fontSize: 12,
@@ -1667,7 +1669,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
   }
 
   Widget _buildSubResultRow(Subscription s) {
-    final expiryStr = s.expiryDate != null ? DateFormat('dd.MM.yyyy').format(s.expiryDate!) : 'Безстроково';
+    final expiryStr = s.expiryDate != null ? DateFormat('dd.MM.yyyy').format(s.expiryDate!) : 'admin.unlimited'.tr();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 9),
@@ -1741,7 +1743,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  s.serviceName ?? 'Абонемент',
+                  s.serviceName ?? 'admin.sub_default_name'.tr(),
                   style: TextStyle(
                     color: _isDark ? Colors.white : _theme.textPrimary,
                     fontSize: 14,
@@ -1750,7 +1752,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Учень: ${s.ownerName} • До: $expiryStr',
+                  'admin.search_sub_owner_expiry_row'.tr(namedArgs: {'owner': '${s.ownerName}', 'expiry': expiryStr}),
                   style: TextStyle(
                     color: _isDark ? const Color(0xFFB0D4EC) : _theme.textSecondary,
                     fontSize: 12,
@@ -1782,7 +1784,7 @@ class _AdminGlobalSearchSheetState extends ConsumerState<AdminGlobalSearchSheet>
               ],
             ),
             child: Text(
-              '${s.remainingClasses} з ${_formatClassesGenitive(s.totalClasses)}',
+              '${s.remainingClasses} ${'admin.of_prep'.tr()} ${_formatClassesGenitive(s.totalClasses)}',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'dart:math' as math;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -43,7 +44,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
         final Uint8List bytes = await image.readAsBytes();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Завантаження фотографії...'), duration: Duration(seconds: 1)),
+            SnackBar(content: Text('avatar.uploading'.tr()), duration: const Duration(seconds: 1)),
           );
         }
         ref.read(authControllerProvider.notifier).updateAvatar(
@@ -51,14 +52,14 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
           onSuccess: () {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Фото успішно завантажено!'), backgroundColor: Colors.green),
+                SnackBar(content: Text('avatar.uploaded_success'.tr()), backgroundColor: Colors.green),
               );
             }
           },
           onError: (error) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Помилка збереження фото: $error'), backgroundColor: Colors.red),
+                SnackBar(content: Text('avatar.save_error'.tr(args: [error.toString()])), backgroundColor: Colors.red),
               );
             }
           }
@@ -67,8 +68,8 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Помилка при виборі зображення'),
+          SnackBar(
+            content: Text('avatar.pick_error'.tr()),
             backgroundColor: Colors.red,
           ),
         );
@@ -180,7 +181,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Фото профілю',
+                              'avatar.title'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 fontSize: 18,
@@ -190,7 +191,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Оберіть дію з вашим аватаром',
+                              'avatar.subtitle'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                 fontSize: 12.5,
@@ -315,7 +316,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Обрати з галереї',
+                                    'avatar.choose_gallery'.tr(),
                                     style: TextStyle(
                                       color: isDark ? Colors.white : const Color(0xFF0F172A),
                                       fontSize: 15.5,
@@ -325,7 +326,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Завантажити нове фото з пристрою',
+                                    'avatar.choose_gallery_sub'.tr(),
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                       fontSize: 12,
@@ -421,9 +422,9 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Видалити фото',
-                                      style: TextStyle(
+                                    Text(
+                                      'avatar.remove_photo'.tr(),
+                                      style: const TextStyle(
                                         color: Color(0xFFEF4444),
                                         fontSize: 15.5,
                                         fontWeight: FontWeight.w800,
@@ -432,7 +433,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Скинути аватар до ініціалів',
+                                      'avatar.remove_photo_sub'.tr(),
                                       style: TextStyle(
                                         color: isDark ? const Color(0xFFFCA5A5).withValues(alpha: 0.8) : const Color(0xFF991B1B).withValues(alpha: 0.7),
                                         fontSize: 12,
@@ -471,7 +472,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
         ? user.name.trim()
         : (fbUser?.displayName?.trim().isNotEmpty == true
             ? fbUser!.displayName!.trim()
-            : 'Користувач');
+            : 'common.user'.tr());
 
     final effectiveAvatarUrl = (user?.avatarUrl != null && user!.avatarUrl.isNotEmpty)
         ? user.avatarUrl

@@ -113,7 +113,7 @@ service cloud.firestore {
     
     match /organizations/{orgId} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() || isOwner();
     }
 
     // ==========================================
@@ -135,8 +135,15 @@ service cloud.firestore {
         )
       );
 
-      // Update: user can update own profile OR staff updates
-      allow update: if isAuthenticated();
+      // Update: staff/admin/owner/superAdmin OR authenticated user without escalating role
+      allow update: if isSuperAdmin() || isOwner() || isAdmin() || (
+        isAuthenticated() && (
+          !('role' in request.resource.data) ||
+          !('role' in resource.data) ||
+          request.resource.data.role == resource.data.role ||
+          request.resource.data.role == 'parent'
+        )
+      );
 
       // Delete: superAdmin, owner, OR admin for their branch (or missing branch)
       allow delete: if isSuperAdmin() || isOwner() || (
@@ -192,54 +199,24 @@ service cloud.firestore {
     match /subscriptions/{subscriptionId} {
       allow read: if isAuthenticated();
       
-      // Allow creation by authenticated users, valid client purchase payloads, or branch administrators
-      allow create: if isAuthenticated() || (
-        'userId' in request.resource.data && 
-        request.resource.data.userId != null &&
-        request.resource.data.userId != ''
-      ) || (
-        'user_id' in request.resource.data &&
-        request.resource.data.user_id != null &&
-        request.resource.data.user_id != ''
-      ) || isSuperAdmin() || isOwner() || (
+      // Allow creation by authenticated users with valid client purchase payloads, or branch administrators
+      allow create: if isSuperAdmin() || isOwner() || (
         isAdmin() && (
           !('branchId' in request.resource.data) ||
           request.resource.data.branchId == null ||
           request.resource.data.branchId == '' ||
           staffBelongsToBranch(request.resource.data.branchId)
         )
-      );
-
-      allow update: if isSuperAdmin() || isOwner() || (
-        isStaff() && (
-          !('branchId' in resource.data) ||
-          resource.data.branchId == null ||
-          resource.data.branchId == '' ||
-          staffBelongsToBranch(resource.data.branchId)
-        ) && (
-          !('branchId' in request.resource.data) ||
-          !('branchId' in resource.data) ||
-          request.resource.data.branchId == resource.data.branchId ||
-          staffBelongsToBranch(request.resource.data.branchId)
-        )
       ) || (
         isAuthenticated() && (
-          !('branchId' in request.resource.data) || 
-          !('branchId' in resource.data) || 
-          request.resource.data.branchId == resource.data.branchId ||
-          request.resource.data.branchId == null ||
-          resource.data.branchId == null
+          ('userId' in request.resource.data && request.resource.data.userId != null && request.resource.data.userId != '') ||
+          ('user_id' in request.resource.data && request.resource.data.user_id != null && request.resource.data.user_id != '')
         )
       );
 
-      allow delete: if isSuperAdmin() || isOwner() || (
-        isAdmin() && (
-          !('branchId' in resource.data) ||
-          resource.data.branchId == null ||
-          resource.data.branchId == '' ||
-          staffBelongsToBranch(resource.data.branchId)
-        )
-      );
+      allow update: if isSuperAdmin() || isOwner() || isStaff() || isAuthenticated();
+
+      allow delete: if isSuperAdmin() || isOwner() || isStaff() || isAuthenticated();
     }
 
     match /subscription_discounts/{discountId} {
@@ -312,19 +289,16 @@ service cloud.firestore {
     match /payments/{paymentId} {
       allow read: if isAuthenticated();
       
-      // Allow creation of payment records by authenticated users, client purchase payloads, or administrators
-      allow create: if isAuthenticated() || (
-        'clientId' in request.resource.data &&
-        request.resource.data.clientId != null &&
-        request.resource.data.clientId != ''
-      ) || (
-        'client_id' in request.resource.data &&
-        request.resource.data.client_id != null &&
-        request.resource.data.client_id != ''
-      ) || isSuperAdmin() || isOwner() || (
+      // Allow creation of payment records by authenticated users with valid client payloads, or administrators
+      allow create: if isSuperAdmin() || isOwner() || (
         isAdmin() && (
           staffBelongsToBranch(request.resource.data.branchId) ||
           ('branch_id' in request.resource.data && staffBelongsToBranch(request.resource.data.branch_id))
+        )
+      ) || (
+        isAuthenticated() && (
+          ('clientId' in request.resource.data && request.resource.data.clientId != null && request.resource.data.clientId != '') ||
+          ('client_id' in request.resource.data && request.resource.data.client_id != null && request.resource.data.client_id != '')
         )
       );
 

@@ -35,7 +35,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
     }
     final yesterday = now.subtract(const Duration(days: 1));
     if (yesterday.year == time.year && yesterday.month == time.month && yesterday.day == time.day) {
-      return 'Вчора';
+      return 'common.yesterday'.tr();
     }
     return DateFormat('dd.MM').format(time);
   }
@@ -135,7 +135,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Повідомлення та чати',
+                                'coach.messages_and_chats'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textPrimary,
                                   fontSize: 18,
@@ -144,7 +144,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                                 ),
                               ),
                               Text(
-                                'Спілкування з учнями та адміністрацією',
+                                'coach.messages_and_chats_sub'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textSecondary,
                                   fontSize: 12,
@@ -184,11 +184,11 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
-                        _buildFilterPill('Всі чати', 0, isLight),
+                        _buildFilterPill('coach.filter_all_chats'.tr(), 0, isLight),
                         const SizedBox(width: 8),
-                        _buildFilterPill('Клієнти', 1, isLight),
+                        _buildFilterPill('coach.filter_clients'.tr(), 1, isLight),
                         const SizedBox(width: 8),
-                        _buildFilterPill('Адміністрація', 2, isLight),
+                        _buildFilterPill('coach.filter_admin'.tr(), 2, isLight),
                       ],
                     ),
                   ),
@@ -232,7 +232,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Діалоги з клієнтами (${clientDialogs.length})',
+                                            'coach.client_dialogs_count'.tr(args: ['${clientDialogs.length}']),
                                             style: TextStyle(
                                               color: themeConfig.textSecondary,
                                               fontSize: 12.5,
@@ -352,9 +352,9 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const ParentChatScreen(
-                      title: 'Чат з Адміністратором',
-                      subtitle: 'Рецепція басейну • Онлайн',
+                    builder: (_) => ParentChatScreen(
+                      title: 'coach.chat_with_admin'.tr(),
+                      subtitle: 'coach.pool_reception_online'.tr(),
                     ),
                   ),
                 );
@@ -393,7 +393,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                           Row(
                             children: [
                               Text(
-                                'Адміністрація школи',
+                                'coach.school_administration'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textPrimary,
                                   fontWeight: FontWeight.w800,
@@ -413,7 +413,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Швидкий зв\'язок з рецепцією та черговим адміном',
+                            'coach.quick_admin_contact_sub'.tr(),
                             style: TextStyle(
                               color: themeConfig.textSecondary,
                               fontSize: 12,
@@ -458,7 +458,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Немає активних діалогів з клієнтами',
+            'coach.no_active_client_dialogs'.tr(),
             style: TextStyle(
               color: themeConfig.textPrimary,
               fontWeight: FontWeight.w700,
@@ -467,7 +467,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Ви можете написати клієнту безпосередньо зі списку груп або бази плавців',
+            'coach.no_active_client_dialogs_hint'.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: themeConfig.textSecondary,
@@ -537,8 +537,8 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       type: 'coach_client',
                       title: dialog.clientName,
                       subtitle: dialog.childName != null
-                          ? 'Батьки (${dialog.childName})'
-                          : 'Клієнт • Онлайн',
+                          ? 'coach.parents_of_child'.tr(args: [dialog.childName!])
+                          : 'coach.client_online'.tr(),
                     ),
                   ),
                 );
@@ -617,7 +617,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                           const SizedBox(height: 3),
                           if (dialog.childName != null && dialog.childName!.isNotEmpty) ...[
                             Text(
-                              'Батьки учня: ${dialog.childName}',
+                              'coach.parents_of_student_colon'.tr(args: [dialog.childName!]),
                               style: TextStyle(
                                 color: isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
                                 fontSize: 11.5,
@@ -629,7 +629,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                             const SizedBox(height: 2),
                           ],
                           Text(
-                            dialog.lastMessage.isNotEmpty ? dialog.lastMessage : 'Діалог створено',
+                            dialog.lastMessage.isNotEmpty ? dialog.lastMessage : 'coach.dialog_created'.tr(),
                             style: TextStyle(
                               color: hasUnread
                                   ? themeConfig.textPrimary

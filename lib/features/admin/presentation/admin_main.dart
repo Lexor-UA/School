@@ -28,6 +28,7 @@ import 'package:swimming_school_app/features/admin/models/activity_log.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'widgets/branch_selector_pill.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
 import 'package:swimming_school_app/features/tenancy/presentation/widgets/branch_invitation_qr_button.dart';
 
 class AdminMain extends ConsumerStatefulWidget {
@@ -41,8 +42,6 @@ class _AdminMainState extends ConsumerState<AdminMain> {
 
   @override
   Widget build(BuildContext context) {
-    final dashboardState = ref.watch(adminDashboardProvider);
-    final unreadCount = ref.watch(unreadAdminChatBadgeProvider);
     final currentTheme = ref.watch(appThemeControllerProvider);
 
     return Scaffold(
@@ -130,7 +129,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               slivers: [
-                _buildAppBar(context, ref, dashboardState.recentActions),
+                _buildAppBar(context, ref),
 
                 // 0. Селектор філій для Owner та бейдж філії для персоналу
                 const SliverToBoxAdapter(
@@ -172,46 +171,74 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       const SizedBox(height: 18),
 
                       // 2. Важливі повідомлення / Неоплачені абонементи (якщо є)
-                      if (dashboardState.unpaidSubscriptions > 0) ...[
-                        _buildSectionTitle(
-                          'admin.needs_attention'.tr(),
-                          LucideIcons.alertTriangle,
-                          const Color(0xFFF43F5E),
-                          gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
-                          badgeText: '${dashboardState.unpaidSubscriptions} ${'admin.debtors_short'.tr()}',
-                          badgeColor: const Color(0xFFF43F5E),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildUnpaidAttentionItem(dashboardState.unpaidSubscriptions),
-                        const SizedBox(height: 18),
-                      ],
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final unpaidCount = ref.watch(adminDashboardProvider.select((s) => s.unpaidSubscriptions));
+                          if (unpaidCount <= 0) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle(
+                                'admin.needs_attention'.tr(),
+                                LucideIcons.alertTriangle,
+                                const Color(0xFFF43F5E),
+                                gradientColors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
+                                badgeText: '$unpaidCount ${'admin.debtors_short'.tr()}',
+                                badgeColor: const Color(0xFFF43F5E),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildUnpaidAttentionItem(unpaidCount),
+                              const SizedBox(height: 18),
+                            ],
+                          );
+                        },
+                      ),
 
                       // 3. Пульс клубу (Телеметрія активності басейну в реальному часі)
                       RepaintBoundary(
-                        child: _buildLivePulseBar(dashboardState),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final pulseState = ref.watch(adminDashboardProvider);
+                            return _buildLivePulseBar(pulseState);
+                          },
+                        ),
                       ),
                       const SizedBox(height: 18),
 
                       // 4. Центр підтримки клієнтів (швидкий перехід до чатів)
-                      _buildSupportCenterCard(unreadCount),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final unreadCount = ref.watch(unreadAdminChatBadgeProvider);
+                          return _buildSupportCenterCard(unreadCount);
+                        },
+                      ),
                       const SizedBox(height: 20),
 
                       // 5. Найближче заняття з аватарками учнів
-                      if (dashboardState.nearestClass != null) ...[
-                        _buildSectionTitle(
-                          'admin.nearest_class'.tr(),
-                          LucideIcons.clock,
-                          currentTheme.accentPrimary,
-                          gradientColors: currentTheme.accentGradient,
-                          badgeText: 'admin.today'.tr(),
-                          badgeColor: currentTheme.accentPrimary,
-                        ),
-                        const SizedBox(height: 10),
-                        RepaintBoundary(
-                          child: _buildNearestClass(dashboardState.nearestClass!),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final nearest = ref.watch(adminDashboardProvider.select((s) => s.nearestClass));
+                          if (nearest == null) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle(
+                                'admin.nearest_class'.tr(),
+                                LucideIcons.clock,
+                                currentTheme.accentPrimary,
+                                gradientColors: currentTheme.accentGradient,
+                                badgeText: 'admin.today'.tr(),
+                                badgeColor: currentTheme.accentPrimary,
+                              ),
+                              const SizedBox(height: 10),
+                              RepaintBoundary(
+                                child: _buildNearestClass(nearest),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          );
+                        },
+                      ),
 
                       // Generous bottom buffer ensuring the entire screen can be scrolled comfortably above the home indicator
                       SizedBox(height: MediaQuery.of(context).padding.bottom + 64),
@@ -346,7 +373,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     );
   }
 
-  Widget _buildAppBar(BuildContext context, WidgetRef ref, List<ActivityLog> recentActions) {
+  Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider);
     final currentTheme = ref.watch(appThemeControllerProvider);
 
@@ -390,7 +417,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                 lower == 'адміністратор' ||
                                 lower.startsWith('адміністратор') ||
                                 lower.startsWith('admin')) {
-                              displayName = 'Адмін';
+                              displayName = 'admin.role_short'.tr();
                             } else if (displayName.contains(' ')) {
                               final parts = displayName.split(' ');
                               if (parts.first.length >= 3) {
@@ -462,7 +489,12 @@ class _AdminMainState extends ConsumerState<AdminMain> {
               children: [
                 const ThemeHeaderButton(size: 38),
                 const SizedBox(width: 6),
-                _buildActivityLogHeaderButton(context, recentActions, currentTheme, size: 38),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final recentActions = ref.watch(adminDashboardProvider.select((s) => s.recentActions));
+                    return _buildActivityLogHeaderButton(context, recentActions, currentTheme, size: 38);
+                  },
+                ),
                 const SizedBox(width: 6),
                 Container(
                   width: 38,
@@ -766,20 +798,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       return 'admin.live_beacon_active'.tr();
     }
     final raw = 'admin.live_beacon_idle'.tr();
-    final upper = raw.toUpperCase();
-    if (upper.contains('ПУЛЬС ШКОЛИ') || upper.contains('ПУЛЬС КЛУБУ')) {
-      return 'ПУЛЬС ШКОЛИ';
-    }
-    if (upper.contains('ПУЛЬС КЛУБА')) {
-      return 'ПУЛЬС КЛУБА';
-    }
-    if (upper.contains('CLUB PULSE')) {
-      return 'CLUB PULSE';
-    }
-    if (upper.contains('CLUB-PULS')) {
-      return 'CLUB-PULS';
-    }
-    return raw.split(RegExp(r'[\s·•\-\|\:\.]+онлайн|online', caseSensitive: false)).first.trim();
+    return raw.split(RegExp(r'[\s·•\-\|\:\.]+(?:онлайн|online)', caseSensitive: false)).first.trim();
   }
 
   // ==========================================
@@ -1128,13 +1147,13 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           child: Text(
                             isSessionActive
                                 ? 'admin.in_pool_now_desc'.tr(args: [
-                                    _formatCompactClassTitle(state.ongoingClasses.first.title),
+                                    _formatCompactClassTitle(state.ongoingClasses.first),
                                     state.ongoingClientsCount.toString(),
                                   ])
                                 : (state.nearestClass != null
                                     ? 'admin.nearest_class_at'.tr(args: [
                                         DateFormat('HH:mm').format(state.nearestClass!.startTime),
-                                        _formatCompactClassTitle(state.nearestClass!.title),
+                                        _formatCompactClassTitle(state.nearestClass!),
                                       ])
                                     : 'admin.normal_mode'.tr()),
                             style: TextStyle(
@@ -1192,13 +1211,14 @@ class _AdminMainState extends ConsumerState<AdminMain> {
       );
   }
 
-  String _formatCompactClassTitle(String title) {
-    var cleaned = title.trim();
+  String _formatCompactClassTitle(GroupClass groupClass) {
+    final localized = groupClass.localizedTitle(context.locale.languageCode);
+    var cleaned = localized.trim();
     if (cleaned.toLowerCase().contains('доросла') || cleaned.toLowerCase().contains('дорослих')) {
-      return 'Доросла група';
+      return 'admin.adult_group_short'.tr();
     }
     if (cleaned.toLowerCase().contains('дитяч') || cleaned.toLowerCase().contains('дітей')) {
-      return 'Дитяча група';
+      return 'admin.kids_group_short'.tr();
     }
     cleaned = cleaned.replaceFirst(
       RegExp(r'^(Групові|Індивідуальні|Персональні|Спліт)\s*(заняття|тренування)?\s*[:\-–—]?\s*(для\s+)?', caseSensitive: false),
@@ -1216,7 +1236,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     if (cleaned.isNotEmpty) {
       cleaned = cleaned[0].toUpperCase() + cleaned.substring(1);
     }
-    return cleaned.isEmpty ? title : cleaned;
+    return cleaned.isEmpty ? localized : cleaned;
   }
 
   String _cleanCoachDisplay(String coachName) {
@@ -1684,10 +1704,10 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   unpaidCount == 1
-                                      ? '1 неоплачений абонемент'
+                                      ? 'admin.unpaid_subs_one'.tr()
                                       : (unpaidCount >= 2 && unpaidCount <= 4)
-                                          ? '$unpaidCount неоплачені абонементи'
-                                          : '$unpaidCount неоплачених абонементів',
+                                          ? 'admin.unpaid_subs_few'.tr(namedArgs: {'count': '$unpaidCount'})
+                                          : 'admin.unpaid_subs_many'.tr(namedArgs: {'count': '$unpaidCount'}),
                                   style: TextStyle(
                                     color: isDark ? Colors.white : const Color(0xFF9F1239),
                                     fontSize: 14,
@@ -1871,11 +1891,11 @@ class _AdminMainState extends ConsumerState<AdminMain> {
     final mod10 = count % 10;
     final mod100 = count % 100;
     if (mod10 == 1 && mod100 != 11) {
-      return '$count учень';
+      return 'admin.students_count_one'.tr(namedArgs: {'count': '$count'});
     } else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-      return '$count учні';
+      return 'admin.students_count_few'.tr(namedArgs: {'count': '$count'});
     } else {
-      return '$count учнів';
+      return 'admin.students_count_many'.tr(namedArgs: {'count': '$count'});
     }
   }
 
@@ -2008,7 +2028,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            _formatCompactClassTitle(nearest.title),
+                            _formatCompactClassTitle(nearest),
                             style: TextStyle(
                               color: isDark ? Colors.white : currentTheme.textPrimary,
                               fontWeight: FontWeight.w700,
@@ -2061,7 +2081,9 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            nearest.lane.isNotEmpty ? nearest.lane : 'Всі доріжки',
+                            nearest.lane.isNotEmpty
+                                ? BranchConfig.translatePoolOrLane(nearest.lane, context.locale.languageCode)
+                                : 'admin.all_lanes'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : currentTheme.textPrimary,
                               fontSize: 12.5,
@@ -2123,7 +2145,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Заповненість групи',
+                      'admin.group_occupancy_label'.tr(),
                       style: TextStyle(
                         color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569),
                         fontSize: 12,
@@ -2389,7 +2411,9 @@ class _StudentFacepileAvatarState extends State<_StudentFacepileAvatar> {
       if (doc.exists && mounted) {
         final data = doc.data();
         final rawName = (data?['name'] as String?)?.trim() ?? '';
-        final cleanName = (rawName.isEmpty || rawName.toLowerCase() == 'user') ? 'Учень' : rawName;
+        final cleanName = (rawName.isEmpty || rawName.toLowerCase() == 'user')
+            ? 'common.student_default'.tr()
+            : rawName;
         final parts = cleanName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
         final initials = parts.length >= 2
             ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()

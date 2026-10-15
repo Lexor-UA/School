@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
@@ -55,7 +56,7 @@ class AdminChatEmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Скритний нагляд активний',
+                'admin_chat.stealth_monitoring_active'.tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -66,7 +67,10 @@ class AdminChatEmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Повідомлень між тренером (${coachName ?? 'Тренер'}) та клієнтом ($clientName) поки немає.\nУсі нові повідомлення з\'являтимуться тут автоматично.',
+                'admin_chat.stealth_monitoring_empty_desc'.tr(namedArgs: {
+                  'coach': coachName ?? 'common.coach_default'.tr(),
+                  'client': clientName,
+                }),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.8) : const Color(0xFF64748B),
@@ -82,9 +86,9 @@ class AdminChatEmptyState extends StatelessWidget {
     }
 
     final quickTemplates = [
-      '👋 Вітаємо у школі плавання CitySwim! Чим можемо допомогти?',
-      '📅 Нагадуємо про розклад вашого наступного тренування.',
-      '🏊 Бажаєте записатись на індивідуальне заняття з тренером?',
+      'admin_chat.quick_template_welcome'.tr(),
+      'admin_chat.quick_template_schedule'.tr(),
+      'admin_chat.quick_template_individual'.tr(),
     ];
 
     return Center(
@@ -117,7 +121,7 @@ class AdminChatEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'Початок діалогу з $displayName',
+              'admin_chat.start_dialog_with'.tr(namedArgs: {'name': displayName}),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -128,7 +132,7 @@ class AdminChatEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Напишіть повідомлення або оберіть швидкий шаблон нижче:',
+              'admin_chat.choose_template_hint'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDark ? Colors.white70 : const Color(0xFF64748B),

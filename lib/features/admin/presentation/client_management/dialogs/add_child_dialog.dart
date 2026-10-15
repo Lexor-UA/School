@@ -119,8 +119,8 @@ Future<void> showAddChildDialog({
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(age > 15
-                        ? 'Вік дитини не може перевищувати 15 років (від 16 років клієнт реєструється як дорослий)'
-                        : 'Вік дитини має бути від 1 до 15 років'),
+                        ? 'admin.child_age_max_error'.tr()
+                        : 'admin.child_age_range_error'.tr()),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
@@ -142,7 +142,7 @@ Future<void> showAddChildDialog({
                   'level': 1,
                   'xp': 0,
                   'maxXp': 100,
-                  'notes': age != null ? 'Вік: $age' : '',
+                  'notes': age != null ? '${'admin.child_age'.tr()}: $age' : '',
                 };
                 if (age != null) {
                   childData['age'] = age;
@@ -150,7 +150,7 @@ Future<void> showAddChildDialog({
                 await childRef.set(childData);
                 final admin = ref.read(authControllerProvider);
                 if (admin != null) {
-                  await logAdminAction('Додано дитину "$name" для клієнта "$initialName"', admin.id);
+                  await logAdminAction('admin.log_child_added'.tr(namedArgs: {'child': name, 'client': initialName}), admin.id);
                 }
               } catch (e) {
                 debugPrint('Error adding child: $e');

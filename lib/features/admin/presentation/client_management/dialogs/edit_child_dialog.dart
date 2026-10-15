@@ -118,8 +118,8 @@ Future<void> showEditChildDialog({
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(age > 15
-                        ? 'Вік дитини не може перевищувати 15 років (від 16 років клієнт реєструється як дорослий)'
-                        : 'Вік дитини має бути від 1 до 15 років'),
+                        ? 'admin.child_age_max_error'.tr()
+                        : 'admin.child_age_range_error'.tr()),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
@@ -130,11 +130,11 @@ Future<void> showEditChildDialog({
                 await FirebaseFirestore.instance.collection('children').doc(childId).update({
                   'name': name,
                   'age': age,
-                  'notes': age != null ? 'Вік: $age' : '',
+                  'notes': age != null ? '${'admin.child_age'.tr()}: $age' : '',
                 });
                 final admin = ref.read(authControllerProvider);
                 if (admin != null) {
-                  await logAdminAction('Оновлено дані дитини "$name" клієнта "$initialName"', admin.id);
+                  await logAdminAction('admin.log_child_updated'.tr(namedArgs: {'child': name, 'client': initialName}), admin.id);
                 }
               } catch (e) {
                 debugPrint('Error updating child: $e');

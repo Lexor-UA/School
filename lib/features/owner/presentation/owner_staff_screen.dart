@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -57,33 +58,19 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
     final mod10 = count % 10;
     final mod100 = count % 100;
     if (mod100 >= 11 && mod100 <= 19) {
-      return '$count занять';
+      return 'coach.profile.lessons_many'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 == 1) {
-      return '$count заняття';
+      return 'coach.profile.lessons_one'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 >= 2 && mod10 <= 4) {
-      return '$count заняття';
+      return 'coach.profile.lessons_few'.tr(namedArgs: {'count': '$count'});
     }
-    return '$count занять';
+    return 'coach.profile.lessons_many'.tr(namedArgs: {'count': '$count'});
   }
 
   String _getMonthOnly(DateTime dt) {
-    const months = [
-      'Січень',
-      'Лютий',
-      'Березень',
-      'Квітень',
-      'Травень',
-      'Червень',
-      'Липень',
-      'Серпень',
-      'Вересень',
-      'Жовтень',
-      'Листопад',
-      'Грудень',
-    ];
-    return months[dt.month - 1];
+    return 'common.month_${dt.month}'.tr();
   }
 
   void _openEditSalarySheet({
@@ -121,9 +108,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
     final isDark = themeConfig.isDark;
 
     final tabs = [
-      {'id': 'all', 'label': 'Вся мережа', 'flag': '🌐', 'currency': '₴ / €'},
-      {'id': 'kyiv', 'label': 'Київ', 'flag': '🇺🇦', 'currency': '₴'},
-      {'id': 'vienna', 'label': 'Відень', 'flag': '🇦🇹', 'currency': '€'},
+      {'id': 'all', 'label': 'owner.all_network'.tr(), 'flag': '🌐', 'currency': '₴ / €'},
+      {'id': 'kyiv', 'label': 'branches.city_kyiv'.tr(), 'flag': '🇺🇦', 'currency': '₴'},
+      {'id': 'vienna', 'label': 'branches.city_vienna'.tr(), 'flag': '🇦🇹', 'currency': '€'},
     ];
 
     return ClipRRect(
@@ -325,7 +312,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                             final loginId = (data['loginId'] as String?) ?? '';
                             final bool isAdmin = roleRaw == 'admin' || roleRaw == 'administrator' || loginId.toLowerCase() == 'admin';
                             final role = isAdmin ? 'admin' : 'coach';
-                            final name = (data['name'] as String?) ?? (isAdmin ? 'Адміністратор' : 'Без імені');
+                            final name = (data['name'] as String?) ?? (isAdmin ? 'auth.default_admin'.tr() : 'owner.staff.no_name'.tr());
                             final phone = (data['phone'] as String?) ?? '';
                             final avatarUrl = (data['avatarUrl'] as String?) ??
                                 (isAdmin
@@ -370,12 +357,15 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                               coachCount++;
                               // Find classes for this coach
                               final coachClasses = allClasses.where((c) {
+                                final cBranch = (c.branchId.isEmpty ? 'kyiv' : c.branchId).toLowerCase();
+                                if (cBranch != staffBranchId) return false;
                                 final matchesId = c.coachId == doc.id;
-                                final matchesName = c.coachName.isNotEmpty &&
+                                final matchesName = c.coachId.isEmpty &&
+                                    c.coachName.isNotEmpty &&
                                     (c.coachName.toLowerCase().contains(name.toLowerCase()) ||
                                      name.toLowerCase().contains(c.coachName.toLowerCase()));
                                 return matchesId || matchesName;
-                              }).where((c) => c.startTime.year == now.year && c.startTime.month == now.month).toList();
+                              }).where((c) => c.branchStartTime.year == now.year && c.branchStartTime.month == now.month).toList();
 
                               int conductedG = 0, conductedI = 0, conductedS = 0;
                               int scheduledG = 0, scheduledI = 0, scheduledS = 0;
@@ -384,8 +374,8 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 final isConducted = c.attendedChildIds.isNotEmpty;
                                 final tLower = c.title.toLowerCase();
                                 final cLower = c.category.toLowerCase();
-                                final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);
-                                final isIndividual = !isSplit && (cLower.contains('індивідуал') || tLower.contains('індивідуал') || c.maxCapacity == 1);
+                                final isSplit = tLower.contains('\u0441\u043f\u043b\u0456\u0442') || tLower.contains('split') || (cLower.contains('\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b') && c.maxCapacity == 2);
+                                final isIndividual = !isSplit && (cLower.contains('\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b') || tLower.contains('\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b') || c.maxCapacity == 1);
 
                                 if (isConducted) {
                                   if (isSplit) {
@@ -564,7 +554,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'КОМАНДА ТА СТАВКИ',
+                        'owner.staff.header_subtitle_upper'.tr(),
                         style: TextStyle(
                           color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                           fontSize: 11,
@@ -575,7 +565,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Персонал та Оплата',
+                        'owner.staff.header_title'.tr(),
                         style: TextStyle(
                           color: themeConfig.textPrimary,
                           fontSize: 20,
@@ -673,7 +663,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
           style: TextStyle(color: themeConfig.textPrimary, fontSize: 14),
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
-            hintText: 'Пошук за імʼям, телефоном або ID',
+            hintText: 'owner.staff.search_hint'.tr(),
             hintStyle: TextStyle(
               color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
               fontSize: 13,
@@ -752,7 +742,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         const SizedBox(width: 10),
                         Flexible(
                           child: Text(
-                            'ФОНД ОПЛАТИ',
+                            'owner.staff.payroll_fund_upper'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                               fontSize: 11,
@@ -851,7 +841,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'факт',
+                        'owner.staff.fact_short'.tr(),
                         style: TextStyle(color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857), fontSize: 10.5, fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -860,7 +850,10 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                 if (totalScheduledCoachFundUah > 0 || totalScheduledCoachFundEur > 0) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '+ ${_formatMoney(totalScheduledCoachFundUah, '₴')} / ${_formatMoney(totalScheduledCoachFundEur, '€')} заплановано',
+                    'owner.staff.scheduled_dual'.tr(namedArgs: {
+                      'uah': _formatMoney(totalScheduledCoachFundUah, '₴'),
+                      'eur': _formatMoney(totalScheduledCoachFundEur, '€'),
+                    }),
                     style: TextStyle(color: themeConfig.textSecondary, fontSize: 12),
                   ),
                 ],
@@ -886,7 +879,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'фактично',
+                        'owner.staff.fact_full'.tr(),
                         style: TextStyle(color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857), fontSize: 11, fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -895,7 +888,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                 if ((currencySymbol == '€' ? totalScheduledCoachFundEur : totalScheduledCoachFundUah) > 0) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '+ ${_formatMoney(currencySymbol == '€' ? totalScheduledCoachFundEur : totalScheduledCoachFundUah, currencySymbol)} заплановано до кінця місяця',
+                    'owner.staff.scheduled_end_of_month'.tr(namedArgs: {
+                      'amount': _formatMoney(currencySymbol == '€' ? totalScheduledCoachFundEur : totalScheduledCoachFundUah, currencySymbol),
+                    }),
                     style: TextStyle(color: themeConfig.textSecondary, fontSize: 12),
                   ),
                 ],
@@ -916,7 +911,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                       child: _buildTelemetryStatItem(
                         icon: LucideIcons.waves,
                         value: '$coachCount',
-                        label: 'Тренери',
+                        label: 'owner.staff.coaches'.tr(),
                         sub: _formatLessonsCount(totalConductedClasses),
                         color: const Color(0xFF00E5FF),
                         themeConfig: themeConfig,
@@ -927,8 +922,8 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                       child: _buildTelemetryStatItem(
                         icon: LucideIcons.shieldCheck,
                         value: '$adminCount',
-                        label: 'Адміністратори',
-                        sub: 'Фіксована ставка',
+                        label: 'owner.staff.admins'.tr(),
+                        sub: 'owner.staff.fixed_rate'.tr(),
                         color: const Color(0xFFA855F7),
                         themeConfig: themeConfig,
                       ),
@@ -938,8 +933,8 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                       child: _buildTelemetryStatItem(
                         icon: LucideIcons.users,
                         value: '${coachCount + adminCount}',
-                        label: 'Всього штат',
-                        sub: 'Активний',
+                        label: 'owner.staff.total_staff'.tr(),
+                        sub: 'owner.staff.active_status'.tr(),
                         color: const Color(0xFF10B981),
                         themeConfig: themeConfig,
                       ),
@@ -1009,15 +1004,15 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
           child: Row(
             children: [
               Expanded(
-                child: _buildFilterSegment(0, 'Всі ($totalCount)', LucideIcons.layoutGrid, themeConfig),
+                child: _buildFilterSegment(0, 'owner.staff.filter_all'.tr(namedArgs: {'count': '$totalCount'}), LucideIcons.layoutGrid, themeConfig),
               ),
               const SizedBox(width: 4),
               Expanded(
-                child: _buildFilterSegment(1, 'Тренери ($coachCount)', LucideIcons.waves, themeConfig),
+                child: _buildFilterSegment(1, 'owner.staff.filter_coaches'.tr(namedArgs: {'count': '$coachCount'}), LucideIcons.waves, themeConfig),
               ),
               const SizedBox(width: 4),
               Expanded(
-                child: _buildFilterSegment(2, 'Адміни ($adminCount)', LucideIcons.shieldCheck, themeConfig),
+                child: _buildFilterSegment(2, 'owner.staff.filter_admins'.tr(namedArgs: {'count': '$adminCount'}), LucideIcons.shieldCheck, themeConfig),
               ),
             ],
           ),
@@ -1248,7 +1243,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  isCoach ? 'ТРЕНЕР' : 'АДМІН',
+                                  isCoach ? 'owner.staff.role_coach_upper'.tr() : 'owner.staff.role_admin_upper'.tr(),
                                   style: TextStyle(
                                     color: isCoach
                                         ? (isDark ? const Color(0xFF22D3EE) : const Color(0xFF0284C7))
@@ -1274,7 +1269,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  isVienna ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                                  isVienna ? '🇦🇹 ${'branches.city_vienna'.tr()}' : '🇺🇦 ${'branches.city_kyiv'.tr()}',
                                   style: TextStyle(
                                     color: isVienna
                                         ? (isDark ? const Color(0xFFD8B4FE) : const Color(0xFF9333EA))
@@ -1286,7 +1281,11 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 ),
                               ),
                               Text(
-                                phone.isNotEmpty ? phone : (loginId.isNotEmpty ? 'Логін: $loginId' : 'Персонал'),
+                                phone.isNotEmpty
+                                    ? phone
+                                    : (loginId.isNotEmpty
+                                        ? 'owner.staff.login_with_id'.tr(namedArgs: {'login': loginId})
+                                        : 'owner.staff.staff_fallback'.tr()),
                                 style: TextStyle(
                                   color: themeConfig.textSecondary,
                                   fontSize: 11.5,
@@ -1340,7 +1339,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                   Row(
                     children: [
                       Text(
-                        'ТАРИФИ ТРЕНЕРА:',
+                        'owner.staff.coach_rates_upper'.tr(),
                         style: TextStyle(
                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                           fontSize: 10,
@@ -1355,9 +1354,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildRateBadge('Групові', _formatMoney(rateGroup, effectiveCurrency), LucideIcons.users, isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), isDark),
-                      _buildRateBadge('Індивід.', _formatMoney(rateIndividual, effectiveCurrency), LucideIcons.user, isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706), isDark),
-                      _buildRateBadge('Спліт', _formatMoney(rateSplit, effectiveCurrency), LucideIcons.userPlus, isDark ? const Color(0xFFA855F7) : const Color(0xFF7C3AED), isDark),
+                      _buildRateBadge('owner.staff.rate_group'.tr(), _formatMoney(rateGroup, effectiveCurrency), LucideIcons.users, isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), isDark),
+                      _buildRateBadge('owner.staff.rate_indiv'.tr(), _formatMoney(rateIndividual, effectiveCurrency), LucideIcons.user, isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706), isDark),
+                      _buildRateBadge('owner.staff.rate_split'.tr(), _formatMoney(rateSplit, effectiveCurrency), LucideIcons.userPlus, isDark ? const Color(0xFFA855F7) : const Color(0xFF7C3AED), isDark),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -1378,7 +1377,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Нараховано за місяць:',
+                              'owner.staff.accrued_this_month'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                 fontSize: 11,
@@ -1414,7 +1413,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                'План до кінця міс.:',
+                                'owner.staff.plan_until_end_of_month'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                   fontSize: 10,
@@ -1440,7 +1439,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                   Row(
                     children: [
                       Text(
-                        'ОКЛАД АДМІНІСТРАТОРА:',
+                        'owner.staff.admin_salary_upper'.tr(),
                         style: TextStyle(
                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                           fontSize: 10,
@@ -1478,7 +1477,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Фіксований оклад',
+                                  'owner.staff.fixed_salary'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                     fontSize: 11,
@@ -1487,7 +1486,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${_formatMoney(adminSalary, effectiveCurrency)} / міс',
+                                  '${_formatMoney(adminSalary, effectiveCurrency)} / ${'owner.salary_sheet.per_month_short'.tr()}',
                                   style: TextStyle(
                                     color: themeConfig.textPrimary,
                                     fontSize: 18,
@@ -1508,9 +1507,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                               width: 0.8,
                             ),
                           ),
-                          child: const Text(
-                            'Ставка',
-                            style: TextStyle(
+                          child: Text(
+                            'owner.staff.rate_badge'.tr(),
+                            style: const TextStyle(
                               color: Color(0xFFA855F7),
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -1542,7 +1541,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     ),
                     icon: const Icon(LucideIcons.pencil, size: 14),
                     label: Text(
-                      isCoach ? 'Налаштувати тарифи' : 'Змінити оклад',
+                      isCoach ? 'owner.staff.configure_rates_btn'.tr() : 'owner.staff.change_salary_btn'.tr(),
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -1632,7 +1631,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Співробітників не знайдено',
+              'owner.staff.empty_title'.tr(),
               style: TextStyle(
                 color: themeConfig.textPrimary,
                 fontSize: 16,
@@ -1641,7 +1640,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Спробуйте змінити критерії пошуку або фільтр',
+              'owner.staff.empty_subtitle'.tr(),
               style: TextStyle(
                 color: themeConfig.textSecondary,
                 fontSize: 12,

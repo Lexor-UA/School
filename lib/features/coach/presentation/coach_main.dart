@@ -42,11 +42,11 @@ class _CoachMainState extends ConsumerState<CoachMain> {
           HapticFeedback.mediumImpact();
           AppSnackBar.show(
             context,
-            message: 'У вас нове повідомлення від клієнта',
+            message: 'coach.new_client_message_toast'.tr(),
             icon: LucideIcons.messageSquare,
             backgroundColor: const Color(0xFF0284C7),
             action: SnackBarAction(
-              label: 'Відкрити',
+              label: 'common.open'.tr(),
               textColor: Colors.white,
               onPressed: () => showCoachDialogsSheet(context),
             ),

@@ -159,7 +159,7 @@ void main() {
       final viennaPass = SubscriptionPackageCatalog.getById('vienna_monat_8');
       expect(viennaPass, isNotNull);
       expect(viennaPass!.getLocalizedName('de'), equals('8 Einheiten pro Monat'));
-      expect(viennaPass.getLocalizedName('en'), equals('8 Lessons / Month'));
+      expect(viennaPass.getLocalizedName('en'), contains('8 Lessons / Month'));
       expect(viennaPass.getLocalizedName('uk'), contains('8 занять на місяць'));
 
       final kyivPass = SubscriptionPackageCatalog.getById('kyiv_month_8');

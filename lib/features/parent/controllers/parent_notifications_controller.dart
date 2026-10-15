@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -19,7 +20,8 @@ class ParentNotification {
   final IconData icon;
   final Color? iconColor;
   final bool isRead;
-  final String? actionType; // 'chat', 'calendar', 'subscription', 'family_invite'
+  final String? actionType; // 'chat', 'coach_chat', 'calendar', 'subscription', 'family_invite'
+  final String? dialogId;
   final String? inviteCode;
   final String? senderId;
   final String? senderName;
@@ -34,6 +36,7 @@ class ParentNotification {
     this.iconColor,
     this.isRead = false,
     this.actionType,
+    this.dialogId,
     this.inviteCode,
     this.senderId,
     this.senderName,
@@ -53,6 +56,7 @@ class ParentNotification {
       iconColor: iconColor,
       isRead: isRead ?? this.isRead,
       actionType: actionType,
+      dialogId: dialogId,
       inviteCode: inviteCode,
       senderId: senderId,
       senderName: senderName,
@@ -85,6 +89,10 @@ final parentFirestoreNotificationsStreamProvider =
     for (final doc in snapshot.docs) {
       try {
         final data = doc.data();
+        if (data['type'] == 'chat_push') {
+          // Real-time chat notifications are synthesized directly from chats stream in step 2
+          continue;
+        }
         final iconName = data['icon']?.toString() ?? 'bell';
         IconData iconData;
         switch (iconName) {
@@ -124,13 +132,14 @@ final parentFirestoreNotificationsStreamProvider =
         list.add(
           ParentNotification(
             id: doc.id,
-            title: data['title']?.toString() ?? 'Нагадування про абонемент',
+            title: data['title']?.toString() ?? 'notifications.sub_reminder_title'.tr(),
             message: data['message']?.toString() ?? '',
             timestamp: timestamp,
             icon: iconData,
             iconColor: iconColor ?? const Color(0xFFF59E0B),
             isRead: data['isRead'] as bool? ?? false,
             actionType: data['actionType']?.toString() ?? 'subscription',
+            dialogId: data['dialogId']?.toString(),
             inviteCode: data['inviteCode']?.toString(),
             senderId: data['senderId']?.toString(),
             senderName: data['senderName']?.toString(),
@@ -193,11 +202,11 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
               ParentNotification(
                 id: id,
                 title: isReminder
-                    ? 'Нагадування від адміністратора'
-                    : (isCoach ? 'Повідомлення від тренера$coachName' : 'Повідомлення від адміністратора'),
+                    ? 'notifications.admin_reminder_title'.tr()
+                    : (isCoach ? '${'notifications.coach_msg_title'.tr()}$coachName' : 'notifications.admin_msg_title'.tr()),
                 message: dialog.lastMessage.isNotEmpty
                     ? dialog.lastMessage
-                    : (isCoach ? 'У вас нове повідомлення від тренера' : 'У вас нове повідомлення у чаті підтримки'),
+                    : (isCoach ? 'notifications.new_coach_msg'.tr() : 'notifications.new_support_msg'.tr()),
                 timestamp: dialog.lastMessageTime,
                 icon: isReminder
                     ? LucideIcons.creditCard
@@ -206,7 +215,10 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
                     ? const Color(0xFFF59E0B)
                     : (isCoach ? const Color(0xFF10B981) : const Color(0xFF00E5FF)),
                 isRead: isRead,
-                actionType: isReminder ? 'subscription' : 'chat',
+                actionType: isReminder ? 'subscription' : (isCoach ? 'coach_chat' : 'chat'),
+                dialogId: dialog.id,
+                senderId: isCoach ? dialog.coachId : 'admin',
+                senderName: isCoach ? dialog.coachName : 'chat.admin_title'.tr(),
               ),
             );
           }
@@ -233,7 +245,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
           allNotifications.add(
             ParentNotification(
               id: id,
-              title: activity.classTitle.isNotEmpty ? activity.classTitle : 'Оновлення розкладу',
+              title: activity.classTitle.isNotEmpty ? activity.classTitle : 'notifications.schedule_update_title'.tr(),
               message: activity.message,
               timestamp: activity.timestamp,
               icon: LucideIcons.calendarClock,
@@ -257,8 +269,8 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
           allNotifications.add(
             ParentNotification(
               id: id,
-              title: 'Абонемент завершується',
-              message: 'Залишилось ${sub.remainingClasses} занять. Не забудьте подовжити абонемент!',
+              title: 'notifications.sub_expiring_title'.tr(),
+              message: 'notifications.sub_expiring_msg'.tr(args: [sub.remainingClasses.toString()]),
               timestamp: DateTime.now().subtract(const Duration(hours: 1)),
               icon: LucideIcons.creditCard,
               iconColor: const Color(0xFFF59E0B),
@@ -309,6 +321,15 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
     );
   }
 
+  bool _isCloudNotification(String id) {
+    return !id.startsWith('default_') &&
+        !id.startsWith('chat_') &&
+        !id.startsWith('activity_') &&
+        !id.startsWith('sub_') &&
+        !id.startsWith('rem24h_') &&
+        !id.startsWith('rem2h_');
+  }
+
   Future<void> markAllAsRead() async {
     final user = ref.read(authControllerProvider);
     final prefs = ref.read(sharedPrefsProvider);
@@ -317,10 +338,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
     final updatedReadIds = Set<String>.from(state.readIds);
     for (final notif in state.notifications) {
       updatedReadIds.add(notif.id);
-      if (!notif.id.startsWith('default_') &&
-          !notif.id.startsWith('chat_') &&
-          !notif.id.startsWith('activity_') &&
-          !notif.id.startsWith('sub_')) {
+      if (_isCloudNotification(notif.id)) {
         try {
           FirebaseFirestore.instance.collection('notifications').doc(notif.id).update({'isRead': true});
         } catch (_) {}
@@ -345,10 +363,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
     final updatedReadIds = Set<String>.from(state.readIds)..add(id);
     await prefs.setStringList(_getPrefsKey(userId), updatedReadIds.toList());
 
-    if (!id.startsWith('default_') &&
-        !id.startsWith('chat_') &&
-        !id.startsWith('activity_') &&
-        !id.startsWith('sub_')) {
+    if (_isCloudNotification(id)) {
       try {
         await FirebaseFirestore.instance.collection('notifications').doc(id).update({'isRead': true});
       } catch (_) {}
@@ -375,10 +390,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
     final updatedClearedIds = prefs.getStringList(_getClearedPrefsKey(userId))?.toSet() ?? <String>{};
     for (final notif in state.notifications) {
       updatedClearedIds.add(notif.id);
-      if (!notif.id.startsWith('default_') &&
-          !notif.id.startsWith('chat_') &&
-          !notif.id.startsWith('activity_') &&
-          !notif.id.startsWith('sub_')) {
+      if (_isCloudNotification(notif.id)) {
         try {
           await FirebaseFirestore.instance.collection('notifications').doc(notif.id).delete();
         } catch (_) {}
@@ -402,10 +414,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
     updatedClearedIds.add(id);
     await prefs.setStringList(_getClearedPrefsKey(userId), updatedClearedIds.toList());
 
-    if (!id.startsWith('default_') &&
-        !id.startsWith('chat_') &&
-        !id.startsWith('activity_') &&
-        !id.startsWith('sub_')) {
+    if (_isCloudNotification(id)) {
       try {
         await FirebaseFirestore.instance.collection('notifications').doc(id).delete();
       } catch (_) {}

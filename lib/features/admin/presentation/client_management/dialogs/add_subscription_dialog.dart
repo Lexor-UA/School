@@ -95,7 +95,7 @@ void showAddSubscriptionDialog({
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Абонемент:',
+                  'admin.subscription_label'.tr(),
                   style: TextStyle(
                     color: isDark ? Colors.white70 : const Color(0xFF64748B),
                     fontSize: 13,
@@ -139,7 +139,7 @@ void showAddSubscriptionDialog({
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Для кого:',
+                  'admin.for_whom_label'.tr(),
                   style: TextStyle(
                     color: isDark ? Colors.white70 : const Color(0xFF64748B),
                     fontSize: 13,
@@ -149,7 +149,7 @@ void showAddSubscriptionDialog({
                 const SizedBox(height: 8),
                 if (availableOwners.isEmpty)
                   Text(
-                    'Немає дітей, буде призначено на клієнта',
+                    'admin.no_children_assign_to_client'.tr(),
                     style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
                   )
                 else
@@ -199,7 +199,7 @@ void showAddSubscriptionDialog({
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      'ℹ️ Для дітей до 6 років ($ownerAge р.) доступні лише персональні індивідуальні абонементи (групові та спліт — від 6 років).',
+                      'admin.under_6_sub_hint'.tr(namedArgs: {'age': '$ownerAge'}),
                       style: TextStyle(
                         color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                         fontSize: 12,
@@ -226,7 +226,11 @@ void showAddSubscriptionDialog({
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'У "$selectedOwner" вже є активний абонемент (${existingSub?.serviceName ?? 'Абонемент'}, залишилось ${existingSub?.remainingClasses} занять). Новий абонемент замінить та деактивує попередній.',
+                            'admin.active_sub_replace_warning'.tr(namedArgs: {
+                              'owner': selectedOwner,
+                              'service': existingSub?.serviceName ?? 'admin.cat_subscriptions'.tr(),
+                              'remaining': '${existingSub?.remainingClasses ?? 0}',
+                            }),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
                               fontSize: 12,
@@ -259,6 +263,8 @@ void showAddSubscriptionDialog({
                   final serviceDetails = services.firstWhere((s) => s['name'] == selectedService);
                   final classes = serviceDetails['classes'] as int;
                   final validityDays = serviceDetails['validityDays'] as int;
+                  final price = (serviceDetails['price'] as num?)?.toDouble() ?? 0.0;
+                  final isChildService = serviceDetails['isAdult'] == false;
                   final expiry = DateTime.now().add(Duration(days: validityDays));
                   
                   final db = FirebaseFirestore.instance;
@@ -277,9 +283,12 @@ void showAddSubscriptionDialog({
                     }
 
                     final effectiveBranch = ref.read(effectiveBranchProvider);
+                    final paymentDocRef = db.collection('payments').doc();
+                    final now = DateTime.now();
+                    final isChildOwner = selectedOwner.trim() != initialName.trim() || isChildService;
 
                     final newSub = Subscription(
-                      id: 'sub_${DateTime.now().microsecondsSinceEpoch}_${selectedOwner.hashCode}',
+                      id: 'sub_${now.microsecondsSinceEpoch}_${selectedOwner.hashCode}',
                       userId: clientId,
                       totalClasses: classes,
                       remainingClasses: classes,
@@ -291,14 +300,45 @@ void showAddSubscriptionDialog({
                       branchId: effectiveBranch.id,
                       currency: effectiveBranch.currencyCode,
                       currencySymbol: effectiveBranch.currencySymbol,
+                      paymentDocId: paymentDocRef.id,
                     );
                     
                     batch.set(db.collection('subscriptions').doc(newSub.id), newSub.toJson());
+                    batch.set(paymentDocRef, {
+                      'id': paymentDocRef.id,
+                      'organization_id': effectiveBranch.organizationId,
+                      'organizationId': effectiveBranch.organizationId,
+                      'branch_id': effectiveBranch.id,
+                      'branchId': effectiveBranch.id,
+                      'client_id': clientId,
+                      'clientId': clientId,
+                      'client_name': initialName,
+                      'clientName': initialName,
+                      if (isChildOwner) 'child_id': selectedOwner,
+                      if (isChildOwner) 'childId': selectedOwner,
+                      if (isChildOwner) 'child_name': selectedOwner,
+                      if (isChildOwner) 'childName': selectedOwner,
+                      'package_id': isChildOwner ? 'admin_child_pkg' : 'admin_adult_pkg',
+                      'packageId': isChildOwner ? 'admin_child_pkg' : 'admin_adult_pkg',
+                      'package_name': selectedService,
+                      'packageName': selectedService,
+                      'amount': price,
+                      'currency': effectiveBranch.currencyCode,
+                      'currency_symbol': effectiveBranch.currencySymbol,
+                      'currencySymbol': effectiveBranch.currencySymbol,
+                      'payment_gateway': effectiveBranch.id == 'vienna' ? 'stripe' : 'liqpay',
+                      'status': 'completed',
+                      'transaction_id': 'ADM-${now.millisecondsSinceEpoch}',
+                      'receipt_number': 'ADM-REC-${now.millisecondsSinceEpoch}',
+                      'payment_method': 'admin_pos',
+                      'created_at': Timestamp.fromDate(now),
+                      'createdAt': Timestamp.fromDate(now),
+                    });
                     await batch.commit();
                     
                     final admin = ref.read(authControllerProvider);
                     if (admin != null) {
-                      await logAdminAction('Призначено абонемент "${serviceDetails['name']}" для "$selectedOwner"', admin.id);
+                      await logAdminAction('admin.log_sub_assigned'.tr(namedArgs: {'service': '${serviceDetails['name']}', 'owner': selectedOwner}), admin.id);
                     }
                   } catch (e) {
                     debugPrint('Error assigning sub: $e');

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../tenancy/controllers/tenancy_controller.dart';
 import '../../payment/models/payment_transaction.dart';
 import '../../admin/controllers/admin_dashboard_controller.dart';
@@ -69,7 +70,7 @@ class OwnerAnalyticsState {
   final BranchFinancialSummary vienna;
   final String? activeBranchId;
   final bool isAllLocations;
-  final String selectedTimeframe; // 'Тиждень', 'Місяць', 'Квартал', 'Рік'
+  final String selectedTimeframe; // 'day', 'week', 'month', 'quarter', 'year'
   final List<PaymentTransaction> recentTransactions;
 
   const OwnerAnalyticsState({
@@ -78,7 +79,7 @@ class OwnerAnalyticsState {
     required this.activeBranchId,
     required this.isAllLocations,
     required this.recentTransactions,
-    this.selectedTimeframe = 'Місяць',
+    this.selectedTimeframe = 'month',
   });
 
   /// Чи активний Відень
@@ -124,15 +125,68 @@ class OwnerAnalyticsState {
   }
 }
 
+/// Запис про фактичну виплату персоналу з колекції `payouts`
+class PayoutRecord {
+  final String id;
+  final String staffId;
+  final String staffName;
+  final String branchId;
+  final String currency;
+  final double amount;
+  final String period;
+  final DateTime createdAt;
+
+  const PayoutRecord({
+    required this.id,
+    required this.staffId,
+    required this.staffName,
+    required this.branchId,
+    required this.currency,
+    required this.amount,
+    required this.period,
+    required this.createdAt,
+  });
+
+  factory PayoutRecord.fromMap(Map<String, dynamic> map, {String id = ''}) {
+    DateTime parsedDate = DateTime.now();
+    final rawDate = map['createdAt'];
+    if (rawDate is Timestamp) {
+      parsedDate = rawDate.toDate();
+    } else if (rawDate is String) {
+      parsedDate = DateTime.tryParse(rawDate) ?? DateTime.now();
+    }
+    final rawBranch = (map['branchId'] as String?)?.toLowerCase().trim();
+    final rawCurrency = (map['currency'] as String?)?.trim() ?? '';
+    final String resolvedBranch = (rawBranch != null && rawBranch.isNotEmpty)
+        ? rawBranch
+        : (rawCurrency == '€' || rawCurrency.toUpperCase() == 'EUR' ? 'vienna' : 'kyiv');
+
+    return PayoutRecord(
+      id: id,
+      staffId: (map['staffId'] as String?) ?? '',
+      staffName: (map['staffName'] as String?) ?? '',
+      branchId: resolvedBranch,
+      currency: rawCurrency.isNotEmpty ? rawCurrency : (resolvedBranch == 'vienna' ? '€' : '₴'),
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      period: (map['period'] as String?) ?? '',
+      createdAt: parsedDate,
+    );
+  }
+}
+
 /// Потік платежів з Firestore з підтримкою оффлайн-кешу
 final ownerPaymentsStreamProvider = StreamProvider<List<PaymentTransaction>>((ref) {
-  return FirebaseFirestore.instance
-      .collection('payments')
-      .where('status', isEqualTo: 'completed')
-      .snapshots()
-      .map((snapshot) {
-    return snapshot.docs.map((doc) => PaymentTransaction.fromMap(doc.data(), id: doc.id)).toList();
-  });
+  try {
+    return FirebaseFirestore.instance
+        .collection('payments')
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => PaymentTransaction.fromMap(doc.data(), id: doc.id)).toList();
+    });
+  } catch (_) {
+    return Stream.value(const <PaymentTransaction>[]);
+  }
 });
 
 /// Провайдер списку платежів для аналітики
@@ -140,9 +194,34 @@ final ownerPaymentsProvider = Provider<List<PaymentTransaction>>((ref) {
   return ref.watch(ownerPaymentsStreamProvider).value ?? [];
 });
 
+/// Потік фактичних виплат (витрат) з колекції `payouts` у Firestore
+final ownerPayoutsStreamProvider = StreamProvider<List<PayoutRecord>>((ref) {
+  try {
+    return FirebaseFirestore.instance
+        .collection('payouts')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .where((doc) {
+            final status = doc.data()['status'] as String?;
+            return status == null || status == 'completed';
+          })
+          .map((doc) => PayoutRecord.fromMap(doc.data(), id: doc.id))
+          .toList();
+    });
+  } catch (_) {
+    return Stream.value(const <PayoutRecord>[]);
+  }
+});
+
+/// Провайдер списку виплат для аналітики витрат
+final ownerPayoutsProvider = Provider<List<PayoutRecord>>((ref) {
+  return ref.watch(ownerPayoutsStreamProvider).value ?? [];
+});
+
 /// Контролер аналітики Власника
 class OwnerAnalyticsNotifier extends Notifier<OwnerAnalyticsState> {
-  String _currentTimeframe = 'Місяць';
+  String _currentTimeframe = 'month';
   OwnerAnalyticsState? _lastKnownState;
 
   @override
@@ -165,32 +244,48 @@ class OwnerAnalyticsNotifier extends Notifier<OwnerAnalyticsState> {
     }
 
     final allPayments = ref.watch(ownerPaymentsProvider);
+    final allPayouts = ref.watch(ownerPayoutsProvider);
 
     final now = DateTime.now();
     DateTime startDate;
-    if (timeframe == 'День') {
+    if (timeframe == 'day') {
       startDate = DateTime(now.year, now.month, now.day);
-    } else if (timeframe == 'Тиждень') {
+    } else if (timeframe == 'week') {
       var d = now.subtract(Duration(days: now.weekday - 1));
       startDate = DateTime(d.year, d.month, d.day);
-    } else { // 'Місяць'
+    } else if (timeframe == 'quarter') {
+      final quarterStartMonth = ((now.month - 1) ~/ 3) * 3 + 1;
+      startDate = DateTime(now.year, quarterStartMonth, 1);
+    } else if (timeframe == 'year') {
+      startDate = DateTime(now.year, 1, 1);
+    } else { // 'month'
       startDate = DateTime(now.year, now.month, 1);
     }
+
+    final currentMonthPeriod = '${'common.month_${now.month}'.tr()} ${now.year}';
 
     final payments = allPayments.where((p) {
       return p.createdAt.isAfter(startDate) || p.createdAt.isAtSameMomentAs(startDate);
     }).toList();
 
-    // Calculate Kyiv Revenue (чисті реальні дані: якщо транзакцій немає, виручка і прибуток = 0.0)
+    final payouts = allPayouts.where((p) {
+      if (timeframe == 'month' && p.period == currentMonthPeriod) {
+        return true;
+      }
+      return p.createdAt.isAfter(startDate) || p.createdAt.isAtSameMomentAs(startDate);
+    }).toList();
+
+    // Calculate Kyiv Revenue & Real Expenses from `payouts`
     final kyivPayments = payments.where((p) => p.branchId == 'kyiv').toList();
+    final kyivPayouts = payouts.where((p) => p.branchId == 'kyiv' && p.currency != '€').toList();
     final double kyivRevenue = kyivPayments.fold(0.0, (acc, p) => acc + p.amount);
     final double kyivChildRevenue = kyivPayments
         .where((p) => p.packageId.contains('child') || (p.childId != null && p.childId!.isNotEmpty))
         .fold(0.0, (acc, p) => acc + p.amount);
     final double kyivAdultRevenue = kyivRevenue - kyivChildRevenue;
     final int kyivClients = adminDashboard.branchMetrics['kyiv']?.activeClientsCount ?? 0;
-    final double kyivExpenses = kyivPayments.isEmpty ? 0.0 : (kyivRevenue * (40300.0 / 124500.0));
-    final double kyivProfit = kyivPayments.isEmpty ? 0.0 : (kyivRevenue - kyivExpenses);
+    final double kyivExpenses = kyivPayouts.fold(0.0, (acc, p) => acc + p.amount);
+    final double kyivProfit = kyivRevenue - kyivExpenses;
     final double kyivLtv = kyivClients > 0 ? (kyivRevenue / kyivClients) : 0.0;
 
     final double kyivAvgCheck = kyivPayments.isNotEmpty ? kyivRevenue / kyivPayments.length : 0.0;
@@ -217,16 +312,17 @@ class OwnerAnalyticsNotifier extends Notifier<OwnerAnalyticsState> {
       churnPercent: kyivClients > 0 ? 2.4 : 0.0,
     );
 
-    // Calculate Vienna Revenue (чисті реальні дані: якщо транзакцій немає, виручка і прибуток = 0.0)
+    // Calculate Vienna Revenue & Real Expenses from `payouts`
     final viennaPayments = payments.where((p) => p.branchId == 'vienna').toList();
+    final viennaPayouts = payouts.where((p) => p.branchId == 'vienna' || p.currency == '€').toList();
     final double viennaRevenue = viennaPayments.fold(0.0, (acc, p) => acc + p.amount);
     final double viennaChildRevenue = viennaPayments
         .where((p) => p.packageId.contains('child') || (p.childId != null && p.childId!.isNotEmpty))
         .fold(0.0, (acc, p) => acc + p.amount);
     final double viennaAdultRevenue = viennaRevenue - viennaChildRevenue;
     final int viennaClients = adminDashboard.branchMetrics['vienna']?.activeClientsCount ?? 0;
-    final double viennaExpenses = viennaPayments.isEmpty ? 0.0 : (viennaRevenue * (5200.0 / 14850.0));
-    final double viennaProfit = viennaPayments.isEmpty ? 0.0 : (viennaRevenue - viennaExpenses);
+    final double viennaExpenses = viennaPayouts.fold(0.0, (acc, p) => acc + p.amount);
+    final double viennaProfit = viennaRevenue - viennaExpenses;
     final double viennaLtv = viennaClients > 0 ? (viennaRevenue / viennaClients) : 0.0;
 
     final double viennaAvgCheck = viennaPayments.isNotEmpty ? viennaRevenue / viennaPayments.length : 0.0;

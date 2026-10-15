@@ -89,4 +89,48 @@ class BranchPaymentConfig {
     'isTestMode': isTestMode,
     'legalEntityDetails': legalEntityDetails,
   };
+
+  BranchPaymentConfig copyWith({
+    String? branchId,
+    String? organizationId,
+    String? provider,
+    String? gatewayName,
+    String? currency,
+    String? currencySymbol,
+    List<String>? supportedMethods,
+    bool? isTestMode,
+    Map<String, String>? legalEntityDetails,
+  }) {
+    return BranchPaymentConfig(
+      branchId: branchId ?? this.branchId,
+      organizationId: organizationId ?? this.organizationId,
+      provider: provider ?? this.provider,
+      gatewayName: gatewayName ?? this.gatewayName,
+      currency: currency ?? this.currency,
+      currencySymbol: currencySymbol ?? this.currencySymbol,
+      supportedMethods: supportedMethods ?? this.supportedMethods,
+      isTestMode: isTestMode ?? this.isTestMode,
+      legalEntityDetails: legalEntityDetails ?? this.legalEntityDetails,
+    );
+  }
+
+  factory BranchPaymentConfig.fromMap(Map<String, dynamic> map, {required String defaultBranchId}) {
+    final base = BranchPaymentConfig.forBranch(defaultBranchId);
+    final rawDetails = map['legalEntityDetails'] as Map<String, dynamic>?;
+    final Map<String, String> details = rawDetails != null
+        ? rawDetails.map((k, v) => MapEntry(k, v.toString()))
+        : Map<String, String>.from(base.legalEntityDetails);
+
+    return BranchPaymentConfig(
+      branchId: map['branchId'] as String? ?? base.branchId,
+      organizationId: map['organizationId'] as String? ?? base.organizationId,
+      provider: map['provider'] as String? ?? base.provider,
+      gatewayName: map['gatewayName'] as String? ?? base.gatewayName,
+      currency: map['currency'] as String? ?? base.currency,
+      currencySymbol: map['currencySymbol'] as String? ?? base.currencySymbol,
+      supportedMethods: (map['supportedMethods'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? base.supportedMethods,
+      isTestMode: map['isTestMode'] as bool? ?? base.isTestMode,
+      legalEntityDetails: details,
+    );
+  }
 }

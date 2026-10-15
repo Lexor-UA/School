@@ -1025,6 +1025,17 @@ class AuthController extends _$AuthController {
 
           var usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
           if (usersSnap.docs.isEmpty) {
+            final coachesSnap = await FirebaseFirestore.instance.collection('coaches').where('loginId', isEqualTo: login).get();
+            if (coachesSnap.docs.isNotEmpty) {
+              final coachDoc = coachesSnap.docs.first;
+              final coachData = Map<String, dynamic>.from(coachDoc.data());
+              coachData['id'] = coachDoc.id;
+              coachData['role'] = 'coach';
+              await FirebaseFirestore.instance.collection('users').doc(coachDoc.id).set(coachData, SetOptions(merge: true));
+              usersSnap = await FirebaseFirestore.instance.collection('users').where('id', isEqualTo: coachDoc.id).get();
+            }
+          }
+          if (usersSnap.docs.isEmpty) {
             if (login == 'maria' || login == 'coach_maria' || login.contains('maria')) {
               final mDoc = await FirebaseFirestore.instance.collection('users').doc('coach_maria').get();
               if (mDoc.exists) {
@@ -1128,6 +1139,17 @@ class AuthController extends _$AuthController {
           return;
         }
       } else if (login == 'client' || login == 'client1' || login == 'parent' || login.startsWith('client') || !login.contains('@')) {
+        if (FirebaseAuth.instance.currentUser == null) {
+          final safeId = login.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+          final clientEmail = 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
+          await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
+          if (FirebaseAuth.instance.currentUser == null) {
+            try {
+              await FirebaseAuth.instance.signInAnonymously();
+            } catch (_) {}
+          }
+        }
+
         final normalizedPhone = _normalizePhone(email);
         final rawDigits = email.replaceAll(RegExp(r'\D'), '');
 

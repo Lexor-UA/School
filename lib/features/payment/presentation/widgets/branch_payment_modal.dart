@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +64,6 @@ class BranchPaymentModal extends ConsumerStatefulWidget {
 class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
   bool _isProcessing = false;
   String? _errorMessage;
-  String _selectedMethod = 'card';
   PaymentReceipt? _completedReceipt;
 
   @override
@@ -72,7 +72,9 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     final isDark = currentTheme.isDark;
     final tenancyState = ref.watch(tenancyControllerProvider);
     final activeBranch = tenancyState.effectiveBranch;
-    final paymentConfig = ref.watch(branchPaymentServiceProvider).getPaymentConfig(widget.package.branchId);
+    final liveConfigAsync = ref.watch(branchPaymentConfigStreamProvider(widget.package.branchId));
+    final paymentConfig = liveConfigAsync.value ??
+        ref.watch(branchPaymentServiceProvider).getPaymentConfig(widget.package.branchId);
 
     final mediaQuery = MediaQuery.of(context);
     final bottomPadding = math.max(mediaQuery.padding.bottom, 16.0) +
@@ -80,7 +82,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: mediaQuery.size.height * 0.90,
+        maxHeight: mediaQuery.size.height * 0.92,
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -137,7 +139,6 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     final isVienna = widget.package.branchId == 'vienna';
     final branchFlag = isVienna ? '🇦🇹' : '🇺🇦';
     final branchTitle = isVienna ? 'CitySwim Vienna' : 'CitySwim Kyiv';
-    final gatewayBadge = paymentConfig.gatewayName;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -156,55 +157,55 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         ),
         const SizedBox(height: 18),
 
-        // Header with Branch & Safe Mock Badge
+        // Header with Branch & Bank Transfer Badge
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F2640) : const Color(0xFFE8F4FD),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F2640) : const Color(0xFFE8F4FD),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: currentTheme.accentPrimary.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(branchFlag, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 6),
+                  Text(
+                    branchTitle,
+                    style: TextStyle(
+                      color: currentTheme.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Text(branchFlag, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 6),
-                      Text(
-                        branchTitle,
-                        style: TextStyle(
-                          color: currentTheme.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.4),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(LucideIcons.shieldCheck, color: Color(0xFF10B981), size: 14),
-                  SizedBox(width: 5),
+                  Icon(
+                    LucideIcons.landmark,
+                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    size: 14,
+                  ),
+                  const SizedBox(width: 5),
                   Text(
-                    'Mock Payment (Тест)',
+                    'payment.bank_transfer_badge'.tr(),
                     style: TextStyle(
-                      color: Color(0xFF10B981),
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -254,7 +255,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                 children: [
                   Expanded(
                     child: Text(
-                      widget.package.name,
+                      widget.package.getLocalizedName(context.locale.languageCode),
                       style: TextStyle(
                         color: isDark ? Colors.white : currentTheme.textPrimary,
                         fontSize: 18,
@@ -285,14 +286,14 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                 children: [
                   _buildMetaBadge(
                     icon: LucideIcons.calendar,
-                    text: '${widget.package.classes} занять',
+                    text: _formatClassesCount(widget.package.classes),
                     currentTheme: currentTheme,
                     isDark: isDark,
                   ),
                   const SizedBox(width: 8),
                   _buildMetaBadge(
                     icon: LucideIcons.clock,
-                    text: '${widget.package.validityDays} днів',
+                    text: 'payment.days_count'.tr(args: ['${widget.package.validityDays}']),
                     currentTheme: currentTheme,
                     isDark: isDark,
                   ),
@@ -312,61 +313,177 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         ),
         const SizedBox(height: 18),
 
-        // Payment Gateway Selector
-        Text(
-          'Платіжний провайдер філії ($gatewayBadge)',
-          style: TextStyle(
-            color: currentTheme.textSecondary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+        // Bank Requisites Pod
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF071A2E),
+                      Color(0xFF041220),
+                    ]
+                  : const [
+                      Color(0xFFF8FAFC),
+                      Color(0xFFF0F9FF),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFFBAE6FD),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        LucideIcons.landmark,
+                        size: 16,
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'payment.requisites_title'.tr(),
+                          style: TextStyle(
+                            color: currentTheme.textPrimary,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'payment.requisites_subtitle'.tr(),
+                          style: TextStyle(
+                            color: currentTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
 
-        Row(
-          children: [
-            Expanded(
-              child: _buildMethodButton(
-                id: 'apple_pay',
-                icon: LucideIcons.smartphone,
-                label: 'Apple Pay',
-                isDark: isDark,
+              // Requisite fields with individual copy actions
+              _buildRequisiteItem(
+                label: 'payment.recipient_label'.tr(),
+                value: paymentConfig.legalEntityDetails['companyName'] ?? (isVienna ? 'CitySwim Vienna GmbH' : 'ТОВ "СітіСвім Україна"'),
+                icon: LucideIcons.building,
+                context: context,
                 currentTheme: currentTheme,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildMethodButton(
-                id: 'google_pay',
-                icon: LucideIcons.qrCode,
-                label: 'Google Pay',
                 isDark: isDark,
-                currentTheme: currentTheme,
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildMethodButton(
-                id: 'card',
+              const SizedBox(height: 8),
+              _buildRequisiteItem(
+                label: 'IBAN',
+                value: paymentConfig.legalEntityDetails['iban'] ?? (isVienna ? 'AT893700000001234567' : 'UA82305299000002600123456789'),
                 icon: LucideIcons.creditCard,
-                label: 'Картка',
-                isDark: isDark,
+                isMonospace: true,
+                isHighlight: true,
+                context: context,
                 currentTheme: currentTheme,
+                isDark: isDark,
               ),
-            ),
-            if (isVienna) ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMethodButton(
-                  id: 'sepa',
-                  icon: LucideIcons.landmark,
-                  label: 'SEPA / EPS',
-                  isDark: isDark,
-                  currentTheme: currentTheme,
+              const SizedBox(height: 8),
+              _buildRequisiteItem(
+                label: paymentConfig.legalEntityDetails['taxIdLabel'] ?? (isVienna ? 'UID-Nummer' : 'ЄДРПОУ'),
+                value: paymentConfig.legalEntityDetails['taxId'] ?? (isVienna ? 'ATU78945612' : '43892104'),
+                icon: LucideIcons.fileText,
+                context: context,
+                currentTheme: currentTheme,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildRequisiteItem(
+                label: 'payment.bank_label'.tr(),
+                value: paymentConfig.legalEntityDetails['bankName'] ?? (isVienna ? 'Erste Bank AG' : 'АТ КБ "ПриватБанк"'),
+                icon: LucideIcons.landmark,
+                context: context,
+                currentTheme: currentTheme,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildRequisiteItem(
+                label: 'payment.amount_to_pay_label'.tr(),
+                value: widget.package.formattedPricePretty,
+                icon: LucideIcons.coins,
+                isHighlight: true,
+                context: context,
+                currentTheme: currentTheme,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildRequisiteItem(
+                label: 'payment.payment_purpose_label'.tr(),
+                value: 'payment.payment_purpose_value'.tr(args: [
+                  widget.package.getLocalizedName(context.locale.languageCode),
+                  widget.childName ?? widget.clientName,
+                ]),
+                icon: LucideIcons.messageSquare,
+                context: context,
+                currentTheme: currentTheme,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 14),
+
+              // Button: Copy all requisites
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _copyAllRequisites(context, paymentConfig, isVienna),
+                  icon: Icon(
+                    LucideIcons.copy,
+                    size: 15,
+                    color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                  ),
+                  label: Text(
+                    'payment.copy_all_requisites'.tr(),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: BorderSide(
+                      color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
             ],
-          ],
+          ),
         ),
         const SizedBox(height: 14),
 
@@ -386,7 +503,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Безпечний режим: реальні кошти не списуються. Після підтвердження абонемент буде миттєво активовано у філії $branchTitle, а ви отримаєте електронну квитанцію.',
+                  'payment.bank_transfer_info_banner'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary,
                     fontSize: 12,
@@ -397,7 +514,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
             ],
           ),
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 20),
 
         // Error display if payment failed
         if (_errorMessage != null) ...[
@@ -440,7 +557,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
           ).animate().fadeIn(duration: 250.ms).shake(duration: 350.ms, hz: 4),
         ],
 
-        // Action Button
+        // Action Button: "Я оплатив(ла) за реквізитами"
         Container(
           width: double.infinity,
           height: 52,
@@ -466,7 +583,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
             ],
           ),
           child: ElevatedButton(
-            onPressed: _isProcessing ? null : _handlePayment,
+            onPressed: _isProcessing ? null : () => _handlePayment(paymentConfig),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
@@ -490,10 +607,10 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 20),
+                        const Icon(LucideIcons.sendHorizontal, color: Color(0xFF00E5FF), size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Підтвердити оплату (${widget.package.formattedPricePretty})',
+                          'payment.i_have_paid_btn'.tr(),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -505,68 +622,138 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                   ),
           ),
         ),
+        const SizedBox(height: 10),
+
+        // Cancel / Pay later button
+        Center(
+          child: TextButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+            child: Text(
+              'payment.pay_later_btn'.tr(),
+              style: TextStyle(
+                color: currentTheme.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildMethodButton({
-    required String id,
-    required IconData icon,
+  Widget _buildRequisiteItem({
     required String label,
-    required bool isDark,
+    required String value,
+    required IconData icon,
+    bool isMonospace = false,
+    bool isHighlight = false,
+    required BuildContext context,
     required dynamic currentTheme,
+    required bool isDark,
   }) {
-    final isSelected = _selectedMethod == id;
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _selectedMethod = id);
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? const Color(0xFF0E3860) : const Color(0xFFE0F2FE))
-              : (isDark ? const Color(0xFF0B2540) : const Color(0xFFF8FAFC)),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected
-                ? (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary)
-                : (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.20) : const Color(0xFFCBD5E1)),
-            width: isSelected ? 1.6 : 1,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0C243C).withValues(alpha: 0.60) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHighlight
+              ? (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.45) : const Color(0xFF38BDF8))
+              : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0)),
+          width: isHighlight ? 1.2 : 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 15,
+            color: isHighlight
+                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary).withValues(alpha: isDark ? 0.30 : 0.15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
                   ),
-                ]
-              : [],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? (isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary) : (isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary),
+                ),
+                const SizedBox(height: 1),
+                SelectableText(
+                  value,
+                  style: TextStyle(
+                    color: isHighlight
+                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                        : (isDark ? Colors.white : currentTheme.textPrimary),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: isMonospace ? 'monospace' : null,
+                    letterSpacing: isMonospace ? 0.6 : null,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? (isDark ? Colors.white : currentTheme.accentPrimary) : (isDark ? const Color(0xFFE2E8F0) : currentTheme.textPrimary),
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          ),
+          IconButton(
+            tooltip: 'common.copy'.tr(),
+            icon: Icon(
+              LucideIcons.copy,
+              size: 15,
+              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
             ),
-          ],
-        ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('payment.copied_field_msg'.tr(args: [label, value])),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _copyAllRequisites(BuildContext context, BranchPaymentConfig config, bool isVienna) {
+    HapticFeedback.mediumImpact();
+    final purpose = 'payment.payment_purpose_value'.tr(args: [
+      widget.package.getLocalizedName(context.locale.languageCode),
+      widget.childName ?? widget.clientName,
+    ]);
+
+    final text = StringBuffer()
+      ..writeln(config.legalEntityDetails['companyName'] ?? '')
+      ..writeln('IBAN: ${config.legalEntityDetails['iban'] ?? ''}')
+      ..writeln('${config.legalEntityDetails['taxIdLabel'] ?? (isVienna ? 'UID-Nummer' : 'ЄДРПОУ')}: ${config.legalEntityDetails['taxId'] ?? ''}')
+      ..writeln('${'payment.bank_label'.tr()}: ${config.legalEntityDetails['bankName'] ?? ''}')
+      ..writeln('${'payment.amount_to_pay_label'.tr()}: ${widget.package.formattedPricePretty}')
+      ..writeln('${'payment.payment_purpose_label'.tr()}: $purpose');
+
+    Clipboard.setData(ClipboardData(text: text.toString().trim()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('payment.all_requisites_copied'.tr()),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -611,39 +798,50 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     dynamic currentTheme,
     bool isDark,
   ) {
+    final isVienna = widget.package.branchId == 'vienna';
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Success animation circle
+        // Pending approval icon circle (Amber/Gold)
         Container(
-          width: 58,
-          height: 58,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF10B981).withValues(alpha: 0.18),
-            border: Border.all(color: const Color(0xFF10B981), width: 2),
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.18),
+            border: Border.all(color: const Color(0xFFF59E0B), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                blurRadius: 16,
+              ),
+            ],
           ),
           child: const Center(
-            child: Icon(LucideIcons.check, color: Color(0xFF10B981), size: 32),
+            child: Icon(LucideIcons.clockAlert, color: Color(0xFFF59E0B), size: 30),
           ),
         ).animate().scale(duration: 350.ms, curve: Curves.easeOutBack),
         const SizedBox(height: 14),
 
         Text(
-          'Оплату успішно здійснено!',
+          'payment.verification_sent_title'.tr(),
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: currentTheme.textPrimary,
-            fontSize: 20,
+            fontSize: 19,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
-          'Абонемент активовано у філії ${receipt.branchName}',
+          'payment.verification_sent_subtitle'.tr(),
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: currentTheme.textSecondary,
-            fontSize: 13,
+            fontSize: 12.5,
+            height: 1.35,
           ),
         ),
         const SizedBox(height: 16),
@@ -686,19 +884,27 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Квитанція № ${receipt.receiptNumber}',
+                    'payment.receipt_no'.tr(args: [receipt.receiptNumber]),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    receipt.formattedAmount,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : currentTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      'payment.awaiting_verification_badge'.tr(),
+                      style: const TextStyle(
+                        color: Color(0xFFF59E0B),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
@@ -708,13 +914,19 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                 height: 1,
                 color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE2E8F0),
               ),
-              _buildReceiptRow('Платник', receipt.clientName, currentTheme, isDark),
+              _buildReceiptRow('payment.payer'.tr(), receipt.clientName, currentTheme, isDark),
               if (receipt.childName != null)
-                _buildReceiptRow('Учень', receipt.childName!, currentTheme, isDark),
-              _buildReceiptRow('Пакет', receipt.packageName, currentTheme, isDark),
-              _buildReceiptRow('Кількість занять', _formatClassesCount(receipt.classesCount), currentTheme, isDark),
-              _buildReceiptRow('Шлюз філії', receipt.paymentGateway, currentTheme, isDark),
-              _buildReceiptRow('Транзакція', receipt.transactionId, currentTheme, isDark),
+                _buildReceiptRow('payment.student'.tr(), receipt.childName!, currentTheme, isDark),
+              _buildReceiptRow(
+                'payment.package'.tr(),
+                SubscriptionPackageCatalog.localizeServiceName(receipt.packageName, context.locale.languageCode),
+                currentTheme,
+                isDark,
+              ),
+              _buildReceiptRow('payment.amount_label'.tr(), receipt.formattedAmount, currentTheme, isDark),
+              _buildReceiptRow('payment.classes_count'.tr(), _formatClassesCount(receipt.classesCount), currentTheme, isDark),
+              _buildReceiptRow('payment.payment_method_label'.tr(), 'payment.bank_transfer_method'.tr(), currentTheme, isDark),
+              _buildReceiptRow('payment.transaction'.tr(), receipt.transactionId, currentTheme, isDark),
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 10),
                 height: 1,
@@ -722,7 +934,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
               ),
               // Legal summary
               Text(
-                'Реквізити надавача послуг (${receipt.legalDetails['companyName'] ?? ''}):',
+                'payment.service_provider_details'.tr(args: [receipt.legalDetails['companyName'] ?? '']),
                 style: TextStyle(
                   color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
                   fontSize: 11,
@@ -731,7 +943,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
               ),
               const SizedBox(height: 3),
               Text(
-                '${receipt.legalDetails['taxIdLabel'] ?? 'Код'}: ${receipt.legalDetails['taxId'] ?? ''} • ${receipt.legalDetails['address'] ?? ''}',
+                'IBAN: ${receipt.legalDetails['iban'] ?? ''} • ${receipt.legalDetails['taxIdLabel'] ?? (isVienna ? 'UID-Nummer' : 'ЄДРПОУ')}: ${receipt.legalDetails['taxId'] ?? ''}',
                 style: TextStyle(
                   color: isDark ? const Color(0xFF64748B) : currentTheme.textSecondary,
                   fontSize: 11,
@@ -784,11 +996,11 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const FittedBox(
+            child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'Готово',
-                style: TextStyle(
+                'payment.done'.tr(),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
@@ -803,6 +1015,22 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
   }
 
   String _formatClassesCount(int count) {
+    final lang = context.locale.languageCode;
+    if (lang == 'de') {
+      return count == 1 ? '1 Einheit' : '$count Einheiten';
+    } else if (lang == 'en') {
+      return count == 1 ? '1 class' : '$count classes';
+    } else if (lang == 'ru') {
+      final mod10 = count % 10;
+      final mod100 = count % 100;
+      if (mod10 == 1 && mod100 != 11) {
+        return '$count занятие';
+      } else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+        return '$count занятия';
+      } else {
+        return '$count занятий';
+      }
+    }
     final mod10 = count % 10;
     final mod100 = count % 100;
     if (mod10 == 1 && mod100 != 11) {
@@ -837,24 +1065,24 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
     );
   }
 
-  Future<void> _handlePayment() async {
+  Future<void> _handlePayment(BranchPaymentConfig config) async {
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
     });
     HapticFeedback.mediumImpact();
-    debugPrint('BranchPaymentModal: _handlePayment invoked for package ${widget.package.name} (branch: ${widget.package.branchId})');
+    debugPrint('BranchPaymentModal: _handlePayment bank transfer invoked for package ${widget.package.name} (branch: ${widget.package.branchId})');
 
     try {
       final paymentService = ref.read(branchPaymentServiceProvider);
-      final receipt = await paymentService.processMockPayment(
+      final receipt = await paymentService.submitBankTransferPayment(
         branchId: widget.package.branchId,
         clientId: widget.clientId,
         clientName: widget.clientName,
         childId: widget.childId,
         childName: widget.childName,
         package: widget.package,
-        paymentMethod: _selectedMethod,
+        customConfig: config,
       );
 
       HapticFeedback.heavyImpact();
@@ -875,7 +1103,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка платежу: $e'),
+            content: Text('payment.request_send_error'.tr(args: ['$e'])),
             backgroundColor: Colors.redAccent,
           ),
         );

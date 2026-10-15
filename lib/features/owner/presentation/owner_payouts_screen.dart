@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -49,51 +50,43 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
     final mod10 = count % 10;
     final mod100 = count % 100;
     if (mod100 >= 11 && mod100 <= 19) {
-      return '$count занять';
+      return 'owner.lessons_count_many'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 == 1) {
-      return '$count заняття';
+      return 'owner.lessons_count_one'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 >= 2 && mod10 <= 4) {
-      return '$count заняття';
+      return 'owner.lessons_count_few'.tr(namedArgs: {'count': '$count'});
     }
-    return '$count занять';
+    return 'owner.lessons_count_many'.tr(namedArgs: {'count': '$count'});
   }
 
   String _getMonthName(DateTime dt) {
-    const months = [
-      'Січень',
-      'Лютий',
-      'Березень',
-      'Квітень',
-      'Травень',
-      'Червень',
-      'Липень',
-      'Серпень',
-      'Вересень',
-      'Жовтень',
-      'Листопад',
-      'Грудень',
-    ];
-    return '${months[dt.month - 1]} ${dt.year}';
+    return '${_getMonthOnly(dt)} ${dt.year}';
   }
 
   String _getMonthOnly(DateTime dt) {
-    const months = [
-      'Січень',
-      'Лютий',
-      'Березень',
-      'Квітень',
-      'Травень',
-      'Червень',
-      'Липень',
-      'Серпень',
-      'Вересень',
-      'Жовтень',
-      'Листопад',
-      'Грудень',
+    return 'common.month_${dt.month}'.tr();
+  }
+
+  bool _matchesPeriod(String docPeriod, DateTime dt) {
+    const ukMonths = [
+      '\u0421\u0456\u0447\u0435\u043d\u044c',
+      '\u041b\u044e\u0442\u0438\u0439',
+      '\u0411\u0435\u0440\u0435\u0437\u0435\u043d\u044c',
+      '\u041a\u0432\u0456\u0442\u0435\u043d\u044c',
+      '\u0422\u0440\u0430\u0432\u0435\u043d\u044c',
+      '\u0427\u0435\u0440\u0432\u0435\u043d\u044c',
+      '\u041b\u0438\u043f\u0435\u043d\u044c',
+      '\u0421\u0435\u0440\u043f\u0435\u043d\u044c',
+      '\u0412\u0435\u0440\u0435\u0441\u0435\u043d\u044c',
+      '\u0416\u043e\u0432\u0442\u0435\u043d\u044c',
+      '\u041b\u0438\u0441\u0442\u043e\u043f\u0430\u0434',
+      '\u0413\u0440\u0443\u0434\u0435\u043d\u044c',
     ];
-    return months[dt.month - 1];
+    final localizedPeriod = _getMonthName(dt);
+    final ukPeriod = '${ukMonths[dt.month - 1]} ${dt.year}';
+    return docPeriod == localizedPeriod || docPeriod == ukPeriod;
   }
 
   Future<void> _recordPayout({
@@ -117,12 +110,18 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         'amount': amount,
         'period': periodName,
         'createdAt': FieldValue.serverTimestamp(),
-        'paidBy': currentUser?.name ?? 'Власник',
+        'paidBy': currentUser?.name ?? 'owner.role_owner'.tr(),
         'status': 'completed',
       });
 
       await logAdminAction(
-        'Виплата ЗП: $name ($role, $branchId) — ${_formatMoney(amount, currencySymbol)} за $periodName',
+        'owner.payout_audit_single'.tr(namedArgs: {
+          'name': name,
+          'role': role,
+          'branch': branchId,
+          'amount': _formatMoney(amount, currencySymbol),
+          'period': periodName,
+        }),
         currentUser?.id ?? 'owner',
       );
 
@@ -136,14 +135,17 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Виплату ${_formatMoney(amount, currencySymbol)} для $name зафіксовано',
+                    'owner.payout_recorded_msg'.tr(namedArgs: {
+                      'amount': _formatMoney(amount, currencySymbol),
+                      'name': name,
+                    }),
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
                   ),
                 ),
               ],
             ),
             action: SnackBarAction(
-              label: 'Відмінити',
+              label: 'common.undo'.tr(),
               textColor: const Color(0xFFF43F5E),
               onPressed: () async {
                 try {
@@ -166,7 +168,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка реєстрації виплати: $e'),
+            content: Text('owner.payout_register_error'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -206,7 +208,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              'Скасувати виплату',
+              'owner.cancel_payout_title'.tr(),
               style: TextStyle(
                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                 fontSize: 18,
@@ -216,7 +218,11 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           ],
         ),
         content: Text(
-          'Ви бажаєте скасувати реєстрацію виплати ${_formatMoney(amount, currencySymbol)} для $name за $periodName і повернути працівника до списку неоплачених?',
+          'owner.cancel_payout_confirm'.tr(namedArgs: {
+            'amount': _formatMoney(amount, currencySymbol),
+            'name': name,
+            'period': periodName,
+          }),
           style: TextStyle(
             color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF475569),
             fontSize: 14,
@@ -227,7 +233,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Ні, залишити',
+              'owner.no_keep_it'.tr(),
               style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
             ),
           ),
@@ -239,7 +245,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Скасувати виплату'),
+            child: Text('owner.cancel_payout_title'.tr()),
           ),
         ],
       ),
@@ -259,7 +265,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Виплату для $name скасовано',
+                      'owner.payout_cancelled_for'.tr(namedArgs: {'name': name}),
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
                     ),
                   ),
@@ -278,7 +284,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Помилка скасування: $e'),
+              content: Text('owner.cancel_error_msg'.tr(namedArgs: {'error': '$e'})),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -329,7 +335,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Відзначити всім: Виплачено',
+                'owner.mark_all_paid_title'.tr(),
                 style: TextStyle(
                   color: isDark ? Colors.white : const Color(0xFF0F172A),
                   fontSize: 18,
@@ -344,7 +350,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Ви збираєтесь зареєструвати виплату для всіх неоплачених працівників ($count осіб):',
+              'owner.mark_all_paid_desc'.tr(namedArgs: {'count': '$count'}),
               style: TextStyle(
                 color: isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF475569),
                 fontSize: 14,
@@ -366,14 +372,14 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Невиплачено:',
+                        'owner.unpaid_label'.tr(),
                         style: TextStyle(
                           color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B),
                           fontSize: 13,
                         ),
                       ),
                       Text(
-                        '$count осіб',
+                        'owner.persons_count'.tr(namedArgs: {'count': '$count'}),
                         style: TextStyle(
                           color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7),
                           fontWeight: FontWeight.bold,
@@ -387,7 +393,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Період:',
+                        'owner.period_label'.tr(),
                         style: TextStyle(
                           color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF64748B),
                           fontSize: 13,
@@ -410,7 +416,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Сума до відзначення:',
+                        'owner.amount_to_mark_label'.tr(),
                         style: TextStyle(
                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontWeight: FontWeight.bold,
@@ -439,7 +445,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Скасувати',
+              'common.cancel'.tr(),
               style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF64748B)),
             ),
           ),
@@ -451,7 +457,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Зареєструвати всім'),
+            child: Text('owner.register_all_btn'.tr()),
           ),
         ],
       ),
@@ -474,7 +480,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
             'amount': item['earnedSum'],
             'period': periodName,
             'createdAt': FieldValue.serverTimestamp(),
-            'paidBy': currentUser?.name ?? 'Власник',
+            'paidBy': currentUser?.name ?? 'owner.role_owner'.tr(),
             'status': 'completed',
           });
         }
@@ -483,7 +489,11 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         HapticFeedback.mediumImpact();
 
         await logAdminAction(
-          'Масова реєстрація виплат ЗП: $totalDisplay для $count працівників за $periodName',
+          'owner.payout_audit_bulk'.tr(namedArgs: {
+            'amount': totalDisplay,
+            'count': '$count',
+            'period': periodName,
+          }),
           currentUser?.id ?? 'owner',
         );
 
@@ -497,7 +507,10 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Масову виплату $totalDisplay для $count працівників успішно збережено',
+                      'owner.bulk_payout_saved_msg'.tr(namedArgs: {
+                        'amount': totalDisplay,
+                        'count': '$count',
+                      }),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),
@@ -512,7 +525,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Помилка реєстрації виплат: $e'),
+              content: Text('owner.payout_register_error'.tr(namedArgs: {'error': '$e'})),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -557,9 +570,9 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
     final isDark = themeConfig.isDark;
 
     final tabs = [
-      {'id': 'all', 'label': 'Вся мережа', 'flag': '🌐', 'currency': '₴ / €'},
-      {'id': 'kyiv', 'label': 'Київ', 'flag': '🇺🇦', 'currency': '₴'},
-      {'id': 'vienna', 'label': 'Відень', 'flag': '🇦🇹', 'currency': '€'},
+      {'id': 'all', 'label': 'owner.entire_network'.tr(), 'flag': '🌐', 'currency': '₴ / €'},
+      {'id': 'kyiv', 'label': 'tenancy.kyiv_short'.tr(), 'flag': '🇺🇦', 'currency': '₴'},
+      {'id': 'vienna', 'label': 'tenancy.vienna_short'.tr(), 'flag': '🇦🇹', 'currency': '€'},
     ];
 
     return ClipRRect(
@@ -743,7 +756,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                             final loginId = (data['loginId'] as String?) ?? '';
                             final bool isAdmin = roleRaw == 'admin' || roleRaw == 'administrator' || loginId.toLowerCase() == 'admin';
                             final role = isAdmin ? 'admin' : 'coach';
-                            final name = (data['name'] as String?) ?? (isAdmin ? 'Адміністратор' : 'Без імені');
+                            final name = (data['name'] as String?) ?? (isAdmin ? 'owner.role_admin_full'.tr() : 'owner.unnamed_staff'.tr());
                             final phone = (data['phone'] as String?) ?? '';
 
                             final explicitBranchId = (data['branchId'] as String?)?.toLowerCase();
@@ -804,12 +817,15 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                             } else {
                               // Coach
                               final coachClasses = allClasses.where((c) {
+                                final cBranch = (c.branchId.isEmpty ? 'kyiv' : c.branchId).toLowerCase();
+                                if (cBranch != staffBranchId) return false;
                                 final matchesId = c.coachId == doc.id;
-                                final matchesName = c.coachName.isNotEmpty &&
+                                final matchesName = c.coachId.isEmpty &&
+                                    c.coachName.isNotEmpty &&
                                     (c.coachName.toLowerCase().contains(name.toLowerCase()) ||
                                      name.toLowerCase().contains(c.coachName.toLowerCase()));
                                 return matchesId || matchesName;
-                              }).where((c) => c.startTime.year == targetMonth.year && c.startTime.month == targetMonth.month).toList();
+                              }).where((c) => c.branchStartTime.year == targetMonth.year && c.branchStartTime.month == targetMonth.month).toList();
 
                               int conductedG = 0, conductedI = 0, conductedS = 0;
 
@@ -819,8 +835,8 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
 
                                 final tLower = c.title.toLowerCase();
                                 final cLower = c.category.toLowerCase();
-                                final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);
-                                final isIndividual = !isSplit && (cLower.contains('індивідуал') || tLower.contains('індивідуал') || c.maxCapacity == 1);
+                                final isSplit = tLower.contains('\u0441\u043f\u043b\u0456\u0442') || tLower.contains('split') || (cLower.contains('\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b') && c.maxCapacity == 2);
+                                final isIndividual = !isSplit && (cLower.contains('\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b') || tLower.contains('\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b') || c.maxCapacity == 1);
 
                                 if (isSplit) {
                                   conductedS++;
@@ -876,14 +892,14 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                               for (final doc in allHistoryDocs) {
                                 final d = doc.data() as Map<String, dynamic>? ?? {};
                                 final docPeriod = d['period'] as String? ?? '';
-                                if (docPeriod == periodName) {
-                                  final sId = d['staffId'] as String?;
-                                  final sName = (d['staffName'] as String?)?.toLowerCase().trim();
-                                  if (sId != null && sId.isNotEmpty) {
-                                    paidStaffPayoutDocIds[sId] = doc.id;
-                                  }
-                                  if (sName != null && sName.isNotEmpty) {
-                                    paidStaffPayoutDocIds[sName] = doc.id;
+                                if (_matchesPeriod(docPeriod, targetMonth)) {
+                                  final sId = (d['staffId'] as String?)?.trim() ?? '';
+                                  final sName = (d['staffName'] as String?)?.toLowerCase().trim() ?? '';
+                                  final docBranch = ((d['branchId'] as String?)?.trim().toLowerCase() ?? 'kyiv');
+                                  if (sId.isNotEmpty) {
+                                    paidStaffPayoutDocIds['id:$sId'] = doc.id;
+                                  } else if (sName.isNotEmpty) {
+                                    paidStaffPayoutDocIds['name:$docBranch:$sName'] = doc.id;
                                   }
                                 }
                               }
@@ -893,10 +909,15 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                               int unpaidCount = 0;
 
                               for (final item in staffPayouts) {
-                                final sId = item['id'] as String? ?? '';
+                                final sId = (item['id'] as String? ?? '').trim();
                                 final sNameLower = (item['name'] as String? ?? '').toLowerCase().trim();
-                                final isPaid = paidStaffPayoutDocIds.containsKey(sId) || paidStaffPayoutDocIds.containsKey(sNameLower);
-                                final payoutDocId = paidStaffPayoutDocIds[sId] ?? paidStaffPayoutDocIds[sNameLower];
+                                final sBranch = (item['branchId'] as String? ?? 'kyiv').toLowerCase();
+                                final idKey = 'id:$sId';
+                                final legacyNameKey = 'name:$sBranch:$sNameLower';
+                                final isPaid = (sId.isNotEmpty && paidStaffPayoutDocIds.containsKey(idKey)) ||
+                                    paidStaffPayoutDocIds.containsKey(legacyNameKey);
+                                final payoutDocId = (sId.isNotEmpty ? paidStaffPayoutDocIds[idKey] : null) ??
+                                    paidStaffPayoutDocIds[legacyNameKey];
                                 item['isPaid'] = isPaid;
                                 item['payoutDocId'] = payoutDocId;
 
@@ -955,7 +976,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'РОЗРАХУНОК ДО ВИПЛАТИ',
+                                        'owner.payout_calculation_section'.tr(),
                                         style: TextStyle(
                                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                                           fontSize: 11,
@@ -1005,7 +1026,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'ОСТАННІ ВИПЛАТИ (ІСТОРІЯ)',
+                                        'owner.recent_payouts_history_section'.tr(),
                                         style: TextStyle(
                                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                                           fontSize: 11,
@@ -1034,12 +1055,12 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                       final index = entry.key;
                                       final doc = entry.value;
                                       final d = doc.data() as Map<String, dynamic>? ?? {};
-                                      final sName = d['staffName'] ?? 'Співробітник';
+                                      final sName = d['staffName'] ?? 'owner.staff_fallback'.tr();
                                       final amount = (d['amount'] as num?)?.toInt() ?? 0;
                                       final period = d['period'] ?? '';
                                       final itemCur = (d['currency'] as String?) ?? (d['branchId'] == 'vienna' ? '€' : '₴');
                                       return _buildHistoryItem(
-                                        'Виплата: $sName',
+                                        'owner.payout_history_item_title'.tr(namedArgs: {'name': '$sName'}),
                                         period,
                                         '- ${_formatMoney(amount, itemCur)}',
                                         const Color(0xFFF43F5E),
@@ -1119,7 +1140,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ФОНД ОПЛАТИ ПРАЦІ',
+                        'owner.payroll_fund_subtitle'.tr(),
                         style: TextStyle(
                           color: isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
                           fontSize: 11,
@@ -1130,7 +1151,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Виплати Персоналу',
+                        'owner.staff_payouts_title'.tr(),
                         style: TextStyle(
                           color: themeConfig.textPrimary,
                           fontSize: 20,
@@ -1185,7 +1206,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
               Expanded(
                 child: _buildPeriodButton(
                   0,
-                  '$currentMonthName (поточний)',
+                  'owner.month_current_tab'.tr(namedArgs: {'month': currentMonthName}),
                   LucideIcons.calendar,
                   themeConfig,
                 ),
@@ -1194,7 +1215,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
               Expanded(
                 child: _buildPeriodButton(
                   1,
-                  '$prevMonthName (минулий)',
+                  'owner.month_prev_tab'.tr(namedArgs: {'month': prevMonthName}),
                   LucideIcons.history,
                   themeConfig,
                 ),
@@ -1347,7 +1368,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                           const SizedBox(width: 10),
                           Flexible(
                             child: Text(
-                              allPaid ? 'ВСІ ЗП ВИПЛАЧЕНО' : 'ДО ВИПЛАТИ',
+                              allPaid ? 'owner.all_salaries_paid_badge'.tr() : 'owner.to_pay_badge'.tr(),
                               style: TextStyle(
                                 color: allPaid
                                     ? const Color(0xFF10B981)
@@ -1415,7 +1436,10 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '🎉 Всі ${staffPayouts.length} виплат за $periodName зафіксовано в системі',
+                    'owner.all_payouts_recorded_desc'.tr(namedArgs: {
+                      'count': '${staffPayouts.length}',
+                      'period': periodName,
+                    }),
                     style: TextStyle(color: themeConfig.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ] else ...[
@@ -1467,7 +1491,13 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    'Невиплачено: $unpaidCount з ${staffPayouts.length} осіб • Фонд: ${isAllLocations ? '${_formatMoney(totalFundUah, '₴')} • ${_formatMoney(totalFundEur, '€')}' : _formatMoney(currencySymbol == '€' ? totalFundEur : totalFundUah, currencySymbol)}',
+                    'owner.unpaid_summary_line'.tr(namedArgs: {
+                      'unpaid': '$unpaidCount',
+                      'total': '${staffPayouts.length}',
+                      'fund': isAllLocations
+                          ? '${_formatMoney(totalFundUah, '₴')} • ${_formatMoney(totalFundEur, '€')}'
+                          : _formatMoney(currencySymbol == '€' ? totalFundEur : totalFundUah, currencySymbol),
+                    }),
                     style: TextStyle(color: themeConfig.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -1514,8 +1544,10 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                           Flexible(
                             child: Text(
                               isAllLocations
-                                  ? 'Виплатити всім ($unpaidCount)'
-                                  : 'Виплатити всім (${_formatMoney(currencySymbol == '€' ? remainingFundEur : remainingFundUah, currencySymbol)})',
+                                  ? 'owner.pay_all_btn'.tr(namedArgs: {'value': '$unpaidCount'})
+                                  : 'owner.pay_all_btn'.tr(namedArgs: {
+                                      'value': _formatMoney(currencySymbol == '€' ? remainingFundEur : remainingFundUah, currencySymbol),
+                                    }),
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 0.2),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1712,14 +1744,14 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                       width: 0.8,
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(LucideIcons.check, size: 10, color: Color(0xFF10B981)),
-                                      SizedBox(width: 3),
+                                      const Icon(LucideIcons.check, size: 10, color: Color(0xFF10B981)),
+                                      const SizedBox(width: 3),
                                       Text(
-                                        'ВИПЛАЧЕНО',
-                                        style: TextStyle(
+                                        'owner.paid_badge'.tr().toUpperCase(),
+                                        style: const TextStyle(
                                           color: Color(0xFF10B981),
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w900,
@@ -1744,7 +1776,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  isCoach ? 'ТРЕНЕР' : 'АДМІН',
+                                  isCoach ? 'owner.role_coach'.tr().toUpperCase() : 'owner.role_admin'.tr().toUpperCase(),
                                   style: TextStyle(
                                     color: isCoach
                                         ? (isDark ? const Color(0xFF22D3EE) : const Color(0xFF0284C7))
@@ -1770,7 +1802,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  isVienna ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                                  isVienna ? '🇦🇹 ${'tenancy.vienna_short'.tr()}' : '🇺🇦 ${'tenancy.kyiv_short'.tr()}',
                                   style: TextStyle(
                                     color: isVienna
                                         ? (isDark ? const Color(0xFFD8B4FE) : const Color(0xFF9333EA))
@@ -1783,8 +1815,13 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                               ),
                               Text(
                                 isCoach
-                                    ? '${_formatLessonsCount(conductedTotal)} (Гр: ${item['conductedG']}, Інд: ${item['conductedI']}, Спліт: ${item['conductedS']})'
-                                    : 'Оклад • ${item['phone'].isNotEmpty ? item['phone'] : (item['loginId'] ?? '')}',
+                                    ? 'owner.coach_lessons_breakdown'.tr(namedArgs: {
+                                        'total': _formatLessonsCount(conductedTotal),
+                                        'g': '${item['conductedG']}',
+                                        'i': '${item['conductedI']}',
+                                        's': '${item['conductedS']}',
+                                      })
+                                    : '${'owner.base_salary_short'.tr()} • ${item['phone'].isNotEmpty ? item['phone'] : (item['loginId'] ?? '')}',
                                 style: TextStyle(
                                   color: themeConfig.textSecondary,
                                   fontSize: 11,
@@ -1823,7 +1860,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         ),
                         label: Text(
-                          'Тариф',
+                          'owner.tariff_btn'.tr(),
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,
@@ -1869,7 +1906,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                 },
                                 icon: const Icon(LucideIcons.checkCheck, size: 15, color: Color(0xFF10B981)),
                                 label: Text(
-                                  'Виплачено ${_formatMoney(earnedSum, effectiveCurrency)}',
+                                  '${'owner.paid_badge'.tr()} ${_formatMoney(earnedSum, effectiveCurrency)}',
                                   style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w800,
@@ -1917,7 +1954,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                 ),
                                 icon: const Icon(LucideIcons.check, size: 15, color: Colors.white),
                                 label: Text(
-                                  'Виплатити ${_formatMoney(earnedSum, effectiveCurrency)}',
+                                  '${'owner.pay_action_btn'.tr()} ${_formatMoney(earnedSum, effectiveCurrency)}',
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -2040,7 +2077,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Немає нарахувань за цей період',
+              'owner.no_accruals_period'.tr(),
               style: TextStyle(
                 color: themeConfig.textPrimary,
                 fontSize: 14,
@@ -2067,7 +2104,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
       ),
       child: Center(
         child: Text(
-          'Історія виплат порожня. Підтвердіть першу виплату вище.',
+          'owner.payout_history_empty'.tr(),
           style: TextStyle(
             color: themeConfig.textSecondary,
             fontSize: 12,

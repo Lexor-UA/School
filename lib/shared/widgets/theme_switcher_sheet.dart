@@ -18,15 +18,6 @@ class ThemeSwitcherSheet extends ConsumerWidget {
     );
   }
 
-  String _t(String key, String fallback) {
-    try {
-      final res = key.tr();
-      return (res.isNotEmpty && res != key) ? res : fallback;
-    } catch (_) {
-      return fallback;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTheme = ref.watch(appThemeControllerProvider);
@@ -103,7 +94,7 @@ class ThemeSwitcherSheet extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _t('theme_title', 'Вибір теми додатку'),
+                            'theme_title'.tr(),
                             style: TextStyle(
                               color: currentTheme.textPrimary,
                               fontSize: 19,
@@ -113,7 +104,7 @@ class ThemeSwitcherSheet extends ConsumerWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            _t('theme_subtitle', 'Оберіть темну або світлу океанічну тему'),
+                            'theme_subtitle'.tr(),
                             style: TextStyle(
                               color: currentTheme.textSecondary,
                               fontSize: 13,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -54,7 +55,7 @@ class CompletedClassCoachRatingBar extends ConsumerWidget {
     }
 
     final clientId = user?.id.isNotEmpty == true ? user!.id : 'guest_client';
-    final clientName = user?.name.isNotEmpty == true ? user!.name : 'Клієнт';
+    final clientName = user?.name.isNotEmpty == true ? user!.name : 'auth.client_fallback'.tr();
 
     final ratingArg = (classId: classItem.id, clientId: clientId);
     final currentRating = ref.watch(classRatingProvider(ratingArg));
@@ -154,7 +155,7 @@ class CompletedClassCoachRatingBar extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      hasRated ? 'Ваша оцінка тренеру:' : 'Оцініть роботу тренера:',
+                      hasRated ? 'parent.your_coach_rating'.tr() : 'parent.rate_coach_prompt'.tr(),
                       style: TextStyle(
                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                         fontSize: 11,
@@ -245,7 +246,7 @@ class CompletedClassCoachRatingBar extends ConsumerWidget {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Дякуємо! Ви оцінили тренера $coachName на $starVal ★',
+                                    'parent.coach_rated_msg'.tr(args: [coachName, starVal.toString()]),
                                     style: const TextStyle(fontWeight: FontWeight.w700),
                                   ),
                                 ),
@@ -289,7 +290,7 @@ class CompletedClassCoachRatingBar extends ConsumerWidget {
 
               // Helper caption
               Text(
-                hasRated ? 'Дякуємо за оцінку!' : 'Натисніть зірочку',
+                hasRated ? 'parent.thanks_for_rating'.tr() : 'parent.tap_star_hint'.tr(),
                 style: TextStyle(
                   color: hasRated
                       ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))

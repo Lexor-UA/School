@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -24,14 +25,50 @@ const List<String> _ukMonths = [
   'грудня',
 ];
 
-String formatUkDate(DateTime date) {
+String formatUkDate(DateTime date, [String? langCode]) {
+  if (langCode == 'de') {
+    const deMonths = [
+      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+    ];
+    return '${date.day}. ${deMonths[date.month - 1]} ${date.year}';
+  } else if (langCode == 'en') {
+    const enMonths = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${enMonths[date.month - 1]} ${date.day}, ${date.year}';
+  } else if (langCode == 'ru') {
+    const ruMonths = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    return '${date.day} ${ruMonths[date.month - 1]} ${date.year} г.';
+  }
   return '${date.day} ${_ukMonths[date.month - 1]} ${date.year} р.';
 }
 
-String formatAgeUk(int years) {
-  if (years % 10 == 1 && years % 100 != 11) {
+String formatAgeUk(int years, [String? langCode]) {
+  if (langCode == 'de') {
+    return years == 1 ? '1 Jahr' : '$years Jahre';
+  } else if (langCode == 'en') {
+    return years == 1 ? '1 year' : '$years years';
+  } else if (langCode == 'ru') {
+    final mod10 = years % 10;
+    final mod100 = years % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return '$years год';
+    } else if ([2, 3, 4].contains(mod10) && ![12, 13, 14].contains(mod100)) {
+      return '$years года';
+    } else {
+      return '$years лет';
+    }
+  }
+  final mod10 = years % 10;
+  final mod100 = years % 100;
+  if (mod10 == 1 && mod100 != 11) {
     return '$years рік';
-  } else if ([2, 3, 4].contains(years % 10) && ![12, 13, 14].contains(years % 100)) {
+  } else if ([2, 3, 4].contains(mod10) && ![12, 13, 14].contains(mod100)) {
     return '$years роки';
   } else {
     return '$years років';
@@ -117,9 +154,9 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
       firstDate: first,
       lastDate: last,
       initialDatePickerMode: DatePickerMode.year,
-      helpText: 'Оберіть дату народження дитини',
-      cancelText: 'Скасувати',
-      confirmText: 'Обрати',
+      helpText: 'parent.choose_child_dob'.tr(),
+      cancelText: 'parent.cancel'.tr(),
+      confirmText: 'parent.select'.tr(),
       builder: (context, child) {
         return Theme(
           data: (widget.isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
@@ -163,12 +200,12 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
 
       if (name.isEmpty) {
         setState(() {
-          _errors[i] = "Введіть ім'я дитини";
+          _errors[i] = 'parent.enter_child_name_err'.tr();
         });
         hasError = true;
       } else if (bDate == null) {
         setState(() {
-          _errors[i] = 'Оберіть дату народження дитини';
+          _errors[i] = 'parent.select_child_dob_err'.tr();
         });
         hasError = true;
       } else {
@@ -176,8 +213,8 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
         if (age < 1 || age > 15) {
           setState(() {
             _errors[i] = age > 15
-                ? 'Діти від 16 років реєструються окремо як дорослі (до 15 років включно)'
-                : 'Вік дитини має бути від 1 до 15 років';
+                ? 'parent.child_age_over_15_err'.tr()
+                : 'parent.child_age_range_err'.tr();
           });
           hasError = true;
         } else {
@@ -190,9 +227,9 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
 
     if (hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Будь ласка, заповніть ім\'я та дату народження для кожної дитини',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        SnackBar(
+          content: Text('parent.fill_all_children_err'.tr(),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -222,13 +259,13 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        AppSnackBar.showSuccess(context, _childCount > 1 ? 'Дітей успішно додано' : 'Дитину успішно додано');
+        AppSnackBar.showSuccess(context, _childCount > 1 ? 'parent.children_added_success'.tr() : 'parent.child_added_success'.tr());
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppSnackBar.showError(context, 'Не вдалося зберегти: $e');
+        AppSnackBar.showError(context, 'common.save_error'.tr(args: [e.toString()]));
       }
     }
   }
@@ -309,7 +346,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Додати дитину',
+                                'parent.add_child_title'.tr(),
                                 style: TextStyle(
                                   color: isDark ? Colors.white : Colors.black,
                                   fontSize: 19,
@@ -322,7 +359,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  'До 15 років (16+ — окремий акаунт)',
+                                  'parent.up_to_15_years_desc'.tr(),
                                   style: TextStyle(
                                     color: isDark ? Colors.white54 : Colors.black54,
                                     fontSize: 11,
@@ -344,7 +381,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                       if (_childCount > 1)
                         IconButton(
                           icon: const Icon(LucideIcons.minusCircle, color: Colors.redAccent, size: 21),
-                          tooltip: 'Прибрати дитину',
+                          tooltip: 'parent.remove_child'.tr(),
                           padding: const EdgeInsets.all(6),
                           constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                           onPressed: () {
@@ -354,7 +391,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                         ),
                       IconButton(
                         icon: const Icon(LucideIcons.plusCircle, color: Color(0xFF10B981), size: 21),
-                        tooltip: 'Додати ще одну дитину',
+                        tooltip: 'parent.add_another_child'.tr(),
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                         onPressed: () {
@@ -364,7 +401,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                       ),
                       IconButton(
                         icon: Icon(LucideIcons.x, color: isDark ? Colors.white54 : Colors.black45, size: 20),
-                        tooltip: 'Закрити',
+                        tooltip: 'parent.close'.tr(),
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                         onPressed: () {
@@ -418,7 +455,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      _childCount > 1 ? 'Дитина #${index + 1}' : 'Дані дитини',
+                                      _childCount > 1 ? 'parent.child_number'.tr(args: ['${index + 1}']) : 'parent.child_data'.tr(),
                                       style: TextStyle(
                                         color: isDark ? Colors.white70 : Colors.black87,
                                         fontWeight: FontWeight.bold,
@@ -442,7 +479,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                       children: [
                                         const Text('🎂 ', style: TextStyle(fontSize: 12)),
                                         Text(
-                                          formatAgeUk(age),
+                                          formatAgeUk(age, context.locale.languageCode),
                                           style: TextStyle(
                                             color: isDark ? Colors.white : selectedColor,
                                             fontWeight: FontWeight.bold,
@@ -462,8 +499,8 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                               textCapitalization: TextCapitalization.words,
                               style: TextStyle(color: isDark ? Colors.white : Colors.black),
                               decoration: InputDecoration(
-                                labelText: "Ім'я дитини",
-                                hintText: 'Наприклад: Максим',
+                                labelText: "parent.child_name".tr(),
+                                hintText: 'parent.child_name_hint'.tr(),
                                 labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                                 filled: true,
                                 fillColor: Colors.white.withValues(alpha: isDark ? 0.05 : 0.5),
@@ -486,7 +523,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
 
                             // Date of Birth Card with Quick Year Picker
                             Text(
-                              'Дата народження (день, місяць, рік)',
+                              'parent.dob_label'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : Colors.black87,
                                 fontSize: 13,
@@ -526,7 +563,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            bDate != null ? formatUkDate(bDate) : 'Оберіть дату народження',
+                                            bDate != null ? formatUkDate(bDate, context.locale.languageCode) : 'parent.select_dob'.tr(),
                                             style: TextStyle(
                                               color: bDate != null
                                                   ? (isDark ? Colors.white : Colors.black87)
@@ -537,7 +574,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            bDate != null ? 'Натисніть, щоб змінити' : 'Швидкий вибір року або точна дата',
+                                            bDate != null ? 'parent.tap_to_change'.tr() : 'parent.quick_year_or_date'.tr(),
                                             style: TextStyle(
                                               color: isDark ? Colors.white38 : Colors.black38,
                                               fontSize: 11.5,
@@ -561,7 +598,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                             Row(
                               children: [
                                 Text(
-                                  'Швидкий вибір року:',
+                                  'parent.quick_year_select'.tr(),
                                   style: TextStyle(
                                     color: isDark ? Colors.white54 : Colors.black45,
                                     fontSize: 11.5,
@@ -631,7 +668,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                             // Color picker row
                             const SizedBox(height: 14),
                             Text(
-                              'Колір аватара дитини:',
+                              'parent.child_avatar_color'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white54 : Colors.black45,
                                 fontSize: 11.5,
@@ -747,7 +784,7 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                             const Icon(LucideIcons.check, size: 19, color: Color(0xFF10B981)),
                             const SizedBox(width: 8),
                             Text(
-                              _childCount > 1 ? 'Зберегти дітей ($_childCount)' : 'Зберегти профіль дитини',
+                              _childCount > 1 ? 'parent.save_children_count'.tr(args: ['$_childCount']) : 'parent.save_child_profile'.tr(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -818,9 +855,9 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
       firstDate: first,
       lastDate: last,
       initialDatePickerMode: DatePickerMode.year,
-      helpText: 'Оберіть дату народження дитини',
-      cancelText: 'Скасувати',
-      confirmText: 'Обрати',
+      helpText: 'parent.choose_child_dob'.tr(),
+      cancelText: 'parent.cancel'.tr(),
+      confirmText: 'parent.select'.tr(),
       builder: (context, child) {
         return Theme(
           data: (widget.isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
@@ -859,20 +896,20 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
-      setState(() => _error = "Введіть ім'я дитини");
+      setState(() => _error = 'parent.enter_child_name_err'.tr());
       return;
     }
 
     if (_birthDate == null) {
-      setState(() => _error = 'Оберіть дату народження');
+      setState(() => _error = 'parent.select_child_dob_err'.tr());
       return;
     }
 
     final age = calculateAgeFromDate(_birthDate!);
     if (age < 1 || age > 15) {
       setState(() => _error = age > 15
-          ? 'Діти від 16 років реєструються окремо як дорослі (до 15 років включно)'
-          : 'Вік дитини має бути від 1 до 15 років');
+          ? 'parent.child_age_over_15_err'.tr()
+          : 'parent.child_age_range_err'.tr());
       return;
     }
 
@@ -888,13 +925,13 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        AppSnackBar.showSuccess(context, 'Дані дитини оновлено');
+        AppSnackBar.showSuccess(context, 'parent.child_updated_success'.tr());
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppSnackBar.showError(context, 'Не вдалося оновити дані: $e');
+        AppSnackBar.showError(context, 'common.save_error'.tr(args: [e.toString()]));
       }
     }
   }
@@ -916,17 +953,16 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
               child: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 20),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Видалити профіль?',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                'parent.delete_child_title'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ),
           ],
         ),
         content: Text(
-          'Ви дійсно бажаєте видалити профіль "${widget.child.name}"? '
-          'Усі майбутні записи та історія для цієї дитини будуть видалені з вашого облікового запису.',
+          'parent.delete_child_confirm'.tr(args: [widget.child.name]),
           style: TextStyle(
             color: widget.isDark ? Colors.white70 : Colors.black87,
             height: 1.4,
@@ -937,7 +973,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Скасувати',
+              'common.cancel'.tr(),
               style: TextStyle(color: widget.isDark ? Colors.white70 : Colors.black54),
             ),
           ),
@@ -950,7 +986,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Видалити', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('parent.delete'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -962,13 +998,13 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
         await ref.read(childrenControllerProvider.notifier).deleteChild(widget.child.id);
         if (mounted) {
           setState(() => _isLoading = false);
-          AppSnackBar.showSuccess(context, 'Профіль дитини видалено');
+          AppSnackBar.showSuccess(context, 'parent.child_deleted_success'.tr());
           Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
           setState(() => _isLoading = false);
-          AppSnackBar.showError(context, 'Не вдалося видалити профіль: $e');
+          AppSnackBar.showError(context, 'common.error_msg'.tr(args: [e.toString()]));
         }
       }
     }
@@ -1052,7 +1088,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Редагувати дитину',
+                            'parent.edit_child_title'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black,
                               fontSize: 19,
@@ -1071,7 +1107,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                     children: [
                       IconButton(
                         icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 20),
-                        tooltip: 'Видалити профіль дитини',
+                        tooltip: 'parent.delete'.tr(),
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                         onPressed: _isLoading
@@ -1083,7 +1119,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                       ),
                       IconButton(
                         icon: Icon(LucideIcons.x, color: isDark ? Colors.white54 : Colors.black45, size: 20),
-                        tooltip: 'Закрити',
+                        tooltip: 'parent.close'.tr(),
                         padding: const EdgeInsets.all(6),
                         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                         onPressed: () {
@@ -1137,10 +1173,10 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                     child: const Icon(LucideIcons.graduationCap, color: Colors.white, size: 20),
                                   ),
                                   const SizedBox(width: 10),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
-                                      'Час для дорослого акаунту! 🎓',
-                                      style: TextStyle(
+                                      'parent.adult_account_time_title'.tr(),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 15,
                                         fontWeight: FontWeight.w800,
@@ -1151,7 +1187,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '${widget.child.name} вже виповнилося 16 років. Переведіть плавця у дорослий акаунт: залишок занять, спортивний рівень та накопичений досвід будуть збережені.',
+                                'parent.adult_account_time_desc'.tr(args: [widget.child.name]),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -1175,14 +1211,14 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     padding: const EdgeInsets.symmetric(vertical: 11),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(LucideIcons.sparkles, size: 16),
-                                      SizedBox(width: 8),
+                                      const Icon(LucideIcons.sparkles, size: 16),
+                                      const SizedBox(width: 8),
                                       Text(
-                                        'Випустити у дорослий акаунт 🎓',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                        '${'graduate.submit_btn'.tr()} 🎓',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                                       ),
                                     ],
                                   ),
@@ -1226,7 +1262,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                       children: [
                                         const Text('🎂 ', style: TextStyle(fontSize: 12)),
                                         Text(
-                                          formatAgeUk(age),
+                                          formatAgeUk(age, context.locale.languageCode),
                                           style: TextStyle(
                                             color: isDark ? Colors.white : childColor,
                                             fontWeight: FontWeight.bold,
@@ -1246,7 +1282,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                               textCapitalization: TextCapitalization.words,
                               style: TextStyle(color: isDark ? Colors.white : Colors.black),
                               decoration: InputDecoration(
-                                labelText: "Ім'я дитини",
+                                labelText: "parent.child_name".tr(),
                                 labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                                 filled: true,
                                 fillColor: Colors.white.withValues(alpha: isDark ? 0.05 : 0.5),
@@ -1269,7 +1305,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
 
                             // Date of Birth Card
                             Text(
-                              'Дата народження (день, місяць, рік)',
+                              'parent.dob_label'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : Colors.black87,
                                 fontSize: 13,
@@ -1309,7 +1345,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _birthDate != null ? formatUkDate(_birthDate!) : 'Оберіть дату народження',
+                                            _birthDate != null ? formatUkDate(_birthDate!, context.locale.languageCode) : 'parent.select_dob'.tr(),
                                             style: TextStyle(
                                               color: _birthDate != null
                                                   ? (isDark ? Colors.white : Colors.black87)
@@ -1320,7 +1356,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            'Натисніть, щоб обрати іншу дату',
+                                            'parent.tap_to_change'.tr(),
                                             style: TextStyle(
                                               color: isDark ? Colors.white38 : Colors.black38,
                                               fontSize: 11.5,
@@ -1344,7 +1380,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                             Row(
                               children: [
                                 Text(
-                                  'Швидкий вибір року:',
+                                  'parent.quick_year_select'.tr(),
                                   style: TextStyle(
                                     color: isDark ? Colors.white54 : Colors.black45,
                                     fontSize: 11.5,
@@ -1414,7 +1450,7 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                             // Color picker row
                             const SizedBox(height: 14),
                             Text(
-                              'Колір аватара дитини:',
+                              'parent.child_avatar_color'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white54 : Colors.black45,
                                 fontSize: 11.5,
@@ -1499,8 +1535,8 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                 _confirmDelete();
                               },
                         icon: const Icon(LucideIcons.trash2, size: 18),
-                        label: const Text(
-                          'Видалити',
+                        label: Text(
+                          'parent.delete'.tr(),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -1554,14 +1590,14 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
                                 height: 22,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : const Row(
+                            : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(LucideIcons.check, size: 19, color: Colors.white),
-                                  SizedBox(width: 8),
+                                  const Icon(LucideIcons.check, size: 19, color: Colors.white),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'Зберегти зміни',
-                                    style: TextStyle(
+                                    'parent.save_changes'.tr(),
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       height: 1.25,

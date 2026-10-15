@@ -1,6 +1,6 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,9 +49,7 @@ class AdminChatHeader extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
+        return Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -100,7 +98,7 @@ class AdminChatHeader extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Скритний нагляд адміністратора',
+                            'admin_chat.stealth_monitoring_admin_title'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : const Color(0xFF0F172A),
                               fontSize: 16.5,
@@ -109,7 +107,7 @@ class AdminChatHeader extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '100% анонімний контроль якості',
+                            'admin_chat.stealth_monitoring_admin_subtitle'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
                               fontSize: 12,
@@ -139,7 +137,7 @@ class AdminChatHeader extends ConsumerWidget {
                           const Icon(LucideIcons.award, size: 16, color: Color(0xFF10B981)),
                           const SizedBox(width: 8),
                           Text(
-                            'Тренер: ',
+                            '${'common.coach_default'.tr()}: ',
                             style: TextStyle(
                               color: isDark ? Colors.white70 : const Color(0xFF64748B),
                               fontSize: 13,
@@ -148,7 +146,7 @@ class AdminChatHeader extends ConsumerWidget {
                           ),
                           Expanded(
                             child: Text(
-                              coachName ?? 'Тренер',
+                              coachName ?? 'common.coach_default'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 fontSize: 13.5,
@@ -164,7 +162,7 @@ class AdminChatHeader extends ConsumerWidget {
                           const Icon(LucideIcons.user, size: 16, color: Color(0xFF0284C7)),
                           const SizedBox(width: 8),
                           Text(
-                            'Клієнт: ',
+                            '${'common.client'.tr()}: ',
                             style: TextStyle(
                               color: isDark ? Colors.white70 : const Color(0xFF64748B),
                               fontSize: 13,
@@ -190,7 +188,7 @@ class AdminChatHeader extends ConsumerWidget {
                             const Icon(LucideIcons.baby, size: 16, color: Color(0xFFEC4899)),
                             const SizedBox(width: 8),
                             Text(
-                              'Дитина: ',
+                              '${'admin.child_label'.tr()}: ',
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : const Color(0xFF64748B),
                                 fontSize: 13,
@@ -230,7 +228,7 @@ class AdminChatHeader extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Учасники діалогу не мають жодних сповіщень чи позначок про присутність адміністратора.',
+                          'admin_chat.stealth_monitoring_notice'.tr(),
                           style: TextStyle(
                             color: isDark ? const Color(0xFFD1FAE5) : const Color(0xFF065F46),
                             fontSize: 12,
@@ -254,14 +252,13 @@ class AdminChatHeader extends ConsumerWidget {
                       elevation: 0,
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Зрозуміло', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    child: Text('common.understood'.tr(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   ),
                 ),
                 const SizedBox(height: 10),
               ],
             ),
-          ),
-        );
+          );
       },
     );
   }
@@ -282,9 +279,7 @@ class AdminChatHeader extends ConsumerWidget {
         final bottomInset = MediaQuery.of(ctx).padding.bottom;
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
+          child: Container(
               padding: EdgeInsets.fromLTRB(24, 16, 24, math.max(bottomInset, 16) + 12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -382,7 +377,7 @@ class AdminChatHeader extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Контактні дані клієнта',
+                              'admin_chat.client_contact_details'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                 fontSize: 12.5,
@@ -481,7 +476,7 @@ class AdminChatHeader extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Телефон',
+                                'admin_chat.phone_label'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                   fontSize: 11,
@@ -490,7 +485,7 @@ class AdminChatHeader extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                phone.isNotEmpty ? phone : 'Номер не вказано',
+                                phone.isNotEmpty ? phone : 'admin.no_phone'.tr(),
                                 style: TextStyle(
                                   color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   fontSize: 15,
@@ -510,10 +505,10 @@ class AdminChatHeader extends ConsumerWidget {
                                 Clipboard.setData(ClipboardData(text: phone));
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Номер скопійовано в буфер!'),
-                                    backgroundColor: Color(0xFF0284C7),
-                                    duration: Duration(seconds: 2),
+                                  SnackBar(
+                                    content: Text('admin_chat.phone_copied'.tr()),
+                                    backgroundColor: const Color(0xFF0284C7),
+                                    duration: const Duration(seconds: 2),
                                   ),
                                 );
                               },
@@ -609,10 +604,10 @@ class AdminChatHeader extends ConsumerWidget {
                                 Clipboard.setData(ClipboardData(text: email));
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Email скопійовано!'),
-                                    backgroundColor: Color(0xFF0284C7),
-                                    duration: Duration(seconds: 2),
+                                  SnackBar(
+                                    content: Text('admin_chat.email_copied'.tr()),
+                                    backgroundColor: const Color(0xFF0284C7),
+                                    duration: const Duration(seconds: 2),
                                   ),
                                 );
                               },
@@ -666,10 +661,10 @@ class AdminChatHeader extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'Закрити',
-                            style: TextStyle(
+                            'admin.close'.tr(),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
@@ -683,8 +678,7 @@ class AdminChatHeader extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
-        );
+          );
       },
     );
   }
@@ -692,15 +686,12 @@ class AdminChatHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isMonitoring) {
-      return ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF140C26).withValues(alpha: 0.90)
-                  : Colors.white.withValues(alpha: 0.94),
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF140C26)
+              : Colors.white,
               border: Border(
                 bottom: BorderSide(
                   color: const Color(0xFFA855F7).withValues(alpha: 0.5),
@@ -767,7 +758,7 @@ class AdminChatHeader extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${coachName ?? 'Тренер'} ↔ $clientName',
+                        '${coachName ?? 'common.coach_default'.tr()} ↔ $clientName',
                         style: TextStyle(
                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontSize: 15.0,
@@ -802,9 +793,9 @@ class AdminChatHeader extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(color: const Color(0xFFA78BFA), width: 0.8),
                             ),
-                            child: const Text(
-                              'НАГЛЯД',
-                              style: TextStyle(
+                            child: Text(
+                              'admin_chat.monitoring_badge'.tr(),
+                              style: const TextStyle(
                                 color: Color(0xFFA78BFA),
                                 fontSize: 8.5,
                                 fontWeight: FontWeight.w800,
@@ -816,8 +807,8 @@ class AdminChatHeader extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               childName != null && childName!.isNotEmpty
-                                  ? 'Дитина: $childName • Тільки читання'
-                                  : 'Скритний режим • Тільки читання',
+                                  ? 'admin_chat.child_read_only'.tr(namedArgs: {'name': childName!})
+                                  : 'admin_chat.stealth_read_only'.tr(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -854,9 +845,7 @@ class AdminChatHeader extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      );
+          );
     }
 
     final userRoles = ref.watch(usersRoleMapProvider).value ?? {};
@@ -883,18 +872,15 @@ class AdminChatHeader extends ConsumerWidget {
           .replaceFirst(RegExp(r'^Відновлення пароля:\s*', caseSensitive: false), '')
           .replaceFirst(RegExp(r'^Запит на відновлення:\s*', caseSensitive: false), '')
           .trim();
-      if (displayName.isEmpty) displayName = 'Запит на відновлення';
+      if (displayName.isEmpty) displayName = 'admin_chat.recovery_request_title'.tr();
     }
 
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.92),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF0F1E32)
+            : Colors.white,
             border: Border(
               bottom: BorderSide(
                 color: isRecovery
@@ -1082,7 +1068,7 @@ class AdminChatHeader extends ConsumerWidget {
                               children: [
                                 const Text('🔑 ', style: TextStyle(fontSize: 9)),
                                 Text(
-                                  'ВІДНОВЛЕННЯ',
+                                  'admin_chat.recovery_badge'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E),
                                     fontSize: 9,
@@ -1113,7 +1099,7 @@ class AdminChatHeader extends ConsumerWidget {
                               children: [
                                 const Text('🏊 ', style: TextStyle(fontSize: 9)),
                                 Text(
-                                  'ТРЕНЕР',
+                                  'admin_chat.coach_badge'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
                                     fontSize: 9,
@@ -1144,7 +1130,7 @@ class AdminChatHeader extends ConsumerWidget {
                               children: [
                                 const Text('👤 ', style: TextStyle(fontSize: 9)),
                                 Text(
-                                  'КЛІЄНТ',
+                                  'admin_chat.client_badge'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                     fontSize: 9,
@@ -1177,8 +1163,8 @@ class AdminChatHeader extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Text(
                           isRecovery
-                              ? 'Запит на відновлення доступу'
-                              : (isCoach ? 'В мережі • Тренер школи' : 'В мережі'),
+                              ? 'admin_chat.access_recovery_subtitle'.tr()
+                              : (isCoach ? 'admin_chat.online_school_coach'.tr() : 'admin_chat.online_status'.tr()),
                           style: TextStyle(
                             color: isRecovery
                                 ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309))
@@ -1221,8 +1207,6 @@ class AdminChatHeader extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }

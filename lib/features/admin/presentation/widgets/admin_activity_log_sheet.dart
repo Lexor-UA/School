@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -67,20 +66,20 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
     return currentTheme.accentPrimary;
   }
 
-  String _formatActionTime(DateTime timestamp) {
+  String _formatActionTime(DateTime timestamp, BuildContext context) {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
 
     if (diff.inMinutes < 1) {
-      return 'Щойно';
+      return 'admin.just_now'.tr();
     } else if (diff.inMinutes < 60) {
       return '${diff.inMinutes} ${'admin.mins_ago'.tr()}';
     } else if (diff.inHours < 24 && timestamp.day == now.day) {
       return '${'admin.today'.tr()}, ${DateFormat('HH:mm').format(timestamp)}';
     } else if (diff.inHours < 48 && timestamp.day == now.subtract(const Duration(days: 1)).day) {
-      return 'Вчора, ${DateFormat('HH:mm').format(timestamp)}';
+      return '${'admin.yesterday'.tr()}, ${DateFormat('HH:mm').format(timestamp)}';
     } else if (timestamp.year == now.year) {
-      return DateFormat('d MMM, HH:mm', 'uk').format(timestamp);
+      return DateFormat('d MMM, HH:mm', context.locale.languageCode).format(timestamp);
     } else {
       return DateFormat('dd.MM.yyyy, HH:mm').format(timestamp);
     }
@@ -109,26 +108,24 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
     switch (_selectedPeriod) {
       case ActivityPeriod.day:
         currentList = dayActions;
-        emptyTitle = 'Немає дій за день';
-        emptySubtitle = 'За останні 24 години нових змін чи активностей не зафіксовано';
+        emptyTitle = 'admin.no_actions_day_title'.tr();
+        emptySubtitle = 'admin.no_actions_day_subtitle'.tr();
         break;
       case ActivityPeriod.week:
         currentList = weekActions;
-        emptyTitle = 'Немає дій за тиждень';
-        emptySubtitle = 'За останні 7 днів нових записів активностей не знайдено';
+        emptyTitle = 'admin.no_actions_week_title'.tr();
+        emptySubtitle = 'admin.no_actions_week_subtitle'.tr();
         break;
       case ActivityPeriod.month:
         currentList = monthActions;
-        emptyTitle = 'Немає дій за місяць';
-        emptySubtitle = 'За останні 30 днів записи дій адміністратора відсутні';
+        emptyTitle = 'admin.no_actions_month_title'.tr();
+        emptySubtitle = 'admin.no_actions_month_subtitle'.tr();
         break;
     }
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+      child: Container(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.82,
           ),
@@ -223,7 +220,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Журнал активностей адміністратора',
+                            'admin.activity_log_subtitle'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
                               fontSize: 12,
@@ -271,21 +268,21 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                 child: Row(
                   children: [
                     _buildPeriodTab(
-                      title: 'День',
+                      title: 'admin.period_day'.tr(),
                       count: dayActions.length,
                       period: ActivityPeriod.day,
                       currentTheme: currentTheme,
                       isDark: isDark,
                     ),
                     _buildPeriodTab(
-                      title: 'Тиждень',
+                      title: 'admin.period_week'.tr(),
                       count: weekActions.length,
                       period: ActivityPeriod.week,
                       currentTheme: currentTheme,
                       isDark: isDark,
                     ),
                     _buildPeriodTab(
-                      title: 'Місяць',
+                      title: 'admin.period_month'.tr(),
                       count: monthActions.length,
                       period: ActivityPeriod.month,
                       currentTheme: currentTheme,
@@ -355,7 +352,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                           final a = currentList[index];
                           final actionIcon = _getActionIcon(a.action);
                           final actionColor = _getActionColor(a.action, currentTheme);
-                          final timeStr = _formatActionTime(a.timestamp);
+                          final timeStr = _formatActionTime(a.timestamp, context);
 
                           return Container(
                             padding: const EdgeInsets.all(12),
@@ -470,8 +467,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildPeriodTab({

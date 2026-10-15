@@ -8,21 +8,23 @@ import '../../auth/models/app_user.dart';
 import '../models/organization.dart';
 import '../models/branch.dart';
 import '../models/branch_config.dart';
+import '../services/branch_invitation_service.dart';
+import '../utils/branch_timezone_helper.dart';
 import '../../subscription/models/subscription_package.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Провайдер філії поточного авторизованого користувача (якщо не Owner)
+/// Провайдер філії поточного авторизованого користувача (якщо не Owner/SuperAdmin)
 final currentUserBranchIdProvider = Provider<String?>((ref) {
   try {
     final user = ref.watch(authControllerProvider);
-    if (user != null && user.role != UserRole.owner) {
+    if (user != null && !user.isOwnerOrSuperAdmin) {
       return user.branchId;
     }
     final prefs = ref.watch(sharedPrefsProvider);
     final cachedBranchId = prefs.getString('userBranchId');
     if (cachedBranchId != null) {
       final cachedRole = prefs.getString('userRole');
-      if (cachedRole != null && cachedRole != 'owner') {
+      if (cachedRole != null && cachedRole != 'owner' && cachedRole != 'superAdmin') {
         return cachedBranchId;
       }
     }
@@ -92,29 +94,57 @@ class TenancyState {
 /// Контролер управління мультитенантністю (Riverpod 3 Notifier)
 class TenancyNotifier extends Notifier<TenancyState> {
   static const String _prefBranchKey = 'selected_branch_id';
+  static const String _prefBrandingAppNameKey = 'white_label_app_name';
+  static const String _prefBrandingColorKey = 'white_label_primary_color';
   StreamSubscription? _branchesSub;
+  StreamSubscription? _orgSub;
 
   @override
   TenancyState build() {
     ref.onDispose(() {
       _branchesSub?.cancel();
+      _orgSub?.cancel();
     });
 
+    for (final b in Branch.defaultBranches) {
+      BranchInvitationService.registerBranch(b);
+      BranchTimezoneHelper.registerBranchTimezone(b.id, b.timezone);
+    }
+
     _initFirestoreBranches();
+    _initFirestoreOrganization();
 
     final prefs = ref.watch(sharedPrefsProvider);
     final savedBranchId = prefs.getString(_prefBranchKey);
+
+    Organization initialOrg = Organization.cityswim;
+    final savedAppName = prefs.getString(_prefBrandingAppNameKey);
+    final savedColor = prefs.getInt(_prefBrandingColorKey);
+    if (savedAppName != null || savedColor != null) {
+      final branding = Map<String, dynamic>.from(initialOrg.branding ?? {});
+      if (savedAppName != null && savedAppName.isNotEmpty) {
+        branding['appName'] = savedAppName;
+      }
+      if (savedColor != null) {
+        branding['primaryColorValue'] = savedColor;
+        branding['primaryColor'] = savedColor;
+      }
+      initialOrg = initialOrg.copyWith(
+        name: savedAppName ?? initialOrg.name,
+        branding: branding,
+      );
+    }
 
     // Пряма перевірка філії користувача для уникнення каскадного invalidateSelf під час білду віджетів
     String? userBranchId;
     try {
       final user = ref.watch(authControllerProvider);
-      if (user != null && user.role != UserRole.owner) {
+      if (user != null && !user.isOwnerOrSuperAdmin) {
         userBranchId = user.branchId;
       } else {
         final cachedBranchId = prefs.getString('userBranchId');
         final cachedRole = prefs.getString('userRole');
-        if (cachedBranchId != null && cachedRole != 'owner') {
+        if (cachedBranchId != null && cachedRole != 'owner' && cachedRole != 'superAdmin') {
           userBranchId = cachedBranchId;
         }
       }
@@ -123,7 +153,7 @@ class TenancyNotifier extends Notifier<TenancyState> {
     if (userBranchId != null) {
       final userBranch = Branch.defaultBranches.firstWhereOrNull((b) => b.id == userBranchId) ?? Branch.kyiv;
       return TenancyState(
-        organization: Organization.cityswim,
+        organization: initialOrg,
         availableBranches: Branch.defaultBranches,
         activeBranch: userBranch,
         isAllLocations: false,
@@ -133,7 +163,7 @@ class TenancyNotifier extends Notifier<TenancyState> {
     // Для Owner (або неавторизованого стану) перевіряємо збережений вибір
     if (savedBranchId == 'all') {
       return TenancyState(
-        organization: Organization.cityswim,
+        organization: initialOrg,
         availableBranches: Branch.defaultBranches,
         activeBranch: null,
         isAllLocations: true,
@@ -142,7 +172,7 @@ class TenancyNotifier extends Notifier<TenancyState> {
       final target = Branch.defaultBranches.firstWhereOrNull((b) => b.id == savedBranchId);
       if (target != null) {
         return TenancyState(
-          organization: Organization.cityswim,
+          organization: initialOrg,
           availableBranches: Branch.defaultBranches,
           activeBranch: target,
           isAllLocations: false,
@@ -152,11 +182,41 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
     // За замовчуванням стартуємо з Kyiv
     return TenancyState(
-      organization: Organization.cityswim,
+      organization: initialOrg,
       availableBranches: Branch.defaultBranches,
       activeBranch: Branch.kyiv,
       isAllLocations: false,
     );
+  }
+
+  /// Ініціалізація та слухання організації (White-Label конфігурації) у Firestore
+  void _initFirestoreOrganization() {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      _orgSub?.cancel();
+      _orgSub = firestore
+          .collection('organizations')
+          .doc('cityswim')
+          .snapshots()
+          .listen((doc) {
+        if (!doc.exists || doc.data() == null) return;
+        try {
+          final data = Map<String, dynamic>.from(doc.data()!);
+          data['id'] = doc.id;
+          final org = Organization.fromJson(data);
+          state = state.copyWith(organization: org);
+
+          final prefs = ref.read(sharedPrefsProvider);
+          final wl = org.whiteLabelConfig;
+          prefs.setString(_prefBrandingAppNameKey, wl.appName);
+          prefs.setInt(_prefBrandingColorKey, wl.primaryColorValue);
+        } catch (e) {
+          debugPrint('[TenancyNotifier] Помилка парсингу організації: $e');
+        }
+      }, onError: (err) {
+        debugPrint('[TenancyNotifier] Помилка стріму організації: $err');
+      });
+    } catch (_) {}
   }
 
   /// Ініціалізація та слухання колекції філій у Firestore в реальному часі
@@ -178,8 +238,10 @@ class TenancyNotifier extends Notifier<TenancyState> {
             final branch = Branch.fromJson(data);
             branchMap[branch.id] = branch;
 
-            // Реєстрація конфігурацій басейнів та абонементів
+            // Реєстрація конфігурацій басейнів, таймзони, QR-запрошень та абонементів
             BranchConfig.forBranch(branch.id, branch.name, branch.city);
+            BranchInvitationService.registerBranch(branch);
+            BranchTimezoneHelper.registerBranchTimezone(branch.id, branch.timezone);
             SubscriptionPackageCatalog.getPackagesForBranch(branch.id, branch.currency, branch.currencySymbol);
           } catch (e) {
             debugPrint('[TenancyNotifier] Помилка парсингу філії: $e');
@@ -240,6 +302,8 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
   /// Додавання нової філії (для масштабування майбутнього AquatixLab)
   void registerBranch(Branch branch) {
+    BranchInvitationService.registerBranch(branch);
+    BranchTimezoneHelper.registerBranchTimezone(branch.id, branch.timezone);
     if (state.availableBranches.any((b) => b.id == branch.id)) {
       updateBranchInMemory(branch);
       return;
@@ -250,6 +314,8 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
   /// Оновлення філії в локальному стані
   void updateBranchInMemory(Branch branch) {
+    BranchInvitationService.registerBranch(branch);
+    BranchTimezoneHelper.registerBranchTimezone(branch.id, branch.timezone);
     final updatedList = state.availableBranches
         .map((b) => b.id == branch.id ? branch : b)
         .toList();
@@ -338,8 +404,12 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
       // 2. Оновлення даних адміністратора (якщо змінювалися)
       final adminDocId = 'admin_${branch.id}';
-      final adminRef = firestore.collection('users').doc(adminDocId);
-      final adminSnap = await adminRef.get();
+      var adminRef = firestore.collection('users').doc(adminDocId);
+      var adminSnap = await adminRef.get();
+      if (!adminSnap.exists && branch.id == 'kyiv') {
+        adminRef = firestore.collection('users').doc('admin');
+        adminSnap = await adminRef.get();
+      }
       if (adminSnap.exists) {
         final updates = <String, dynamic>{
           'currency': branch.currencySymbol,
@@ -353,6 +423,8 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
       // 3. Оновлення конфігурацій
       BranchConfig.forBranch(branch.id, branch.name, branch.city);
+      BranchInvitationService.registerBranch(branch);
+      BranchTimezoneHelper.registerBranchTimezone(branch.id, branch.timezone);
       SubscriptionPackageCatalog.getPackagesForBranch(branch.id, branch.currency, branch.currencySymbol);
 
       // 4. Оновлення локального списку філій
@@ -374,6 +446,39 @@ class TenancyNotifier extends Notifier<TenancyState> {
       );
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Оновлення налаштувань White-Label брендингу організації
+  Future<void> updateWhiteLabelBranding({
+    required String appName,
+    required int primaryColorValue,
+  }) async {
+    final normalizedName = appName.trim().isEmpty ? 'CitySwim' : appName.trim();
+    final currentBranding = Map<String, dynamic>.from(state.organization.branding ?? {});
+    currentBranding['appName'] = normalizedName;
+    currentBranding['primaryColorValue'] = primaryColorValue;
+    currentBranding['primaryColor'] = primaryColorValue;
+
+    final updatedOrg = state.organization.copyWith(
+      name: normalizedName,
+      branding: currentBranding,
+    );
+    state = state.copyWith(organization: updatedOrg);
+
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      await prefs.setString(_prefBrandingAppNameKey, normalizedName);
+      await prefs.setInt(_prefBrandingColorKey, primaryColorValue);
+    } catch (_) {}
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('organizations')
+          .doc(updatedOrg.id)
+          .set(updatedOrg.toJson(), SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[TenancyNotifier] updateWhiteLabelBranding offline/test mode: $e');
     }
   }
 
@@ -403,6 +508,8 @@ class TenancyNotifier extends Notifier<TenancyState> {
 
       // 3. Очищення кешів
       BranchConfig.removeConfig(branchId);
+      BranchInvitationService.removeBranch(branchId);
+      BranchTimezoneHelper.removeBranchTimezone(branchId);
       SubscriptionPackageCatalog.removeCustomPackages(branchId);
 
       // 4. Оновлення локального стану

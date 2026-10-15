@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -60,7 +61,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           children: [
             const Icon(LucideIcons.check, color: Colors.greenAccent, size: 18),
             const SizedBox(width: 8),
-            Text('Код $text скопійовано в буфер обміну!'),
+            Expanded(child: Text('family.code_copied'.tr(args: [text]))),
           ],
         ),
         backgroundColor: const Color(0xFF0F1E32),
@@ -73,7 +74,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
   Future<void> _submitJoinCode() async {
     final code = _codeController.text.trim();
     if (code.isEmpty) {
-      setState(() => _errorMessage = 'Введіть код сім\'ї');
+      setState(() => _errorMessage = 'family.enter_family_code_err'.tr());
       return;
     }
 
@@ -93,15 +94,15 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
       HapticFeedback.heavyImpact();
       _codeController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              Icon(LucideIcons.heartHandshake, color: Colors.greenAccent, size: 20),
-              SizedBox(width: 8),
-              Text('Успішно! Сімейні акаунти об\'єднано.'),
+              const Icon(LucideIcons.heartHandshake, color: Colors.greenAccent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text('family.accounts_linked_success'.tr())),
             ],
           ),
-          backgroundColor: Color(0xFF064E3B),
+          backgroundColor: const Color(0xFF064E3B),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -119,28 +120,28 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
   Future<void> _confirmUnlink(Family family) async {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final user = ref.read(authControllerProvider);
-    final partnerName = family.getOtherParentName(user?.id ?? '') ?? 'партнера';
+    final partnerName = family.getOtherParentName(user?.id ?? '') ?? 'parent.partner'.tr();
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 22),
-            SizedBox(width: 8),
-            Text('Від\'єднати акаунт?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 22),
+            const SizedBox(width: 8),
+            Expanded(child: Text('family.unlink_account_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
           ],
         ),
         content: Text(
-          'Ви впевнені, що хочете розірвати сімейний зв\'язок з $partnerName? Спільний доступ до дітей та абонементів буде розділено.',
+          'family.unlink_account_confirm'.tr(args: [partnerName]),
           style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Скасувати'),
+            child: Text('common.cancel'.tr()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -149,7 +150,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Від\'єднати', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('family.unlink_btn'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -161,9 +162,9 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Сімейний зв\'язок розірвано.'),
-            backgroundColor: Color(0xFF1E293B),
+          SnackBar(
+            content: Text('family.unlinked_msg'.tr()),
+            backgroundColor: const Color(0xFF1E293B),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -268,7 +269,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Сімейний акаунт',
+                            'parent.family_account'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black,
                               fontSize: 19,
@@ -276,7 +277,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                             ),
                           ),
                           Text(
-                            isPaired ? 'Спільне керування парою' : 'Підключення другого з батьків',
+                            isPaired ? 'parent.family_joint_management'.tr() : 'parent.family_connect_partner'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                               fontSize: 12,
@@ -341,9 +342,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                isPaired
-                                    ? 'Ваші акаунти об\'єднано. Обидва батьки мають доступ до дітей, розкладу та абонементів.'
-                                    : 'Об\'єднайте акаунти з чоловіком або дружиною, щоб разом записувати дітей та користуватися єдиними абонементами.',
+                                isPaired ? 'parent.family_linked_intro'.tr() : 'parent.family_connect_intro'.tr(),
                                 style: TextStyle(
                                   color: isDark ? Colors.white : Colors.black87,
                                   fontSize: 12.5,
@@ -388,15 +387,15 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                             ),
                             onPressed: _isLoading ? null : () => _confirmUnlink(family),
                             icon: const Icon(LucideIcons.userMinus, size: 18),
-                            label: const Text(
-                              'Від\'єднати другий акаунт',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                            label: Text(
+                              'family.unlink_second_account_btn'.tr(),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
                             ),
                           ),
                         ),
                       ] else ...[
                         // Unpaired View: 1) My Invite Code
-                        _buildInviteCodeCard(family?.inviteCode ?? 'Генерація...', isDark),
+                        _buildInviteCodeCard(family?.inviteCode ?? 'common.loading'.tr(), isDark),
                         const SizedBox(height: 18),
 
                         // Divider with OR
@@ -411,7 +410,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
-                                'АБО',
+                                'parent.or_divider'.tr(),
                                 style: TextStyle(
                                   color: isDark ? Colors.white38 : Colors.black38,
                                   fontSize: 12,
@@ -447,11 +446,11 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
         ? user.name.trim()
         : (family.parentNames[currentUserId]?.trim().isNotEmpty == true
             ? family.parentNames[currentUserId]!.trim()
-            : 'Ви');
+            : 'family.you_badge'.tr());
     final currentUserPhone = (user?.phone != null && user!.phone!.trim().isNotEmpty)
         ? user.phone!.trim()
         : (family.parentPhones[currentUserId]?.trim() ?? '');
-    final partnerName = family.getOtherParentName(currentUserId) ?? 'Другий з батьків';
+    final partnerName = family.getOtherParentName(currentUserId) ?? 'family.second_parent'.tr();
     final partnerPhone = family.getOtherParentPhone(currentUserId) ?? '';
 
     return Container(
@@ -472,7 +471,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               const Icon(LucideIcons.heartHandshake, color: Color(0xFF10B981), size: 18),
               const SizedBox(width: 8),
               Text(
-                'Батьки родини',
+                'family.family_parents_title'.tr(),
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black87,
                   fontSize: 14.5,
@@ -487,7 +486,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           _buildParentTile(
             name: currentUserName,
             phone: currentUserPhone,
-            roleBadge: 'Ви',
+            roleBadge: 'family.you_badge'.tr(),
             badgeColor: const Color(0xFF00E5FF),
             isDark: isDark,
           ),
@@ -500,14 +499,14 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                 color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.link2, size: 12, color: Color(0xFF10B981)),
-                  SizedBox(width: 4),
+                  const Icon(LucideIcons.link2, size: 12, color: Color(0xFF10B981)),
+                  const SizedBox(width: 4),
                   Text(
-                    'Спільний доступ',
-                    style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                    'family.shared_access_badge'.tr(),
+                    style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -519,7 +518,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           _buildParentTile(
             name: partnerName,
             phone: partnerPhone,
-            roleBadge: 'Партнер',
+            roleBadge: 'parent.partner'.tr(),
             badgeColor: const Color(0xFFA78BFA),
             isDark: isDark,
           ),
@@ -535,10 +534,10 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
     required Color badgeColor,
     required bool isDark,
   }) {
-    final cleanName = name.trim().isNotEmpty ? name.trim() : 'Користувач';
+    final cleanName = name.trim().isNotEmpty ? name.trim() : 'auth.user_fallback'.tr();
     final initialLetter = cleanName.characters.isNotEmpty
         ? cleanName.characters.first.toUpperCase()
-        : 'К';
+        : 'U';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -609,7 +608,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
             const SizedBox(width: 8),
             Text(
-              'Спільні діти (${children.length})',
+              'family.shared_children_count'.tr(args: [children.length.toString()]),
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black87,
                 fontSize: 14.5,
@@ -628,7 +627,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             ),
             child: Center(
               child: Text(
-                'Дітей ще не додано. Натисніть «+ Додати» у профілі.',
+                'family.no_children_added_yet'.tr(),
                 style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12.5),
               ),
             ),
@@ -702,7 +701,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '1. Ваш сімейний код',
+                'parent.family_your_code'.tr(),
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black87,
                   fontSize: 14.5,
@@ -720,7 +719,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _showQrCode ? 'Приховати QR' : 'Показати QR',
+                      _showQrCode ? 'parent.family_hide_qr'.tr() : 'parent.family_show_qr'.tr(),
                       style: TextStyle(
                         color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         fontSize: 11.5,
@@ -734,7 +733,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Надішліть цей код чоловікові або дружині, щоб вони підключилися до вашої родини:',
+            'parent.family_send_code_desc'.tr(),
             style: TextStyle(
               color: isDark ? Colors.white60 : Colors.black54,
               fontSize: 12,
@@ -819,8 +818,8 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       ),
                       onPressed: () => _copyToClipboard(code),
                       icon: const Icon(LucideIcons.copy, size: 15, color: Color(0xFF00E5FF)),
-                      label: const Text(
-                        'Копіювати',
+                      label: Text(
+                        'parent.copy'.tr(),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -884,7 +883,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '2. Приєднатися до сім\'ї',
+                'parent.family_join_title'.tr(),
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black87,
                   fontSize: 14.5,
@@ -908,7 +907,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Сканувати QR',
+                        'parent.family_scan_qr'.tr(),
                         style: TextStyle(
                           color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           fontSize: 11.5,
@@ -923,7 +922,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Якщо ваш чоловік або дружина вже мають код сім\'ї, введіть його або відскануйте QR:',
+            'parent.family_enter_code_desc'.tr(),
             style: TextStyle(
               color: isDark ? Colors.white60 : Colors.black54,
               fontSize: 12,
@@ -942,7 +941,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               letterSpacing: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: 'Код сім\'ї (наприклад FAM-123456)',
+              hintText: 'parent.family_code_hint'.tr(),
               hintStyle: TextStyle(
                 color: isDark ? Colors.white38 : Colors.black38,
                 fontSize: 13,
@@ -959,7 +958,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                   size: 20,
                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 ),
-                tooltip: 'Сканувати QR-код',
+                tooltip: 'parent.family_scan_qr'.tr(),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   _openQrScanner();
@@ -1036,14 +1035,14 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       height: 22,
                       child: CircularProgressIndicator(color: Color(0xFF00E5FF), strokeWidth: 2.2),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.userCheck, size: 19, color: Color(0xFF00E5FF)),
-                        SizedBox(width: 8),
+                        const Icon(LucideIcons.userCheck, size: 19, color: Color(0xFF00E5FF)),
+                        const SizedBox(width: 8),
                         Text(
-                          'Об\'єднати акаунти',
-                          style: TextStyle(
+                          'parent.family_link_accounts'.tr(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,

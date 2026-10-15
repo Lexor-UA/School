@@ -67,7 +67,6 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
     final now = DateTime.now();
 
     final List<CoachAttendeeInfo> resolved = [];
-    final List<String> orphanedIds = [];
 
     for (final id in enrolledIds) {
       try {
@@ -76,7 +75,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
 
         if (childDoc.exists) {
           final childData = childDoc.data()!;
-          final childName = (childData['name'] as String? ?? 'Учень').trim();
+          final childName = (childData['name'] as String? ?? 'coach.student_role'.tr()).trim();
           final childAge = childData['age'] as int?;
           final parentId = childData['parentId'] as String? ?? '';
 
@@ -141,7 +140,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
           final userDoc = await FirebaseFirestore.instance.collection('users').doc(id).get();
           if (userDoc.exists) {
             final userData = userDoc.data()!;
-            final userName = (userData['name'] as String? ?? 'Клієнт').trim();
+            final userName = (userData['name'] as String? ?? 'admin.role_client'.tr()).trim();
             final userPhone = (userData['phone'] as String?)?.trim();
             final userAge = userData['age'] as int?;
 
@@ -183,28 +182,10 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
               isPresent: isPresent,
               isChild: false,
             ));
-          } else {
-            // Neither child nor user exists - orphaned ID
-            orphanedIds.add(id);
           }
         }
       } catch (e) {
         debugPrint('Error resolving attendee $id: $e');
-      }
-    }
-
-    // Auto-heal orphaned enrollments in background
-    if (orphanedIds.isNotEmpty) {
-      try {
-        await FirebaseFirestore.instance.collection('classes').doc(_currentClass.id).update({
-          'enrolledChildIds': FieldValue.arrayRemove(orphanedIds),
-        });
-        final updatedEnrolled = List<String>.from(_currentClass.enrolledChildIds)
-          ..removeWhere((id) => orphanedIds.contains(id));
-        _currentClass = _currentClass.copyWith(enrolledChildIds: updatedEnrolled);
-        ref.invalidate(scheduleControllerProvider);
-      } catch (e) {
-        debugPrint('Failed to auto-heal orphaned attendees: $e');
       }
     }
 
@@ -239,8 +220,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
       if (!hasAccess) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('У вас немає доступу до відмітки відвідування в іншій філії'),
+            SnackBar(
+              content: Text('coach.no_branch_attendance_access'.tr()),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -273,11 +254,12 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
       final docSnap = await classDocRef.get();
       if (docSnap.exists) {
         await classDocRef.update({
-          'attendedChildIds': updatedAttended,
+          'attendedChildIds': isPresent
+              ? FieldValue.arrayRemove([attendee.id])
+              : FieldValue.arrayUnion([attendee.id]),
         });
-      } else {
-        // Document doesn't exist yet in Firestore (e.g. seed/cached class)
-        // Persist full class document with updated attended list!
+      } else if (!_currentClass.id.startsWith('seed_') && !_currentClass.enrolledChildIds.contains('demo_child_1')) {
+        // Document doesn't exist yet in Firestore (e.g. cached class)
         final classData = {
           'id': _currentClass.id,
           'title': _currentClass.title,
@@ -314,7 +296,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              !isPresent ? 'Відмічено: ${attendee.name} присутній(-ня)' : 'Відмітку для ${attendee.name} знято',
+              !isPresent ? 'coach.marked_present_fmt'.tr(args: [attendee.name]) : 'coach.unmarked_present_fmt'.tr(args: [attendee.name]),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: !isPresent ? const Color(0xFF10B981) : const Color(0xFF334155),
@@ -333,7 +315,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Не вдалося зберегти відвідуваність для ${attendee.name}. Перевірте зв’язок.',
+              'coach.save_attendance_error_fmt'.tr(args: [attendee.name]),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: const Color(0xFFEF4444),
@@ -355,7 +337,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Номер $phone скопійовано',
+                'coach.phone_copied_fmt'.tr(args: [phone]),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -372,7 +354,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
     final nav = Navigator.of(context);
     final coach = ref.read(authControllerProvider);
     final targetClientId = attendee.isChild ? (attendee.parentId ?? attendee.id) : attendee.id;
-    final targetClientName = attendee.isChild ? (attendee.parentName ?? 'Батьки (${attendee.name})') : attendee.name;
+    final targetClientName = attendee.isChild ? (attendee.parentName ?? 'coach.parents_of_child'.tr(args: [attendee.name])) : attendee.name;
     final dialogId = 'coach_${coach?.id}_client_$targetClientId';
 
     nav.pop();
@@ -390,7 +372,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
           childName: attendee.isChild ? attendee.name : null,
           type: 'coach_client',
           title: attendee.isChild ? attendee.name : targetClientName,
-          subtitle: attendee.isChild ? 'Батьки: $targetClientName' : 'Клієнт • Онлайн',
+          subtitle: attendee.isChild ? 'coach.parents_colon_fmt'.tr(args: [targetClientName]) : 'coach.client_online'.tr(),
         ),
       ),
     );
@@ -409,8 +391,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
       currentUser.role == UserRole.superAdmin
     );
 
-    final startTimeStr = '${_currentClass.startTime.hour.toString().padLeft(2, '0')}:${_currentClass.startTime.minute.toString().padLeft(2, '0')}';
-    final endTimeStr = '${_currentClass.endTime.hour.toString().padLeft(2, '0')}:${_currentClass.endTime.minute.toString().padLeft(2, '0')}';
+    final startTimeStr = '${_currentClass.branchStartTime.hour.toString().padLeft(2, '0')}:${_currentClass.branchStartTime.minute.toString().padLeft(2, '0')}';
+    final endTimeStr = '${_currentClass.branchEndTime.hour.toString().padLeft(2, '0')}:${_currentClass.branchEndTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = _currentClass.enrolledChildIds.length;
     final maxCap = _currentClass.maxCapacity > 0 ? _currentClass.maxCapacity : 8;
     final freeSlots = (maxCap - enrolledCount).clamp(0, maxCap);
@@ -481,7 +463,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                'ДЕТАЛІ ГРУПИ ТА УЧНІ',
+                                'coach.group_and_students_details_upper'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12,
@@ -636,7 +618,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                 isDark: isDark,
                               ),
                             _buildPill(
-                              label: freeSlots > 0 ? 'Вільно: $freeSlots місць' : 'Місць немає (заповнено)',
+                              label: freeSlots > 0 ? 'coach.free_slots_places_fmt'.tr(args: ['$freeSlots']) : 'coach.no_free_slots_full'.tr(),
                               color: freeSlots > 0
                                   ? (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
                                   : (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)),
@@ -655,7 +637,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Записано: $enrolledCount з $maxCap учнів',
+                              'coach.enrolled_of_max_students_fmt'.tr(args: ['$enrolledCount', '$maxCap']),
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : const Color(0xFF475569),
                                 fontSize: 12.5,
@@ -663,7 +645,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               ),
                             ),
                             Text(
-                              '${(fillFraction * 100).toInt()}% заповнено',
+                              'coach.filled_percent_fmt'.tr(args: ['${(fillFraction * 100).toInt()}']),
                               style: TextStyle(
                                 color: fillFraction > 0.85
                                     ? const Color(0xFFF59E0B)
@@ -702,7 +684,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'СПИСОК УЧНІВ ($enrolledCount)',
+                        'coach.students_list_count_upper'.tr(args: ['$enrolledCount']),
                         style: TextStyle(
                           color: isDark ? Colors.white70 : const Color(0xFF475569),
                           fontSize: 12,
@@ -711,7 +693,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                         ),
                       ),
                       Text(
-                        'Присутні: ${_currentClass.attendedChildIds.length} з $enrolledCount',
+                        'coach.present_of_enrolled_fmt'.tr(args: ['${_currentClass.attendedChildIds.length}', '$enrolledCount']),
                         style: TextStyle(
                           color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
                           fontSize: 11.5,
@@ -754,7 +736,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                     ),
                                     const SizedBox(height: 14),
                                     Text(
-                                      'У цій групі ще немає записаних учнів',
+                                      'coach.no_enrolled_students_group'.tr(),
                                       style: TextStyle(
                                         color: isDark ? Colors.white : currentTheme.textPrimary,
                                         fontSize: 15,
@@ -764,7 +746,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'Вільні місця будуть зайняті після бронювання клієнтами або запису адміністратором',
+                                      'coach.no_enrolled_students_group_hint'.tr(),
                                       style: TextStyle(
                                         color: isDark ? Colors.white54 : const Color(0xFF64748B),
                                         fontSize: 12,
@@ -892,7 +874,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                     ),
                                   ),
                                   child: Text(
-                                    '${attendee.age} р.',
+                                    'parent.years_short'.tr(args: ['${attendee.age}']),
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                       fontSize: 10.5,
@@ -905,7 +887,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               if (attendee.parentName != null && attendee.parentName!.isNotEmpty)
                                 Expanded(
                                   child: Text(
-                                    'Батьки: ${attendee.parentName}',
+                                    'coach.parents_colon_fmt'.tr(args: [attendee.parentName!]),
                                     style: TextStyle(
                                       color: isDark ? Colors.white60 : const Color(0xFF64748B),
                                       fontSize: 11,
@@ -965,7 +947,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               ),
                               const SizedBox(width: 5.5),
                               Text(
-                                isPresent ? 'Присутній' : 'Відмітити',
+                                isPresent ? 'coach.present_btn'.tr() : 'coach.mark_btn'.tr(),
                                 style: TextStyle(
                                   color: isPresent
                                       ? Colors.white
@@ -1030,7 +1012,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                                 Icon(LucideIcons.copy, size: 12, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Копіювати',
+                                  'common.copy'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 11,
@@ -1089,7 +1071,9 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               Icon(LucideIcons.ticket, size: 13, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                               const SizedBox(width: 6),
                               Text(
-                                'Залишок: ${attendee.remainingClasses}${attendee.totalClasses > 0 ? " з ${attendee.totalClasses}" : ""} занять',
+                                attendee.totalClasses > 0
+                                    ? 'coach.remaining_of_total_classes_fmt'.tr(args: ['${attendee.remainingClasses}', '${attendee.totalClasses}'])
+                                    : 'coach.remaining_classes_fmt'.tr(args: ['${attendee.remainingClasses}']),
                                 style: TextStyle(
                                   color: attendee.isExhausted
                                       ? const Color(0xFFF59E0B)
@@ -1106,7 +1090,7 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                               Icon(LucideIcons.calendarCheck, size: 13, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)),
                               const SizedBox(width: 5),
                               Text(
-                                'Заброньовано: ${attendee.bookedClassesCount}',
+                                'coach.booked_count_fmt'.tr(args: ['${attendee.bookedClassesCount}']),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                   fontSize: 11.5,
@@ -1128,8 +1112,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             Expanded(
                               child: Text(
                                 attendee.expiryDate != null
-                                    ? '⚠️ Абонемент прострочено (${DateFormat("dd.MM.yyyy").format(attendee.expiryDate!)})'
-                                    : '⚠️ Абонемент прострочено',
+                                    ? 'coach.sub_expired_date_fmt'.tr(args: [DateFormat("dd.MM.yyyy").format(attendee.expiryDate!)])
+                                    : 'coach.sub_expired_warn'.tr(),
                                 style: const TextStyle(
                                   color: Color(0xFFEF4444),
                                   fontSize: 11,
@@ -1142,10 +1126,10 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                           ] else if (attendee.isExhausted) ...[
                             const Icon(LucideIcons.alertCircle, size: 13, color: Color(0xFFF59E0B)),
                             const SizedBox(width: 5),
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                '⚠️ Занять немає (абонемент вичерпано)',
-                                style: TextStyle(
+                                'coach.sub_exhausted_warn'.tr(),
+                                style: const TextStyle(
                                   color: Color(0xFFF59E0B),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -1160,8 +1144,8 @@ class _CoachClassAttendeesSheetState extends ConsumerState<CoachClassAttendeesSh
                             Expanded(
                               child: Text(
                                 attendee.expiryDate != null
-                                    ? 'Абонемент діє до ${DateFormat("dd.MM.yyyy").format(attendee.expiryDate!)}'
-                                    : 'Абонемент активний',
+                                    ? 'coach.sub_valid_until_fmt'.tr(args: [DateFormat("dd.MM.yyyy").format(attendee.expiryDate!)])
+                                    : 'coach.sub_active'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
                                   fontSize: 11,

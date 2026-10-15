@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,6 +10,7 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
 
 class AddCoachSheet extends ConsumerStatefulWidget {
   const AddCoachSheet({super.key});
@@ -73,32 +73,51 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
       }
       final generatedLogin = 'coach${maxCoachNum + 1}';
 
-      final userRef = FirebaseFirestore.instance.collection('users').doc();
+      final db = FirebaseFirestore.instance;
+      final userRef = db.collection('users').doc();
+      final coachRef = db.collection('coaches').doc(userRef.id);
       final rateGroup = int.tryParse(_rateGroupController.text.trim()) ?? 400;
       final rateIndividual = int.tryParse(_rateIndividualController.text.trim()) ?? 450;
       final rateSplit = int.tryParse(_rateSplitController.text.trim()) ?? 600;
 
-      final activeBranchId = ref.read(tenancyControllerProvider).activeBranchId;
+      final effectiveBranch = ref.read(effectiveBranchProvider);
+      final activeBranchId = effectiveBranch.id;
+      final organizationId = effectiveBranch.organizationId;
 
-      await userRef.set({
+      final coachPayload = {
         'id': userRef.id,
         'name': _nameController.text.trim(),
         'role': 'coach',
         'phone': _phoneController.text.trim(),
         'loginId': generatedLogin,
+        'password': PasswordSecurityHelper.hashPassword('1'),
         'avatarUrl': '',
-        'organizationId': 'cityswim',
+        'organizationId': organizationId,
         'branchId': activeBranchId,
         'branchIds': [activeBranchId],
         'rateGroup': rateGroup,
         'rateIndividual': rateIndividual,
         'rateSplit': rateSplit,
-      }).timeout(const Duration(seconds: 15));
+      };
+
+      final batch = db.batch();
+      batch.set(userRef, coachPayload);
+      batch.set(coachRef, coachPayload);
+      await batch.commit().timeout(const Duration(seconds: 15));
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Додано нового тренера "${_nameController.text.trim()}" (Ставки: $rateGroup/$rateIndividual/$rateSplit ₴)', admin.id);
+          await logAdminAction(
+            'admin.coach_action_added'.tr(args: [
+              _nameController.text.trim(),
+              rateGroup.toString(),
+              rateIndividual.toString(),
+              rateSplit.toString(),
+              effectiveBranch.currencySymbol,
+            ]),
+            admin.id,
+          );
         }
 
         if (!mounted) return;
@@ -167,14 +186,11 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(22, 14, 22, bottomInset + 18),
-            child: _isSuccess
-                ? _buildSuccessState(currentTheme, isDark)
-                : _buildFormState(currentTheme, isDark),
-          ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(22, 14, 22, bottomInset + 18),
+          child: _isSuccess
+              ? _buildSuccessState(currentTheme, isDark)
+              : _buildFormState(currentTheme, isDark),
         ),
       ),
     );
@@ -478,6 +494,10 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
   }
 
   Widget _buildFormState(AppThemeConfig currentTheme, bool isDark) {
+    final activeBranchId = ref.watch(tenancyControllerProvider).activeBranchId;
+    final isVienna = activeBranchId == 'vienna';
+    final currencySymbol = isVienna ? '€' : '₴';
+
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -587,7 +607,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
               ),
               const SizedBox(width: 10),
               Text(
-                'Ставки заробітної плати (ЗП)',
+                'admin.coach_salary_rates_title'.tr(),
                 style: TextStyle(
                   color: isDark ? Colors.white : currentTheme.textPrimary,
                   fontSize: 15,
@@ -598,27 +618,30 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           ),
           const SizedBox(height: 12),
           _buildRateField(
-            label: 'Групове тренування (грн / заняття)',
+            label: 'admin.coach_rate_group_label'.tr(args: [currencySymbol]),
             icon: LucideIcons.users,
             controller: _rateGroupController,
             color: const Color(0xFF00E5FF),
             currentTheme: currentTheme,
+            unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
           ),
           const SizedBox(height: 10),
           _buildRateField(
-            label: 'Індивідуальне тренування (грн / заняття)',
+            label: 'admin.coach_rate_ind_label'.tr(args: [currencySymbol]),
             icon: LucideIcons.user,
             controller: _rateIndividualController,
             color: const Color(0xFFA855F7),
             currentTheme: currentTheme,
+            unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
           ),
           const SizedBox(height: 10),
           _buildRateField(
-            label: 'Спліт-тренування (2 учні) (грн / заняття)',
+            label: 'admin.coach_rate_split_label'.tr(args: [currencySymbol]),
             icon: LucideIcons.userCheck,
             controller: _rateSplitController,
             color: const Color(0xFFF59E0B),
             currentTheme: currentTheme,
+            unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
           ),
           const SizedBox(height: 24),
           
@@ -631,7 +654,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
               ),
               child: Text(
-                'Помилка: $_errorMessage',
+                '${'common.error'.tr()}: $_errorMessage',
                 style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 13.5, fontWeight: FontWeight.w600),
               ),
             ),
@@ -775,6 +798,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
     required TextEditingController controller,
     required Color color,
     required AppThemeConfig currentTheme,
+    String? unitBadge,
   }) {
     final isDark = currentTheme.isDark;
     return Container(
@@ -858,7 +882,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
               border: Border.all(color: color.withValues(alpha: isDark ? 0.45 : 0.35)),
             ),
             child: Text(
-              '₴ / зан',
+              unitBadge ?? '₴ / ${'admin.coach_rate_unit_short'.tr()}',
               style: TextStyle(
                 color: isDark ? color : (color == const Color(0xFF00E5FF) ? const Color(0xFF0284C7) : color),
                 fontSize: 11,

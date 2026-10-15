@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -126,28 +125,38 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
     if (confirm == true) {
       try {
-        final currentFbUser = FirebaseAuth.instance.currentUser;
-        if (currentFbUser != null) {
-          await FirebaseFirestore.instance.collection('users').doc(currentFbUser.uid).set({
-            'id': currentFbUser.uid,
-            'role': 'admin',
-            'branchId': 'kyiv',
-            'name': 'Адміністратор',
-            'aliasOf': 'admin',
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true)).catchError((_) {});
+        await ref.read(authControllerProvider.notifier).syncCurrentAuthUserDoc();
+
+        final db = FirebaseFirestore.instance;
+        final batch = db.batch();
+        batch.delete(db.collection('users').doc(coachId));
+        batch.delete(db.collection('coaches').doc(coachId));
+
+        final nowIso = DateTime.now().toIso8601String();
+        final futureClassesSnap = await db
+            .collection('classes')
+            .where('coachId', isEqualTo: coachId)
+            .get();
+        for (final doc in futureClassesSnap.docs) {
+          final startStr = doc.data()['startTime']?.toString() ?? '';
+          if (startStr.isEmpty || startStr.compareTo(nowIso) >= 0) {
+            batch.update(doc.reference, {
+              'coachId': 'unassigned',
+              'coachName': 'admin.coach_unassigned'.tr(),
+            });
+          }
         }
 
-        await FirebaseFirestore.instance.collection('users').doc(coachId).delete();
+        await batch.commit();
 
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Видалено тренера "$name"', admin.id);
+          await logAdminAction('admin.coach_action_deleted'.tr(args: [name]), admin.id);
         }
 
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Тренера "$name" успішно видалено'),
+            content: Text('admin.coaches_deleted_success'.tr(args: [name])),
             backgroundColor: const Color(0xFF10B981),
           ),
         );
@@ -311,7 +320,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       final tenancyState = ref.watch(tenancyControllerProvider);
                       final activeBranchId = tenancyState.activeBranchId;
                       final isAllLocations = tenancyState.isAllLocationsSelected;
-                      final branchName = isAllLocations ? 'Всі локації' : tenancyState.effectiveBranch.name;
+                      final branchName = isAllLocations
+                          ? 'branches.all_locations'.tr()
+                          : tenancyState.effectiveBranch.localizedName(context.locale.languageCode);
 
                       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return _buildEmptyState(currentTheme, activeBranchId: activeBranchId, branchName: branchName);
@@ -355,9 +366,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                             final doc = coaches[index];
                             final data = doc.data();
                             final coachId = doc.id;
-                            final name = data['name'] ?? 'Невідомо';
-                            final phone = data['phone'] ?? 'Немає номеру';
-                            final loginId = data['loginId'] ?? 'Не призначено';
+                            final name = data['name'] ?? 'common.unknown'.tr();
+                            final phone = data['phone'] ?? 'admin.clients_no_phone'.tr();
+                            final loginId = data['loginId'] ?? 'admin.clients_not_assigned'.tr();
                             final rateGroup = (data['rateGroup'] as num?)?.toInt() ?? 400;
                             final rateIndividual = (data['rateIndividual'] as num?)?.toInt() ?? 450;
                             final rateSplit = (data['rateSplit'] as num?)?.toInt() ?? 600;
@@ -507,7 +518,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           ),
                           const SizedBox(width: 3.5),
                           Text(
-                            isAllLocations ? 'Всі локації' : effectiveBranch.name,
+                            isAllLocations
+                                ? 'branches.all_locations'.tr()
+                                : effectiveBranch.localizedName(context.locale.languageCode),
                             style: TextStyle(
                               color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                               fontSize: 9.5,
@@ -619,20 +632,20 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   Widget _buildBranchBadge(String? branchId, List<dynamic>? branchIds, AppThemeConfig currentTheme) {
-    String label = '🇺🇦 Київ';
+    String label = '🇺🇦 ${'branches.city_kyiv'.tr()}';
     Color accentColor = const Color(0xFF00E5FF);
 
     final ids = branchIds?.map((e) => e.toString().toLowerCase()).toList() ?? [];
     final bId = branchId?.toLowerCase() ?? 'kyiv';
 
     if (ids.contains('vienna') && ids.contains('kyiv')) {
-      label = '🌐 Всі філії';
+      label = '🌐 ${'branches.all_branches'.tr()}';
       accentColor = const Color(0xFF38BDF8);
     } else if (bId == 'vienna' || ids.contains('vienna')) {
-      label = '🇦🇹 Відень';
+      label = '🇦🇹 ${'branches.city_vienna'.tr()}';
       accentColor = const Color(0xFFF43F5E);
     } else if (bId == 'all') {
-      label = '🌐 Всі філії';
+      label = '🌐 ${'branches.all_branches'.tr()}';
       accentColor = const Color(0xFF38BDF8);
     }
 
@@ -672,6 +685,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
     List<dynamic>? branchIds,
   }) {
     final isCopied = _recentlyCopiedCoachId == coachId;
+    final activeBranchId = ref.watch(tenancyControllerProvider).activeBranchId;
+    final bId = branchId ?? (branchIds != null && branchIds.isNotEmpty ? branchIds.first.toString() : activeBranchId);
+    final isVienna = bId == 'vienna' || (branchIds != null && branchIds.map((e) => e.toString()).contains('vienna')) || activeBranchId == 'vienna';
+    final currencySymbol = isVienna ? '€' : '₴';
 
     return RepaintBoundary(
       child: Container(
@@ -784,7 +801,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 Clipboard.setData(ClipboardData(text: phone));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Номер $phone скопійовано!'),
+                                    content: Text('admin.phone_copied_msg'.tr(args: [phone])),
                                     duration: const Duration(seconds: 1),
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -879,6 +896,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 initialRateGroup: rateGroup,
                                 initialRateIndividual: rateIndividual,
                                 initialRateSplit: rateSplit,
+                                branchId: bId,
                               ),
                             );
                           },
@@ -958,8 +976,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                   children: [
                     Expanded(
                       child: _buildRateChip(
-                        label: 'ГРУПОВІ',
-                        amount: '$rateGroup ₴',
+                        label: 'admin.coaches_rate_group_chip'.tr(),
+                        amount: '$rateGroup $currencySymbol',
                         icon: LucideIcons.users,
                         color: const Color(0xFF00E5FF),
                         currentTheme: currentTheme,
@@ -975,8 +993,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                     Expanded(
                       child: _buildRateChip(
-                        label: 'ІНДИВІД.',
-                        amount: '$rateIndividual ₴',
+                        label: 'admin.coaches_rate_ind_chip'.tr(),
+                        amount: '$rateIndividual $currencySymbol',
                         icon: LucideIcons.user,
                         color: const Color(0xFFA855F7),
                         currentTheme: currentTheme,
@@ -992,8 +1010,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     ),
                     Expanded(
                       child: _buildRateChip(
-                        label: 'СПЛІТ',
-                        amount: '$rateSplit ₴',
+                        label: 'admin.coaches_rate_split_chip'.tr(),
+                        amount: '$rateSplit $currencySymbol',
                         icon: LucideIcons.userCheck,
                         color: const Color(0xFFF59E0B),
                         currentTheme: currentTheme,
@@ -1167,7 +1185,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                isCopied ? 'Скопійовано' : 'admin.clients_copy'.tr(),
+                                isCopied ? 'common.copied'.tr() : 'admin.clients_copy'.tr(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -1344,7 +1362,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
   }
 
   Widget _buildEmptyState(AppThemeConfig currentTheme, {String? activeBranchId, String? branchName}) {
-    final effectiveBranchName = branchName ?? 'поточної філії';
+    final effectiveBranchName = branchName ?? 'admin.coaches_current_branch'.tr();
     final isVienna = activeBranchId == 'vienna';
 
     return Center(
@@ -1398,9 +1416,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 const SizedBox(height: 6),
                 Text(
                   isVienna
-                      ? 'У філії CitySwim Vienna ще немає створених тренерів.\nВи можете завантажити тренерів Maria Huber та Stefan Gruber автоматично або додати нового тренера вручну.'
+                      ? 'admin.coaches_empty_vienna_desc'.tr()
                       : (activeBranchId != null && activeBranchId != 'all'
-                          ? 'У філії $effectiveBranchName ще немає зареєстрованих тренерів.'
+                          ? 'admin.coaches_empty_branch_desc'.tr(args: [effectiveBranchName])
                           : 'admin.coaches_empty_desc'.tr()),
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -1442,8 +1460,8 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         Flexible(
                           child: Text(
                             isVienna
-                                ? 'Завантажити тренерів Відня'
-                                : 'Завантажити базових тренерів',
+                                ? 'admin.coaches_load_vienna_btn'.tr()
+                                : 'admin.coaches_load_default_btn'.tr(),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
@@ -1468,7 +1486,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(branchId == 'vienna' ? 'Тренери Відня успішно завантажені!' : 'Тренери успішно завантажені!'),
+            content: Text(branchId == 'vienna' ? 'admin.coaches_loaded_vienna_msg'.tr() : 'admin.coaches_loaded_default_msg'.tr()),
             backgroundColor: const Color(0xFF00E5FF),
           ),
         );
@@ -1477,7 +1495,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка: $e'),
+            content: Text('${'common.error'.tr()}: $e'),
             backgroundColor: Colors.redAccent,
           ),
         );

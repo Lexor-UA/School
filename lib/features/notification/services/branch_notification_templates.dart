@@ -10,6 +10,8 @@ class BranchNotificationTemplates {
         return isVienna ? 'Wien' : 'Kiew';
       case 'en':
         return isVienna ? 'Vienna' : 'Kyiv';
+      case 'ru':
+        return isVienna ? 'по Вене' : 'по Киеву';
       case 'uk':
       default:
         return isVienna ? 'за Віднем' : 'за Києвом';
@@ -39,6 +41,11 @@ class BranchNotificationTemplates {
         return (
           title: 'Class Reminder',
           body: 'Your class "$classTitle" is tomorrow at $timeFormatted ($tzLabel)$locationInfo. See you at the pool!',
+        );
+      case 'ru':
+        return (
+          title: 'Напоминание о занятии',
+          body: 'Ваше занятие «$classTitle» завтра в $timeFormatted ($tzLabel)$locationInfo. Ждем вас!',
         );
       case 'uk':
       default:
@@ -73,6 +80,11 @@ class BranchNotificationTemplates {
           title: 'Class starting soon!',
           body: 'Reminder: Your class "$classTitle" starts today at $timeFormatted ($tzLabel)$locationInfo. Don\'t forget your swim gear!',
         );
+      case 'ru':
+        return (
+          title: 'Занятие скоро начнется!',
+          body: 'Напоминаем: занятие «$classTitle» начнется сегодня в $timeFormatted ($tzLabel)$locationInfo. Не забудьте плавательные принадлежности!',
+        );
       case 'uk':
       default:
         return (
@@ -103,6 +115,11 @@ class BranchNotificationTemplates {
         return (
           title: 'Class Rescheduled',
           body: 'Your class "$classTitle" has been rescheduled to $newDateFormatted at $newTimeFormatted ($tzLabel).${reasonTextEn(reason)}',
+        );
+      case 'ru':
+        return (
+          title: 'Изменение расписания занятия',
+          body: 'Занятие «$classTitle» перенесено на $newDateFormatted в $newTimeFormatted ($tzLabel).${reasonTextRu(reason)}',
         );
       case 'uk':
       default:
@@ -135,6 +152,11 @@ class BranchNotificationTemplates {
           title: 'Class Cancelled',
           body: 'The class "$classTitle" on $dateFormatted at $timeFormatted ($tzLabel) has been cancelled. Your lesson credit remains intact.${reasonTextEn(reason)}',
         );
+      case 'ru':
+        return (
+          title: 'Занятие отменено',
+          body: 'Занятие «$classTitle» $dateFormatted в $timeFormatted ($tzLabel) отменено. Занятие не списано с вашего баланса.${reasonTextRu(reason)}',
+        );
       case 'uk':
       default:
         return (
@@ -166,6 +188,11 @@ class BranchNotificationTemplates {
           title: 'Payment Confirmation & Invoice',
           body: 'Thank you for your payment at $schoolName! Package: $packageName ($formattedAmount). Invoice #: $receiptNumber.',
         );
+      case 'ru':
+        return (
+          title: 'Оплата успешна & Электронный чек',
+          body: 'Спасибо за оплату в $schoolName! Приобретено: $packageName на сумму $formattedAmount. Номер квитанции: $receiptNumber.',
+        );
       case 'uk':
       default:
         return (
@@ -188,6 +215,8 @@ class BranchNotificationTemplates {
         return ' im $loc$details';
       case 'en':
         return ' at $loc$details';
+      case 'ru':
+        return ' в $loc$details';
       case 'uk':
       default:
         return ' у $loc$details';
@@ -197,4 +226,5 @@ class BranchNotificationTemplates {
   static String reasonTextUk(String reason) => reason.isNotEmpty ? ' Причина: $reason.' : '';
   static String reasonTextDe(String reason) => reason.isNotEmpty ? ' Grund: $reason.' : '';
   static String reasonTextEn(String reason) => reason.isNotEmpty ? ' Reason: $reason.' : '';
+  static String reasonTextRu(String reason) => reason.isNotEmpty ? ' Причина: $reason.' : '';
 }

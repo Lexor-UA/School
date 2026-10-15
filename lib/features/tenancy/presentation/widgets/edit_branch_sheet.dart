@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
@@ -73,10 +74,16 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
 
   Future<void> _fetchAdminDetails() async {
     try {
-      final doc = await FirebaseFirestore.instance
+      var doc = await FirebaseFirestore.instance
           .collection('users')
           .doc('admin_${widget.branch.id}')
           .get();
+      if (!doc.exists && widget.branch.id == 'kyiv') {
+        doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc('admin')
+            .get();
+      }
       if (doc.exists && mounted) {
         final data = doc.data();
         if (data != null) {
@@ -175,7 +182,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                      'Філію "${_name.trim()}" успішно оновлено!'),
+                      'tenancy.branch_updated_msg'.tr(namedArgs: {'name': _name.trim()})),
                 ),
               ],
             ),
@@ -190,7 +197,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка оновлення: $e'),
+            content: Text('tenancy.update_error_msg'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -252,7 +259,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Редагування філії',
+                          'tenancy.edit_branch_title'.tr(),
                           style: TextStyle(
                             color: isDark ? Colors.white : const Color(0xFF0F172A),
                             fontSize: 18,
@@ -283,24 +290,24 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
 
                 // Name
                 _buildTextField(
-                  label: 'Назва філії',
+                  label: 'tenancy.branch_name_label'.tr(),
                   icon: LucideIcons.building,
                   initialValue: _name,
                   onSaved: (val) => _name = val ?? '',
                   validator: (val) =>
-                      val == null || val.trim().isEmpty ? 'Введіть назву' : null,
+                      val == null || val.trim().isEmpty ? 'tenancy.enter_name_error'.tr() : null,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 16),
 
                 // City
                 _buildTextField(
-                  label: 'Місто (для відображення)',
+                  label: 'tenancy.city_display_label'.tr(),
                   icon: LucideIcons.mapPin,
                   initialValue: _city,
                   onSaved: (val) => _city = val ?? '',
                   validator: (val) =>
-                      val == null || val.trim().isEmpty ? 'Введіть місто' : null,
+                      val == null || val.trim().isEmpty ? 'tenancy.enter_city_error'.tr() : null,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 16),
@@ -309,7 +316,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                   children: [
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Країна',
+                        label: 'tenancy.country_label'.tr(),
                         value: _country,
                         items: _countries,
                         onChanged: (val) => setState(() => _country = val!),
@@ -319,7 +326,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Валюта',
+                        label: 'tenancy.currency_label'.tr(),
                         value: _currency,
                         items: _currencies,
                         onChanged: (val) {
@@ -333,7 +340,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                 const SizedBox(height: 16),
 
                 _buildDropdown(
-                  label: 'Часовий пояс',
+                  label: 'tenancy.timezone_label'.tr(),
                   value: _timezone,
                   items: _timezones,
                   onChanged: (val) => setState(() => _timezone = val!),
@@ -345,7 +352,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                   children: [
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Провайдер оплат',
+                        label: 'tenancy.payment_provider_label'.tr(),
                         value: _paymentProvider,
                         items: _paymentProviders,
                         onChanged: (val) =>
@@ -356,7 +363,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Основна мова',
+                        label: 'tenancy.default_language_label'.tr(),
                         value: _defaultLanguage,
                         items: _languages,
                         onChanged: (val) =>
@@ -394,7 +401,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                                   : const Color(0xFF0284C7)),
                           const SizedBox(width: 8),
                           Text(
-                            'Адміністратор філії',
+                            'tenancy.branch_admin_section'.tr(),
                             style: TextStyle(
                               color: isDark
                                   ? Colors.white
@@ -413,7 +420,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                                 ? Colors.white
                                 : const Color(0xFF0F172A)),
                         decoration: InputDecoration(
-                          labelText: "Ім'я адміністратора",
+                          labelText: 'tenancy.admin_name_label'.tr(),
                           labelStyle: TextStyle(
                             color: isDark
                                 ? Colors.white60
@@ -455,7 +462,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                                 ? Colors.white
                                 : const Color(0xFF0F172A)),
                         decoration: InputDecoration(
-                          labelText: 'Ставка / зарплата на місяць',
+                          labelText: 'tenancy.monthly_salary_rate_label'.tr(),
                           labelStyle: TextStyle(
                             color: isDark
                                 ? Colors.white60
@@ -543,7 +550,7 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Захист від видалення',
+                              'tenancy.delete_protection_title'.tr(),
                               style: TextStyle(
                                 color: isDark
                                     ? Colors.white
@@ -555,10 +562,10 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                             const SizedBox(height: 2),
                             Text(
                               isSystemDefault
-                                  ? 'Базова системна філія (завжди захищена від видалення).'
+                                  ? 'tenancy.delete_protection_system_desc'.tr()
                                   : (_isProtected
-                                      ? 'Філія заблокована від випадкового видалення.'
-                                      : 'Захист вимкнено. Філію можна буде видалити.'),
+                                      ? 'tenancy.delete_protection_on_desc'.tr()
+                                      : 'tenancy.delete_protection_off_desc'.tr()),
                               style: TextStyle(
                                 color: isDark
                                     ? const Color(0xFF94A3B8)
@@ -601,14 +608,14 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                             color: Colors.black,
                           ),
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(LucideIcons.save, size: 18),
-                            SizedBox(width: 8),
+                            const Icon(LucideIcons.save, size: 18),
+                            const SizedBox(width: 8),
                             Text(
-                              'Зберегти зміни',
-                              style: TextStyle(
+                              'common.save_changes'.tr(),
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                               ),

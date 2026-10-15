@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
 
@@ -42,7 +43,7 @@ class ClassPoolLaneSelector extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Басейн та місце проведення',
+              'admin.pool_and_location'.tr(),
               style: TextStyle(
                 color: isDark ? Colors.white.withValues(alpha: 0.90) : const Color(0xFF0F172A),
                 fontSize: 12.5,
@@ -184,7 +185,7 @@ class ClassPoolLaneSelector extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Оберіть доріжку / зону:',
+                'admin.select_lane_zone'.tr(),
                 style: TextStyle(
                   color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                   fontSize: 12,
@@ -312,7 +313,7 @@ class ClassPoolLaneSelector extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Басейн без додаткового поділу на доріжки',
+                    'admin.pool_without_lanes'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0369A1),
                       fontSize: 12,

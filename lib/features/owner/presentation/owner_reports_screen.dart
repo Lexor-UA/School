@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -18,7 +19,7 @@ class OwnerReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
-  String _selectedTimeframe = 'Місяць';
+  String _selectedTimeframe = 'month';
 
   @override
   Widget build(BuildContext context) {
@@ -49,10 +50,10 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                             .fadeIn()
                             .slideY(begin: 0.1),
                         const SizedBox(height: 24),
-                        _buildTimeframeSelector(themeConfig).animate().fadeIn(delay: 100.ms),
+                        _buildTimeframeSelector(themeConfig, analytics).animate().fadeIn(delay: 100.ms),
                         const SizedBox(height: 24),
                         Text(
-                          'СТРУКТУРА ДОХОДІВ',
+                          'owner.reports.revenue_structure_upper'.tr(),
                           style: TextStyle(
                             color: isDark ? Colors.white70 : themeConfig.textSecondary,
                             fontSize: 14,
@@ -64,7 +65,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                         _buildRevenueBreakdown(themeConfig).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                         const SizedBox(height: 32),
                         Text(
-                          'КЛЮЧОВІ МЕТРИКИ',
+                          'owner.reports.key_metrics_upper'.tr(),
                           style: TextStyle(
                             color: isDark ? Colors.white70 : themeConfig.textSecondary,
                             fontSize: 14,
@@ -75,7 +76,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                         const SizedBox(height: 16),
                         _buildMetricRow(
                           LucideIcons.users,
-                          'Клієнтська база',
+                          'owner.reports.client_base'.tr(),
                           tenancyState.isAllLocations
                               ? '${analytics.totalClients}'
                               : (analytics.isViennaSelected
@@ -84,9 +85,9 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                           '+12%',
                           Colors.cyanAccent,
                           LucideIcons.userMinus,
-                          'Відтік (Churn)',
+                          'owner.reports.churn_label'.tr(),
                           tenancyState.isAllLocations
-                              ? '2.2%'
+                              ? '${analytics.kyiv.churnPercent}% / ${analytics.vienna.churnPercent}%'
                               : (analytics.isViennaSelected
                                   ? '${analytics.vienna.churnPercent}%'
                                   : '${analytics.kyiv.churnPercent}%'),
@@ -97,16 +98,16 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                         const SizedBox(height: 16),
                         _buildMetricRow(
                           LucideIcons.trendingUp,
-                          'LTV Клієнта',
+                          'owner.reports.client_ltv'.tr(),
                           tenancyState.isAllLocations
-                              ? '₴ 12.4k / € 850'
+                              ? '${analytics.kyiv.formatLtv()} / ${analytics.vienna.formatLtv()}'
                               : (analytics.isViennaSelected
                                   ? analytics.vienna.formatLtv()
                                   : analytics.kyiv.formatLtv()),
                           '+8%',
                           Colors.orangeAccent,
                           LucideIcons.shoppingCart,
-                          'Нові абонементи',
+                          'owner.reports.new_subscriptions'.tr(),
                           tenancyState.isAllLocations
                               ? '${analytics.totalNewSubscriptions}'
                               : (analytics.isViennaSelected
@@ -141,7 +142,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Фінансові Звіти',
+              'owner.reports.title'.tr(),
               style: TextStyle(
                 color: themeConfig.textPrimary,
                 fontSize: 22,
@@ -187,9 +188,9 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'ЧИСТИЙ ПРИБУТОК ЗА ФІЛІЯМИ',
-                  style: TextStyle(
+                Text(
+                  'owner.reports.net_profit_by_branch_upper'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF818CF8),
                     fontSize: 12,
                     letterSpacing: 1.5,
@@ -202,9 +203,9 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                     color: const Color(0xFF10B981).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    '+14.8% заг.',
-                    style: TextStyle(
+                  child: Text(
+                    'owner.reports.growth_total_badge'.tr(namedArgs: {'percent': '14.8'}),
+                    style: const TextStyle(
                       color: Color(0xFF10B981),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -230,16 +231,16 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Text('🇺🇦', style: TextStyle(fontSize: 18)),
-                            SizedBox(width: 6),
-                            Text('Київ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const Text('🇺🇦', style: TextStyle(fontSize: 18)),
+                            const SizedBox(width: 6),
+                            Text('branches.city_kyiv'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '₴ 84,200',
+                          analytics.kyiv.formatNetProfit(),
                           style: TextStyle(
                             color: themeConfig.textPrimary,
                             fontSize: 24,
@@ -248,9 +249,9 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Витрати: ₴ 40,300',
-                          style: TextStyle(color: Colors.pinkAccent, fontSize: 12),
+                        Text(
+                          'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': analytics.kyiv.formatExpenses()}),
+                          style: const TextStyle(color: Colors.pinkAccent, fontSize: 12),
                         ),
                       ],
                     ),
@@ -271,16 +272,16 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Text('🇦🇹', style: TextStyle(fontSize: 18)),
-                            SizedBox(width: 6),
-                            Text('Відень', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const Text('🇦🇹', style: TextStyle(fontSize: 18)),
+                            const SizedBox(width: 6),
+                            Text('branches.city_vienna'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '€ 9,650',
+                          analytics.vienna.formatNetProfit(),
                           style: TextStyle(
                             color: themeConfig.textPrimary,
                             fontSize: 24,
@@ -289,9 +290,9 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Витрати: € 5,200',
-                          style: TextStyle(color: Colors.pinkAccent, fontSize: 12),
+                        Text(
+                          'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': analytics.vienna.formatExpenses()}),
+                          style: const TextStyle(color: Colors.pinkAccent, fontSize: 12),
                         ),
                       ],
                     ),
@@ -310,7 +311,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'ТЗ п. 26: Розділення за філіями без конвертації та сумування різних валют',
+                    'owner.reports.multicurrency_info_note'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white38 : themeConfig.textSecondary.withValues(alpha: 0.7),
                       fontSize: 11,
@@ -351,7 +352,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
               Row(
                 children: [
                   Text(
-                    'ЧИСТИЙ ПРИБУТОК',
+                    'owner.reports.net_profit_upper'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white70 : themeConfig.textSecondary,
                       fontSize: 12,
@@ -402,7 +403,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Витрати: ${summary.formatExpenses()}',
+            'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': summary.formatExpenses()}),
             style: const TextStyle(color: Colors.pinkAccent, fontSize: 14),
           ),
         ],
@@ -410,13 +411,25 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
     );
   }
 
-  Widget _buildTimeframeSelector(AppThemeConfig themeConfig) {
+  Widget _buildTimeframeSelector(AppThemeConfig themeConfig, OwnerAnalyticsState analytics) {
+    final activePeriod = analytics.selectedTimeframe.isNotEmpty ? analytics.selectedTimeframe : _selectedTimeframe;
+    final periods = [
+      {'id': 'week', 'label': 'owner.week'.tr()},
+      {'id': 'month', 'label': 'owner.month'.tr()},
+      {'id': 'quarter', 'label': 'owner.reports.quarter'.tr()},
+      {'id': 'year', 'label': 'owner.reports.year'.tr()},
+    ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: ['Тиждень', 'Місяць', 'Квартал', 'Рік'].map((period) {
-        final isSelected = _selectedTimeframe == period;
+      children: periods.map((item) {
+        final period = item['id']!;
+        final label = item['label']!;
+        final isSelected = activePeriod == period;
         return GestureDetector(
-          onTap: () => setState(() => _selectedTimeframe = period),
+          onTap: () {
+            setState(() => _selectedTimeframe = period);
+            ref.read(ownerAnalyticsControllerProvider.notifier).setTimeframe(period);
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -433,7 +446,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
               ),
             ),
             child: Text(
-              period,
+              label,
               style: TextStyle(
                 color: isSelected
                     ? themeConfig.accentPrimary
@@ -461,11 +474,11 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
       ),
       child: Column(
         children: [
-          _buildBreakdownItem('Групові тренування', 65, Colors.cyanAccent, themeConfig),
+          _buildBreakdownItem('owner.reports.group_trainings'.tr(), 65, Colors.cyanAccent, themeConfig),
           const SizedBox(height: 16),
-          _buildBreakdownItem('Індивідуальні тренування', 25, Colors.purpleAccent, themeConfig),
+          _buildBreakdownItem('owner.reports.indiv_trainings'.tr(), 25, Colors.purpleAccent, themeConfig),
           const SizedBox(height: 16),
-          _buildBreakdownItem('Разові візити', 10, Colors.orangeAccent, themeConfig),
+          _buildBreakdownItem('owner.reports.single_visits'.tr(), 10, Colors.orangeAccent, themeConfig),
         ],
       ),
     );

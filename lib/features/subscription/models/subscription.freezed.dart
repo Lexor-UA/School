@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Subscription {
 
- String get id; String get userId; int get totalClasses; int get remainingClasses; bool get isActive; String? get serviceName; DateTime? get expiryDate; String? get ownerName; String get organizationId; String get branchId; String get currency; String get currencySymbol;
+ String get id; String get userId; int get totalClasses; int get remainingClasses; bool get isActive; String? get serviceName; DateTime? get expiryDate; String? get ownerName; String get organizationId; String get branchId; String get currency; String get currencySymbol; bool get pendingApproval; String? get paymentDocId;
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $SubscriptionCopyWith<Subscription> get copyWith => _$SubscriptionCopyWithImpl<S
 @override
 bool operator ==(Object other) {
   final _this = this as Subscription;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subscription&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.totalClasses, _this.totalClasses) || other.totalClasses == _this.totalClasses)&&(identical(other.remainingClasses, _this.remainingClasses) || other.remainingClasses == _this.remainingClasses)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.serviceName, _this.serviceName) || other.serviceName == _this.serviceName)&&(identical(other.expiryDate, _this.expiryDate) || other.expiryDate == _this.expiryDate)&&(identical(other.ownerName, _this.ownerName) || other.ownerName == _this.ownerName)&&(identical(other.organizationId, _this.organizationId) || other.organizationId == _this.organizationId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&(identical(other.currency, _this.currency) || other.currency == _this.currency)&&(identical(other.currencySymbol, _this.currencySymbol) || other.currencySymbol == _this.currencySymbol));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subscription&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.totalClasses, _this.totalClasses) || other.totalClasses == _this.totalClasses)&&(identical(other.remainingClasses, _this.remainingClasses) || other.remainingClasses == _this.remainingClasses)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.serviceName, _this.serviceName) || other.serviceName == _this.serviceName)&&(identical(other.expiryDate, _this.expiryDate) || other.expiryDate == _this.expiryDate)&&(identical(other.ownerName, _this.ownerName) || other.ownerName == _this.ownerName)&&(identical(other.organizationId, _this.organizationId) || other.organizationId == _this.organizationId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&(identical(other.currency, _this.currency) || other.currency == _this.currency)&&(identical(other.currencySymbol, _this.currencySymbol) || other.currencySymbol == _this.currencySymbol)&&(identical(other.pendingApproval, _this.pendingApproval) || other.pendingApproval == _this.pendingApproval)&&(identical(other.paymentDocId, _this.paymentDocId) || other.paymentDocId == _this.paymentDocId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Subscription;
-  return Object.hash(runtimeType,_this.id,_this.userId,_this.totalClasses,_this.remainingClasses,_this.isActive,_this.serviceName,_this.expiryDate,_this.ownerName,_this.organizationId,_this.branchId,_this.currency,_this.currencySymbol);
+  return Object.hash(runtimeType,_this.id,_this.userId,_this.totalClasses,_this.remainingClasses,_this.isActive,_this.serviceName,_this.expiryDate,_this.ownerName,_this.organizationId,_this.branchId,_this.currency,_this.currencySymbol,_this.pendingApproval,_this.paymentDocId);
 }
 
 @override
 String toString() {
   final _this = this as Subscription;
-  return 'Subscription(id: ${_this.id}, userId: ${_this.userId}, totalClasses: ${_this.totalClasses}, remainingClasses: ${_this.remainingClasses}, isActive: ${_this.isActive}, serviceName: ${_this.serviceName}, expiryDate: ${_this.expiryDate}, ownerName: ${_this.ownerName}, organizationId: ${_this.organizationId}, branchId: ${_this.branchId}, currency: ${_this.currency}, currencySymbol: ${_this.currencySymbol})';
+  return 'Subscription(id: ${_this.id}, userId: ${_this.userId}, totalClasses: ${_this.totalClasses}, remainingClasses: ${_this.remainingClasses}, isActive: ${_this.isActive}, serviceName: ${_this.serviceName}, expiryDate: ${_this.expiryDate}, ownerName: ${_this.ownerName}, organizationId: ${_this.organizationId}, branchId: ${_this.branchId}, currency: ${_this.currency}, currencySymbol: ${_this.currencySymbol}, pendingApproval: ${_this.pendingApproval}, paymentDocId: ${_this.paymentDocId})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $SubscriptionCopyWith<$Res>  {
   factory $SubscriptionCopyWith(Subscription value, $Res Function(Subscription) _then) = _$SubscriptionCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, int totalClasses, int remainingClasses, bool isActive, String? serviceName, DateTime? expiryDate, String? ownerName, String organizationId, String branchId, String currency, String currencySymbol
+ String id, String userId, int totalClasses, int remainingClasses, bool isActive, String? serviceName, DateTime? expiryDate, String? ownerName, String organizationId, String branchId, String currency, String currencySymbol, bool pendingApproval, String? paymentDocId
 });
 
 
@@ -71,7 +71,7 @@ class _$SubscriptionCopyWithImpl<$Res>
 
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,Object? organizationId = null,Object? branchId = null,Object? currency = null,Object? currencySymbol = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,Object? organizationId = null,Object? branchId = null,Object? currency = null,Object? currencySymbol = null,Object? pendingApproval = null,Object? paymentDocId = freezed,}) {
   return _then(Subscription(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -85,7 +85,9 @@ as String?,organizationId: null == organizationId ? _self.organizationId : organ
 as String,branchId: null == branchId ? _self.branchId : branchId // ignore: cast_nullable_to_non_nullable
 as String,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
 as String,currencySymbol: null == currencySymbol ? _self.currencySymbol : currencySymbol // ignore: cast_nullable_to_non_nullable
-as String,
+as String,pendingApproval: null == pendingApproval ? _self.pendingApproval : pendingApproval // ignore: cast_nullable_to_non_nullable
+as bool,paymentDocId: freezed == paymentDocId ? _self.paymentDocId : paymentDocId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -170,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName,  String organizationId,  String branchId,  String currency,  String currencySymbol)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName,  String organizationId,  String branchId,  String currency,  String currencySymbol,  bool pendingApproval,  String? paymentDocId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Subscription() when $default != null:
-return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName,_that.organizationId,_that.branchId,_that.currency,_that.currencySymbol);case _:
+return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName,_that.organizationId,_that.branchId,_that.currency,_that.currencySymbol,_that.pendingApproval,_that.paymentDocId);case _:
   return orElse();
 
 }
@@ -191,10 +193,10 @@ return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName,  String organizationId,  String branchId,  String currency,  String currencySymbol)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName,  String organizationId,  String branchId,  String currency,  String currencySymbol,  bool pendingApproval,  String? paymentDocId)  $default,) {final _that = this;
 switch (_that) {
 case _Subscription():
-return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName,_that.organizationId,_that.branchId,_that.currency,_that.currencySymbol);case _:
+return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName,_that.organizationId,_that.branchId,_that.currency,_that.currencySymbol,_that.pendingApproval,_that.paymentDocId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +213,10 @@ return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName,  String organizationId,  String branchId,  String currency,  String currencySymbol)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  int totalClasses,  int remainingClasses,  bool isActive,  String? serviceName,  DateTime? expiryDate,  String? ownerName,  String organizationId,  String branchId,  String currency,  String currencySymbol,  bool pendingApproval,  String? paymentDocId)?  $default,) {final _that = this;
 switch (_that) {
 case _Subscription() when $default != null:
-return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName,_that.organizationId,_that.branchId,_that.currency,_that.currencySymbol);case _:
+return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,_that.isActive,_that.serviceName,_that.expiryDate,_that.ownerName,_that.organizationId,_that.branchId,_that.currency,_that.currencySymbol,_that.pendingApproval,_that.paymentDocId);case _:
   return null;
 
 }
@@ -226,7 +228,7 @@ return $default(_that.id,_that.userId,_that.totalClasses,_that.remainingClasses,
 @JsonSerializable()
 
 class _Subscription implements Subscription {
-  const _Subscription({required this.id, required this.userId, required this.totalClasses, required this.remainingClasses, required this.isActive, this.serviceName, this.expiryDate, this.ownerName, this.organizationId = 'cityswim', this.branchId = 'kyiv', this.currency = 'UAH', this.currencySymbol = '₴'});
+  const _Subscription({required this.id, required this.userId, required this.totalClasses, required this.remainingClasses, required this.isActive, this.serviceName, this.expiryDate, this.ownerName, this.organizationId = 'cityswim', this.branchId = 'kyiv', this.currency = 'UAH', this.currencySymbol = '₴', this.pendingApproval = false, this.paymentDocId});
   factory _Subscription.fromJson(Map<String, dynamic> json) => _$SubscriptionFromJson(json);
 
 @override final  String id;
@@ -241,6 +243,8 @@ class _Subscription implements Subscription {
 @override@JsonKey() final  String branchId;
 @override@JsonKey() final  String currency;
 @override@JsonKey() final  String currencySymbol;
+@override@JsonKey() final  bool pendingApproval;
+@override final  String? paymentDocId;
 
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
@@ -255,18 +259,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.currencySymbol, currencySymbol) || other.currencySymbol == currencySymbol));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscription&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.totalClasses, totalClasses) || other.totalClasses == totalClasses)&&(identical(other.remainingClasses, remainingClasses) || other.remainingClasses == remainingClasses)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.serviceName, serviceName) || other.serviceName == serviceName)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.ownerName, ownerName) || other.ownerName == ownerName)&&(identical(other.organizationId, organizationId) || other.organizationId == organizationId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.currencySymbol, currencySymbol) || other.currencySymbol == currencySymbol)&&(identical(other.pendingApproval, pendingApproval) || other.pendingApproval == pendingApproval)&&(identical(other.paymentDocId, paymentDocId) || other.paymentDocId == paymentDocId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName,organizationId,branchId,currency,currencySymbol);
+    return Object.hash(runtimeType,id,userId,totalClasses,remainingClasses,isActive,serviceName,expiryDate,ownerName,organizationId,branchId,currency,currencySymbol,pendingApproval,paymentDocId);
 }
 
 @override
 String toString() {
-    return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName, organizationId: $organizationId, branchId: $branchId, currency: $currency, currencySymbol: $currencySymbol)';
+    return 'Subscription(id: $id, userId: $userId, totalClasses: $totalClasses, remainingClasses: $remainingClasses, isActive: $isActive, serviceName: $serviceName, expiryDate: $expiryDate, ownerName: $ownerName, organizationId: $organizationId, branchId: $branchId, currency: $currency, currencySymbol: $currencySymbol, pendingApproval: $pendingApproval, paymentDocId: $paymentDocId)';
 }
 
 
@@ -277,7 +281,7 @@ abstract mixin class _$SubscriptionCopyWith<$Res> implements $SubscriptionCopyWi
   factory _$SubscriptionCopyWith(_Subscription value, $Res Function(_Subscription) _then) = __$SubscriptionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, int totalClasses, int remainingClasses, bool isActive, String? serviceName, DateTime? expiryDate, String? ownerName, String organizationId, String branchId, String currency, String currencySymbol
+ String id, String userId, int totalClasses, int remainingClasses, bool isActive, String? serviceName, DateTime? expiryDate, String? ownerName, String organizationId, String branchId, String currency, String currencySymbol, bool pendingApproval, String? paymentDocId
 });
 
 
@@ -294,7 +298,7 @@ class __$SubscriptionCopyWithImpl<$Res>
 
 /// Create a copy of Subscription
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,Object? organizationId = null,Object? branchId = null,Object? currency = null,Object? currencySymbol = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? totalClasses = null,Object? remainingClasses = null,Object? isActive = null,Object? serviceName = freezed,Object? expiryDate = freezed,Object? ownerName = freezed,Object? organizationId = null,Object? branchId = null,Object? currency = null,Object? currencySymbol = null,Object? pendingApproval = null,Object? paymentDocId = freezed,}) {
   return _then(_Subscription(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -308,7 +312,9 @@ as String?,organizationId: null == organizationId ? _self.organizationId : organ
 as String,branchId: null == branchId ? _self.branchId : branchId // ignore: cast_nullable_to_non_nullable
 as String,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
 as String,currencySymbol: null == currencySymbol ? _self.currencySymbol : currencySymbol // ignore: cast_nullable_to_non_nullable
-as String,
+as String,pendingApproval: null == pendingApproval ? _self.pendingApproval : pendingApproval // ignore: cast_nullable_to_non_nullable
+as bool,paymentDocId: freezed == paymentDocId ? _self.paymentDocId : paymentDocId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

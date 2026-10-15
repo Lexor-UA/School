@@ -41,10 +41,10 @@ class _ClientDiscountsSectionState
   void _deleteDiscount(SubscriptionDiscount discount) async {
     final isDark = ref.read(appThemeControllerProvider).isDark;
     final targetDesc = discount.targetMember == 'all'
-        ? "всієї сім'ї"
-        : 'клієнта "${discount.targetMember}"';
+        ? 'admin.discount_target_whole_family'.tr()
+        : 'admin.discount_target_member_quoted'.tr(namedArgs: {'member': discount.targetMember});
     final serviceDesc = discount.serviceName == 'all'
-        ? 'будь-який абонемент'
+        ? 'admin.any_subscription_lower'.tr()
         : '"${discount.serviceName}"';
 
     final confirm = await showDialog<bool>(
@@ -58,14 +58,17 @@ class _ClientDiscountsSectionState
           ),
         ),
         title: Text(
-          'Видалити персональну знижку?',
+          'admin.delete_discount_title'.tr(),
           style: TextStyle(
             color: isDark ? Colors.white : const Color(0xFF0F172A),
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Ви дійсно бажаєте видалити знижку на $serviceDesc для $targetDesc?',
+          'admin.delete_discount_confirm'.tr(namedArgs: {
+            'service': serviceDesc,
+            'target': targetDesc,
+          }),
           style: TextStyle(
             color: isDark ? Colors.white70 : const Color(0xFF475569),
           ),
@@ -88,9 +91,9 @@ class _ClientDiscountsSectionState
               ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Видалити',
-              style: TextStyle(
+            child: Text(
+              'admin.delete'.tr(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -121,7 +124,7 @@ class _ClientDiscountsSectionState
       final admin = ref.read(authControllerProvider);
       if (admin != null) {
         await logAdminAction(
-          'Видалено персональну знижку для "${widget.clientName}"',
+          'admin.log_discount_deleted'.tr(namedArgs: {'client': widget.clientName}),
           admin.id,
         );
       }
@@ -129,11 +132,11 @@ class _ClientDiscountsSectionState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Персональну знижку видалено'),
+                const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text('admin.personal_discount_deleted_msg'.tr()),
               ],
             ),
             backgroundColor: const Color(0xFF10B981),
@@ -187,7 +190,7 @@ class _ClientDiscountsSectionState
         if (childSnap.hasData && childSnap.data!.docs.isNotEmpty) {
           for (var doc in childSnap.data!.docs) {
             final cData = doc.data() as Map<String, dynamic>;
-            final cName = (cData['name'] as String? ?? 'Дитина').trim();
+            final cName = (cData['name'] as String? ?? 'common.child_default'.tr()).trim();
             if (!availableOwners.contains(cName)) {
               familyMembers.add({
                 'name': cName,
@@ -228,7 +231,7 @@ class _ClientDiscountsSectionState
                     Row(
                       children: [
                         Text(
-                          'Персональні знижки',
+                          'admin.personal_discounts_title'.tr(),
                           style: TextStyle(
                             color: isDark
                                 ? Colors.white
@@ -285,9 +288,9 @@ class _ClientDiscountsSectionState
                         size: 16,
                         color: Color(0xFFF59E0B),
                       ),
-                      label: const Text(
-                        'Додати',
-                        style: TextStyle(
+                      label: Text(
+                        'admin.add'.tr(),
+                        style: const TextStyle(
                           color: Color(0xFFF59E0B),
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -334,7 +337,7 @@ class _ClientDiscountsSectionState
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Немає персональних знижок для цього клієнта.',
+                            'admin.no_personal_discounts'.tr(),
                             style: TextStyle(
                               color: isDark
                                   ? Colors.white54
@@ -350,6 +353,7 @@ class _ClientDiscountsSectionState
                   ...discounts.map((discount) {
                     final isAllServices = discount.serviceName == 'all';
                     final isAllMembers = discount.targetMember == 'all';
+                    final currSym = ref.watch(effectiveBranchProvider).currencySymbol;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -433,7 +437,7 @@ class _ClientDiscountsSectionState
                                       ),
                                       child: Text(
                                         isAllMembers
-                                            ? "Вся сім'я"
+                                            ? 'admin.whole_family_short'.tr()
                                             : discount.targetMember,
                                         style: TextStyle(
                                           color: isAllMembers
@@ -466,7 +470,7 @@ class _ClientDiscountsSectionState
                                       ),
                                       child: Text(
                                         discount.discountType == 'fixedPrice'
-                                            ? 'Фіксована ціна'
+                                            ? 'admin.fixed_price_badge'.tr()
                                             : '-${discount.discountPercent}%',
                                         style: const TextStyle(
                                           color: Color(0xFFF87171),
@@ -480,7 +484,7 @@ class _ClientDiscountsSectionState
                                 const SizedBox(height: 5),
                                 Text(
                                   isAllServices
-                                      ? 'Будь-який абонемент'
+                                      ? 'admin.any_subscription_cap'.tr()
                                       : discount.serviceName,
                                   style: TextStyle(
                                     color: isDark
@@ -500,7 +504,7 @@ class _ClientDiscountsSectionState
                                         if (discount.originalPrice > 0) ...[
                                           TextSpan(
                                             text:
-                                                '${discount.originalPrice} грн  ',
+                                                '${discount.originalPrice} $currSym  ',
                                             style: TextStyle(
                                               decoration:
                                                   TextDecoration.lineThrough,
@@ -514,7 +518,7 @@ class _ClientDiscountsSectionState
                                         ],
                                         TextSpan(
                                           text:
-                                              '${discount.discountedPrice} ${ref.watch(effectiveBranchProvider).currencySymbol}',
+                                              '${discount.discountedPrice} $currSym',
                                           style: TextStyle(
                                             color: isDark
                                                 ? const Color(0xFF00E5FF)
@@ -527,7 +531,7 @@ class _ClientDiscountsSectionState
                                             discount.discountedPrice) ...[
                                           TextSpan(
                                             text:
-                                                ' (економія ${discount.originalPrice - discount.discountedPrice} ${ref.watch(effectiveBranchProvider).currencySymbol})',
+                                                ' (${'admin.savings_inline'.tr(namedArgs: {'amount': '${discount.originalPrice - discount.discountedPrice}', 'symbol': currSym})})',
                                             style: TextStyle(
                                               color: isDark
                                                   ? const Color(0xFF34D399)
@@ -542,7 +546,7 @@ class _ClientDiscountsSectionState
                                   ),
                                 ] else ...[
                                   Text(
-                                    '-${discount.discountPercent}% від вартості абонемента',
+                                    'admin.percent_off_sub_price'.tr(namedArgs: {'percent': '${discount.discountPercent}'}),
                                     style: TextStyle(
                                       color: isDark
                                           ? const Color(0xFF00E5FF)
@@ -562,7 +566,7 @@ class _ClientDiscountsSectionState
                               color: Color(0xFFF43F5E),
                             ),
                             onPressed: () => _deleteDiscount(discount),
-                            tooltip: 'Видалити знижку',
+                            tooltip: 'admin.delete_discount_tooltip'.tr(),
                           ),
                         ],
                       ),

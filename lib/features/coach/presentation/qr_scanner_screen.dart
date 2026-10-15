@@ -11,6 +11,9 @@ import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/coach/models/qr_check_in_result.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/auth/models/app_user.dart';
+import 'package:swimming_school_app/features/coach/presentation/coach_dashboard.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   final GroupClass? targetClass;
@@ -47,9 +50,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
     if (_selectedClass == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Спочатку оберіть заняття для списання перепустки'),
-          backgroundColor: Color(0xFFF59E0B),
+        SnackBar(
+          content: Text('coach.qr_select_class_first'.tr()),
+          backgroundColor: const Color(0xFFF59E0B),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -106,9 +109,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                   ),
                 ),
               ),
-              const Text(
-                'Оберіть заняття на сьогодні',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                'coach.qr_select_today_class'.tr(),
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Flexible(
@@ -138,7 +141,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        '${DateFormat('HH:mm').format(c.startTime)} - ${DateFormat('HH:mm').format(c.endTime)}${c.lane.isNotEmpty ? ' • ${c.lane}' : ''}',
+                        '${DateFormat('HH:mm').format(c.branchStartTime)} - ${DateFormat('HH:mm').format(c.branchEndTime)}${c.lane.isNotEmpty ? ' • ${c.lane}' : ''}',
                         style: const TextStyle(color: Colors.white60, fontSize: 12),
                       ),
                       trailing: isSel ? const Icon(LucideIcons.check, color: Color(0xFF00E5FF), size: 18) : null,
@@ -170,32 +173,32 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       case QrCheckInStatus.success:
         themeColor = const Color(0xFF10B981); // Emerald
         statusIcon = LucideIcons.checkCircle2;
-        statusTitle = 'Заняття успішно зараховано!';
+        statusTitle = 'coach.qr_status_success'.tr();
         break;
       case QrCheckInStatus.alreadyAttended:
         themeColor = const Color(0xFFF59E0B); // Amber
         statusIcon = LucideIcons.shieldAlert;
-        statusTitle = 'Учень вже на занятті';
+        statusTitle = 'coach.qr_status_already_attended'.tr();
         break;
       case QrCheckInStatus.wrongDate:
         themeColor = const Color(0xFFF97316); // Orange
         statusIcon = LucideIcons.calendarClock;
-        statusTitle = 'Невідповідна дата';
+        statusTitle = 'coach.qr_status_wrong_date'.tr();
         break;
       case QrCheckInStatus.wrongService:
         themeColor = const Color(0xFFEF4444); // Red
         statusIcon = LucideIcons.badgeAlert;
-        statusTitle = 'Невідповідний абонемент';
+        statusTitle = 'coach.qr_status_wrong_service'.tr();
         break;
       case QrCheckInStatus.expiredOrEmpty:
         themeColor = const Color(0xFFEF4444);
         statusIcon = LucideIcons.clockAlert;
-        statusTitle = 'Абонемент вичерпано';
+        statusTitle = 'coach.qr_status_expired'.tr();
         break;
       case QrCheckInStatus.notFound:
         themeColor = const Color(0xFFEF4444);
         statusIcon = LucideIcons.alertTriangle;
-        statusTitle = 'Перепустку не знайдено';
+        statusTitle = 'coach.qr_status_not_found'.tr();
         break;
     }
 
@@ -271,7 +274,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                         children: [
                           const Icon(LucideIcons.user, color: Color(0xFF00E5FF), size: 16),
                           const SizedBox(width: 8),
-                          const Text('Клієнт:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          Text('coach.qr_label_client'.tr(), style: const TextStyle(color: Colors.white60, fontSize: 13)),
                           const Spacer(),
                           Text(
                             result.studentName!,
@@ -290,7 +293,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                         children: [
                           const Icon(LucideIcons.calendar, color: Color(0xFF00E5FF), size: 16),
                           const SizedBox(width: 8),
-                          const Text('Заняття:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          Text('coach.qr_label_class'.tr(), style: const TextStyle(color: Colors.white60, fontSize: 13)),
                           const Spacer(),
                           Flexible(
                             child: Text(
@@ -313,7 +316,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                         children: [
                           const Icon(LucideIcons.ticket, color: Color(0xFF00E5FF), size: 16),
                           const SizedBox(width: 8),
-                          const Text('Абонемент:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          Text('coach.qr_label_subscription'.tr(), style: const TextStyle(color: Colors.white60, fontSize: 13)),
                           const Spacer(),
                           Flexible(
                             child: Text(
@@ -336,7 +339,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                         children: [
                           const Icon(LucideIcons.layers, color: Color(0xFF00E5FF), size: 16),
                           const SizedBox(width: 8),
-                          const Text('Залишок занять:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          Text('coach.qr_label_remaining'.tr(), style: const TextStyle(color: Colors.white60, fontSize: 13)),
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -392,7 +395,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        child: const Text('Завершити', style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: Text('coach.qr_btn_finish'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -411,7 +414,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        child: const Text('Наступний', style: TextStyle(fontWeight: FontWeight.w900)),
+                        child: Text('coach.qr_btn_next'.tr(), style: const TextStyle(fontWeight: FontWeight.w900)),
                       ),
                     ),
                   ],
@@ -433,7 +436,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('Сканувати інший QR', style: TextStyle(fontWeight: FontWeight.w900)),
+                    child: Text('coach.qr_btn_scan_another'.tr(), style: const TextStyle(fontWeight: FontWeight.w900)),
                   ),
                 ),
               ],
@@ -447,15 +450,31 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   @override
   Widget build(BuildContext context) {
     final allClasses = ref.watch(scheduleControllerProvider).asData?.value ?? [];
+    final currentUser = ref.watch(authControllerProvider);
+    final activeBranch = ref.watch(effectiveBranchProvider);
     final now = DateTime.now();
-    final todayClasses = allClasses.where((c) {
-      return c.startTime.year == now.year &&
-          c.startTime.month == now.month &&
-          c.startTime.day == now.day;
-    }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    final branchTodayClasses = allClasses.where((c) {
+      final matchesBranch = activeBranch.id.isEmpty ||
+          c.branchId.isEmpty ||
+          c.branchId == activeBranch.id ||
+          (currentUser?.branchIds.contains(c.branchId) ?? false);
+      if (!matchesBranch) return false;
+      return c.branchStartTime.year == now.year &&
+          c.branchStartTime.month == now.month &&
+          c.branchStartTime.day == now.day;
+    }).toList()..sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
+
+    final myTodayClasses = currentUser != null && currentUser.role == UserRole.coach
+        ? branchTodayClasses.where((c) => isClassForCoach(c, currentUser)).toList()
+        : branchTodayClasses;
+    final todayClasses = myTodayClasses.isNotEmpty ? myTodayClasses : branchTodayClasses;
 
     if (_selectedClass == null && todayClasses.isNotEmpty) {
-      _selectedClass = todayClasses.first;
+      _selectedClass = todayClasses.firstWhere(
+        (c) => c.branchEndTime.isAfter(now),
+        orElse: () => todayClasses.first,
+      );
     }
 
     return PopScope(
@@ -569,7 +588,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${DateFormat('HH:mm').format(_selectedClass!.startTime)} - ${DateFormat('HH:mm').format(_selectedClass!.endTime)}${_selectedClass!.lane.isNotEmpty ? ' • ${_selectedClass!.lane}' : ''}',
+                              '${DateFormat('HH:mm').format(_selectedClass!.branchStartTime)} - ${DateFormat('HH:mm').format(_selectedClass!.branchEndTime)}${_selectedClass!.lane.isNotEmpty ? ' • ${_selectedClass!.lane}' : ''}',
                               style: const TextStyle(
                                 color: Color(0xFF00E5FF),
                                 fontSize: 11.5,
@@ -588,9 +607,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text(
-                            'Змінити',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          child: Text(
+                            'common.change'.tr(),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
                     ],
@@ -612,15 +631,15 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                       Expanded(
                         child: Text(
                           todayClasses.isEmpty
-                              ? 'Немає запланованих занять на сьогодні'
-                              : 'Оберіть заняття для списання перепусток',
+                              ? 'coach.no_classes_scheduled_today'.tr()
+                              : 'coach.select_class_for_pass_deduction'.tr(),
                           style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
                       if (todayClasses.isNotEmpty)
                         TextButton(
                           onPressed: () => _showSelectClassSheet(todayClasses),
-                          child: const Text('Обрати', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.bold)),
+                          child: Text('common.select'.tr(), style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                     ],
                   ),
@@ -691,9 +710,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                                             ),
                                           ),
                                           const SizedBox(height: 16),
-                                          const Text(
-                                            'Камера недоступна',
-                                            style: TextStyle(
+                                          Text(
+                                            'coach.camera_unavailable'.tr(),
+                                            style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
@@ -701,7 +720,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            'Надайте доступ до камери у системних налаштуваннях або скористайтеся полем введення коду нижче.',
+                                            'coach.camera_permission_hint_manual'.tr(),
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
                                               color: Colors.white.withValues(alpha: 0.65),

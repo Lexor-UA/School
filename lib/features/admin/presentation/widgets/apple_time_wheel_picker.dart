@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// An ultra-premium Apple Alarm-style dual drum wheel time picker.
 /// Allows smooth vertical scrolling for hours and minutes with iOS physics,
@@ -170,7 +171,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Час початку',
+                    'admin.class_start_time'.tr(),
                     style: TextStyle(
                       color: effectiveIsDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 13.5,
@@ -288,7 +289,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                 Expanded(
                   child: Center(
                     child: Text(
-                      'ГОДИНИ',
+                      'admin.hours_caps'.tr(),
                       style: TextStyle(
                         color: effectiveIsDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                         fontSize: 10,
@@ -302,7 +303,7 @@ class _AppleTimeWheelPickerState extends State<AppleTimeWheelPicker> {
                 Expanded(
                   child: Center(
                     child: Text(
-                      'ХВИЛИНИ',
+                      'admin.minutes_caps'.tr(),
                       style: TextStyle(
                         color: effectiveIsDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                         fontSize: 10,

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,7 +100,13 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
         final owner = ref.read(authControllerProvider);
         if (owner != null) {
           await logAdminAction(
-            'Власник оновив тарифи тренера "${widget.name}": Група $rateGroup ₴, Інд $rateIndividual ₴, Спліт $rateSplit ₴',
+            'owner.salary_sheet.log_coach_rates'.tr(namedArgs: {
+              'name': widget.name,
+              'group': '$rateGroup',
+              'indiv': '$rateIndividual',
+              'split': '$rateSplit',
+              'currency': widget.currencySymbol,
+            }),
             owner.id,
           );
         }
@@ -111,7 +118,7 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
           'salaryType': 'monthly',
           'role': 'admin',
           if (widget.staffId == 'admin' || widget.staffId == 'admin_vienna') ...{
-            'name': widget.staffId == 'admin' ? 'Адміністратор' : 'Admin Vienna',
+            'name': widget.staffId == 'admin' ? 'auth.default_admin'.tr() : 'Admin Vienna',
             'branchId': widget.staffId == 'admin' ? 'kyiv' : 'vienna',
             'phone': widget.staffId == 'admin' ? '+380 (99) 000-00-01' : '+43 1 234 5678',
             'loginId': widget.staffId == 'admin' ? 'Admin' : 'vienna.admin@cityswim.at',
@@ -125,7 +132,11 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
         final owner = ref.read(authControllerProvider);
         if (owner != null) {
           await logAdminAction(
-            'Власник оновив оклад адміністратора "${widget.name}": $adminSalary ${widget.currencySymbol} / міс',
+            'owner.salary_sheet.log_admin_salary'.tr(namedArgs: {
+              'name': widget.name,
+              'salary': '$adminSalary',
+              'currency': widget.currencySymbol,
+            }),
             owner.id,
           );
         }
@@ -142,8 +153,8 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                 Expanded(
                   child: Text(
                     isCoach
-                        ? 'Тарифи тренера успішно збережено!'
-                        : 'Оклад адміністратора успішно збережено!',
+                        ? 'owner.salary_sheet.coach_rates_saved'.tr()
+                        : 'owner.salary_sheet.admin_salary_saved'.tr(),
                   ),
                 ),
               ],
@@ -171,6 +182,8 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
     final isCoach = widget.role == 'coach';
     final themeConfig = ref.watch(appThemeControllerProvider);
     final isDark = themeConfig.isDark;
+    final perLessonUnit = '${widget.currencySymbol} / ${'owner.salary_sheet.per_lesson_short'.tr()}';
+    final perMonthUnit = '${widget.currencySymbol} / ${'owner.salary_sheet.per_month_short'.tr()}';
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -215,54 +228,54 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                         // Coach Rate Section
                         _buildSectionHeader(
                           icon: LucideIcons.banknote,
-                          title: 'Тарифна сітка тренера (ЗП)',
-                          subtitle: 'Встановіть винагороду за кожне проведене тренування',
+                          title: 'owner.salary_sheet.coach_rates_title'.tr(),
+                          subtitle: 'owner.salary_sheet.coach_rates_subtitle'.tr(),
                           color: const Color(0xFF00E5FF),
                           isDark: isDark,
                         ),
                         const SizedBox(height: 14),
                         _buildRateField(
-                          label: 'Групове тренування (${widget.currencySymbol} / зан)',
+                          label: 'owner.salary_sheet.group_training_label'.tr(namedArgs: {'unit': perLessonUnit}),
                           icon: LucideIcons.users,
                           controller: _rateGroupController,
                           color: const Color(0xFF00E5FF),
-                          unit: '${widget.currencySymbol} / зан',
+                          unit: perLessonUnit,
                           isDark: isDark,
                         ),
                         const SizedBox(height: 12),
                         _buildRateField(
-                          label: 'Індивідуальне тренування (${widget.currencySymbol} / зан)',
+                          label: 'owner.salary_sheet.indiv_training_label'.tr(namedArgs: {'unit': perLessonUnit}),
                           icon: LucideIcons.user,
                           controller: _rateIndividualController,
                           color: const Color(0xFFA855F7),
-                          unit: '${widget.currencySymbol} / зан',
+                          unit: perLessonUnit,
                           isDark: isDark,
                         ),
                         const SizedBox(height: 12),
                         _buildRateField(
-                          label: 'Спліт-тренування (2 учні) (${widget.currencySymbol} / зан)',
+                          label: 'owner.salary_sheet.split_training_label'.tr(namedArgs: {'unit': perLessonUnit}),
                           icon: LucideIcons.userCheck,
                           controller: _rateSplitController,
                           color: const Color(0xFFF59E0B),
-                          unit: '${widget.currencySymbol} / зан',
+                          unit: perLessonUnit,
                           isDark: isDark,
                         ),
                       ] else ...[
                         // Admin Salary Section
                         _buildSectionHeader(
                           icon: LucideIcons.shieldCheck,
-                          title: 'Фіксована ставка адміністратора',
-                          subtitle: 'Щомісячний оклад співробітника',
+                          title: 'owner.salary_sheet.admin_salary_title'.tr(),
+                          subtitle: 'owner.salary_sheet.admin_salary_subtitle'.tr(),
                           color: const Color(0xFF10B981),
                           isDark: isDark,
                         ),
                         const SizedBox(height: 14),
                         _buildRateField(
-                          label: 'Фіксований оклад (${widget.currencySymbol} / місяць)',
+                          label: 'owner.salary_sheet.fixed_salary_label'.tr(namedArgs: {'currency': widget.currencySymbol}),
                           icon: LucideIcons.wallet,
                           controller: _adminSalaryController,
                           color: const Color(0xFF10B981),
-                          unit: '${widget.currencySymbol} / міс',
+                          unit: perMonthUnit,
                           isDark: isDark,
                         ),
                       ],
@@ -278,7 +291,7 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                             border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            'Помилка: $_errorMessage',
+                            'owner.salary_sheet.error_with_msg'.tr(namedArgs: {'error': '$_errorMessage'}),
                             style: const TextStyle(color: Colors.redAccent, fontSize: 13.5),
                           ),
                         ),
@@ -337,9 +350,9 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
-                                  'Зберегти налаштування',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+                              : Text(
+                                  'owner.salary_sheet.save_settings'.tr(),
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.3),
                                 ),
                         ),
                       ),
@@ -409,7 +422,7 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Тарифи та оплата праці',
+                    'owner.salary_sheet.header_title'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 18,
@@ -528,7 +541,7 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                         ),
                       ),
                       child: Text(
-                        isCoach ? 'ТРЕНЕР' : 'АДМІНІСТРАТОР',
+                        isCoach ? 'owner.salary_sheet.role_coach_upper'.tr() : 'owner.salary_sheet.role_admin_upper'.tr(),
                         style: TextStyle(
                           color: isCoach
                               ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
@@ -619,7 +632,7 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
     required IconData icon,
     required TextEditingController controller,
     required Color color,
-    String unit = '₴ / зан',
+    required String unit,
     required bool isDark,
   }) {
     final effectiveColor = color == const Color(0xFF00E5FF)

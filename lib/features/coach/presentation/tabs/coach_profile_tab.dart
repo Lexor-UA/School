@@ -12,7 +12,9 @@ import 'package:swimming_school_app/features/chat/providers/chat_providers.dart'
 import 'package:swimming_school_app/shared/widgets/avatar_picker.dart';
 import '../widgets/coach_dialogs_sheet.dart';
 import '../coach_dashboard.dart';
+import '../coach_journal_screen.dart';
 import 'package:swimming_school_app/features/coach/controllers/coach_rating_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 void _confirmCoachLogout(BuildContext context, WidgetRef ref) => confirmCoachLogout(context, ref);
 
@@ -25,9 +27,11 @@ class CoachProfileTab extends ConsumerStatefulWidget {
 
 class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   bool _isIncomeHidden = false;
-  int _selectedPeriod = 0; // 0: Цей місяць, 1: Минулив місяць, 2: Всі
+  int _selectedPeriod = 0; // 0: This month, 1: Previous month, 2: All
   late AppThemeConfig _themeConfig;
   late bool _isLight;
+  String _currencySymbol = '₴';
+  String _currencyLabel = '₴';
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +40,16 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
     _themeConfig = ref.watch(appThemeControllerProvider);
     _isLight = !_themeConfig.isDark;
+    final activeBranch = ref.watch(effectiveBranchProvider);
+    final isEur = activeBranch.currency.toUpperCase() == 'EUR' ||
+        user.branchId == 'vienna' ||
+        (user.branchId.isEmpty && activeBranch.id == 'vienna');
+    _currencySymbol = isEur ? '€' : '₴';
+    _currencyLabel = isEur ? '€' : 'common.uah_short'.tr();
+
+    final int defaultGroupRate = isEur ? 25 : 400;
+    final int defaultIndividualRate = isEur ? 30 : 450;
+    final int defaultSplitRate = isEur ? 40 : 600;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -43,22 +57,27 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         stream: FirebaseFirestore.instance.collection('users').doc(user.id).snapshots(),
         builder: (context, userDocSnap) {
           final userData = userDocSnap.data?.data() as Map<String, dynamic>? ?? {};
-          final int rateGroup = (userData['rateGroup'] as num?)?.toInt() ?? 400;
-          final int rateIndividual = (userData['rateIndividual'] as num?)?.toInt() ?? 450;
-          final int rateSplit = (userData['rateSplit'] as num?)?.toInt() ?? 600;
+          final int rateGroup = (userData['rateGroup'] as num?)?.toInt() ?? defaultGroupRate;
+          final int rateIndividual = (userData['rateIndividual'] as num?)?.toInt() ?? defaultIndividualRate;
+          final int rateSplit = (userData['rateSplit'] as num?)?.toInt() ?? defaultSplitRate;
 
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('classes').snapshots(),
             builder: (context, classSnap) {
               final classDocs = classSnap.data?.docs ?? [];
               final List<GroupClass> coachClasses = [];
+              final coachBranch = user.branchId.isNotEmpty ? user.branchId : activeBranch.id;
 
               for (final d in classDocs) {
                 final data = Map<String, dynamic>.from(d.data() as Map);
                 data['id'] = d.id;
                 try {
                   final gc = GroupClass.fromJson(data);
-                  if (isClassForCoach(gc, user)) {
+                  final matchesBranch = coachBranch.isEmpty ||
+                      gc.branchId.isEmpty ||
+                      gc.branchId == coachBranch ||
+                      user.branchIds.contains(gc.branchId);
+                  if (matchesBranch && isClassForCoach(gc, user)) {
                     coachClasses.add(gc);
                   }
                 } catch (_) {}
@@ -68,16 +87,16 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               final now = DateTime.now();
               final filteredClasses = coachClasses.where((c) {
                 if (_selectedPeriod == 0) {
-                  return c.startTime.year == now.year && c.startTime.month == now.month;
+                  return c.branchStartTime.year == now.year && c.branchStartTime.month == now.month;
                 } else if (_selectedPeriod == 1) {
                   final prev = DateTime(now.year, now.month - 1, 1);
-                  return c.startTime.year == prev.year && c.startTime.month == prev.month;
+                  return c.branchStartTime.year == prev.year && c.branchStartTime.month == prev.month;
                 }
                 return true;
               }).toList();
 
               // Sort by startTime descending
-              filteredClasses.sort((a, b) => b.startTime.compareTo(a.startTime));
+              filteredClasses.sort((a, b) => b.branchStartTime.compareTo(a.branchStartTime));
 
               int conductedGroup = 0;
               int conductedIndividual = 0;
@@ -91,8 +110,12 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 final isConducted = c.attendedChildIds.isNotEmpty;
                 final tLower = c.title.toLowerCase();
                 final cLower = c.category.toLowerCase();
-                final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);
-                final isIndividual = !isSplit && (cLower.contains('індивідуал') || tLower.contains('індивідуал') || c.maxCapacity == 1);
+                final isSplit = RegExp(r'\u0441\u043f\u043b\u0456\u0442|split', caseSensitive: false).hasMatch(tLower) ||
+                    (RegExp(r'\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b|indiv', caseSensitive: false).hasMatch(cLower) && c.maxCapacity == 2);
+                final isIndividual = !isSplit &&
+                    (RegExp(r'\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b|indiv', caseSensitive: false).hasMatch(cLower) ||
+                        RegExp(r'\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b|indiv', caseSensitive: false).hasMatch(tLower) ||
+                        c.maxCapacity == 1);
 
                 if (isConducted) {
                   if (isSplit) {
@@ -123,12 +146,12 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
               final totalScheduled = scheduledGroup + scheduledIndividual + scheduledSplit;
 
               final todayClasses = coachClasses.where((c) {
-                return c.startTime.year == now.year &&
-                       c.startTime.month == now.month &&
-                       c.startTime.day == now.day;
+                return c.branchStartTime.year == now.year &&
+                       c.branchStartTime.month == now.month &&
+                       c.branchStartTime.day == now.day;
               }).toList();
-              todayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
-              final upcomingClass = todayClasses.where((c) => c.endTime.isAfter(now)).firstOrNull;
+              todayClasses.sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
+              final upcomingClass = todayClasses.where((c) => c.branchEndTime.isAfter(now)).firstOrNull;
 
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -171,7 +194,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         Expanded(
                           child: _buildKpiCard(
                             '96%',
-                            'Відвідуваність',
+                            'coach.kpi_attendance'.tr(),
                             LucideIcons.trendingUp,
                             _isLight ? const Color(0xFF059669) : const Color(0xFF10B981),
                           ),
@@ -187,8 +210,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                   ? '${coachRatingData.rating.toStringAsFixed(1)} ★'
                                   : '— ★';
                               final ratingLabel = coachRatingData.count > 0
-                                  ? 'Рейтинг (${coachRatingData.count})'
-                                  : 'Рейтинг тренера';
+                                  ? 'coach.rating_with_count'.tr(args: ['${coachRatingData.count}'])
+                                  : 'coach.coach_rating_label'.tr();
 
                               return _buildKpiCard(
                                 ratingString,
@@ -263,9 +286,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const ParentChatScreen(
-                            title: 'Чат з Адміністратором',
-                            subtitle: 'Рецепція басейну • Онлайн',
+                          builder: (_) => ParentChatScreen(
+                            title: 'coach.chat_admin_title'.tr(),
+                            subtitle: 'coach.chat_admin_sub'.tr(),
                           ),
                         ),
                       );
@@ -313,7 +336,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Онлайн',
+                                  'common.online'.tr(),
                                   style: TextStyle(
                                     color: _isLight ? const Color(0xFF059669) : const Color(0xFF34D399),
                                     fontSize: 10.5,
@@ -376,7 +399,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Повідомлення від клієнтів',
+                                  'coach.client_messages_title'.tr(),
                                   style: TextStyle(
                                     color: _isLight ? const Color(0xFF0F172A) : Colors.white,
                                     fontWeight: FontWeight.w800,
@@ -384,7 +407,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                   ),
                                 ),
                                 Text(
-                                  'Спілкування з учнями та батьками',
+                                  'coach.client_messages_sub'.tr(),
                                   style: TextStyle(
                                     color: _themeConfig.textSecondary,
                                     fontSize: 11,
@@ -440,7 +463,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   Widget _buildTodayMissionCard(GroupClass upcomingClass, BuildContext context) {
     final durationMins = upcomingClass.endTime.difference(upcomingClass.startTime).inMinutes;
     final cleanTitle = upcomingClass.title.replaceFirst(
-      RegExp(r'^(Індивідуальне|Групове|Спліт)\s*тренування:\s*', caseSensitive: false),
+      RegExp(r'^(\u0406\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b\u044c\u043d\u0435|\u0413\u0440\u0443\u043f\u043e\u0432\u0435|\u0421\u043f\u043b\u0456\u0442)\s*\u0442\u0440\u0435\u043d\u0443\u0432\u0430\u043d\u043d\u044f:\s*', caseSensitive: false),
       '',
     ).trim();
     final displayTitle = cleanTitle.isNotEmpty ? cleanTitle : upcomingClass.title;
@@ -501,7 +524,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         ),
                       ),
                       Text(
-                        '$durationMins хв',
+                        '$durationMins ${'common.min_short'.tr()}',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 8.5,
@@ -529,7 +552,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        '${upcomingClass.category} • ${upcomingClass.attendedChildIds.length}/${upcomingClass.maxCapacity} відмічено',
+                        '${upcomingClass.category} • ${upcomingClass.attendedChildIds.length}/${upcomingClass.maxCapacity} ${'coach.marked_short'.tr()}',
                         style: TextStyle(
                           color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                           fontSize: 9.5,
@@ -546,7 +569,10 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   child: InkWell(
                     onTap: () {
                       ref.read(selectedCoachClassIdProvider.notifier).setClassId(upcomingClass.id);
-                      ref.read(coachTabProvider.notifier).setTab(0);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CoachJournalScreen()),
+                      );
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
@@ -563,9 +589,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                           ),
                         ],
                       ),
-                      child: const Text(
-                        'Журнал',
-                        style: TextStyle(
+                      child: Text(
+                        'coach.nav_journal'.tr(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -640,19 +666,19 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
   String _formatConductedClassesCount(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 14) return '$count занять';
-    if (mod10 == 1) return '$count заняття';
-    if (mod10 >= 2 && mod10 <= 4) return '$count заняття';
-    return '$count занять';
+    if (mod100 >= 11 && mod100 <= 14) return 'coach.classes_count_many'.tr(args: ['$count']);
+    if (mod10 == 1) return 'coach.classes_count_one'.tr(args: ['$count']);
+    if (mod10 >= 2 && mod10 <= 4) return 'coach.classes_count_few'.tr(args: ['$count']);
+    return 'coach.classes_count_many'.tr(args: ['$count']);
   }
 
   String _formatClassesCount(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 14) return '$count занять';
-    if (mod10 == 1) return '$count заняття';
-    if (mod10 >= 2 && mod10 <= 4) return '$count заняття';
-    return '$count занять';
+    if (mod100 >= 11 && mod100 <= 14) return 'coach.classes_count_many'.tr(args: ['$count']);
+    if (mod10 == 1) return 'coach.classes_count_one'.tr(args: ['$count']);
+    if (mod10 >= 2 && mod10 <= 4) return 'coach.classes_count_few'.tr(args: ['$count']);
+    return 'coach.classes_count_many'.tr(args: ['$count']);
   }
 
   Widget _buildIdentityCard(AppUser user) {
@@ -812,7 +838,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                       ),
                     ),
                     Text(
-                      'Онлайн',
+                      'common.online'.tr(),
                       style: TextStyle(
                         color: _isLight ? const Color(0xFF059669) : const Color(0xFF34D399),
                         fontSize: 11,
@@ -890,7 +916,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
     required int rateSplit,
     required List<GroupClass> allFilteredClasses,
   }) {
-    final currencyFormat = NumberFormat('#,###', 'uk_UA');
+    final currencyFormat = NumberFormat('#,###', context.locale.toString());
 
     return Container(
       width: double.infinity,
@@ -929,7 +955,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Period Switcher [ Цей місяць | Минулий | Всі ] (Segmented Control)
+          // Top Row: Period Switcher (Segmented Control)
           Container(
             padding: const EdgeInsets.all(2.5),
             decoration: BoxDecoration(
@@ -942,9 +968,9 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
             ),
                   child: Row(
                     children: [
-                      _buildPeriodPill(label: 'Цей місяць', index: 0),
-                      _buildPeriodPill(label: 'Минулий', index: 1),
-                      _buildPeriodPill(label: 'Всі заняття', index: 2),
+                      _buildPeriodPill(label: 'coach.period_this_month'.tr(), index: 0),
+                      _buildPeriodPill(label: 'coach.period_prev_month'.tr(), index: 1),
+                      _buildPeriodPill(label: 'coach.period_all_classes'.tr(), index: 2),
                     ],
                   ),
                 ),
@@ -1000,7 +1026,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               ),
                               const SizedBox(width: 4.5),
                               Text(
-                                'грн',
+                                _currencyLabel,
                                 style: TextStyle(
                                   color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                                   fontSize: 14.5,
@@ -1065,7 +1091,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                               const Icon(LucideIcons.receipt, size: 11.5, color: Colors.white),
                               const SizedBox(width: 4),
                               Text(
-                                'Деталі ($totalConducted)',
+                                'coach.details_count'.tr(args: ['$totalConducted']),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10.5,
@@ -1107,7 +1133,11 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'До кінця місяця: ${_formatClassesCount(totalScheduled)} (+${_isIncomeHidden ? '•••' : currencyFormat.format(scheduledSum)} грн)',
+                            'coach.until_end_of_month_proj'.tr(args: [
+                              _formatClassesCount(totalScheduled),
+                              _isIncomeHidden ? '•••' : currencyFormat.format(scheduledSum),
+                              _currencyLabel,
+                            ]),
                             style: TextStyle(
                               color: _isLight ? const Color(0xFF92400E) : const Color(0xFFFBBF24),
                               fontSize: 10,
@@ -1195,15 +1225,16 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
 
   String _getPeriodSubtitle() {
     final now = DateTime.now();
+    final localeStr = context.locale.toString();
     if (_selectedPeriod == 0) {
-      final monthName = DateFormat('LLLL', 'uk_UA').format(now);
+      final monthName = DateFormat('LLLL', localeStr).format(now);
       return '${monthName[0].toUpperCase()}${monthName.substring(1)}';
     } else if (_selectedPeriod == 1) {
       final prev = DateTime(now.year, now.month - 1, 1);
-      final monthName = DateFormat('LLLL', 'uk_UA').format(prev);
+      final monthName = DateFormat('LLLL', localeStr).format(prev);
       return '${monthName[0].toUpperCase()}${monthName.substring(1)}';
     }
-    return 'За весь час';
+    return 'coach.for_all_time'.tr();
   }
 
   Widget _buildCategoryTriptych({
@@ -1222,7 +1253,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
       children: [
         Expanded(
           child: _buildTriptychCol(
-            title: 'Групові',
+            title: 'coach.type_group_plural'.tr(),
             icon: LucideIcons.users,
             count: conductedGroup,
             sum: conductedGroupSum,
@@ -1234,7 +1265,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         const SizedBox(width: 5),
         Expanded(
           child: _buildTriptychCol(
-            title: 'Індивід.',
+            title: 'coach.type_indiv_short'.tr(),
             icon: LucideIcons.user,
             count: conductedIndividual,
             sum: conductedIndividualSum,
@@ -1246,7 +1277,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
         const SizedBox(width: 5),
         Expanded(
           child: _buildTriptychCol(
-            title: 'Спліт',
+            title: 'coach.type_split'.tr(),
             icon: LucideIcons.userCheck,
             count: conductedSplit,
             sum: conductedSplitSum,
@@ -1337,7 +1368,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           ),
           const SizedBox(height: 3.5),
           Text(
-            _isIncomeHidden ? '••••' : '${currencyFormat.format(sum)} ₴',
+            _isIncomeHidden ? '••••' : '${currencyFormat.format(sum)} $_currencySymbol',
             style: TextStyle(
               color: hasEarnings
                   ? accentColor
@@ -1438,7 +1469,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Деталізація нарахувань',
+                              'coach.salary_breakdown_title'.tr(),
                               style: TextStyle(
                                 color: _isLight ? const Color(0xFF0F172A) : Colors.white,
                                 fontSize: 17,
@@ -1482,7 +1513,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                 child: classes.isEmpty
                     ? Center(
                         child: Text(
-                          'Занять у цьому періоді не знайдено',
+                          'coach.no_classes_in_period'.tr(),
                           style: TextStyle(
                             color: _isLight ? const Color(0xFF64748B) : Colors.white54,
                             fontSize: 14,
@@ -1497,23 +1528,27 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                           final isConducted = c.attendedChildIds.isNotEmpty;
                           final tLower = c.title.toLowerCase();
                           final cLower = c.category.toLowerCase();
-                          final isSplit = tLower.contains('спліт') || tLower.contains('split') || (cLower.contains('індивідуал') && c.maxCapacity == 2);
-                          final isIndividual = !isSplit && (cLower.contains('індивідуал') || tLower.contains('індивідуал') || c.maxCapacity == 1);
+                          final isSplit = RegExp(r'\u0441\u043f\u043b\u0456\u0442|split', caseSensitive: false).hasMatch(tLower) ||
+                              (RegExp(r'\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b|indiv', caseSensitive: false).hasMatch(cLower) && c.maxCapacity == 2);
+                          final isIndividual = !isSplit &&
+                              (RegExp(r'\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b|indiv', caseSensitive: false).hasMatch(cLower) ||
+                                  RegExp(r'\u0456\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b|indiv', caseSensitive: false).hasMatch(tLower) ||
+                                  c.maxCapacity == 1);
 
                           final String typeLabel;
                           final int earned;
                           final Color typeColor;
 
                           if (isSplit) {
-                            typeLabel = 'Спліт';
+                            typeLabel = 'coach.type_split'.tr();
                             earned = rateSplit;
                             typeColor = _isLight ? const Color(0xFFD97706) : const Color(0xFFF59E0B);
                           } else if (isIndividual) {
-                            typeLabel = 'Індивідуальне';
+                            typeLabel = 'coach.type_individual'.tr();
                             earned = rateIndividual;
                             typeColor = _isLight ? const Color(0xFF2563EB) : const Color(0xFF38BDF8);
                           } else {
-                            typeLabel = 'Групове';
+                            typeLabel = 'coach.type_group'.tr();
                             earned = rateGroup;
                             typeColor = _isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF);
                           }
@@ -1592,7 +1627,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                       Row(
                                         children: [
                                           Text(
-                                            DateFormat('d MMM, HH:mm', 'uk_UA').format(c.startTime),
+                                            DateFormat('d MMM, HH:mm', context.locale.toString()).format(c.branchStartTime),
                                             style: TextStyle(
                                               color: _isLight ? const Color(0xFF64748B) : Colors.white60,
                                               fontSize: 11,
@@ -1624,7 +1659,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      isConducted ? '+$earned ₴' : '0 ₴',
+                                      isConducted ? '+$earned $_currencySymbol' : '0 $_currencySymbol',
                                       style: TextStyle(
                                         color: isConducted
                                             ? const Color(0xFF10B981)
@@ -1635,7 +1670,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      isConducted ? 'Проведено' : 'Заплановано',
+                                      isConducted ? 'coach.status_conducted'.tr() : 'coach.status_scheduled'.tr(),
                                       style: TextStyle(
                                         color: isConducted
                                             ? (_isLight ? const Color(0xFF475569) : Colors.white60)

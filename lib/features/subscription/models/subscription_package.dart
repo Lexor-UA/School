@@ -17,6 +17,7 @@ class SubscriptionPackage {
   final bool isSplit;
   final String? ageGroup; // '6-8', '9-15', etc.
   final Map<String, String>? localizedNames;
+  final Map<String, String>? localizedDescriptions;
   final String? description;
 
   const SubscriptionPackage({
@@ -33,6 +34,7 @@ class SubscriptionPackage {
     this.isSplit = false,
     this.ageGroup,
     this.localizedNames,
+    this.localizedDescriptions,
     this.description,
   });
 
@@ -45,15 +47,25 @@ class SubscriptionPackage {
   );
 
   String getLocalizedName(String langCode) {
-    if (localizedNames != null && localizedNames!.containsKey(langCode)) {
-      return localizedNames![langCode]!;
+    final code = langCode.toLowerCase();
+    if (localizedNames != null && localizedNames!.containsKey(code)) {
+      return localizedNames![code]!;
     }
     return name;
   }
 
-  Map<String, dynamic> toMap() => {
+  String getLocalizedDescription(String langCode) {
+    final code = langCode.toLowerCase();
+    if (localizedDescriptions != null && localizedDescriptions!.containsKey(code)) {
+      return localizedDescriptions![code]!;
+    }
+    return description ?? '';
+  }
+
+  Map<String, dynamic> toMap([String? langCode]) => {
     'id': id,
-    'name': name,
+    'name': langCode != null ? getLocalizedName(langCode) : name,
+    'rawName': name,
     'branchId': branchId,
     'price': formattedPrice,
     'priceNum': price,
@@ -65,7 +77,10 @@ class SubscriptionPackage {
     'isIndividual': isIndividual,
     'isSplit': isSplit,
     if (ageGroup != null) 'ageGroup': ageGroup,
-    if (description != null) 'description': description,
+    if (localizedNames != null) 'localizedNames': localizedNames,
+    if (localizedDescriptions != null) 'localizedDescriptions': localizedDescriptions,
+    if (description != null)
+      'description': langCode != null ? getLocalizedDescription(langCode) : description,
   };
 
   SubscriptionPackage copyWith({
@@ -82,6 +97,7 @@ class SubscriptionPackage {
     bool? isSplit,
     String? ageGroup,
     Map<String, String>? localizedNames,
+    Map<String, String>? localizedDescriptions,
     String? description,
   }) {
     return SubscriptionPackage(
@@ -98,12 +114,28 @@ class SubscriptionPackage {
       isSplit: isSplit ?? this.isSplit,
       ageGroup: ageGroup ?? this.ageGroup,
       localizedNames: localizedNames ?? this.localizedNames,
+      localizedDescriptions: localizedDescriptions ?? this.localizedDescriptions,
       description: description ?? this.description,
     );
   }
 }
 
 class SubscriptionPackageCatalog {
+  /// Локалізує назву абонемента за збереженим рядком або ID для поточної мови ('uk', 'en', 'de', 'ru')
+  static String localizeServiceName(String rawName, String langCode) {
+    final trimmed = rawName.trim();
+    if (trimmed.isEmpty) return rawName;
+    final all = [...kyivPackages, ...viennaPackages, ..._customBranchPackages.values.expand((l) => l)];
+    for (final pkg in all) {
+      if (pkg.id == trimmed ||
+          pkg.name == trimmed ||
+          (pkg.localizedNames?.values.any((v) => v == trimmed) ?? false)) {
+        return pkg.getLocalizedName(langCode);
+      }
+    }
+    return rawName;
+  }
+
   /// Пакети для Kyiv (UAH ₴)
   static const List<SubscriptionPackage> kyivPackages = [
     // Базові тарифні пакети CitySwim Kyiv (ТЗ п. 13)
@@ -121,6 +153,13 @@ class SubscriptionPackageCatalog {
         'uk': 'Пробне заняття',
         'en': 'Trial Lesson',
         'de': 'Schnuppertraining',
+        'ru': 'Пробное занятие',
+      },
+      localizedDescriptions: {
+        'uk': 'Безкоштовне перше ознайомче тренування для нових плавців',
+        'en': 'Free first introductory training session for new swimmers',
+        'de': 'Kostenloses erstes Einführungstraining für neue Schwimmer',
+        'ru': 'Бесплатная первая ознакомительная тренировка для новых пловцов',
       },
       description: 'Безкоштовне перше ознайомче тренування для нових плавців',
     ),
@@ -138,6 +177,13 @@ class SubscriptionPackageCatalog {
         'uk': 'Разове заняття',
         'en': 'Single Lesson',
         'de': 'Einzelstunde',
+        'ru': 'Разовое занятие',
+      },
+      localizedDescriptions: {
+        'uk': 'Одноразове відвідування тренування',
+        'en': 'Single training session visit',
+        'de': 'Einmaliger Trainingsbesuch',
+        'ru': 'Одноразовое посещение тренировки',
       },
       description: 'Одноразове відвідування тренування',
     ),
@@ -155,6 +201,13 @@ class SubscriptionPackageCatalog {
         'uk': '4 заняття на місяць',
         'en': '4 Lessons / Month',
         'de': '4 Einheiten / Monat',
+        'ru': '4 занятия в месяц',
+      },
+      localizedDescriptions: {
+        'uk': 'Абонемент на 4 заняття протягом 30 днів',
+        'en': 'Subscription for 4 lessons within 30 days',
+        'de': 'Abo für 4 Einheiten innerhalb von 30 Tagen',
+        'ru': 'Абонемент на 4 занятия в течение 30 дней',
       },
       description: 'Абонемент на 4 заняття протягом 30 днів',
     ),
@@ -172,6 +225,13 @@ class SubscriptionPackageCatalog {
         'uk': '8 занять на місяць',
         'en': '8 Lessons / Month',
         'de': '8 Einheiten / Monat',
+        'ru': '8 занятий в месяц',
+      },
+      localizedDescriptions: {
+        'uk': 'Стандартний абонемент на 8 занять (двічі на тиждень)',
+        'en': 'Standard subscription for 8 lessons (twice a week)',
+        'de': 'Standard-Abo für 8 Einheiten (zweimal pro Woche)',
+        'ru': 'Стандартный абонемент на 8 занятий (дважды в неделю)',
       },
       description: 'Стандартний абонемент на 8 занять (двічі на тиждень)',
     ),
@@ -189,6 +249,13 @@ class SubscriptionPackageCatalog {
         'uk': '12 занять на місяць',
         'en': '12 Lessons / Month',
         'de': '12 Einheiten / Monat',
+        'ru': '12 занятий в месяц',
+      },
+      localizedDescriptions: {
+        'uk': 'Інтенсивний абонемент на 12 занять (тричі на тиждень)',
+        'en': 'Intensive subscription for 12 lessons (three times a week)',
+        'de': 'Intensiv-Abo für 12 Einheiten (dreimal pro Woche)',
+        'ru': 'Интенсивный абонемент на 12 занятий (трижды в неделю)',
       },
       description: 'Інтенсивний абонемент на 12 занять (тричі на тиждень)',
     ),
@@ -207,6 +274,13 @@ class SubscriptionPackageCatalog {
         'uk': 'Індивідуальне заняття',
         'en': 'Individual Lesson',
         'de': 'Einzelunterricht',
+        'ru': 'Индивидуальное занятие',
+      },
+      localizedDescriptions: {
+        'uk': 'Персональне тренування з тренером на виділеній доріжці',
+        'en': 'Personal training session with a coach in a dedicated lane',
+        'de': 'Persönliches Training mit Coach auf eigener Bahn',
+        'ru': 'Персональная тренировка с тренером на выделенной дорожке',
       },
       description: 'Персональне тренування з тренером на виділеній доріжці',
     ),
@@ -222,6 +296,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'uk': 'Дитячий абонемент 6-8 років (4 тренування)',
+        'en': 'Kids Pass 6-8 yrs (4 lessons)',
+        'de': 'Kinderabopass 6-8 J. (4 Einheiten)',
+        'ru': 'Детский абонемент 6-8 лет (4 тренировки)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_child_6_8_8',
@@ -234,6 +314,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'uk': 'Дитячий абонемент 6-8 років (8 тренувань)',
+        'en': 'Kids Pass 6-8 yrs (8 lessons)',
+        'de': 'Kinderabopass 6-8 J. (8 Einheiten)',
+        'ru': 'Детский абонемент 6-8 лет (8 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_child_6_8_12',
@@ -246,6 +332,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'uk': 'Дитячий абонемент 6-8 років (12 тренувань)',
+        'en': 'Kids Pass 6-8 yrs (12 lessons)',
+        'de': 'Kinderabopass 6-8 J. (12 Einheiten)',
+        'ru': 'Детский абонемент 6-8 лет (12 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_child_6_8_single',
@@ -258,6 +350,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'uk': 'Разове дитяче тренування 6-8 років',
+        'en': 'Single Kids Lesson 6-8 yrs',
+        'de': 'Einzeltraining Kinder 6-8 J.',
+        'ru': 'Разовая детская тренировка 6-8 лет',
+      },
     ),
 
     // Дитячі абонементи 9-15 років
@@ -272,6 +370,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'uk': 'Дитячий абонемент 9-15 років (4 тренування)',
+        'en': 'Junior Pass 9-15 yrs (4 lessons)',
+        'de': 'Jugendabopass 9-15 J. (4 Einheiten)',
+        'ru': 'Детский абонемент 9-15 лет (4 тренировки)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_child_9_15_8',
@@ -284,6 +388,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'uk': 'Дитячий абонемент 9-15 років (8 тренувань)',
+        'en': 'Junior Pass 9-15 yrs (8 lessons)',
+        'de': 'Jugendabopass 9-15 J. (8 Einheiten)',
+        'ru': 'Детский абонемент 9-15 лет (8 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_child_9_15_12',
@@ -296,6 +406,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'uk': 'Дитячий абонемент 9-15 років (12 тренувань)',
+        'en': 'Junior Pass 9-15 yrs (12 lessons)',
+        'de': 'Jugendabopass 9-15 J. (12 Einheiten)',
+        'ru': 'Детский абонемент 9-15 лет (12 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_child_9_15_single',
@@ -308,6 +424,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'uk': 'Разове дитяче тренування 9-15 років',
+        'en': 'Single Junior Lesson 9-15 yrs',
+        'de': 'Einzeltraining Jugend 9-15 J.',
+        'ru': 'Разовая детская тренировка 9-15 лет',
+      },
     ),
 
     // Дорослі абонементи
@@ -321,6 +443,12 @@ class SubscriptionPackageCatalog {
       classes: 1,
       validityDays: 365,
       isAdult: true,
+      localizedNames: {
+        'uk': 'Разове відвідування (Доросла група)',
+        'en': 'Single Visit (Adult Group)',
+        'de': 'Einzeltraining Erwachsene',
+        'ru': 'Разовое посещение (Взрослая группа)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_adult_4',
@@ -332,6 +460,12 @@ class SubscriptionPackageCatalog {
       classes: 4,
       validityDays: 30,
       isAdult: true,
+      localizedNames: {
+        'uk': 'Абонемент на 4 тренування (Доросла група)',
+        'en': 'Adult Pass (4 lessons)',
+        'de': 'Erwachsenenabopass (4 Einheiten)',
+        'ru': 'Абонемент на 4 тренировки (Взрослая группа)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_adult_8',
@@ -343,6 +477,12 @@ class SubscriptionPackageCatalog {
       classes: 8,
       validityDays: 30,
       isAdult: true,
+      localizedNames: {
+        'uk': 'Абонемент на 8 тренувань (Доросла група)',
+        'en': 'Adult Pass (8 lessons)',
+        'de': 'Erwachsenenabopass (8 Einheiten)',
+        'ru': 'Абонемент на 8 тренировок (Взрослая группа)',
+      },
     ),
 
     // Дитячі індивідуальні абонементи
@@ -357,6 +497,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       isIndividual: true,
+      localizedNames: {
+        'uk': 'Дитячий індивідуальний абонемент (4 тренування)',
+        'en': 'Kids Individual Pass (4 lessons)',
+        'de': 'Privattraining Kinder (4 Einheiten)',
+        'ru': 'Детский индивидуальный абонемент (4 тренировки)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_indiv_8',
@@ -369,6 +515,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       isIndividual: true,
+      localizedNames: {
+        'uk': 'Дитячий індивідуальний абонемент (8 тренувань)',
+        'en': 'Kids Individual Pass (8 lessons)',
+        'de': 'Privattraining Kinder (8 Einheiten)',
+        'ru': 'Детский индивидуальный абонемент (8 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_indiv_single',
@@ -381,6 +533,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: false,
       isIndividual: true,
+      localizedNames: {
+        'uk': 'Разове індивідуальне тренування (діти)',
+        'en': 'Single Individual Lesson (Kids)',
+        'de': 'Privattraining Kinder Einzelstunde',
+        'ru': 'Разовая индивидуальная тренировка (дети)',
+      },
     ),
 
     // Спліт абонементи
@@ -395,6 +553,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: null,
       isSplit: true,
+      localizedNames: {
+        'uk': 'Спліт-абонемент на 8 занять (2 особи)',
+        'en': 'Split Pass 8 Lessons (2 persons)',
+        'de': 'Split-Abo 8 Einheiten (2 Personen)',
+        'ru': 'Сплит-абонемент на 8 занятий (2 человека)',
+      },
     ),
     SubscriptionPackage(
       id: 'kyiv_split_single',
@@ -407,6 +571,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: null,
       isSplit: true,
+      localizedNames: {
+        'uk': 'Разове спліт-тренування (2 особи)',
+        'en': 'Single Split Lesson (2 persons)',
+        'de': 'Split-Einzeltraining (2 Personen)',
+        'ru': 'Разовая сплит-тренировка (2 человека)',
+      },
     ),
   ];
 
@@ -425,8 +595,15 @@ class SubscriptionPackageCatalog {
       isAdult: null,
       localizedNames: {
         'de': 'Schnuppertraining',
-        'en': 'Trial Lesson',
+        'en': 'Trial Lesson (Vienna)',
         'uk': 'Пробне заняття (Відень)',
+        'ru': 'Пробное занятие (Вена)',
+      },
+      localizedDescriptions: {
+        'de': 'Kostenloses erstes Probetraining im HappyLand',
+        'en': 'Free first trial lesson at HappyLand',
+        'uk': 'Безкоштовне перше пробне тренування у HappyLand',
+        'ru': 'Бесплатная первая пробная тренировка в HappyLand',
       },
       description: 'Kostenloses erstes Probetraining im HappyLand',
     ),
@@ -442,8 +619,15 @@ class SubscriptionPackageCatalog {
       isAdult: null,
       localizedNames: {
         'de': 'Einzelstunde',
-        'en': 'Single Lesson',
+        'en': 'Single Lesson (Vienna)',
         'uk': 'Разове заняття (Відень)',
+        'ru': 'Разовое занятие (Вена)',
+      },
+      localizedDescriptions: {
+        'de': 'Einmaliges Schwimmtraining',
+        'en': 'Single swimming training session',
+        'uk': 'Одноразове тренування з плавання',
+        'ru': 'Одноразовая тренировка по плаванию',
       },
       description: 'Einmaliges Schwimmtraining',
     ),
@@ -459,8 +643,15 @@ class SubscriptionPackageCatalog {
       isAdult: null,
       localizedNames: {
         'de': '4 Einheiten pro Monat',
-        'en': '4 Lessons / Month',
+        'en': '4 Lessons / Month (Vienna)',
         'uk': '4 заняття на місяць (Відень)',
+        'ru': '4 занятия в месяц (Вена)',
+      },
+      localizedDescriptions: {
+        'de': 'Monatlicher Pass für 4 Trainingseinheiten',
+        'en': 'Monthly pass for 4 training sessions',
+        'uk': 'Місячний абонемент на 4 тренування',
+        'ru': 'Месячный абонемент на 4 тренировки',
       },
       description: 'Monatlicher Pass für 4 Trainingseinheiten',
     ),
@@ -476,8 +667,15 @@ class SubscriptionPackageCatalog {
       isAdult: null,
       localizedNames: {
         'de': '8 Einheiten pro Monat',
-        'en': '8 Lessons / Month',
+        'en': '8 Lessons / Month (Vienna)',
         'uk': '8 занять на місяць (Відень)',
+        'ru': '8 занятий в месяц (Вена)',
+      },
+      localizedDescriptions: {
+        'de': 'Standard-Monatspass für 8 Einheiten (2x pro Woche)',
+        'en': 'Standard monthly pass for 8 sessions (2x per week)',
+        'uk': 'Стандартний місячний абонемент на 8 занять (двічі на тиждень)',
+        'ru': 'Стандартный месячный абонемент на 8 занятий (дважды в неделю)',
       },
       description: 'Standard-Monatspass für 8 Einheiten (2x pro Woche)',
     ),
@@ -493,8 +691,15 @@ class SubscriptionPackageCatalog {
       isAdult: null,
       localizedNames: {
         'de': '12 Einheiten pro Monat',
-        'en': '12 Lessons / Month',
+        'en': '12 Lessons / Month (Vienna)',
         'uk': '12 занять на місяць (Відень)',
+        'ru': '12 занятий в месяц (Вена)',
+      },
+      localizedDescriptions: {
+        'de': 'Intensiv-Pass für 12 Trainingseinheiten (3x pro Woche)',
+        'en': 'Intensive pass for 12 training sessions (3x per week)',
+        'uk': 'Інтенсивний абонемент на 12 тренувань (тричі на тиждень)',
+        'ru': 'Интенсивный абонемент на 12 тренировок (трижды в неделю)',
       },
       description: 'Intensiv-Pass für 12 Trainingseinheiten (3x pro Woche)',
     ),
@@ -511,8 +716,15 @@ class SubscriptionPackageCatalog {
       isIndividual: true,
       localizedNames: {
         'de': 'Einzelunterricht',
-        'en': 'Individual Lesson',
+        'en': 'Individual Lesson (Vienna)',
         'uk': 'Індивідуальне заняття (Відень)',
+        'ru': 'Индивидуальное занятие (Вена)',
+      },
+      localizedDescriptions: {
+        'de': 'Privates Einzeltraining mit Coach im HappyLand',
+        'en': 'Private 1-on-1 training with a coach at HappyLand',
+        'uk': 'Персональне індивідуальне тренування з тренером у HappyLand',
+        'ru': 'Персональная индивидуальная тренировка с тренером в HappyLand',
       },
       description: 'Privates Einzeltraining mit Coach im HappyLand',
     ),
@@ -528,6 +740,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'de': 'Kinderabopass 6-8 J. (4 Einheiten)',
+        'en': 'Kids Pass 6-8 yrs (4 lessons)',
+        'uk': 'Дитячий абонемент 6-8 років (4 тренування)',
+        'ru': 'Детский абонемент 6-8 лет (4 тренировки)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_child_6_8_8',
@@ -540,6 +758,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'de': 'Kinderabopass 6-8 J. (8 Einheiten)',
+        'en': 'Kids Pass 6-8 yrs (8 lessons)',
+        'uk': 'Дитячий абонемент 6-8 років (8 тренувань)',
+        'ru': 'Детский абонемент 6-8 лет (8 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_child_6_8_12',
@@ -552,6 +776,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'de': 'Kinderabopass 6-8 J. (12 Einheiten)',
+        'en': 'Kids Pass 6-8 yrs (12 lessons)',
+        'uk': 'Дитячий абонемент 6-8 років (12 тренувань)',
+        'ru': 'Детский абонемент 6-8 лет (12 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_child_6_8_single',
@@ -564,6 +794,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: false,
       ageGroup: '6-8',
+      localizedNames: {
+        'de': 'Einzeltraining Kinder 6-8 J.',
+        'en': 'Single Kids Lesson 6-8 yrs',
+        'uk': 'Разове дитяче тренування 6-8 років',
+        'ru': 'Разовая детская тренировка 6-8 лет',
+      },
     ),
 
     // Дитячі абонементи 9-15 років (Jugend 9-15 Jahre)
@@ -578,6 +814,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'de': 'Jugendabopass 9-15 J. (4 Einheiten)',
+        'en': 'Junior Pass 9-15 yrs (4 lessons)',
+        'uk': 'Дитячий абонемент 9-15 років (4 тренування)',
+        'ru': 'Детский абонемент 9-15 лет (4 тренировки)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_child_9_15_8',
@@ -590,6 +832,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'de': 'Jugendabopass 9-15 J. (8 Einheiten)',
+        'en': 'Junior Pass 9-15 yrs (8 lessons)',
+        'uk': 'Дитячий абонемент 9-15 років (8 тренувань)',
+        'ru': 'Детский абонемент 9-15 лет (8 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_child_9_15_12',
@@ -602,6 +850,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'de': 'Jugendabopass 9-15 J. (12 Einheiten)',
+        'en': 'Junior Pass 9-15 yrs (12 lessons)',
+        'uk': 'Дитячий абонемент 9-15 років (12 тренувань)',
+        'ru': 'Детский абонемент 9-15 лет (12 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_child_9_15_single',
@@ -614,6 +868,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: false,
       ageGroup: '9-15',
+      localizedNames: {
+        'de': 'Einzeltraining Jugend 9-15 J.',
+        'en': 'Single Junior Lesson 9-15 yrs',
+        'uk': 'Разове дитяче тренування 9-15 років',
+        'ru': 'Разовая детская тренировка 9-15 лет',
+      },
     ),
 
     // Дорослі абонементи (Erwachsene)
@@ -627,6 +887,12 @@ class SubscriptionPackageCatalog {
       classes: 1,
       validityDays: 365,
       isAdult: true,
+      localizedNames: {
+        'de': 'Einzeltraining Erwachsene',
+        'en': 'Single Visit (Adult Group)',
+        'uk': 'Разове відвідування (Доросла група)',
+        'ru': 'Разовое посещение (Взрослая группа)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_adult_4',
@@ -638,6 +904,12 @@ class SubscriptionPackageCatalog {
       classes: 4,
       validityDays: 30,
       isAdult: true,
+      localizedNames: {
+        'de': 'Erwachsenenabopass (4 Einheiten)',
+        'en': 'Adult Pass (4 lessons)',
+        'uk': 'Абонемент на 4 тренування (Доросла група)',
+        'ru': 'Абонемент на 4 тренировки (Взрослая группа)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_adult_8',
@@ -649,6 +921,12 @@ class SubscriptionPackageCatalog {
       classes: 8,
       validityDays: 30,
       isAdult: true,
+      localizedNames: {
+        'de': 'Erwachsenenabopass (8 Einheiten)',
+        'en': 'Adult Pass (8 lessons)',
+        'uk': 'Абонемент на 8 тренувань (Доросла група)',
+        'ru': 'Абонемент на 8 тренировок (Взрослая группа)',
+      },
     ),
 
     // Дитячі індивідуальні тренування (Einzeltraining Privat)
@@ -663,6 +941,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       isIndividual: true,
+      localizedNames: {
+        'de': 'Privattraining Kinder (4 Einheiten)',
+        'en': 'Kids Individual Pass (4 lessons)',
+        'uk': 'Дитячий індивідуальний абонемент (4 тренування)',
+        'ru': 'Детский индивидуальный абонемент (4 тренировки)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_indiv_8',
@@ -675,6 +959,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: false,
       isIndividual: true,
+      localizedNames: {
+        'de': 'Privattraining Kinder (8 Einheiten)',
+        'en': 'Kids Individual Pass (8 lessons)',
+        'uk': 'Дитячий індивідуальний абонемент (8 тренувань)',
+        'ru': 'Детский индивидуальный абонемент (8 тренировок)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_indiv_single',
@@ -687,6 +977,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: false,
       isIndividual: true,
+      localizedNames: {
+        'de': 'Privattraining Kinder Einzelstunde',
+        'en': 'Single Individual Lesson (Kids)',
+        'uk': 'Разове індивідуальне тренування (діти)',
+        'ru': 'Разовая индивидуальная тренировка (дети)',
+      },
     ),
 
     // Спліт абонементи (Split-Training 2 Personen)
@@ -701,6 +997,12 @@ class SubscriptionPackageCatalog {
       validityDays: 30,
       isAdult: null,
       isSplit: true,
+      localizedNames: {
+        'de': 'Split-Abo 8 Einheiten (2 Personen)',
+        'en': 'Split Pass 8 Lessons (2 persons)',
+        'uk': 'Спліт-абонемент на 8 занять (2 особи)',
+        'ru': 'Сплит-абонемент на 8 занятий (2 человека)',
+      },
     ),
     SubscriptionPackage(
       id: 'vienna_split_single',
@@ -713,6 +1015,12 @@ class SubscriptionPackageCatalog {
       validityDays: 365,
       isAdult: null,
       isSplit: true,
+      localizedNames: {
+        'de': 'Split-Einzeltraining (2 Personen)',
+        'en': 'Single Split Lesson (2 persons)',
+        'uk': 'Разове спліт-тренування (2 особи)',
+        'ru': 'Разовая сплит-тренировка (2 человека)',
+      },
     ),
   ];
 
@@ -749,6 +1057,18 @@ class SubscriptionPackageCatalog {
         currencySymbol: currencySymbol,
         classes: 1,
         validityDays: 14,
+        localizedNames: const {
+          'uk': 'Пробне заняття',
+          'en': 'Trial Lesson',
+          'de': 'Schnuppertraining',
+          'ru': 'Пробное занятие',
+        },
+        localizedDescriptions: const {
+          'uk': 'Безкоштовне перше ознайомче тренування',
+          'en': 'Free first introductory training session',
+          'de': 'Kostenloses erstes Einführungstraining',
+          'ru': 'Бесплатная первая ознакомительная тренировка',
+        },
         description: 'Безкоштовне перше ознайомче тренування',
       ),
       SubscriptionPackage(
@@ -760,6 +1080,18 @@ class SubscriptionPackageCatalog {
         currencySymbol: currencySymbol,
         classes: 1,
         validityDays: 30,
+        localizedNames: const {
+          'uk': 'Разове заняття',
+          'en': 'Single Lesson',
+          'de': 'Einzelstunde',
+          'ru': 'Разовое занятие',
+        },
+        localizedDescriptions: const {
+          'uk': 'Одноразове відвідування тренування',
+          'en': 'Single training session visit',
+          'de': 'Einmaliger Trainingsbesuch',
+          'ru': 'Одноразовое посещение тренировки',
+        },
         description: 'Одноразове відвідування тренування',
       ),
       SubscriptionPackage(
@@ -771,6 +1103,18 @@ class SubscriptionPackageCatalog {
         currencySymbol: currencySymbol,
         classes: 4,
         validityDays: 30,
+        localizedNames: const {
+          'uk': '4 заняття на місяць',
+          'en': '4 Lessons / Month',
+          'de': '4 Einheiten / Monat',
+          'ru': '4 занятия в месяц',
+        },
+        localizedDescriptions: const {
+          'uk': 'Абонемент на 4 заняття протягом 30 днів',
+          'en': 'Subscription for 4 lessons within 30 days',
+          'de': 'Abo für 4 Einheiten innerhalb von 30 Tagen',
+          'ru': 'Абонемент на 4 занятия в течение 30 дней',
+        },
         description: 'Абонемент на 4 заняття протягом 30 днів',
       ),
       SubscriptionPackage(
@@ -782,6 +1126,18 @@ class SubscriptionPackageCatalog {
         currencySymbol: currencySymbol,
         classes: 8,
         validityDays: 30,
+        localizedNames: const {
+          'uk': '8 занять на місяць',
+          'en': '8 Lessons / Month',
+          'de': '8 Einheiten / Monat',
+          'ru': '8 занятий в месяц',
+        },
+        localizedDescriptions: const {
+          'uk': 'Абонемент на 8 занять протягом 30 днів',
+          'en': 'Subscription for 8 lessons within 30 days',
+          'de': 'Abo für 8 Einheiten innerhalb von 30 Tagen',
+          'ru': 'Абонемент на 8 занятий в течение 30 дней',
+        },
         description: 'Абонемент на 8 занять протягом 30 днів',
       ),
       SubscriptionPackage(
@@ -793,6 +1149,18 @@ class SubscriptionPackageCatalog {
         currencySymbol: currencySymbol,
         classes: 12,
         validityDays: 30,
+        localizedNames: const {
+          'uk': '12 занять на місяць',
+          'en': '12 Lessons / Month',
+          'de': '12 Einheiten / Monat',
+          'ru': '12 занятий в месяц',
+        },
+        localizedDescriptions: const {
+          'uk': 'Абонемент на 12 занять протягом 30 днів',
+          'en': 'Subscription for 12 lessons within 30 days',
+          'de': 'Abo für 12 Einheiten innerhalb von 30 Tagen',
+          'ru': 'Абонемент на 12 занятий в течение 30 дней',
+        },
         description: 'Абонемент на 12 занять протягом 30 днів',
       ),
       SubscriptionPackage(
@@ -805,6 +1173,18 @@ class SubscriptionPackageCatalog {
         classes: 1,
         validityDays: 30,
         isIndividual: true,
+        localizedNames: const {
+          'uk': 'Індивідуальне заняття',
+          'en': 'Individual Lesson',
+          'de': 'Einzelunterricht',
+          'ru': 'Индивидуальное занятие',
+        },
+        localizedDescriptions: const {
+          'uk': 'Персональне тренування з тренером 1-на-1',
+          'en': 'Personal 1-on-1 training with a coach',
+          'de': 'Persönliches 1-zu-1 Training mit Coach',
+          'ru': 'Персональная тренировка с тренером 1-на-1',
+        },
         description: 'Персональне тренування з тренером 1-на-1',
       ),
     ];

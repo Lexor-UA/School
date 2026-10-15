@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -124,20 +125,20 @@ class _FamilyQrScannerDialogState extends State<FamilyQrScannerDialog> {
                               child: const Icon(LucideIcons.scanLine, color: Colors.white, size: 18),
                             ),
                             const SizedBox(width: 10),
-                            const Column(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Сканувати QR-код',
-                                  style: TextStyle(
+                                  'family.scan_qr_title'.tr(),
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  'Підключення до сім\'ї',
-                                  style: TextStyle(
+                                  'family.connect_to_family'.tr(),
+                                  style: const TextStyle(
                                     color: Color(0xFF00E5FF),
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
@@ -193,13 +194,13 @@ class _FamilyQrScannerDialogState extends State<FamilyQrScannerDialog> {
                                       children: [
                                         const Icon(LucideIcons.cameraOff, color: Colors.white54, size: 40),
                                         const SizedBox(height: 12),
-                                        const Text(
-                                          'Камера недоступна',
-                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                        Text(
+                                          'family.camera_unavailable'.tr(),
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
-                                          'Надайте доступ до камери у налаштуваннях пристрою для сканування QR-коду.',
+                                          'family.camera_permission_desc'.tr(),
                                           textAlign: TextAlign.center,
                                           style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
                                         ),
@@ -228,7 +229,7 @@ class _FamilyQrScannerDialogState extends State<FamilyQrScannerDialog> {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'Наведіть камеру на сімейний QR-код партнера',
+                            'family.point_camera_at_qr'.tr(),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 12.5,

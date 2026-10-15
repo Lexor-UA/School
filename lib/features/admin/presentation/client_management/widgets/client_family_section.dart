@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -61,7 +61,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Сімейний зв\'язок (CRM)',
+                        'admin.family_crm_title'.tr(),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white
@@ -90,9 +90,9 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                       : const Color(0xFF059669),
                   size: 15,
                 ),
-                label: const Text(
-                  'Зв\'язати пару',
-                  style: TextStyle(
+                label: Text(
+                  'admin.link_pair_btn'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF10B981),
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -160,7 +160,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Партнер: ${partnerName ?? "Невідомо"}',
+                                  'admin.partner_label'.tr(namedArgs: {'name': partnerName ?? 'common.unknown'.tr()}),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -223,7 +223,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Обидва батьки мають спільний доступ до дітей та абонементів.',
+                        'admin.both_parents_shared_access_hint'.tr(),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white70
@@ -241,9 +241,9 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                         size: 14,
                         color: Colors.redAccent,
                       ),
-                      label: const Text(
-                        'Розірвати',
-                        style: TextStyle(
+                      label: Text(
+                        'admin.unlink_btn'.tr(),
+                        style: const TextStyle(
                           color: Colors.redAccent,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -295,7 +295,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Акаунт не має зв\'язку з другим із батьків',
+                        'admin.account_not_linked_to_second_parent'.tr(),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white70
@@ -306,7 +306,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                       ),
                       if (family != null)
                         Text(
-                          'Код сім\'ї: ${family.inviteCode}',
+                          '${'family.family_code_label'.tr()} ${family.inviteCode}',
                           style: TextStyle(
                             color: isDark ? Colors.white38 : Colors.black45,
                             fontSize: 11.5,
@@ -329,30 +329,33 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
     required bool isDark,
   }) async {
     final partnerName =
-        family.getOtherParentName(widget.clientId) ?? 'партнера';
+        family.getOtherParentName(widget.clientId) ?? 'family.partner_default'.tr();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 22),
-            SizedBox(width: 8),
+            const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 22),
+            const SizedBox(width: 8),
             Text(
-              'Розірвати зв\'язок?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              'family.unlink_title'.tr(),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
         content: Text(
-          'Ви впевнені, що хочете розірвати сімейний зв\'язок клієнта "${widget.clientName}" з $partnerName? Спільний доступ до дітей та абонементів буде розділено.',
+          'admin.unlink_family_confirm_msg'.tr(namedArgs: {
+            'client': widget.clientName,
+            'partner': partnerName,
+          }),
           style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Скасувати'),
+            child: Text('admin.cancel'.tr()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -363,9 +366,9 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
               ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Розірвати',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Text(
+              'admin.unlink_btn'.tr(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -377,15 +380,15 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
       final admin = ref.read(authControllerProvider);
       if (admin != null) {
         await logAdminAction(
-          'Розірвано сімейний зв\'язок клієнтів "${widget.clientName}" та "$partnerName"',
+          'admin.log_family_unlinked'.tr(namedArgs: {'client': widget.clientName, 'partner': partnerName}),
           admin.id,
         );
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Сімейний зв\'язок успішно розірвано.'),
-            backgroundColor: Color(0xFF1E293B),
+          SnackBar(
+            content: Text('admin.family_unlinked_msg'.tr()),
+            backgroundColor: const Color(0xFF1E293B),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -414,9 +417,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(28),
               ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
+              child: Container(
                   height: MediaQuery.of(context).size.height * 0.75,
                   padding: EdgeInsets.only(
                     top: 16,
@@ -473,15 +474,15 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Зв\'язати у спільну сім\'ю',
-                                    style: TextStyle(
+                                  Text(
+                                    'admin.link_into_shared_family_title'.tr(),
+                                    style: const TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   Text(
-                                    'Клієнт: ${widget.clientName}',
+                                    '${'admin.client_label'.tr()}: ${widget.clientName}',
                                     style: TextStyle(
                                       color: isDark
                                           ? const Color(0xFF10B981)
@@ -511,7 +512,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Пошук за ім\'ям або телефоном...',
+                          hintText: 'admin.clients_search_hint'.tr(),
                           hintStyle: TextStyle(
                             color: isDark ? Colors.white38 : Colors.black38,
                             fontSize: 13,
@@ -562,7 +563,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                             if (candidateDocs.isEmpty) {
                               return Center(
                                 child: Text(
-                                  'Клієнтів не знайдено',
+                                  'admin.no_clients_found'.tr(),
                                   style: TextStyle(
                                     color: isDark
                                         ? Colors.white54
@@ -582,7 +583,7 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                                 final data = doc.data() as Map<String, dynamic>;
                                 final cId = doc.id;
                                 final cName =
-                                    data['name'] as String? ?? 'Клієнт';
+                                    data['name'] as String? ?? 'common.client_default'.tr();
                                 final cPhone = data['phone'] as String? ?? '';
                                 final isSelected = selectedClientId == cId;
 
@@ -731,7 +732,10 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                                     );
                                     if (admin != null) {
                                       await logAdminAction(
-                                        'Об\'єднано у сім\'ю клієнтів "${widget.clientName}" та "$selectedClientName"',
+                                        'admin.log_family_linked'.tr(namedArgs: {
+                                          'client1': widget.clientName,
+                                          'client2': selectedClientName ?? '',
+                                        }),
                                         admin.id,
                                       );
                                     }
@@ -744,7 +748,10 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                                       ).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            'Акаунти "${widget.clientName}" та "$selectedClientName" успішно об\'єднано у спільну сім\'ю!',
+                                            'admin.family_linked_success_msg'.tr(namedArgs: {
+                                              'client1': widget.clientName,
+                                              'client2': selectedClientName ?? '',
+                                            }),
                                           ),
                                           backgroundColor: const Color(
                                             0xFF064E3B,
@@ -770,8 +777,10 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                                 ),
                           label: Text(
                             isLinking
-                                ? 'Об\'єднання...'
-                                : 'Об\'єднати з ${selectedClientName ?? "обраним клієнтом"}',
+                                ? 'admin.linking_status'.tr()
+                                : 'admin.link_with_client_btn'.tr(namedArgs: {
+                                    'client': selectedClientName ?? 'admin.selected_client_default'.tr(),
+                                  }),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14.5,
@@ -782,7 +791,6 @@ class _ClientFamilySectionState extends ConsumerState<ClientFamilySection> {
                     ],
                   ),
                 ),
-              ),
             );
           },
         );

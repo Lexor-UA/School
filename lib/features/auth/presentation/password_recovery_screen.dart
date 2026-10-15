@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
@@ -41,7 +42,16 @@ class _PasswordRecoveryScreenState
     _initDialogId();
   }
 
+  Future<void> _ensureRecoveryAuth() async {
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
+    } catch (_) {}
+  }
+
   Future<void> _initDialogId() async {
+    await _ensureRecoveryAuth();
     final prefs = await SharedPreferences.getInstance();
     String? storedId = prefs.getString('password_recovery_dialog_id');
 
@@ -62,8 +72,7 @@ class _PasswordRecoveryScreenState
 
       // If user had a prefilled login, prepare a helpful opening draft message if input is empty
       if (widget.initialLogin.trim().isNotEmpty && _messageController.text.isEmpty) {
-        _messageController.text =
-            'Добрий день! Допоможіть, будь ласка, відновити доступ до акаунта ${widget.initialLogin.trim()}.';
+        _messageController.text = 'auth.recovery_prefill_msg'.tr(args: [widget.initialLogin.trim()]);
       }
     }
   }
@@ -105,16 +114,17 @@ class _PasswordRecoveryScreenState
         ? _identifierController.text.trim()
         : (widget.initialLogin.trim().isNotEmpty
             ? widget.initialLogin.trim()
-            : 'Клієнт');
+            : 'auth.client_fallback'.tr());
 
     setState(() => _isSending = true);
 
     try {
+      await _ensureRecoveryAuth();
       final repo = ref.read(chatRepositoryProvider);
       await repo.sendMessage(
         dialogId: _dialogId,
         clientId: _dialogId,
-        clientName: '🔑 Відновлення пароля: $clientIdentifier',
+        clientName: '🔑 ${'auth.password_recovery_title'.tr()}: $clientIdentifier',
         clientAvatar: '',
         senderId: _dialogId, // sender is client
         clientRole: 'recovery',
@@ -138,7 +148,7 @@ class _PasswordRecoveryScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка відправки: $e'),
+            content: Text('auth.send_error'.tr(args: ['$e'])),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -383,29 +393,26 @@ class _PasswordRecoveryScreenState
             child: Row(
               children: [
                 _buildQuickChip(
-                  label: '🔑 Забув пароль',
+                  label: 'auth.recovery_chip_forgot_pw'.tr(),
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    _messageController.text =
-                        'Я забув(-ла) свій пароль. Підкажіть, будь ласка, як увійти або скиньте тимчасовий пароль.';
+                    _messageController.text = 'auth.recovery_chip_forgot_pw_text'.tr();
                   },
                 ),
                 const SizedBox(width: 8),
                 _buildQuickChip(
-                  label: '👤 Не пам\'ятаю логін',
+                  label: 'auth.recovery_chip_forgot_login'.tr(),
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    _messageController.text =
-                        'Я не пам\'ятаю свій логін до акаунта. Мої контактні дані: ';
+                    _messageController.text = 'auth.recovery_chip_forgot_login_text'.tr();
                   },
                 ),
                 const SizedBox(width: 8),
                 _buildQuickChip(
-                  label: '📞 Вказати контакти',
+                  label: 'auth.recovery_chip_contacts'.tr(),
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    _messageController.text =
-                        'Мій контактний номер телефону: ';
+                    _messageController.text = 'auth.recovery_chip_contacts_text'.tr();
                   },
                 ),
               ],
@@ -473,9 +480,9 @@ class _PasswordRecoveryScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Повідомлень поки немає',
-                    style: TextStyle(
+                  Text(
+                    'auth.recovery_no_messages'.tr(),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -483,7 +490,7 @@ class _PasswordRecoveryScreenState
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Напишіть повідомлення нижче, щоб адміністратор розпочав відновлення.',
+                    'auth.recovery_no_messages_desc'.tr(),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
@@ -538,7 +545,7 @@ class _PasswordRecoveryScreenState
       ),
       error: (err, stack) => Center(
         child: Text(
-          'Помилка завантаження чату: $err',
+          'auth.chat_load_error'.tr(args: ['$err']),
           style: const TextStyle(color: Colors.redAccent),
         ),
       ),
@@ -611,7 +618,7 @@ class _PasswordRecoveryScreenState
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Адміністратор',
+                      'auth.admin_role_label'.tr(),
                       style: TextStyle(
                         color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
                         fontSize: 11,
@@ -667,7 +674,7 @@ class _PasswordRecoveryScreenState
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              'Копіювати',
+                              'common.copy'.tr(),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 10,

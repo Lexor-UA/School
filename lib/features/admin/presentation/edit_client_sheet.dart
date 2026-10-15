@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -97,7 +96,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         _phoneController.text.trim().isEmpty ||
         _loginIdController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Заповніть всі поля, включаючи пароль');
+      setState(() => _errorMessage = 'admin.fill_all_fields_incl_password'.tr());
       return;
     }
 
@@ -142,7 +141,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
           setState(() {
             _isLoading = false;
             _errorMessage =
-                'Для зміни філії необхідно спочатку обнулити всі активні абонементи клієнта (залишок занять має бути 0).';
+                'admin.branch_change_reset_subs_error'.tr();
           });
           return;
         }
@@ -190,10 +189,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
           final branchNote = branchChanged
-              ? ' (філію змінено на ${_selectedBranchId == 'vienna' ? 'Відень 🇦🇹' : 'Київ 🇺🇦'})'
+              ? ' (${'admin.log_branch_changed_to'.tr(namedArgs: {'branch': _selectedBranchId == 'vienna' ? '${'branches.vienna_short'.tr()} 🇦🇹' : '${'branches.kyiv_short'.tr()} 🇺🇦'})})'
               : '';
           await logAdminAction(
-            'Оновлено дані та пароль клієнта "${_nameController.text.trim()}"$branchNote',
+            '${'admin.log_client_updated'.tr(namedArgs: {'client': _nameController.text.trim()})}$branchNote',
             admin.id,
           );
         }
@@ -215,7 +214,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         String msg = e.toString();
         if (e is TimeoutException || msg.contains('TimeoutException')) {
           msg =
-              'Час очікування відповіді сервера вичерпано. Перевірте зʼєднання з інтернетом або спробуйте ще раз.';
+              'common.server_timeout_error'.tr();
         }
         setState(() {
           _isLoading = false;
@@ -273,9 +272,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Column(
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Fixed Header (outside scroll view, full drag & dismiss zone)
@@ -302,7 +299,6 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -380,7 +376,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
 
                 _buildTextField(
                   controller: _ageController,
-                  label: 'Вік клієнта (років)',
+                  label: 'admin.client_age_years_label'.tr(),
                   icon: LucideIcons.calendar,
                   keyboardType: TextInputType.number,
                   isDark: isDark,
@@ -411,7 +407,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     if (id != origBranch && hasActiveSubs) {
                       setState(() {
                         _errorMessage =
-                            'Для зміни філії необхідно спочатку обнулити всі активні абонементи клієнта (залишок занять має бути 0).';
+                            'admin.branch_change_reset_subs_error'.tr();
                       });
                       return;
                     }
@@ -486,7 +482,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   ),
                 ),
                 child: Text(
-                  'Помилка: $_errorMessage',
+                  '${'common.error'.tr()}: $_errorMessage',
                   style: const TextStyle(color: Colors.redAccent, fontSize: 14),
                 ),
               ),
@@ -556,11 +552,7 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
   }
 
   Widget _buildSuccessState({required bool isDark}) {
-    final trText = 'admin.edit_client_success'.tr();
-    final displayText =
-        (trText == 'admin.edit_client_success' || trText.isEmpty)
-        ? 'Дані клієнта оновлено!'
-        : trText;
+    final displayText = 'admin.edit_client_success'.tr();
     return Column(
       children: [
         const Icon(

@@ -50,7 +50,7 @@ void main() {
     );
 
     await tester.pump();
-    expect(find.text('Групи та плавці'), findsOneWidget);
+    expect(find.text('coach.groups_and_swimmers'), findsOneWidget);
   });
 
   testWidgets('Adult swimmer representations use adult_swimmer parentId and do not show levels', (tester) async {

@@ -629,48 +629,91 @@ class SubscriptionController extends _$SubscriptionController {
 
     // 4. Remaining classes and active/expiry check
     final isExpired = sub.expiryDate != null && sub.expiryDate!.isBefore(now);
-    if (!sub.isActive || sub.remainingClasses <= 0 || isExpired) {
+    if (!sub.isActive || sub.pendingApproval || sub.remainingClasses <= 0 || isExpired) {
       return QrCheckInResult(
         status: QrCheckInStatus.expiredOrEmpty,
         studentName: sub.ownerName,
         classTitle: targetClass.title,
         subServiceName: sub.serviceName,
         remainingClasses: sub.remainingClasses,
-        message: isExpired
-            ? 'Термін дії абонемента закінчився (${DateFormat('dd.MM.yyyy').format(sub.expiryDate!)}).'
-            : 'На абонементі вичерпано всі заняття (залишок 0).',
+        message: sub.pendingApproval
+            ? 'Абонемент очікує підтвердження оплати адміністратором.'
+            : (isExpired
+                ? 'Термін дії абонемента закінчився (${DateFormat('dd.MM.yyyy').format(sub.expiryDate!)}).'
+                : 'На абонементі вичерпано всі заняття (залишок 0).'),
       );
     }
 
-    // 5. Resolve Attendee ID and Student Name
+    // 5. Resolve Attendee ID and Student Name (including family partner children & multi-child passes)
     String attendeeId = explicitUserId ?? sub.userId;
     String studentName = (sub.ownerName ?? '').trim();
+    final Map<String, String> familyChildrenById = {};
 
-    // Check if ownerName corresponds to a child of this user
     try {
-      final childrenSnapshot = await FirebaseFirestore.instance
+      final byParentId = await FirebaseFirestore.instance
           .collection('children')
           .where('parentId', isEqualTo: sub.userId)
           .get();
+      final byParentIds = await FirebaseFirestore.instance
+          .collection('children')
+          .where('parentIds', arrayContains: sub.userId)
+          .get();
 
-      if (studentName.isNotEmpty) {
-        for (final doc in childrenSnapshot.docs) {
-          final cName = (doc.data()['name'] as String?)?.trim() ?? '';
-          if (cName.toLowerCase() == studentName.toLowerCase()) {
-            attendeeId = doc.id;
-            studentName = cName;
+      for (final doc in [...byParentId.docs, ...byParentIds.docs]) {
+        final cName = (doc.data()['name'] as String?)?.trim() ?? 'Учень';
+        familyChildrenById[doc.id] = cName;
+      }
+
+      // Also check family members if the parent belongs to a family
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(sub.userId).get();
+      final familyId = userDoc.data()?['familyId'] as String?;
+      if (familyId != null && familyId.isNotEmpty) {
+        final famDoc = await FirebaseFirestore.instance.collection('families').doc(familyId).get();
+        final memberIds = List<String>.from((famDoc.data()?['memberIds'] as List?) ?? []);
+        for (final memberId in memberIds) {
+          if (memberId == sub.userId) continue;
+          final partnerChildren = await FirebaseFirestore.instance
+              .collection('children')
+              .where('parentId', isEqualTo: memberId)
+              .get();
+          for (final doc in partnerChildren.docs) {
+            final cName = (doc.data()['name'] as String?)?.trim() ?? 'Учень';
+            familyChildrenById[doc.id] = cName;
+          }
+        }
+      }
+
+      final normalizedStudent = studentName.toLowerCase();
+      final isGenericOwner = normalizedStudent.isEmpty ||
+          normalizedStudent == 'всі' ||
+          normalizedStudent == 'all' ||
+          normalizedStudent == 'alle';
+
+      if (!isGenericOwner) {
+        // Exact match or Split name match (e.g. "Олексій + Марія")
+        final splitParts = normalizedStudent
+            .split(RegExp(r'[\+,&/]'))
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+        for (final entry in familyChildrenById.entries) {
+          final cNameLower = entry.value.toLowerCase();
+          if (cNameLower == normalizedStudent || splitParts.contains(cNameLower)) {
+            attendeeId = entry.key;
+            studentName = entry.value;
             break;
           }
         }
-      } else if (childrenSnapshot.docs.length == 1) {
-        attendeeId = childrenSnapshot.docs.first.id;
-        studentName = (childrenSnapshot.docs.first.data()['name'] as String?) ?? 'Учень';
+      } else if (familyChildrenById.length == 1) {
+        attendeeId = familyChildrenById.keys.first;
+        studentName = familyChildrenById.values.first;
       }
     } catch (e) {
       debugPrint('Error finding child for subscription: $e');
     }
 
-    if (studentName.isEmpty) {
+    if (studentName.isEmpty || studentName.toLowerCase() == 'всі') {
       try {
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(sub.userId).get();
         studentName = (userDoc.data()?['name'] as String?)?.trim() ?? 'Клієнт';
@@ -703,9 +746,49 @@ class SubscriptionController extends _$SubscriptionController {
         final classData = Map<String, dynamic>.from(classSnapshot.data() ?? {});
         final liveAttended = List<String>.from((classData['attendedChildIds'] as List?) ?? []);
         final liveEnrolled = List<String>.from((classData['enrolledChildIds'] as List?) ?? []);
+        final bookedMap = Map<String, dynamic>.from((classData['bookedSubscriptions'] as Map?) ?? {});
 
-        // Anti-duplicate attendance: check if already attended
-        if (liveAttended.contains(attendeeId) || liveAttended.contains(sub.userId)) {
+        // Smart resolution for multi-child families & Split subscriptions:
+        // 1) Find all enrolled participants on this class tied to this subscription or family
+        final candidateEnrolledIds = liveEnrolled.where((id) {
+          return bookedMap[id] == sub.id ||
+              familyChildrenById.containsKey(id) ||
+              id == attendeeId ||
+              id == sub.userId;
+        }).toList();
+
+        if (candidateEnrolledIds.isNotEmpty) {
+          // Prefer a pre-booked participant who has NOT been marked present yet
+          final unAttendedId = candidateEnrolledIds.firstWhere(
+            (id) => !liveAttended.contains(id),
+            orElse: () => candidateEnrolledIds.first,
+          );
+          attendeeId = unAttendedId;
+          if (familyChildrenById.containsKey(unAttendedId)) {
+            studentName = familyChildrenById[unAttendedId]!;
+          }
+        } else if (attendeeId == sub.userId && familyChildrenById.isNotEmpty) {
+          // Walk-in for a family with multiple children: pick the first child not yet in liveAttended
+          final unAttendedChild = familyChildrenById.keys.firstWhere(
+            (id) => !liveAttended.contains(id),
+            orElse: () => familyChildrenById.keys.first,
+          );
+          attendeeId = unAttendedChild;
+          studentName = familyChildrenById[unAttendedChild]!;
+        } else if (liveAttended.contains(attendeeId) && familyChildrenById.length > 1) {
+          // Walk-in Split or second sibling check-in on the same subscription
+          final nextChildId = familyChildrenById.keys.firstWhere(
+            (id) => !liveAttended.contains(id),
+            orElse: () => attendeeId,
+          );
+          if (nextChildId != attendeeId) {
+            attendeeId = nextChildId;
+            studentName = familyChildrenById[nextChildId]!;
+          }
+        }
+
+        // Anti-duplicate attendance: check if resolved attendee is already attended
+        if (liveAttended.contains(attendeeId)) {
           final currentRem = subSnapshot.exists ? (subSnapshot.data()?['remainingClasses'] as int? ?? sub.remainingClasses) : sub.remainingClasses;
           transactionResult = QrCheckInResult(
             status: QrCheckInStatus.alreadyAttended,
@@ -718,7 +801,7 @@ class SubscriptionController extends _$SubscriptionController {
           return;
         }
 
-        final bool isPreBooked = liveEnrolled.contains(attendeeId) || liveEnrolled.contains(sub.userId);
+        final bool isPreBooked = liveEnrolled.contains(attendeeId);
 
         if (isPreBooked) {
           // --- CASE A: Student was pre-booked (1 pass was already deducted at booking) ---

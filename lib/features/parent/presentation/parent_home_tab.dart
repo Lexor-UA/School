@@ -24,6 +24,23 @@ import 'package:swimming_school_app/features/parent/presentation/widgets/coach_s
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collection/collection.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
+
+String _formatSubClassesCount(int count, [String? langCode]) {
+  if (langCode == 'de') {
+    return '$count ${count == 1 ? "Einheit" : "Einheiten"}';
+  } else if (langCode == 'en') {
+    return '$count ${count == 1 ? "class" : "classes"}';
+  } else if (langCode == 'ru') {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) return '$count занятие';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return '$count занятия';
+    return '$count занятий';
+  }
+  return '$count ${count == 1 ? "заняття" : "занять"}';
+}
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -79,8 +96,14 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
       }
     }
 
-    // Fetch active subscription for the main user (or default)
-    final allSubs = user != null ? ref.watch(subscriptionControllerProvider.notifier).getSubscriptionsForUser(user.id) : <Subscription>[];
+    // Fetch active subscription for the main user or family reactively
+    final subscriptions = ref.watch(subscriptionControllerProvider);
+    final familyParentIds = (family != null && family.parentIds.isNotEmpty)
+        ? family.parentIds
+        : (user != null ? [user.id] : <String>[]);
+    final allSubs = user != null
+        ? subscriptions.where((s) => familyParentIds.contains(s.userId)).toList()
+        : <Subscription>[];
     final activeSubs = allSubs.where((s) => s.isActive).toList();
     
     // Sort so primary user's sub comes first if available, else first active
@@ -165,7 +188,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                             ? user.name
                             : (FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
                                 ? FirebaseAuth.instance.currentUser!.displayName!.trim()
-                                : 'Гість'),
+                                : 'parent.guest'.tr()),
                         maxLines: 1,
                         style: TextStyle(
                           color: textColor,
@@ -282,7 +305,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Найближче заняття',
+                    'parent.next_class'.tr(),
                     style: TextStyle(
                       color: textColor,
                       fontSize: 15,
@@ -400,9 +423,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                 children: [
                                   Builder(
                                     builder: (context) {
+                                      final langCode = context.locale.languageCode;
                                       final rawName = (currentSub.serviceName != null && currentSub.serviceName!.isNotEmpty)
-                                          ? currentSub.serviceName!
-                                          : 'Абонемент CitySwim';
+                                          ? SubscriptionPackageCatalog.localizeServiceName(currentSub.serviceName!, langCode)
+                                          : 'parent.cityswim_subscription'.tr();
                                       final cleanTitle = rawName.replaceFirst(RegExp(r'^Абонемент\s+(на\s+)?', caseSensitive: false), '').trim();
                                       final displayTitle = cleanTitle.isNotEmpty ? cleanTitle : rawName;
                                       return FittedBox(
@@ -425,8 +449,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                     alignment: Alignment.centerLeft,
                                     child: Text(
                                       currentSub.remainingClasses > 0
-                                          ? 'Залишок: ${currentSub.remainingClasses} ${currentSub.remainingClasses == 1 ? "заняття" : "занять"} • Діє до ${currentSub.expiryDate != null ? DateFormat("dd.MM.yyyy").format(currentSub.expiryDate!) : "безстроково"}'
-                                          : 'Активний абонемент',
+                                          ? '${'parent.balance'.tr()}: ${_formatSubClassesCount(currentSub.remainingClasses, context.locale.languageCode)} • ${'parent.valid_until'.tr()} ${currentSub.expiryDate != null ? DateFormat("dd.MM.yyyy").format(currentSub.expiryDate!) : "parent.unlimited".tr()}'
+                                          : 'parent.active_subscription'.tr(),
                                       style: TextStyle(
                                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                         fontWeight: FontWeight.w600,
@@ -531,7 +555,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Чат',
+                                        'parent.chat'.tr(),
                                         style: TextStyle(
                                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                                           fontWeight: FontWeight.w800,
@@ -539,7 +563,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                         ),
                                       ),
                                       Text(
-                                        'З тренером',
+                                        'parent.chat_with_coach'.tr(),
                                         style: TextStyle(
                                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                           fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
@@ -567,12 +591,12 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                   builder: (_) => ParentChatScreen(
                                     dialogId: 'support_admin_${user.id}',
                                     recipientId: 'admin_support',
-                                    recipientName: 'Адміністрація CitySwim',
+                                    recipientName: 'chat.cityswim_support'.tr(),
                                     clientId: user.id,
                                     clientName: user.name,
                                     type: 'client_admin',
-                                    title: 'Підтримка CitySwim',
-                                    subtitle: 'Адміністрація школи',
+                                    title: 'chat.cityswim_support'.tr(),
+                                    subtitle: 'parent.school_admin'.tr(),
                                   ),
                                 ),
                               );
@@ -653,7 +677,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Чат',
+                                        'parent.chat'.tr(),
                                         style: TextStyle(
                                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                                           fontWeight: FontWeight.w800,
@@ -661,7 +685,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                         ),
                                       ),
                                       Text(
-                                        'Зі школою',
+                                        'parent.chat_with_school'.tr(),
                                         style: TextStyle(
                                           color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                           fontWeight: isDark ? FontWeight.w500 : FontWeight.w600,
@@ -704,7 +728,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
   ]) {
     final partnerId = (user != null && family != null) ? family.getOtherParentId(user.id) : null;
     final partnerName = (user != null && family != null && partnerId != null)
-        ? (family.getOtherParentName(user.id) ?? family.parentNames[partnerId] ?? 'Партнер')
+        ? (family.getOtherParentName(user.id) ?? family.parentNames[partnerId] ?? 'parent.partner'.tr())
         : null;
 
     final familyIds = {
@@ -730,16 +754,16 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
         return (id: id, name: partnerName, isParent: true);
       }
       if (family != null && family.parentIds.contains(id)) {
-        final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? 'Партнер';
+        final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? 'parent.partner'.tr();
         return (id: id, name: name, isParent: true);
       }
-      return (id: id, name: user?.name ?? 'Я', isParent: true);
+      return (id: id, name: user?.name ?? 'parent.me_short'.tr(), isParent: true);
     }).toList();
 
     final bool isMultiple = enrolledMembers.length > 1;
     final String personName = enrolledMembers.isNotEmpty
         ? enrolledMembers.map((m) => m.name).join(' + ')
-        : 'Запис';
+        : 'parent.sign_up_btn'.tr();
     final bool isParent = enrolledMembers.any((m) => m.isParent);
     final iconData = isMultiple ? LucideIcons.users : (isParent ? LucideIcons.user : LucideIcons.baby);
 
@@ -908,15 +932,27 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                         color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                       ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
-                                            ? 'HappyLand · ${nextClass.lane}'
-                                            : 'HappyLand',
-                                        style: TextStyle(
-                                          color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                      Builder(
+                                        builder: (context) {
+                                          final poolLabel = BranchConfig.forBranch(nextClass.branchId)
+                                                  .locations
+                                                  .firstOrNull
+                                                  ?.pools
+                                                  .firstOrNull
+                                                  ?.getLocalizedName(context.locale.languageCode) ??
+                                              'HappyLand';
+                                          final localizedLane = BranchConfig.localizeLaneName(nextClass.lane, context.locale.languageCode);
+                                          return Text(
+                                            nextClass.lane.isNotEmpty && nextClass.lane != 'Будь-яка'
+                                                ? '$poolLabel · $localizedLane'
+                                                : poolLabel,
+                                            style: TextStyle(
+                                              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
@@ -934,7 +970,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                         const SizedBox(width: 4),
                                         Text(
                                           (nextClass.coachName == 'Тренер не призначений' || nextClass.coachName.toLowerCase().contains('не призначен'))
-                                              ? 'Тренер призначається'
+                                              ? 'parent.trainer_assigning'.tr()
                                               : nextClass.coachName,
                                           style: TextStyle(
                                             color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
@@ -990,7 +1026,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                     childName: childEnrolled?.name,
                                     type: 'coach_client',
                                     title: nextClass.coachName,
-                                    subtitle: 'Тренер • ${nextClass.title}',
+                                    subtitle: '${'common.coach_fallback'.tr()} • ${nextClass.title}',
                                   ),
                                 ),
                               );
@@ -1011,14 +1047,14 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                   ),
                                 ],
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(LucideIcons.messageCircle, color: Colors.white, size: 13),
-                                  SizedBox(width: 5),
+                                  const Icon(LucideIcons.messageCircle, color: Colors.white, size: 13),
+                                  const SizedBox(width: 5),
                                   Text(
-                                    'Написати тренеру',
-                                    style: TextStyle(
+                                    'parent.write_to_coach'.tr(),
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 12,
@@ -1053,7 +1089,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
-                                  'Заплановано',
+                                  'parent.scheduled'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 11,
@@ -1092,7 +1128,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'В розклад',
+                                  'parent.to_schedule'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontWeight: FontWeight.w800,
@@ -1170,7 +1206,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   Icon(LucideIcons.calendarX2, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 28),
                   const SizedBox(height: 8),
                   Text(
-                    'У вас немає запланованих занять.\nДодайте заняття в календарі!',
+                    'parent.no_planned_classes'.tr(),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: isDark ? const Color(0xFFF1F5F9) : textColor,
@@ -1206,10 +1242,10 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                           ),
                         ],
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          'Відкрити календар',
-                          style: TextStyle(
+                          'parent.open_calendar_btn'.tr(),
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,

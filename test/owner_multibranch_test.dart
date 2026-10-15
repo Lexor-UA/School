@@ -76,6 +76,32 @@ List<PaymentTransaction> generateTestPayments() {
   return list;
 }
 
+List<PayoutRecord> generateTestPayouts() {
+  final now = DateTime.now();
+  return [
+    PayoutRecord(
+      id: 'payout_kyiv_1',
+      branchId: 'kyiv',
+      staffId: 'coach_kyiv_1',
+      staffName: 'Тренер Київ',
+      amount: 40300.0,
+      currency: '₴',
+      period: '',
+      createdAt: now,
+    ),
+    PayoutRecord(
+      id: 'payout_vienna_1',
+      branchId: 'vienna',
+      staffId: 'coach_vienna_1',
+      staffName: 'Coach Vienna',
+      amount: 5200.0,
+      currency: '€',
+      period: '',
+      createdAt: now,
+    ),
+  ];
+}
+
 AdminDashboardState generateTestAdminDashboard() {
   return AdminDashboardState(
     branchMetrics: {
@@ -130,6 +156,7 @@ void main() {
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
           ownerPaymentsProvider.overrideWithValue([]),
+          ownerPayoutsProvider.overrideWithValue([]),
         ],
       );
 
@@ -151,6 +178,7 @@ void main() {
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
           ownerPaymentsProvider.overrideWithValue(generateTestPayments()),
+          ownerPayoutsProvider.overrideWithValue(generateTestPayouts()),
           adminDashboardProvider.overrideWith((ref) => generateTestAdminDashboard()),
         ],
       );
@@ -168,6 +196,8 @@ void main() {
       expect(kyiv.currencySymbol, equals('₴'));
       expect(kyiv.currencyCode, equals('UAH'));
       expect(kyiv.totalRevenue, equals(124500));
+      expect(kyiv.expenses, equals(40300));
+      expect(kyiv.netProfit, equals(84200));
       expect(kyiv.formatRevenue(), contains('124 500 ₴'));
       expect(kyiv.clientCount, equals(412));
     });
@@ -178,6 +208,7 @@ void main() {
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
           ownerPaymentsProvider.overrideWithValue(generateTestPayments()),
+          ownerPayoutsProvider.overrideWithValue(generateTestPayouts()),
           adminDashboardProvider.overrideWith((ref) => generateTestAdminDashboard()),
         ],
       );
@@ -199,6 +230,7 @@ void main() {
       expect(vienna.currencyCode, equals('EUR'));
       expect(vienna.totalRevenue, equals(14850)); // ТЗ п. 8: 14 850 €
       expect(vienna.formatRevenue(), contains('€ 14 850'));
+      expect(vienna.expenses, equals(5200));
       expect(vienna.netProfit, equals(9650));
       expect(vienna.clientCount, equals(68));
     });
@@ -209,6 +241,7 @@ void main() {
           sharedPrefsProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith(() => FakeAuthController(ownerUser)),
           ownerPaymentsProvider.overrideWithValue(generateTestPayments()),
+          ownerPayoutsProvider.overrideWithValue(generateTestPayouts()),
           adminDashboardProvider.overrideWith((ref) => generateTestAdminDashboard()),
         ],
       );

@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/parent/models/family.dart';
 
@@ -111,7 +112,7 @@ class FamilyController {
   Future<Family> getOrCreateFamily() async {
     final user = _ref.read(authControllerProvider);
     if (user == null) {
-      throw Exception('Користувач не авторизований');
+      throw Exception('family.user_not_authorized_err'.tr());
     }
 
     final existing = await getCurrentFamily();
@@ -120,7 +121,7 @@ class FamilyController {
     final docRef = FirebaseFirestore.instance.collection('families').doc();
     final inviteCode = _generateInviteCode();
 
-    final userName = user.name.trim().isNotEmpty ? user.name.trim() : 'Клієнт';
+    final userName = user.name.trim().isNotEmpty ? user.name.trim() : 'parent.client_fallback'.tr();
     final parentNames = {user.id: userName};
     final parentPhones = <String, String>{};
     if (user.phone != null && user.phone!.trim().isNotEmpty) {
@@ -143,10 +144,10 @@ class FamilyController {
 
   Future<String?> joinFamily(String rawCode) async {
     final user = _ref.read(authControllerProvider);
-    if (user == null) return 'Потрібно авторизуватися';
+    if (user == null) return 'family.auth_required_err'.tr();
 
     var cleanCode = rawCode.trim().toUpperCase().replaceAll(' ', '');
-    if (cleanCode.isEmpty) return 'Будь ласка, введіть код сім\'ї';
+    if (cleanCode.isEmpty) return 'family.enter_family_code_err'.tr();
     if (!cleanCode.startsWith('FAM-')) {
       if (cleanCode.startsWith('FAM')) {
         cleanCode = 'FAM-${cleanCode.substring(3).replaceAll('-', '')}';
@@ -164,18 +165,18 @@ class FamilyController {
           .get();
 
       if (snap.docs.isEmpty) {
-        return 'Код сім\'ї не знайдено. Перевірте код та спробуйте ще раз.';
+        return 'family.code_not_found_err'.tr();
       }
 
       final doc = snap.docs.first;
       final family = Family.fromJson({'id': doc.id, ...doc.data()});
 
       if (family.parentIds.contains(user.id)) {
-        return 'Ви вже приєднані до цієї сім\'ї.';
+        return 'family.already_in_this_family_err'.tr();
       }
 
       if (family.parentIds.length >= 2) {
-        return 'У цій родині вже є 2 батьків.';
+        return 'family.already_2_parents_err'.tr();
       }
 
       final batch = db.batch();
@@ -184,7 +185,7 @@ class FamilyController {
       final myExistingFamily = await getCurrentFamily();
       if (myExistingFamily != null && myExistingFamily.id != family.id) {
         if (myExistingFamily.parentIds.length > 1) {
-          return 'Ви вже є учасником іншої активної сім\'ї. Спочатку від\'єднайтеся від неї.';
+          return 'family.already_in_another_family_err'.tr();
         } else {
           // It was a solitary family, safely remove it
           batch.delete(db.collection('families').doc(myExistingFamily.id));
@@ -195,7 +196,7 @@ class FamilyController {
       final updatedParentNames = Map<String, String>.from(family.parentNames);
       final updatedParentPhones = Map<String, String>.from(family.parentPhones);
 
-      final myName = user.name.trim().isNotEmpty ? user.name.trim() : 'Партнер';
+      final myName = user.name.trim().isNotEmpty ? user.name.trim() : 'parent.partner'.tr();
       updatedParentNames[user.id] = myName;
       if (user.phone != null && user.phone!.trim().isNotEmpty) {
         updatedParentPhones[user.id] = user.phone!.trim();
@@ -248,7 +249,7 @@ class FamilyController {
       return null; // Success
     } catch (e) {
       debugPrint('Error joining family: $e');
-      return 'Помилка при підключенні: $e';
+      return 'family.join_error'.tr(args: [e.toString()]);
     }
   }
 
@@ -288,9 +289,14 @@ class FamilyController {
       final childData = childDoc.data();
       final childParentIds = List<String>.from(childData['parentIds'] ?? []);
       childParentIds.remove(idToRemove);
-      batch.update(childDoc.reference, {
-        'parentIds': childParentIds,
-      });
+      final isOwnedByLeavingParent = childData['parentId'] == idToRemove;
+      final childUpdates = <String, dynamic>{
+        'parentIds': isOwnedByLeavingParent ? [idToRemove] : childParentIds,
+      };
+      if (updatedParentIds.isEmpty || isOwnedByLeavingParent) {
+        childUpdates['familyId'] = FieldValue.delete();
+      }
+      batch.update(childDoc.reference, childUpdates);
     }
 
     await batch.commit();
@@ -298,11 +304,11 @@ class FamilyController {
 
   Future<({String? error, String? targetUserName})> invitePartnerByPhone(String rawPhone) async {
     final user = _ref.read(authControllerProvider);
-    if (user == null) return (error: 'Потрібно авторизуватися', targetUserName: null);
+    if (user == null) return (error: 'family.auth_required_err'.tr(), targetUserName: null);
 
     final cleanDigits = rawPhone.replaceAll(RegExp(r'\D'), '');
     if (cleanDigits.length < 9) {
-      return (error: 'Введіть коректний номер телефону (мінімум 9 цифр)', targetUserName: null);
+      return (error: 'family.invalid_phone_err'.tr(), targetUserName: null);
     }
 
     final last9 = cleanDigits.length >= 9 
@@ -313,7 +319,7 @@ class FamilyController {
       // 1. Ensure current user has a family code to invite to
       final myFamily = await getOrCreateFamily();
       if (myFamily.isPaired) {
-        return (error: 'У вас вже підключено сімейний акаунт.', targetUserName: null);
+        return (error: 'family.already_linked_err'.tr(), targetUserName: null);
       }
 
       // 2. Find target partner in users
@@ -329,15 +335,15 @@ class FamilyController {
       }
 
       if (targetDoc == null) {
-        return (error: 'Користувача з таким номером не знайдено в базі додатку.', targetUserName: null);
+        return (error: 'family.user_phone_not_found_err'.tr(), targetUserName: null);
       }
 
       final targetUserId = targetDoc.id;
       final targetData = targetDoc.data() as Map<String, dynamic>;
-      final targetUserName = targetData['name'] as String? ?? 'Користувач';
+      final targetUserName = targetData['name'] as String? ?? 'parent.client_fallback'.tr();
 
       if (targetUserId == user.id) {
-        return (error: 'Ви не можете надіслати запрошення самому собі.', targetUserName: null);
+        return (error: 'family.cannot_invite_self_err'.tr(), targetUserName: null);
       }
 
       // 3. Check if target user is already in another paired family
@@ -350,15 +356,15 @@ class FamilyController {
       if (partnerFamilySnap.docs.isNotEmpty) {
         final pFam = Family.fromJson({'id': partnerFamilySnap.docs.first.id, ...partnerFamilySnap.docs.first.data()});
         if (pFam.isPaired) {
-          return (error: '$targetUserName вже перебуває в іншій активній сім\'ї.', targetUserName: null);
+          return (error: 'family.user_already_in_family_err'.tr(args: [targetUserName]), targetUserName: null);
         }
       }
 
       // 4. Create an interactive notification in target user's notifications collection
       await FirebaseFirestore.instance.collection('notifications').add({
         'userId': targetUserId,
-        'title': 'Запрошення до сім\'ї 👨‍👩‍👧',
-        'message': '${user.name} запрошує вас об\'єднати акаунти у спільну сім\'ю для зручного керування дітьми та абонементами.',
+        'title': 'family.invite_notif_title'.tr(),
+        'message': 'family.invite_notif_msg'.tr(args: [user.name]),
         'timestamp': FieldValue.serverTimestamp(),
         'icon': 'heartHandshake',
         'iconColor': 0xFF10B981,
@@ -372,7 +378,7 @@ class FamilyController {
       return (error: null, targetUserName: targetUserName);
     } catch (e) {
       debugPrint('Error inviting partner by phone: $e');
-      return (error: 'Помилка надсилання запрошення: $e', targetUserName: null);
+      return (error: 'family.send_invite_error'.tr(args: [e.toString()]), targetUserName: null);
     }
   }
 
@@ -394,24 +400,24 @@ class FamilyController {
       }
     } catch (e) {
       debugPrint('Error responding to invite: $e');
-      return 'Помилка обробки запрошення: $e';
+      return 'family.respond_invite_error'.tr(args: [e.toString()]);
     }
   }
 
   Future<String?> adminLinkParents(String parentAId, String parentBId) async {
-    if (parentAId == parentBId) return 'Не можна об\'єднати один і той самий акаунт';
+    if (parentAId == parentBId) return 'family.cannot_link_same_account_err'.tr();
 
     try {
       final db = FirebaseFirestore.instance;
       // 1. Fetch both users
       final userADoc = await db.collection('users').doc(parentAId).get();
       final userBDoc = await db.collection('users').doc(parentBId).get();
-      if (!userADoc.exists || !userBDoc.exists) return 'Клієнта не знайдено';
+      if (!userADoc.exists || !userBDoc.exists) return 'family.client_not_found_err'.tr();
 
       final userA = userADoc.data()!;
       final userB = userBDoc.data()!;
-      final nameA = userA['name'] as String? ?? 'Батько A';
-      final nameB = userB['name'] as String? ?? 'Батько B';
+      final nameA = userA['name'] as String? ?? 'Parent A';
+      final nameB = userB['name'] as String? ?? 'Parent B';
       final phoneA = userA['phone'] as String? ?? '';
       final phoneB = userB['phone'] as String? ?? '';
 
@@ -431,7 +437,7 @@ class FamilyController {
           // If already paired with someone else, error
           if ((pIds.contains(parentAId) && !pIds.contains(parentBId)) ||
               (pIds.contains(parentBId) && !pIds.contains(parentAId))) {
-            return 'Один із клієнтів вже в іншій активній сім\'ї';
+            return 'family.one_client_already_in_family_err'.tr();
           }
         }
         if (targetFamilyId == null) {
@@ -485,7 +491,7 @@ class FamilyController {
       return null;
     } catch (e) {
       debugPrint('Error linking parents: $e');
-      return 'Помилка зв\'язування: $e';
+      return 'family.link_error'.tr(args: [e.toString()]);
     }
   }
 

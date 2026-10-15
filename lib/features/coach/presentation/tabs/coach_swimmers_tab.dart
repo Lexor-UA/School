@@ -13,8 +13,6 @@ import 'package:swimming_school_app/features/auth/controllers/auth_controller.da
 import '../coach_class_attendees_sheet.dart';
 import '../coach_dashboard.dart';
 
-String _coachTr(String key, String fallback, {List<String>? args}) => coachTr(key, fallback, args: args);
-
 class CoachSwimmersTab extends ConsumerStatefulWidget {
   const CoachSwimmersTab({super.key});
 
@@ -59,7 +57,9 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
           childName: childName,
           type: 'coach_client',
           title: targetClientName,
-          subtitle: childName != null ? 'Батьки плавця ($childName)' : 'Клієнт • Онлайн',
+          subtitle: childName != null
+              ? 'coach.swimmer_parents_sub'.tr(args: [childName])
+              : 'coach.client_online_sub'.tr(),
         ),
       ),
     );
@@ -246,7 +246,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Групи та плавці',
+                              'coach.groups_and_swimmers'.tr(),
                               style: TextStyle(
                                 color: _themeConfig.textPrimary,
                                 fontSize: 21,
@@ -256,7 +256,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Мої учні, групи школи та каталог усіх плавців',
+                              'coach.groups_and_swimmers_subtitle'.tr(),
                               style: TextStyle(
                                 color: _themeConfig.textSecondary,
                                 fontSize: 12.5,
@@ -270,7 +270,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Segmented Switcher: [ 👥 Мої учні ] / [ 🏊 Групи ] / [ 👤 Всі плавці ]
+                  // Segmented Switcher
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -330,10 +330,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                       onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                       decoration: InputDecoration(
                         hintText: _selectedSegment == 0
-                            ? 'Пошук серед моїх учнів'
+                            ? 'coach.search_my_students_hint'.tr()
                             : _selectedSegment == 1
-                                ? 'Пошук групи чи тренера'
-                                : 'Пошук плавця за ім\'ям',
+                                ? 'coach.search_group_or_coach_hint'.tr()
+                                : 'coach.search_swimmer_by_name_hint'.tr(),
                         hintStyle: TextStyle(
                           color: _isLight ? const Color(0xFF94A3B8) : Colors.white38,
                           fontSize: 13.5,
@@ -366,14 +366,14 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
 
                   const SizedBox(height: 12),
 
-                  // Category Filter Chips: [ Всі ] [ 🧒 Діти ] [ 👤 Дорослі ]
+                  // Category Filter Chips
                   Row(
                     children: [
-                      _buildFilterChip('Всі', 0),
+                      _buildFilterChip('common.all'.tr(), 0),
                       const SizedBox(width: 8),
-                      _buildFilterChip('🧒 Діти', 1),
+                      _buildFilterChip('🧒 ${'coach.filter_kids'.tr()}', 1),
                       const SizedBox(width: 8),
-                      _buildFilterChip('👤 Дорослі', 2),
+                      _buildFilterChip('👤 ${'coach.filter_adults'.tr()}', 2),
                     ],
                   ),
                 ],
@@ -396,10 +396,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
   String _formatClassesCount(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 14) return '$count занять';
-    if (mod10 == 1) return '$count заняття';
-    if (mod10 >= 2 && mod10 <= 4) return '$count заняття';
-    return '$count занять';
+    if (mod100 >= 11 && mod100 <= 14) return 'coach.classes_count_many'.tr(args: ['$count']);
+    if (mod10 == 1) return 'coach.classes_count_one'.tr(args: ['$count']);
+    if (mod10 >= 2 && mod10 <= 4) return 'coach.classes_count_few'.tr(args: ['$count']);
+    return 'coach.classes_count_many'.tr(args: ['$count']);
   }
 
   // ==========================================
@@ -445,9 +445,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     if (coachClasses.isEmpty) {
       return _buildMySwimmersEmptyState(
         icon: LucideIcons.calendarX,
-        title: 'У вас наразі немає призначених занять',
-        description:
-            'Вам ще не призначено груп або занять у розкладі школи плавання CitySwim. Як тільки адміністратор закріпить за вами заняття, тут автоматично з\'являться ваші учні.',
+        title: 'coach.no_assigned_classes_title'.tr(),
+        description: 'coach.no_assigned_classes_desc'.tr(),
         showScheduleButton: true,
       );
     }
@@ -456,9 +455,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
     if (enrolledIds.isEmpty) {
       return _buildMySwimmersEmptyState(
         icon: LucideIcons.userX,
-        title: 'У ваших групах поки немає зареєстрованих учнів',
-        description:
-            'За вами закріплено ${_formatClassesCount(coachClasses.length)} у розкладі, але на них ще не записався жоден плавець або очікується формування списків.',
+        title: 'coach.no_enrolled_in_my_groups_title'.tr(),
+        description: 'coach.no_enrolled_in_my_groups_desc'.tr(args: [_formatClassesCount(coachClasses.length)]),
         showScheduleButton: true,
       );
     }
@@ -578,7 +576,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Серед ваших учнів нікого не знайдено',
+                          'coach.no_my_students_found'.tr(),
                           style: TextStyle(
                             color: _themeConfig.textSecondary,
                             fontSize: 14,
@@ -729,14 +727,14 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               ),
                             ],
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(LucideIcons.calendarDays, color: Colors.white, size: 16),
-                              SizedBox(width: 8),
+                              const Icon(LucideIcons.calendarDays, color: Colors.white, size: 16),
+                              const SizedBox(width: 8),
                               Text(
-                                'Переглянути мій розклад',
-                                style: TextStyle(
+                                'coach.view_my_schedule'.tr(),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w800,
@@ -785,7 +783,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Ви можете переглянути повний перелік груп школи або базу всіх плавців у вкладках вгорі.',
+                              'coach.my_swimmers_empty_tip'.tr(),
                               style: TextStyle(
                                 color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF7DD3FC),
                                 fontSize: 11.5,
@@ -879,7 +877,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Груп за вашим запитом не знайдено',
+                  'coach.no_groups_found'.tr(),
                   style: TextStyle(
                     color: _themeConfig.textSecondary,
                     fontSize: 15,
@@ -964,7 +962,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
       child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row 1: Title + Category Badge (ДІТИ / ДОРОСЛІ)
+                // Row 1: Title + Category Badge
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -985,13 +983,13 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           Row(
                             children: [
                               Icon(
-                                group.lane.toLowerCase().contains('дитяч') ? LucideIcons.baby : LucideIcons.waves,
+                                RegExp(r'\u0434\u0438\u0442\u044f\u0447|kid', caseSensitive: false).hasMatch(group.lane) ? LucideIcons.baby : LucideIcons.waves,
                                 size: 13,
                                 color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                group.lane.isNotEmpty ? group.lane : 'Спортивний басейн',
+                                group.lane.isNotEmpty ? group.lane : 'coach.sports_pool_fallback'.tr(),
                                 style: TextStyle(
                                   color: _isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
                                   fontSize: 12.5,
@@ -1031,7 +1029,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isAdult ? 'ДОРОСЛІ' : 'ДІТИ',
+                            isAdult ? 'coach.adults_caps'.tr() : 'coach.kids_caps'.tr(),
                             style: TextStyle(
                               color: accentColor,
                               fontSize: 10,
@@ -1074,7 +1072,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                group.coachName.isNotEmpty ? group.coachName : 'Тренер школи',
+                                group.coachName.isNotEmpty ? group.coachName : 'coach.school_coach_fallback'.tr(),
                                 style: TextStyle(
                                   color: _themeConfig.textPrimary,
                                   fontSize: 12,
@@ -1095,7 +1093,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '${DateFormat('HH:mm').format(group.startTime)} \u2013 ${DateFormat('HH:mm').format(group.endTime)}',
+                            '${DateFormat('HH:mm').format(group.branchStartTime)} \u2013 ${DateFormat('HH:mm').format(group.branchEndTime)}',
                             style: TextStyle(
                               color: _isLight ? const Color(0xFF0F172A) : Colors.white,
                               fontSize: 12,
@@ -1115,7 +1113,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Заповненість: $enrolledCount з $capacity місць',
+                      'coach.occupancy_count_of_max'.tr(args: ['$enrolledCount', '$capacity']),
                       style: TextStyle(
                         color: _themeConfig.textSecondary,
                         fontSize: 12,
@@ -1200,7 +1198,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         const Icon(LucideIcons.users, size: 15, color: Colors.white),
                         const SizedBox(width: 8),
                         Text(
-                          'Склад групи ($enrolledCount)',
+                          'coach.group_roster_count'.tr(args: ['$enrolledCount']),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -1353,7 +1351,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Плавців за вашим запитом не знайдено',
+                          'coach.no_swimmers_found'.tr(),
                           style: TextStyle(
                             color: _themeConfig.textSecondary,
                             fontSize: 14,
@@ -1477,7 +1475,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row 1: Header (Avatar + Name & "ДОРОСЛИЙ ПЛАВЕЦЬ" Badge + Chat Button + Chevron)
+                // Row 1: Header (Avatar + Name & Adult Swimmer Badge + Chat Button + Chevron)
                 Row(
                   children: [
                     Container(
@@ -1554,8 +1552,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                     const SizedBox(width: 4),
                                     Text(
                                       (age != null && age > 0)
-                                          ? 'Дорослий • $age р.'
-                                          : 'Дорослий плавець',
+                                          ? 'coach.adult_age_badge'.tr(args: ['$age'])
+                                          : 'coach.adult_swimmer'.tr(),
                                       style: TextStyle(
                                         color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
                                         fontSize: 10.5,
@@ -1677,7 +1675,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _coachTr('coach.details_btn', 'Картка плавця'),
+                          'coach.details_btn'.tr(),
                           style: TextStyle(
                             color: _isLight ? const Color(0xFF0284C7) : Colors.white,
                             fontSize: 12.5,
@@ -1828,8 +1826,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                       ),
                                       child: Text(
                                         (child.currentAge ?? child.age ?? 0) > 0
-                                            ? '${child.currentAge ?? child.age} р.'
-                                            : 'Учень',
+                                            ? '${child.currentAge ?? child.age} ${'common.years_short'.tr()}'
+                                            : 'coach.student_fallback'.tr(),
                                         style: TextStyle(
                                           color: _isLight ? const Color(0xFF0369A1) : const Color(0xFF38BDF8),
                                           fontSize: 10.5,
@@ -1847,7 +1845,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             GestureDetector(
                               onTap: () => _openCoachChatWithClient(
                                 targetClientId: child.parentId,
-                                targetClientName: 'Батьки (${child.name})',
+                                targetClientName: 'coach.parents_of_child'.tr(args: [child.name]),
                                 childName: child.name,
                               ),
                               child: Container(
@@ -1950,7 +1948,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _coachTr('coach.details_btn', 'Картка плавця'),
+                                'coach.details_btn'.tr(),
                                 style: TextStyle(
                                   color: _isLight ? const Color(0xFF0284C7) : Colors.white,
                                   fontSize: 12.5,

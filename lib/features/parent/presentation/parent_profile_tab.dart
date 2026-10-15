@@ -617,6 +617,7 @@ class ParentProfileTab extends ConsumerWidget {
                   SizedBox(width: isCompact ? 11 : 13),
                   // Name & Contact Info
                   Expanded(
+                    flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -629,7 +630,7 @@ class ParentProfileTab extends ConsumerWidget {
                                 ? user.name
                                 : (fbUser?.displayName?.trim().isNotEmpty == true
                                     ? fbUser!.displayName!.trim()
-                                    : 'Олександр'),
+                                    : 'Alex'),
                             style: TextStyle(
                               color: textColor,
                               fontSize: isCompact ? 17.5 : 18.5,
@@ -641,15 +642,18 @@ class ParentProfileTab extends ConsumerWidget {
                         ),
                         if (contactInfo != null) ...[
                           const SizedBox(height: 2.0),
-                          Text(
-                            contactInfo,
-                            style: TextStyle(
-                              color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
-                              fontSize: isCompact ? 12.0 : 13.0,
-                              fontWeight: FontWeight.w500,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              contactInfo,
+                              style: TextStyle(
+                                color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
+                                fontSize: isCompact ? 12.0 : 13.0,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
@@ -657,33 +661,36 @@ class ParentProfileTab extends ConsumerWidget {
                   ),
                   const SizedBox(width: 6),
                   // Status Badge
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isCompact ? 9 : 11,
-                        vertical: isCompact ? 4.5 : 6,
-                      ),
-                      decoration: _ProfileStyleConfig.statusBadgeDecoration(isDark, accentColor),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.shieldCheck,
-                            size: isCompact ? 12.5 : 13.5,
-                            color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
-                          ),
-                          const SizedBox(width: 4.5),
-                          Text(
-                            hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
-                            style: TextStyle(
+                  Flexible(
+                    flex: 2,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompact ? 9 : 11,
+                          vertical: isCompact ? 4.5 : 6,
+                        ),
+                        decoration: _ProfileStyleConfig.statusBadgeDecoration(isDark, accentColor),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.shieldCheck,
+                              size: isCompact ? 12.5 : 13.5,
                               color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
-                              fontSize: isCompact ? 11.0 : 12.0,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.1,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4.5),
+                            Text(
+                              hasChildren ? 'parent.parent_account'.tr() : 'parent.client_account'.tr(),
+                              style: TextStyle(
+                                color: _ProfileStyleConfig.statusBadgeTextColor(isDark, accentColor),
+                                fontSize: isCompact ? 11.0 : 12.0,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -720,7 +727,7 @@ class ParentProfileTab extends ConsumerWidget {
                     child: _buildHeroStatItem(
                       icon: LucideIcons.calendarCheck,
                       value: '$availableTodayCount',
-                      label: 'Доступно сьогодні',
+                      label: 'parent.available_today'.tr(),
                       color: const Color(0xFF06B6D4),
                       isDark: isDark,
                       textColor: textColor,
@@ -757,7 +764,7 @@ class ParentProfileTab extends ConsumerWidget {
                       icon: LucideIcons.thermometer,
                       value: '+28',
                       unit: '°C',
-                      label: 'Вода в басейні',
+                      label: 'parent.pool_water'.tr(),
                       color: const Color(0xFF00E5FF),
                       isDark: isDark,
                       textColor: textColor,
@@ -769,14 +776,14 @@ class ParentProfileTab extends ConsumerWidget {
                           SnackBar(
                             behavior: SnackBarBehavior.floating,
                             backgroundColor: isDark ? const Color(0xFF0C233C) : const Color(0xFF0284C7),
-                            content: const Row(
+                            content: Row(
                               children: [
-                                Icon(LucideIcons.droplets, color: Color(0xFF00E5FF), size: 18),
-                                SizedBox(width: 10),
+                                const Icon(LucideIcons.droplets, color: Color(0xFF00E5FF), size: 18),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Стабільна комфортна температура води +28°C',
-                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                    'parent.stable_water_temp'.tr(),
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
@@ -880,8 +887,8 @@ class ParentProfileTab extends ConsumerWidget {
     final partnerPhone = family?.getOtherParentPhone(user?.id ?? '') ?? '';
     final partnerDisplayName = partnerName.trim().isNotEmpty 
         ? partnerName.trim() 
-        : (partnerPhone.isNotEmpty ? partnerPhone : 'Другий з батьків');
-    final partnerInitial = partnerDisplayName.characters.isNotEmpty ? partnerDisplayName.characters.first.toUpperCase() : 'П';
+        : (partnerPhone.isNotEmpty ? partnerPhone : 'parent.second_parent'.tr());
+    final partnerInitial = partnerDisplayName.characters.isNotEmpty ? partnerDisplayName.characters.first.toUpperCase() : 'P';
 
     return Container(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 11 : 14),
@@ -912,7 +919,7 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                       SizedBox(width: isCompact ? 8 : 9),
                       Text(
-                        'Родина та діти',
+                        'parent.family_and_children'.tr(),
                         style: TextStyle(
                           color: textColor,
                           fontSize: isCompact ? 14.5 : 15.0,
@@ -955,7 +962,7 @@ class ParentProfileTab extends ConsumerWidget {
                             const SizedBox(width: 4.5),
                             Flexible(
                               child: Text(
-                                isPaired ? 'Сім\'я: $partnerDisplayName' : 'Сімейний акаунт',
+                                isPaired ? '${'parent.family'.tr()}: $partnerDisplayName' : 'parent.family_account'.tr(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -1069,9 +1076,9 @@ class ParentProfileTab extends ConsumerWidget {
                                       color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.15),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text(
-                                      'Партнер',
-                                      style: TextStyle(
+                                    child: Text(
+                                      'parent.partner'.tr(),
+                                      style: const TextStyle(
                                         color: Color(0xFF10B981),
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
@@ -1083,8 +1090,8 @@ class ParentProfileTab extends ConsumerWidget {
                               const SizedBox(height: 1.5),
                               Text(
                                 partnerPhone.isNotEmpty
-                                    ? '$partnerPhone • Спільний доступ'
-                                    : 'Спільний доступ активний',
+                                    ? '$partnerPhone • ${'parent.shared_access'.tr()}'
+                                    : 'parent.shared_access_active'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFFB0D4EC) : subColor,
                                   fontSize: 11,
@@ -1161,7 +1168,7 @@ class ParentProfileTab extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '${adultChild.name} вже 16 років! 🎓',
+                              'parent.child_turned_16'.tr(args: [adultChild.name]),
                               style: TextStyle(
                                 color: textColor,
                                 fontSize: 13.5,
@@ -1170,7 +1177,7 @@ class ParentProfileTab extends ConsumerWidget {
                             ),
                             const SizedBox(height: 1.5),
                             Text(
-                              'Час перевести у дорослий акаунт зі збереженням занять та рівня',
+                              'parent.time_to_transfer_adult_account'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFFB0D4EC) : subColor,
                                 fontSize: 11.5,
@@ -1201,9 +1208,9 @@ class ParentProfileTab extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          child: const Text(
-                            'Випустити',
-                            style: TextStyle(
+                          child: Text(
+                            'parent.graduate'.tr(),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -1292,7 +1299,7 @@ class ParentProfileTab extends ConsumerWidget {
                   ] else ...[
                     Expanded(
                       child: Text(
-                        'Додайте дитину для тренувань',
+                        'parent.add_child_for_training'.tr(),
                         style: TextStyle(
                           color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
                           fontSize: isCompact ? 12.0 : 13.0,
@@ -1324,7 +1331,7 @@ class ParentProfileTab extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4.5),
                           Text(
-                            'Додати',
+                            'parent.add_btn'.tr(),
                             style: TextStyle(
                               color: _ProfileStyleConfig.addChildTextColor(isDark),
                               fontSize: isCompact ? 11.5 : 12.5,
@@ -1390,10 +1397,10 @@ class ParentProfileTab extends ConsumerWidget {
               _buildGroupedItem(
                 icon: LucideIcons.heartHandshake,
                 gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
-                title: 'Сімейний акаунт',
+                title: 'parent.family_account'.tr(),
                 subtitle: ref.watch(familyStreamProvider).value?.isPaired == true
-                    ? 'Спільний доступ активний'
-                    : 'Підключити чоловіка / дружину',
+                    ? 'parent.shared_access_active'.tr()
+                    : 'parent.connect_spouse'.tr(),
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
@@ -1423,8 +1430,8 @@ class ParentProfileTab extends ConsumerWidget {
               _buildGroupedItem(
                 icon: LucideIcons.messageSquare,
                 gradientColors: const [Color(0xFF06B6D4), Color(0xFF0284C7)],
-                title: 'Повідомлення та підтримка',
-                subtitle: 'Чат з адміністратором та тренером',
+                title: 'parent.messages_and_support'.tr(),
+                subtitle: 'parent.chat_admin_coach'.tr(),
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
@@ -1481,8 +1488,8 @@ class ParentProfileTab extends ConsumerWidget {
               _buildGroupedItem(
                 icon: LucideIcons.mapPin,
                 gradientColors: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                title: 'Філія та локація',
-                subtitle: user?.branchId == 'vienna' ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                title: 'parent.branch_and_location'.tr(),
+                subtitle: user?.branchId == 'vienna' ? 'parent.branch_vienna'.tr() : 'parent.branch_kyiv'.tr(),
                 textColor: textColor,
                 subColor: subColor,
                 isDark: isDark,
@@ -1534,7 +1541,7 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4.5),
                       Text(
-                        'Закріплено',
+                        'parent.pinned'.tr(),
                         style: TextStyle(
                           fontSize: isCompact ? 11.0 : 11.5,
                           fontWeight: FontWeight.w700,
@@ -1622,7 +1629,7 @@ class ParentProfileTab extends ConsumerWidget {
                             color: isDark ? Colors.white54 : Colors.black45,
                             size: 20,
                           ),
-                          tooltip: 'Закрити',
+                          tooltip: 'admin.close'.tr(),
                           padding: const EdgeInsets.all(6),
                           constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                           onPressed: () {
@@ -1671,7 +1678,7 @@ class ParentProfileTab extends ConsumerWidget {
 
                     // Title
                     Text(
-                      'Філія та локація',
+                      'parent.branch_and_location'.tr(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 20,
@@ -1682,7 +1689,7 @@ class ParentProfileTab extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Закріплена філія школи CitySwim',
+                      'parent.pinned_branch_desc'.tr(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -1718,7 +1725,9 @@ class ParentProfileTab extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  activeBranchId == 'vienna' ? 'CitySwim Відень' : 'CitySwim Київ',
+                                  activeBranchId == 'vienna'
+                                      ? 'CitySwim ${context.locale.languageCode == 'de' ? 'Wien' : (context.locale.languageCode == 'uk' ? 'Відень' : (context.locale.languageCode == 'ru' ? 'Вена' : 'Vienna'))}'
+                                      : 'CitySwim ${context.locale.languageCode == 'de' ? 'Kiew' : (context.locale.languageCode == 'uk' ? 'Київ' : (context.locale.languageCode == 'ru' ? 'Киев' : 'Kyiv'))}',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
@@ -1728,8 +1737,8 @@ class ParentProfileTab extends ConsumerWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   activeBranchId == 'vienna'
-                                      ? 'Австрія • Валюта: € (EUR) • Europe/Vienna'
-                                      : 'Україна • Валюта: ₴ (UAH) • Europe/Kyiv',
+                                      ? 'parent.branch_vienna_details'.tr()
+                                      : 'parent.branch_kyiv_details'.tr(),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: isDark ? Colors.white70 : const Color(0xFF64748B),
@@ -1758,7 +1767,7 @@ class ParentProfileTab extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Закріплено',
+                                  'parent.pinned'.tr(),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
@@ -1802,7 +1811,7 @@ class ParentProfileTab extends ConsumerWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Між філіями Києва та Відня діє сувора ізоляція розкладу та абонементів. Зміна філії здійснюється виключно адміністрацією школи за запитом клієнта.',
+                              'parent.branch_isolation_notice'.tr(),
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.4,
@@ -1827,8 +1836,8 @@ class ParentProfileTab extends ConsumerWidget {
                         size: 16,
                         color: Colors.white,
                       ),
-                      label: const Text(
-                        'Звернутися до адміністратора',
+                      label: Text(
+                        'parent.contact_admin_btn'.tr(),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -2030,12 +2039,12 @@ class ParentProfileTab extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? const Color(0xFF0F1E32) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Вийти з акаунта?'),
-        content: const Text('Ви дійсно бажаєте вийти зі свого профілю?'),
+        title: Text('parent.logout_confirm_title'.tr()),
+        content: Text('parent.logout_confirm_message'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Скасувати'),
+            child: Text('parent.cancel'.tr()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -2056,7 +2065,7 @@ class ParentProfileTab extends ConsumerWidget {
               tabNotifier.setTab(0);
               router.go('/?skipSplash=true');
             },
-            child: const Text('Вийти'),
+            child: Text('parent.logout_short'.tr()),
           ),
         ],
       ),
@@ -2126,7 +2135,7 @@ class ParentProfileTab extends ConsumerWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Push-сповіщення',
+                    'parent.push_notifications'.tr(),
                     style: TextStyle(
                       color: textColor,
                       fontSize: isCompact ? 14.5 : 15.5,
@@ -2140,7 +2149,7 @@ class ParentProfileTab extends ConsumerWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Нагадування про тренування',
+                    'parent.training_reminders'.tr(),
                     style: TextStyle(
                       color: _ProfileStyleConfig.subtitleColor(isDark, subColor),
                       fontSize: isCompact ? 11.8 : 12.5,

@@ -22,6 +22,8 @@ _Subscription _$SubscriptionFromJson(Map<String, dynamic> json) =>
       branchId: json['branchId'] as String? ?? 'kyiv',
       currency: json['currency'] as String? ?? 'UAH',
       currencySymbol: json['currencySymbol'] as String? ?? '₴',
+      pendingApproval: json['pendingApproval'] as bool? ?? false,
+      paymentDocId: json['paymentDocId'] as String?,
     );
 
 Map<String, dynamic> _$SubscriptionToJson(_Subscription instance) =>
@@ -38,4 +40,6 @@ Map<String, dynamic> _$SubscriptionToJson(_Subscription instance) =>
       'branchId': instance.branchId,
       'currency': instance.currency,
       'currencySymbol': instance.currencySymbol,
+      'pendingApproval': instance.pendingApproval,
+      'paymentDocId': instance.paymentDocId,
     };

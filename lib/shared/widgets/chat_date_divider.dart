@@ -25,8 +25,8 @@ class ChatDateDivider extends StatelessWidget {
     final target = DateTime(date.year, date.month, date.day);
     final diff = today.difference(target).inDays;
 
-    if (diff == 0) return 'Сьогодні';
-    if (diff == 1) return 'Вчора';
+    if (diff == 0) return 'common.today'.tr();
+    if (diff == 1) return 'common.yesterday'.tr();
 
     final loc = locale ?? 'uk';
     try {
@@ -36,33 +36,18 @@ class ChatDateDivider extends StatelessWidget {
         return DateFormat('d MMMM yyyy', loc).format(date);
       }
     } catch (_) {
-      // Reliable Ukrainian fallback when Intl data is not initialized in raw environments
-      const monthsUk = [
-        '',
-        'січня',
-        'лютого',
-        'березня',
-        'квітня',
-        'травня',
-        'червня',
-        'липня',
-        'серпня',
-        'вересня',
-        'жовтня',
-        'листопада',
-        'грудня'
-      ];
-      final m = (date.month >= 1 && date.month <= 12) ? monthsUk[date.month] : '${date.month}';
+      final m = date.month.toString().padLeft(2, '0');
+      final d = date.day.toString().padLeft(2, '0');
       if (date.year == now.year) {
-        return '${date.day} $m';
+        return '$d.$m';
       }
-      return '${date.day} $m ${date.year} р.';
+      return '$d.$m.${date.year}';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final label = formatChatDate(date);
+    final label = formatChatDate(date, locale: context.locale.languageCode);
 
     return Center(
       child: Container(

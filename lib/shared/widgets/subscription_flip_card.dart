@@ -5,8 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:swimming_school_app/shared/widgets/subscription_front_card.dart';
 import 'package:swimming_school_app/shared/widgets/interactive_3d_card.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
 
 class SubscriptionFlipCard extends StatefulWidget {
   final dynamic currentSub;
@@ -90,9 +92,9 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
               TextButton.icon(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(LucideIcons.x, color: Colors.white, size: 20),
-                label: const Text(
-                  'Закрити',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                label: Text(
+                  'parent.close'.tr(),
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -213,12 +215,12 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4), width: 0.8),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(LucideIcons.shieldCheck, color: Colors.cyanAccent, size: 12),
-                                  SizedBox(width: 4),
-                                  Text('ВЕРИФІКОВАНО', style: TextStyle(color: Colors.cyanAccent, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  const Icon(LucideIcons.shieldCheck, color: Colors.cyanAccent, size: 12),
+                                  const SizedBox(width: 4),
+                                  Text('parent.card_verified'.tr(), style: const TextStyle(color: Colors.cyanAccent, fontSize: 9, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
@@ -230,7 +232,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              sub.serviceName!.replaceFirst(RegExp(r'^Абонемент\s+на\s+', caseSensitive: false), ''),
+                              SubscriptionPackageCatalog.localizeServiceName(sub.serviceName!, context.locale.languageCode).replaceFirst(RegExp(r'^Абонемент\s+на\s+', caseSensitive: false), ''),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -279,7 +281,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
                         const SizedBox(height: 5),
                         Center(
                           child: Text(
-                            'Торкніться для перевороту · Натисніть QR для збільшення',
+                            'parent.card_flip_hint'.tr(),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.55),
                               fontSize: 9,
@@ -292,7 +294,7 @@ class _SubscriptionFlipCardState extends State<SubscriptionFlipCard> with Single
 
                         Center(
                           child: Text(
-                            'Ця цифрова картка є власністю басейну. Пред\'явіть QR-код тренеру або адміністратору на ресепшені.',
+                            'parent.card_ownership_disclaimer'.tr(),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.65),
                               fontSize: 8.5,

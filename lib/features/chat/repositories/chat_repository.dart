@@ -24,6 +24,10 @@ class ChatRepository {
   Stream<ChatDialog?> streamClientDialog(String clientId) {
     return _chats.where('clientId', isEqualTo: clientId).snapshots().map((snapshot) {
       if (snapshot.docs.isEmpty) return null;
+      for (final doc in snapshot.docs) {
+        final d = ChatDialog.fromJson(doc.data() as Map<String, dynamic>);
+        if (d.type != 'coach_client') return d;
+      }
       return ChatDialog.fromJson(snapshot.docs.first.data() as Map<String, dynamic>);
     });
   }
@@ -153,7 +157,7 @@ class ChatRepository {
       'id': dialogId,
       'clientId': clientId,
       'clientName': clientName,
-      'clientAvatar': clientAvatar,
+      if (clientAvatar.isNotEmpty) 'clientAvatar': clientAvatar,
       'lastMessage': summaryText,
       'lastMessageTime': Timestamp.fromDate(now),
       'updatedAt': Timestamp.fromDate(now),
@@ -169,8 +173,60 @@ class ChatRepository {
       'childName': ?childName,
       'clientRole': ?clientRole,
       'organizationId': ?organizationId,
-      'branchId': ?branchId,
+      if (branchId != null && branchId.isNotEmpty) 'branchId': branchId,
     }, SetOptions(merge: true));
+
+    // 3. Create push notification record in 'notifications' collection for FCM/APNs delivery
+    String targetUserId = '';
+    String notifTitle = 'CitySwim';
+    String notifActionType = 'chat';
+
+    if (type == 'coach_client') {
+      notifActionType = 'coach_chat';
+      if (isCoachSender) {
+        targetUserId = clientId;
+        final cName = (coachName != null && coachName.trim().isNotEmpty) ? ' ${coachName.trim()}' : '';
+        notifTitle = 'Повідомлення від тренера$cName';
+      } else {
+        targetUserId = coachId ?? '';
+        notifTitle = clientName.trim().isNotEmpty
+            ? 'Повідомлення від ${clientName.trim()}'
+            : 'Нове повідомлення від клієнта';
+      }
+    } else {
+      notifActionType = 'chat';
+      if (isAdminSender) {
+        targetUserId = clientId;
+        notifTitle = 'Повідомлення від адміністратора';
+      } else {
+        final normBranch = (branchId ?? '').trim().toLowerCase();
+        targetUserId = (normBranch.isEmpty || normBranch == 'kyiv')
+            ? 'admin'
+            : 'admin_$normBranch';
+        notifTitle = clientName.trim().isNotEmpty
+            ? 'Нове повідомлення: ${clientName.trim()}'
+            : 'Нове звернення у підтримку';
+      }
+    }
+
+    if (targetUserId.isNotEmpty && summaryText.isNotEmpty) {
+      final notifRef = _firestore.collection('notifications').doc();
+      batch.set(notifRef, {
+        'id': notifRef.id,
+        'userId': targetUserId,
+        'title': notifTitle,
+        'message': summaryText,
+        'type': 'chat_push',
+        'actionType': notifActionType,
+        'dialogId': dialogId,
+        'senderId': senderId,
+        'senderName': senderName ?? (isAdminSender ? 'Адміністратор' : (isCoachSender ? coachName : clientName)),
+        'icon': 'messageSquare',
+        'isRead': false,
+        'timestamp': Timestamp.fromDate(now),
+        if (branchId != null && branchId.isNotEmpty) 'branchId': branchId,
+      });
+    }
 
     await batch.commit();
   }

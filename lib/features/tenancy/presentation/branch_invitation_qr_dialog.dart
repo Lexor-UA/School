@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -51,9 +52,9 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
             children: [
               const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
               const SizedBox(width: 8),
-              const Text(
-                'Посилання для реєстрації скопійовано!',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                'tenancy.qr_dialog.link_copied_toast'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -141,7 +142,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        details.getWelcomeMessage('uk'),
+                        details.getWelcomeMessage(context.locale.languageCode),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.85),
@@ -243,7 +244,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'QR рецепції',
+                                'admin.qr_reception'.tr(),
                                 style: TextStyle(
                                   color: currentTheme.textPrimary,
                                   fontSize: 16,
@@ -251,7 +252,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                 ),
                               ),
                               Text(
-                                'Стійка адміністратора',
+                                'admin.qr_reception_subtitle'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                   fontSize: 11.5,
@@ -364,7 +365,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                   const Text('🇺🇦', style: TextStyle(fontSize: 14)),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Київ',
+                                    'branches.city_kyiv'.tr(),
                                     style: TextStyle(
                                       color: _selectedBranchId == 'kyiv'
                                           ? Colors.white
@@ -424,7 +425,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                   const Text('🇦🇹', style: TextStyle(fontSize: 14)),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Відень',
+                                    'branches.city_vienna'.tr(),
                                     style: TextStyle(
                                       color: _selectedBranchId == 'vienna'
                                           ? Colors.white
@@ -546,7 +547,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                         const SizedBox(height: 10),
 
                         Text(
-                          'Торкніться для відкриття на весь екран',
+                          'tenancy.qr_dialog.tap_fullscreen_hint'.tr(),
                           style: TextStyle(
                             color: isDark ? const Color(0xFF64748B) : const Color(0xFF64748B),
                             fontSize: 10.5,
@@ -630,7 +631,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                             size: 16,
                           ),
                           label: Text(
-                            _isCopied ? 'Скопійовано' : 'Копіювати лінк',
+                            _isCopied ? 'tenancy.qr_dialog.copied_btn'.tr() : 'tenancy.qr_dialog.copy_link_btn'.tr(),
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ),
@@ -678,9 +679,9 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                               _openFullScreenQr(context, details);
                             },
                             icon: const Icon(LucideIcons.maximize2, size: 16, color: Colors.white),
-                            label: const Text(
-                              'Повний екран',
-                              style: TextStyle(
+                            label: Text(
+                              'tenancy.qr_dialog.fullscreen_btn'.tr(),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,

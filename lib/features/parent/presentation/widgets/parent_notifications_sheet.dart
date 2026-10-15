@@ -9,6 +9,7 @@ import 'package:swimming_school_app/features/parent/controllers/parent_notificat
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
+import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 class ParentNotificationsSheet extends ConsumerStatefulWidget {
   const ParentNotificationsSheet({super.key});
@@ -194,7 +195,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              'Всі прочитані',
+                                              'notifications.all_read'.tr(),
                                               style: TextStyle(
                                                 color: isDarkMode
                                                     ? const Color(0xFF34D399)
@@ -212,7 +213,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                               ),
                               if (notifications.isNotEmpty) ...[
                                 Tooltip(
-                                  message: 'Очистити сповіщення',
+                                  message: 'notifications.clear_all_tooltip'.tr(),
                                   child: InkWell(
                                     onTap: () => _confirmClearAll(context, ref, isDarkMode),
                                     borderRadius: BorderRadius.circular(12),
@@ -241,7 +242,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            'Очистити',
+                                            'notifications.clear'.tr(),
                                             style: TextStyle(
                                               color: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
                                               fontSize: 11,
@@ -323,7 +324,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                           ),
                                           const SizedBox(height: 14),
                                           Text(
-                                            'Сповіщень немає',
+                                            'notifications.no_notifications'.tr(),
                                             style: TextStyle(
                                               color: isDarkMode ? Colors.white : textColor,
                                               fontWeight: FontWeight.w800,
@@ -333,7 +334,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                                           ),
                                           const SizedBox(height: 5),
                                           Text(
-                                            'Тут з\'являтимуться нагадування про заняття, абонементи та повідомлення',
+                                            'notifications.no_notifications_desc'.tr(),
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
                                               color: isDarkMode ? const Color(0xFFE2E8F0) : textSubColor,
@@ -628,8 +629,30 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                     if (!isFamilyInvite && notif.actionType != null)
                       InkWell(
                         onTap: () {
+                          final user = ref.read(authControllerProvider);
                           Navigator.pop(context);
-                          if (notif.actionType == 'chat') {
+                          if (notif.actionType == 'coach_chat') {
+                            final cName = (notif.senderName != null && notif.senderName!.trim().isNotEmpty)
+                                ? notif.senderName!.trim()
+                                : 'common.coach_fallback'.tr();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ParentChatScreen(
+                                  dialogId: notif.dialogId,
+                                  recipientId: notif.senderId ?? '',
+                                  recipientName: cName,
+                                  coachId: notif.senderId,
+                                  coachName: cName,
+                                  clientId: user?.id,
+                                  clientName: user?.name,
+                                  type: 'coach_client',
+                                  title: cName,
+                                  subtitle: 'parent.pool_coach_subtitle'.tr(),
+                                ),
+                              ),
+                            );
+                          } else if (notif.actionType == 'chat') {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const ParentChatScreen()),
@@ -657,13 +680,13 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                notif.actionType == 'chat'
-                                    ? 'Перейти в чат'
+                                (notif.actionType == 'chat' || notif.actionType == 'coach_chat')
+                                    ? 'notifications.go_to_chat'.tr()
                                     : (notif.actionType == 'calendar'
-                                        ? 'До розкладу'
+                                        ? 'notifications.go_to_schedule'.tr()
                                         : (notif.actionType == 'subscription'
-                                            ? 'До абонементів'
-                                            : 'Детальніше')),
+                                            ? 'notifications.go_to_subscriptions'.tr()
+                                            : 'notifications.details'.tr())),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12,
@@ -703,14 +726,16 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
             width: 0.9,
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 14),
-            SizedBox(width: 6),
-            Text(
-              'Запрошення прийнято • Сім\'ю об\'єднано',
-              style: TextStyle(color: Color(0xFF10B981), fontSize: 11.5, fontWeight: FontWeight.bold),
+            const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 14),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'notifications.invite_accepted_badge'.tr(),
+                style: const TextStyle(color: Color(0xFF10B981), fontSize: 11.5, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -735,7 +760,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
             Icon(LucideIcons.xCircle, color: isDark ? Colors.white54 : Colors.black45, size: 14),
             const SizedBox(width: 6),
             Text(
-              'Запрошення відхилено',
+              'notifications.invite_declined_badge'.tr(),
               style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 11.5, fontWeight: FontWeight.w600),
             ),
           ],
@@ -787,24 +812,24 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                     } else {
                       HapticFeedback.heavyImpact();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Row(
                             children: [
-                              Icon(LucideIcons.heartHandshake, color: Colors.greenAccent, size: 20),
-                              SizedBox(width: 8),
-                              Text('Вітаємо! Акаунти успішно об\'єднано в сім\'ю!'),
+                              const Icon(LucideIcons.heartHandshake, color: Colors.greenAccent, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text('family.accounts_linked_success'.tr())),
                             ],
                           ),
-                          backgroundColor: Color(0xFF064E3B),
+                          backgroundColor: const Color(0xFF064E3B),
                         ),
                       );
                     }
                   }
                 },
                 icon: const Icon(LucideIcons.check, size: 15),
-                label: const Text(
-                  'Прийняти',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                label: Text(
+                  'notifications.accept_btn'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
                 ),
               ),
             ),
@@ -831,17 +856,17 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                       );
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Запрошення відхилено'),
-                        backgroundColor: Color(0xFF1E293B),
+                      SnackBar(
+                        content: Text('notifications.invite_declined_badge'.tr()),
+                        backgroundColor: const Color(0xFF1E293B),
                       ),
                     );
                   }
                 },
                 icon: const Icon(LucideIcons.x, size: 15),
-                label: const Text(
-                  'Відхилити',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                label: Text(
+                  'notifications.decline_btn'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
                 ),
               ),
             ),
@@ -853,11 +878,11 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
 
   String _formatTimeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'Щойно';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} хв тому';
-    if (diff.inHours < 24) return '${diff.inHours} год тому';
-    if (diff.inDays == 1) return 'Вчора';
-    return '${diff.inDays} дн тому';
+    if (diff.inMinutes < 1) return 'notifications.just_now'.tr();
+    if (diff.inMinutes < 60) return 'notifications.mins_ago'.tr(args: [diff.inMinutes.toString()]);
+    if (diff.inHours < 24) return 'notifications.hours_ago'.tr(args: [diff.inHours.toString()]);
+    if (diff.inDays == 1) return 'common.yesterday'.tr();
+    return 'notifications.days_ago'.tr(args: [diff.inDays.toString()]);
   }
 
   Future<void> _confirmClearAll(BuildContext context, WidgetRef ref, bool isDark) async {
@@ -895,7 +920,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
             ),
             const SizedBox(height: 16),
             Text(
-              'Очистити всі сповіщення?',
+              'notifications.clear_all_title'.tr(),
               style: TextStyle(
                 color: themeConfig.textPrimary,
                 fontSize: 17.5,
@@ -905,7 +930,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
             ),
             const SizedBox(height: 8),
             Text(
-              'Ви впевнені, що хочете видалити всі сповіщення? Список сповіщень стане порожнім.',
+              'notifications.clear_all_desc'.tr(),
               style: TextStyle(
                 color: themeConfig.textSecondary,
                 fontSize: 13.5,
@@ -930,7 +955,7 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                       ),
                     ),
                     child: Text(
-                      'Скасувати',
+                      'common.cancel'.tr(),
                       style: TextStyle(
                         color: isDark ? Colors.white70 : const Color(0xFF64748B),
                         fontSize: 14,
@@ -952,14 +977,14 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.trash2, size: 15),
-                        SizedBox(width: 6),
+                        const Icon(LucideIcons.trash2, size: 15),
+                        const SizedBox(width: 6),
                         Text(
-                          'Очистити',
-                          style: TextStyle(
+                          'notifications.clear'.tr(),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),

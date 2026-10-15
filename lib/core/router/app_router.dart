@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
@@ -51,9 +52,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final skipSplash = state.uri.queryParameters['skipSplash'] == 'true';
           final branchParam = state.uri.queryParameters['branch'];
-          if (branchParam != null && (branchParam == 'kyiv' || branchParam == 'vienna')) {
+          if (branchParam != null && branchParam.trim().isNotEmpty) {
             Future.microtask(() {
-              ref.read(tenancyControllerProvider.notifier).selectBranch(branchParam);
+              ref.read(tenancyControllerProvider.notifier).selectBranch(branchParam.trim());
             });
           }
           return RoleSelectionScreen(skipSplash: skipSplash, initialBranchId: branchParam);
@@ -105,7 +106,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'chat',
             builder: (context, state) {
-              final clientName = state.uri.queryParameters['clientName'] ?? 'Клієнт';
+              final clientName = state.uri.queryParameters['clientName'] ?? 'common.client'.tr();
               final clientId = state.uri.queryParameters['clientId'] ?? '';
               final dialogId = state.uri.queryParameters['dialogId'];
               final coachId = state.uri.queryParameters['coachId'];

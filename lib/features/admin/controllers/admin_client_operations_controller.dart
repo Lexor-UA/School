@@ -124,6 +124,7 @@ class AdminClientOperationsController {
       }
 
       List<String> allRelatedIds = [clientId];
+      final Set<String> deletedChildNames = {};
       for (final childDoc in childDocsMap.values) {
         final cData = childDoc.data() ?? {};
         final cParentIds = List<String>.from(cData['parentIds'] ?? []);
@@ -136,11 +137,13 @@ class AdminClientOperationsController {
           }));
         } else {
           allRelatedIds.add(childDoc.id);
+          final cName = (cData['name'] as String?)?.trim() ?? '';
+          if (cName.isNotEmpty) deletedChildNames.add(cName.toLowerCase());
           addOperation((batch) => batch.delete(childDoc.reference));
         }
       }
 
-      // 4. Clean up or transfer subscriptions
+      // 4. Clean up or transfer subscriptions and discounts
       final subsSnap = await db.collection('subscriptions').where('userId', isEqualTo: clientId).get();
       for (var doc in subsSnap.docs) {
         final sData = doc.data();
@@ -152,11 +155,25 @@ class AdminClientOperationsController {
         }
       }
 
+      final discountsSnap = await db.collection('subscription_discounts').where('clientId', isEqualTo: clientId).get();
+      for (final dDoc in discountsSnap.docs) {
+        addOperation((batch) => batch.delete(dDoc.reference));
+      }
+
       for (final relId in allRelatedIds) {
         if (relId == clientId) continue;
         final childSubs = await db.collection('subscriptions').where('childId', isEqualTo: relId).get();
         for (final sDoc in childSubs.docs) {
           addOperation((batch) => batch.delete(sDoc.reference));
+        }
+      }
+      if (deletedChildNames.isNotEmpty) {
+        final allSubsSnap = await db.collection('subscriptions').where('userId', isEqualTo: clientId).get();
+        for (final sDoc in allSubsSnap.docs) {
+          final oName = (sDoc.data()['ownerName'] as String?)?.trim().toLowerCase() ?? '';
+          if (deletedChildNames.contains(oName)) {
+            addOperation((batch) => batch.delete(sDoc.reference));
+          }
         }
       }
 

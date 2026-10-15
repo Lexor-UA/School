@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,10 +14,11 @@ import 'package:collection/collection.dart';
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:swimming_school_app/features/schedule/models/class_conflict.dart';
-import 'package:intl/intl.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/schedule/services/recurring_schedule_generator.dart';
 import 'package:swimming_school_app/features/tenancy/services/branch_data_integrity_validator.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
+import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
 
 part 'schedule_controller.g.dart';
 
@@ -55,39 +57,39 @@ class BookingResult {
     required this.status,
   });
 
-  static const success = BookingResult(
+  static BookingResult get success => BookingResult(
     isSuccess: true,
-    message: 'Успішно записано на тренування!',
+    message: 'schedule.booking_success'.tr(),
     status: BookingStatus.success,
   );
 
-  static const classFull = BookingResult(
+  static BookingResult get classFull => BookingResult(
     isSuccess: false,
-    message: 'У цій групі вже немає вільних місць.',
+    message: 'schedule.booking_class_full'.tr(),
     status: BookingStatus.classFull,
   );
 
-  static const noSubscription = BookingResult(
+  static BookingResult get noSubscription => BookingResult(
     isSuccess: false,
-    message: 'Немає активного абонемента з доступними заняттями.',
+    message: 'schedule.booking_no_subscription'.tr(),
     status: BookingStatus.noSubscription,
   );
 
-  static const alreadyBooked = BookingResult(
+  static BookingResult get alreadyBooked => BookingResult(
     isSuccess: false,
-    message: 'Ви вже записані на це тренування.',
+    message: 'schedule.booking_already_booked'.tr(),
     status: BookingStatus.alreadyBooked,
   );
 
-  static const classPast = BookingResult(
+  static BookingResult get classPast => BookingResult(
     isSuccess: false,
-    message: 'Це тренування вже завершилося. Запис неможливий.',
+    message: 'schedule.booking_class_past'.tr(),
     status: BookingStatus.classPast,
   );
 
-  static const error = BookingResult(
+  static BookingResult get error => BookingResult(
     isSuccess: false,
-    message: 'Помилка запису. Спробуйте пізніше.',
+    message: 'schedule.booking_error'.tr(),
     status: BookingStatus.error,
   );
 }
@@ -456,7 +458,10 @@ class ScheduleController extends _$ScheduleController {
         final dateStr = DateFormat('dd.MM.yyyy').format(classStartTime);
         return BookingResult(
           isSuccess: false,
-          message: 'Термін дії абонемента закінчується $expiryStr (до дати тренування $dateStr).',
+          message: 'schedule.err_sub_expires_before_class'.tr(namedArgs: {
+            'expiry': expiryStr,
+            'date': dateStr,
+          }),
           status: BookingStatus.error,
         );
       }
@@ -478,8 +483,8 @@ class ScheduleController extends _$ScheduleController {
           result = BookingResult(
             isSuccess: false,
             message: !classDoc.exists
-                ? 'Заняття не знайдено в базі даних.'
-                : 'Абонемент не знайдено в базі даних.',
+                ? 'schedule.err_class_not_found'.tr()
+                : 'schedule.err_sub_not_found'.tr(),
             status: BookingStatus.error,
           );
           return;
@@ -499,7 +504,7 @@ class ScheduleController extends _$ScheduleController {
         if (!bookingIntegrity.isValid) {
           result = BookingResult(
             isSuccess: false,
-            message: bookingIntegrity.errorMessage ?? 'Запис між різними філіями заборонено.',
+            message: bookingIntegrity.errorMessage ?? 'schedule.err_cross_branch_booking'.tr(),
             status: BookingStatus.error,
           );
           return;
@@ -507,18 +512,18 @@ class ScheduleController extends _$ScheduleController {
 
         // Strict category validation between class and subscription
         if (groupClass.isSplit && !effectiveSubscription.isSplitSubscription) {
-          result = const BookingResult(
+          result = BookingResult(
             isSuccess: false,
-            message: 'Для запису на спліт-тренування потрібен спліт-абонемент (на 2 особи).',
+            message: 'schedule.err_split_requires_split_sub'.tr(),
             status: BookingStatus.error,
           );
           return;
         }
 
         if (!groupClass.isSplit && effectiveSubscription.isSplitSubscription) {
-          result = const BookingResult(
+          result = BookingResult(
             isSuccess: false,
-            message: 'Спліт-абонемент призначений лише для спліт-тренувань (на 2 особи). Для цього заняття потрібен звичайний абонемент.',
+            message: 'schedule.err_split_sub_only_for_split'.tr(),
             status: BookingStatus.error,
           );
           return;
@@ -541,9 +546,9 @@ class ScheduleController extends _$ScheduleController {
                 attendeesToAdd.add(children.first.id);
               } else {
                 // If there are multiple family options, DO NOT guess! Force selection.
-                result = const BookingResult(
+                result = BookingResult(
                   isSuccess: false,
-                  message: 'Для спліт-тренування оберіть обох учасників (двоє дорослих, дорослий + дитина або двоє дітей).',
+                  message: 'schedule.err_split_select_both'.tr(),
                   status: BookingStatus.error,
                 );
                 return;
@@ -558,36 +563,36 @@ class ScheduleController extends _$ScheduleController {
           
           if (!groupClass.isSplit) {
             if (isAttAdult && groupClass.isChildOnly) {
-              result = const BookingResult(
+              result = BookingResult(
                 isSuccess: false,
-                message: 'Це тренування лише для дітей. Будь ласка, оберіть профіль дитини.',
+                message: 'schedule.err_class_children_only'.tr(),
                 status: BookingStatus.error,
               );
               return;
             }
 
             if (!isAttAdult && groupClass.isAdultOnly) {
-              result = const BookingResult(
+              result = BookingResult(
                 isSuccess: false,
-                message: 'Це тренування призначене лише для дорослих.',
+                message: 'schedule.err_class_adults_only'.tr(),
                 status: BookingStatus.error,
               );
               return;
             }
 
             if (!isAttAdult && effectiveSubscription.isAdultOnlySubscription) {
-              result = const BookingResult(
+              result = BookingResult(
                 isSuccess: false,
-                message: 'Дорослий абонемент не може використовуватися для дитячих занять.',
+                message: 'schedule.err_adult_sub_for_child'.tr(),
                 status: BookingStatus.error,
               );
               return;
             }
 
             if (isAttAdult && effectiveSubscription.isChildOnlySubscription) {
-              result = const BookingResult(
+              result = BookingResult(
                 isSuccess: false,
-                message: 'Дитячий абонемент не може використовуватися для дорослих занять.',
+                message: 'schedule.err_child_sub_for_adult'.tr(),
                 status: BookingStatus.error,
               );
               return;
@@ -599,11 +604,23 @@ class ScheduleController extends _$ScheduleController {
             final childAge = child?.ageAt(groupClass.startTime) ?? child?.currentAge;
             if (childAge != null && !groupClass.isAgeCompatible(childAge)) {
               final range = groupClass.ageRange;
+              final childName = child?.name ?? '';
               final msg = childAge >= 16 && groupClass.isChildOnly
-                  ? 'Дитині ${child?.name ?? ''} на дату заняття вже є $childAge р. З 16 років відвідування дитячих груп заборонено — потрібно створити окремий дорослий акаунт.'
+                  ? 'schedule.err_child_16_plus'.tr(namedArgs: {
+                      'name': childName,
+                      'age': childAge.toString(),
+                    })
                   : (childAge <= 5
-                      ? 'Для дітей до 6 років (1–5 років включно) (${child?.name ?? ''}, вік: $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
-                      : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).');
+                      ? 'schedule.err_child_under_6_class'.tr(namedArgs: {
+                          'name': childName,
+                          'age': childAge.toString(),
+                        })
+                      : 'schedule.err_child_age_mismatch'.tr(namedArgs: {
+                          'name': childName,
+                          'age': childAge.toString(),
+                          'min': (range?.$1 ?? 0).toString(),
+                          'max': (range?.$2 ?? 0).toString(),
+                        }));
               result = BookingResult(
                 isSuccess: false,
                 message: msg,
@@ -615,8 +632,14 @@ class ScheduleController extends _$ScheduleController {
             if (childAge != null && !effectiveSubscription.isAgeCompatible(childAge)) {
               final subRange = effectiveSubscription.ageRange;
               final subMsg = childAge <= 5
-                  ? 'Для дитини віком $childAge р. потрібен індивідуальний дитячий абонемент (групові та спліт-абонементи доступні від 6 років).'
-                  : 'Абонемент призначений для вікової групи ${subRange?.$1 ?? 0}-${subRange?.$2 ?? 0} р. (вік дитини: $childAge р.).';
+                  ? 'schedule.err_child_under_6_sub'.tr(namedArgs: {
+                      'age': childAge.toString(),
+                    })
+                  : 'schedule.err_sub_age_mismatch'.tr(namedArgs: {
+                      'min': (subRange?.$1 ?? 0).toString(),
+                      'max': (subRange?.$2 ?? 0).toString(),
+                      'age': childAge.toString(),
+                    });
               result = BookingResult(
                 isSuccess: false,
                 message: subMsg,
@@ -650,7 +673,10 @@ class ScheduleController extends _$ScheduleController {
             final dateStr = DateFormat('dd.MM.yyyy').format(groupClass.startTime);
             result = BookingResult(
               isSuccess: false,
-              message: 'Термін дії абонемента закінчується $expiryStr (до дати тренування $dateStr).',
+              message: 'schedule.err_sub_expires_before_class'.tr(namedArgs: {
+                'expiry': expiryStr,
+                'date': dateStr,
+              }),
               status: BookingStatus.error,
             );
             return;
@@ -688,9 +714,9 @@ class ScheduleController extends _$ScheduleController {
         });
 
         if (conflictingClass != null) {
-          result = const BookingResult(
+          result = BookingResult(
             isSuccess: false,
-            message: 'Учень вже записаний на інше заняття у цей самий час. Оберіть інший час.',
+            message: 'schedule.err_student_time_overlap'.tr(),
             status: BookingStatus.error,
           );
           return;
@@ -716,11 +742,13 @@ class ScheduleController extends _$ScheduleController {
         });
         
         confirmedAttendees = List.from(attendeesToAdd);
-        final enrolledNames = attendeesToAdd.map(getMemberName).join(' та ');
+        final enrolledNames = attendeesToAdd.map(getMemberName).join(' ${'common.and'.tr()} ');
         result = groupClass.isSplit && attendeesToAdd.length == 2
             ? BookingResult(
                 isSuccess: true,
-                message: 'Спліт-заняття успішно заброньовано ($enrolledNames)!',
+                message: 'schedule.booking_split_success'.tr(namedArgs: {
+                  'names': enrolledNames,
+                }),
                 status: BookingStatus.success,
               )
             : BookingResult.success;
@@ -728,7 +756,7 @@ class ScheduleController extends _$ScheduleController {
       
       if (result.isSuccess && bookedClass != null) {
         final enrolledNames = confirmedAttendees.isNotEmpty
-            ? confirmedAttendees.map(getMemberName).join(' та ')
+            ? confirmedAttendees.map(getMemberName).join(' ${'common.and'.tr()} ')
             : ownerName;
         _logActivity(
           type: ClassActivityType.booking,
@@ -740,7 +768,10 @@ class ScheduleController extends _$ScheduleController {
           attendeeName: enrolledNames,
           parentName: user.name,
           parentPhone: user.phone,
-          message: 'Новий запис: $enrolledNames записався(-лась) на «${bookedClass!.title}»',
+          message: 'schedule.log_new_booking'.tr(namedArgs: {
+            'names': enrolledNames,
+            'title': bookedClass!.title,
+          }),
         );
       }
 
@@ -749,8 +780,8 @@ class ScheduleController extends _$ScheduleController {
       debugPrint('Error booking class: $e\n$stack');
       final errStr = e.toString();
       final userMsg = errStr.contains('permission-denied')
-          ? 'Помилка доступу до бази даних (перевірте правила доступу).'
-          : 'Помилка запису ($e). Спробуйте пізніше.';
+          ? 'schedule.err_db_permission'.tr()
+          : 'schedule.err_booking_exception'.tr(namedArgs: {'error': e.toString()});
       return BookingResult(
         isSuccess: false,
         message: userMsg,
@@ -764,6 +795,7 @@ class ScheduleController extends _$ScheduleController {
     String childId, {
     String? targetUserId,
     String? targetOwnerName,
+    bool isAdminOverride = false,
   }) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return false;
@@ -793,6 +825,7 @@ class ScheduleController extends _$ScheduleController {
       
       bool success = false;
       GroupClass? cancelledClass;
+      List<String> removedMembers = [];
       
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final classDoc = await transaction.get(classRef);
@@ -804,8 +837,12 @@ class ScheduleController extends _$ScheduleController {
         final groupClass = GroupClass.fromJson(data);
         cancelledClass = groupClass;
         
-        if (groupClass.startTime.isBefore(DateTime.now())) {
-          return;
+        if (user.role == UserRole.parent && !isAdminOverride) {
+          final nowInBranch = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), groupClass.branchId);
+          final diffMinutes = groupClass.branchStartTime.difference(nowInBranch).inMinutes;
+          if (diffMinutes < 300) {
+            return;
+          }
         }
 
         if (groupClass.enrolledChildIds.contains(childId)) {
@@ -814,6 +851,7 @@ class ScheduleController extends _$ScheduleController {
           final List<String> membersToRemove = isSplitClass
               ? List<String>.from(groupClass.enrolledChildIds)
               : [childId];
+          removedMembers = membersToRemove;
 
           List<String> newEnrolled = List.from(groupClass.enrolledChildIds);
           for (final mId in membersToRemove) {
@@ -821,27 +859,40 @@ class ScheduleController extends _$ScheduleController {
           }
 
           final bookedSubMap = data['bookedSubscriptions'] as Map?;
-          final Set<String> refundedSubIds = {};
+          final Set<String> targetSubIds = {};
 
           for (final mId in membersToRemove) {
             final bookedSubId = bookedSubMap?[mId] as String?;
-            final targetSubId = bookedSubId ?? subscription?.id;
+            final activeSubId = subscription?.id.trim();
+            final subId = (bookedSubId != null && bookedSubId.trim().isNotEmpty)
+                ? bookedSubId.trim()
+                : (activeSubId != null && activeSubId.isNotEmpty ? activeSubId : null);
 
-            if (targetSubId != null && !refundedSubIds.contains(targetSubId)) {
-              refundedSubIds.add(targetSubId);
-              final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(targetSubId);
-              final subDoc = await transaction.get(subRef);
-              if (subDoc.exists) {
-                final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
-                final remainingClasses = subData['remainingClasses'] as int? ?? 0;
-                final totalClasses = subData['totalClasses'] as int? ?? remainingClasses;
-                if (remainingClasses < totalClasses) {
-                  int newRemaining = (remainingClasses + 1).clamp(0, totalClasses);
-                  transaction.update(subRef, {
-                    'remainingClasses': newRemaining,
-                    'isActive': true,
-                  });
-                }
+            if (subId != null && subId.isNotEmpty) {
+              targetSubIds.add(subId);
+            }
+          }
+
+          // 1. Fetch all subscriptions first (all transaction reads must execute before writes)
+          final Map<String, DocumentSnapshot> subDocs = {};
+          for (final subId in targetSubIds) {
+            final subRef = FirebaseFirestore.instance.collection('subscriptions').doc(subId);
+            subDocs[subId] = await transaction.get(subRef);
+          }
+
+          // 2. Apply subscription refunds (writes)
+          for (final subId in targetSubIds) {
+            final subDoc = subDocs[subId];
+            if (subDoc != null && subDoc.exists) {
+              final subData = Map<String, dynamic>.from(subDoc.data()! as Map);
+              final remainingClasses = subData['remainingClasses'] as int? ?? 0;
+              final totalClasses = subData['totalClasses'] as int? ?? remainingClasses;
+              if (remainingClasses < totalClasses) {
+                int newRemaining = (remainingClasses + 1).clamp(0, totalClasses);
+                transaction.update(subDoc.reference, {
+                  'remainingClasses': newRemaining,
+                  'isActive': true,
+                });
               }
             }
           }
@@ -866,6 +917,7 @@ class ScheduleController extends _$ScheduleController {
       }, timeout: const Duration(seconds: 10), maxAttempts: 2);
       
       if (success && cancelledClass != null) {
+        removeParticipantsFromClasses(removedMembers);
         _logActivity(
           type: ClassActivityType.cancellation,
           classId: classId,
@@ -877,13 +929,19 @@ class ScheduleController extends _$ScheduleController {
           parentName: childId != user.id ? user.name : null,
           parentPhone: user.phone,
           message: cancelledClass!.isSplit
-              ? 'Скасування спліт-заняття: скасовано запис обох учасників на «${cancelledClass!.title}»'
-              : 'Скасування: $ownerName скасував(-ла) запис на «${cancelledClass!.title}»',
+              ? 'schedule.log_cancel_split'.tr(namedArgs: {
+                  'title': cancelledClass!.title,
+                })
+              : 'schedule.log_cancel_single'.tr(namedArgs: {
+                  'name': ownerName,
+                  'title': cancelledClass!.title,
+                }),
         );
       }
 
       return success;
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('Error in cancelClass: $e\n$stack');
       return false;
     }
   }
@@ -897,6 +955,8 @@ class ScheduleController extends _$ScheduleController {
     required int maxCapacity,
     required String category,
     required String lane,
+    String? locationId,
+    String? poolId,
     List<String> enrolledChildIds = const [],
     bool isCustomBooking = false,
   }) async {
@@ -910,6 +970,8 @@ class ScheduleController extends _$ScheduleController {
       lane: lane,
       coachId: coachId,
       enrolledChildIds: enrolledChildIds,
+      locationId: locationId,
+      poolId: poolId,
     );
     if (conflict != null) {
       lastConflict = conflict;
@@ -935,7 +997,7 @@ class ScheduleController extends _$ScheduleController {
           if (!coachValidation.isValid) {
             lastConflict = ClassConflict(
               type: ClassConflictType.coachConflict,
-              message: coachValidation.errorMessage ?? 'Тренер не має доступу до цієї філії.',
+              message: coachValidation.errorMessage ?? 'admin.err_coach_no_branch_access'.tr(),
             );
             return false;
           }
@@ -977,9 +1039,9 @@ class ScheduleController extends _$ScheduleController {
         }
 
         if (subscription == null || subscription.remainingClasses <= 0) {
-          lastConflict = const ClassConflict(
+          lastConflict = ClassConflict(
             type: ClassConflictType.participantConflict,
-            message: 'Відсутній активний спліт-абонемент або закінчилися заняття.',
+            message: 'schedule.err_no_active_split_sub'.tr(),
           );
           return false;
         }
@@ -996,7 +1058,10 @@ class ScheduleController extends _$ScheduleController {
             final dateStr = DateFormat('dd.MM.yyyy').format(startTime);
             lastConflict = ClassConflict(
               type: ClassConflictType.subscriptionExpired,
-              message: 'Термін дії спліт-абонемента закінчується $expiryStr (до обраної дати тренування $dateStr).',
+              message: 'schedule.err_split_sub_expires_before_class'.tr(namedArgs: {
+                'expiry': expiryStr,
+                'date': dateStr,
+              }),
             );
             return false;
           }
@@ -1028,7 +1093,7 @@ class ScheduleController extends _$ScheduleController {
           if (sub == null || sub.isSplitSubscription) {
             lastConflict = ClassConflict(
               type: ClassConflictType.participantConflict,
-              message: 'Відсутній абонемент для $ownerName.',
+              message: 'schedule.err_missing_sub_for_owner'.tr(namedArgs: {'name': ownerName}),
             );
             return false;
           }
@@ -1037,7 +1102,7 @@ class ScheduleController extends _$ScheduleController {
           if (sub.remainingClasses - alreadyUsed <= 0) {
             lastConflict = ClassConflict(
               type: ClassConflictType.participantConflict,
-              message: 'Недостатньо занять в абонементі для $ownerName.',
+              message: 'schedule.err_insufficient_classes_for_owner'.tr(namedArgs: {'name': ownerName}),
             );
             return false;
           }
@@ -1054,7 +1119,11 @@ class ScheduleController extends _$ScheduleController {
               final dateStr = DateFormat('dd.MM.yyyy').format(startTime);
               lastConflict = ClassConflict(
                 type: ClassConflictType.subscriptionExpired,
-                message: 'Термін дії абонемента для $ownerName закінчується $expiryStr (до обраної дати тренування $dateStr).',
+                message: 'schedule.err_sub_for_owner_expires_before_class'.tr(namedArgs: {
+                  'name': ownerName,
+                  'expiry': expiryStr,
+                  'date': dateStr,
+                }),
               );
               return false;
             }
@@ -1068,6 +1137,15 @@ class ScheduleController extends _$ScheduleController {
 
     try {
       final activeBranch = ref.read(effectiveBranchProvider);
+      final branchConfig = BranchConfig.forBranch(activeBranch.id);
+      final defaultLoc = branchConfig.locations.isNotEmpty ? branchConfig.locations.first : null;
+      final effectiveLocationId = (locationId != null && locationId.isNotEmpty)
+          ? locationId
+          : (defaultLoc?.id ?? 'kyiv_main');
+      final effectivePoolId = (poolId != null && poolId.isNotEmpty)
+          ? poolId
+          : (defaultLoc != null && defaultLoc.pools.isNotEmpty ? defaultLoc.pools.first.id : 'pool_25m');
+
       final newClassRef = FirebaseFirestore.instance.collection('classes').doc();
       final newClass = GroupClass(
         id: newClassRef.id,
@@ -1083,6 +1161,8 @@ class ScheduleController extends _$ScheduleController {
         organizationId: activeBranch.organizationId,
         branchId: activeBranch.id,
         timezone: activeBranch.timezone,
+        locationId: effectiveLocationId,
+        poolId: effectivePoolId,
       );
 
       if (subscription != null) {
@@ -1242,7 +1322,7 @@ class ScheduleController extends _$ScheduleController {
       if (!locationPoolIntegrity.isValid) {
         lastConflict = ClassConflict(
           type: ClassConflictType.laneConflict,
-          message: locationPoolIntegrity.errorMessage ?? 'Невірна локація або басейн.',
+          message: locationPoolIntegrity.errorMessage ?? 'admin.err_invalid_location_or_pool'.tr(),
         );
         return const CreateRecurringClassesResult(createdCount: 0);
       }
@@ -1262,7 +1342,7 @@ class ScheduleController extends _$ScheduleController {
             if (!coachIntegrity.isValid) {
               lastConflict = ClassConflict(
                 type: ClassConflictType.coachConflict,
-                message: coachIntegrity.errorMessage ?? 'Тренер не має доступу до цієї філії.',
+                message: coachIntegrity.errorMessage ?? 'admin.err_coach_no_branch_access'.tr(),
               );
               return const CreateRecurringClassesResult(createdCount: 0);
             }
@@ -1486,6 +1566,8 @@ class ScheduleController extends _$ScheduleController {
       lane: lane,
       coachId: coachId,
       excludeClassId: classId,
+      locationId: locationId,
+      poolId: poolId,
     );
     if (conflict != null) {
       lastConflict = conflict;
@@ -1514,7 +1596,7 @@ class ScheduleController extends _$ScheduleController {
           if (!coachValidation.isValid) {
             lastConflict = ClassConflict(
               type: ClassConflictType.coachConflict,
-              message: coachValidation.errorMessage ?? 'Тренер не має доступу до цієї філії.',
+              message: coachValidation.errorMessage ?? 'admin.err_coach_no_branch_access'.tr(),
             );
             return false;
           }
@@ -1606,13 +1688,17 @@ class ScheduleController extends _$ScheduleController {
       cachedClasses = newList;
 
       final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+      final slotStr = lane.isNotEmpty ? '$timeStr, $lane' : timeStr;
       _logActivity(
         type: ClassActivityType.rescheduled,
         classId: classId,
         classTitle: title,
         coachId: coachId,
         coachName: coachName,
-        message: 'Зміна в розкладі: «$title» ($timeStr${lane.isNotEmpty ? ", $lane" : ""})',
+        message: 'schedule.log_rescheduled'.tr(namedArgs: {
+          'title': title,
+          'slot': slotStr,
+        }),
       );
 
       // Send notifications to enrolled clients
@@ -1659,14 +1745,41 @@ class ScheduleController extends _$ScheduleController {
         final isTitleMatch = c.title.trim().toLowerCase() == originalTitle.trim().toLowerCase();
         final isCoachMatch = coachId.isEmpty || coachId == 'unassigned' || c.coachId == coachId;
         final isLaneMatch = lane.isEmpty || c.lane == lane;
-        final isTimeMatch = originalStartTime == null ||
-            (c.startTime.hour == originalStartTime.hour && c.startTime.minute == originalStartTime.minute);
-        final isDateMatch = originalStartTime == null ||
-            !c.startTime.isBefore(DateTime(originalStartTime.year, originalStartTime.month, originalStartTime.day));
+        final cLocal = c.branchStartTime;
+        final origLocal = originalStartTime != null
+            ? BranchTimezoneHelper.toBranchLocalTime(originalStartTime, c.branchId)
+            : null;
+        final isTimeMatch = origLocal == null ||
+            (cLocal.hour == origLocal.hour && cLocal.minute == origLocal.minute);
+        final isDateMatch = origLocal == null ||
+            !cLocal.isBefore(DateTime(origLocal.year, origLocal.month, origLocal.day));
         return isBranchMatch && isTitleMatch && isCoachMatch && isLaneMatch && isTimeMatch && isDateMatch;
       }).toList();
 
       if (matchingClasses.isEmpty) return 0;
+
+      final targetBranchId = (branchId != null && branchId.isNotEmpty)
+          ? branchId
+          : matchingClasses.first.branchId;
+
+      if (newCoachId != null && newCoachId.isNotEmpty && newCoachId != 'unassigned') {
+        try {
+          final coachDoc = await FirebaseFirestore.instance.collection('users').doc(newCoachId).get();
+          if (coachDoc.exists && coachDoc.data() != null) {
+            final coachData = Map<String, dynamic>.from(coachDoc.data() as Map);
+            coachData['id'] = coachDoc.id;
+            final coachUser = AppUser.fromJson(coachData);
+            final coachValidation = BranchDataIntegrityValidator.validateCoachAssignment(
+              coach: coachUser,
+              branchId: targetBranchId,
+            );
+            if (!coachValidation.isValid) {
+              debugPrint('Coach branch mismatch in updateClassSeries: ${coachValidation.errorMessage}');
+              return 0;
+            }
+          }
+        } catch (_) {}
+      }
 
       final batch = FirebaseFirestore.instance.batch();
       for (final c in matchingClasses) {
@@ -1768,10 +1881,15 @@ class ScheduleController extends _$ScheduleController {
       final dateStr = '${startTime.day.toString().padLeft(2, '0')}.${startTime.month.toString().padLeft(2, '0')}';
       final coachStr = (coachId != 'unassigned' && coachName.isNotEmpty && !coachName.toLowerCase().contains('не призначен'))
           ? coachName
-          : 'уточнюється';
+          : 'schedule.coach_tbd'.tr();
 
-      final notifTitle = '🕒 Зміни у розкладі: $title';
-      final notifMessage = 'Розклад тренування «$title» ($dateStr) оновлено: новий час $timeStr, тренер: $coachStr.';
+      final notifTitle = 'schedule.notif_reschedule_title'.tr(namedArgs: {'title': title});
+      final notifMessage = 'schedule.notif_reschedule_body'.tr(namedArgs: {
+        'title': title,
+        'date': dateStr,
+        'time': timeStr,
+        'coach': coachStr,
+      });
 
       for (final recipientId in targetRecipientUserIds) {
         try {
@@ -1799,7 +1917,7 @@ class ScheduleController extends _$ScheduleController {
   Future<bool> deleteClass(String classId) async {
     try {
       final doc = await FirebaseFirestore.instance.collection('classes').doc(classId).get();
-      String title = 'Заняття';
+      String title = 'schedule.class_default'.tr();
       String coachId = '';
       String coachName = '';
       List<String> enrolledChildIds = [];
@@ -1921,7 +2039,14 @@ class ScheduleController extends _$ScheduleController {
         classTitle: title,
         coachId: coachId,
         coachName: coachName,
-        message: 'Заняття «$title» скасовано адміністратором${enrolledChildIds.isNotEmpty ? ' (повернено ${enrolledChildIds.length} занять учням)' : ''}',
+        message: enrolledChildIds.isNotEmpty
+            ? 'schedule.log_class_cancelled_with_refund'.tr(namedArgs: {
+                'title': title,
+                'count': enrolledChildIds.length.toString(),
+              })
+            : 'schedule.log_class_cancelled_by_admin'.tr(namedArgs: {
+                'title': title,
+              }),
       );
       return true;
     } catch (e) {

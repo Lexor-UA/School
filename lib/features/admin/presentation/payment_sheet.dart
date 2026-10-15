@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +12,27 @@ import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_c
 import 'package:swimming_school_app/features/chat/repositories/chat_repository.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
+import 'package:swimming_school_app/features/payment/presentation/widgets/edit_branch_requisites_sheet.dart';
+import 'package:swimming_school_app/features/payment/services/branch_payment_service.dart';
+
+final pendingSubscriptionsProvider = StreamProvider.autoDispose<Map<String, Map<String, dynamic>>>((ref) {
+  final tenancy = ref.watch(tenancyControllerProvider);
+  return FirebaseFirestore.instance
+      .collection('subscriptions')
+      .where('pendingApproval', isEqualTo: true)
+      .snapshots()
+      .map((snap) {
+    final Map<String, Map<String, dynamic>> map = {};
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final bId = data['branchId'] as String? ?? data['branch_id'] as String? ?? 'kyiv';
+      if (tenancy.isAllLocationsSelected || bId == tenancy.activeBranchId) {
+        map[doc.id] = data;
+      }
+    }
+    return map;
+  });
+});
 
 class PaymentSheet extends ConsumerStatefulWidget {
   final int initialTabIndex;
@@ -95,7 +115,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   }) async {
     if (_sendingReminderClientIds.contains(clientId)) return;
     if (_sentReminderClientIds.contains(clientId)) {
-      AppSnackBar.showInfo(context, 'Нагадування для $clientName вже надіслано');
+      AppSnackBar.showInfo(
+        context,
+        'admin.payment_reminder_already_sent'.tr(namedArgs: {'name': clientName}),
+      );
       return;
     }
 
@@ -105,13 +128,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
     HapticFeedback.mediumImpact();
 
-    final String childDetail = (ownerName.trim().isNotEmpty && ownerName.trim().toLowerCase() != clientName.trim().toLowerCase())
-        ? ' для $ownerName'
+    final bool hasDistinctChild = ownerName.trim().isNotEmpty && ownerName.trim().toLowerCase() != clientName.trim().toLowerCase();
+    final String childDetail = hasDistinctChild
+        ? ' ${'admin.payment_for_owner'.tr(namedArgs: {'owner': ownerName})}'
         : '';
-    final String notifTitle = (ownerName.trim().isNotEmpty && ownerName.trim().toLowerCase() != clientName.trim().toLowerCase())
-        ? 'Закінчення абонементу ($ownerName)'
-        : 'Закінчення абонементу';
-    final text = 'Вітаємо, $clientName! 🏊 Нагадуємо, що абонемент на тренування з плавання в CitySwim$childDetail завершився. Будемо раді бачити вас знову на заняттях! Щоб поновити абонемент та узгодити розклад, зверніться до адміністратора або оберіть тариф у додатку.';
+    final String notifTitle = hasDistinctChild
+        ? 'admin.payment_sub_expired_title_owner'.tr(namedArgs: {'owner': ownerName})
+        : 'admin.payment_sub_expired_title'.tr();
+    final text = 'admin.payment_reminder_body'.tr(namedArgs: {'name': clientName, 'childDetail': childDetail});
 
     try {
       // 1. Add notification to Firestore collection so it immediately appears in client's bell icon
@@ -125,7 +149,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         'type': 'subscription_reminder',
         'isRead': false,
         'actionType': 'subscription',
-        'senderName': 'Адміністрація CitySwim',
+        'senderName': 'admin.cityswim_admin_sender'.tr(),
         'branchId': ref.read(tenancyControllerProvider).activeBranchId ?? 'kyiv',
       });
 
@@ -142,7 +166,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       // 3. Log admin action for audit log
       final admin = ref.read(authControllerProvider);
       if (admin != null) {
-        await logAdminAction('Надіслано нагадування про оплату для "$clientName"', admin.id);
+        await logAdminAction('admin.log_sent_payment_reminder'.tr(namedArgs: {'name': clientName}), admin.id);
       }
 
       if (mounted) {
@@ -150,7 +174,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           _sendingReminderClientIds.remove(clientId);
           _sentReminderClientIds.add(clientId);
         });
-        AppSnackBar.showSuccess(context, 'Сповіщення надіслано в дзвіночок клієнту $clientName');
+        AppSnackBar.showSuccess(
+          context,
+          'admin.payment_reminder_sent_success'.tr(namedArgs: {'name': clientName}),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -159,7 +186,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         });
         AppSnackBar.show(
           context,
-          message: 'Помилка надсилання: $e',
+          message: 'admin.payment_send_error'.tr(namedArgs: {'error': '$e'}),
           backgroundColor: const Color(0xFFEF4444),
         );
       }
@@ -171,6 +198,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final currentTheme = ref.watch(appThemeControllerProvider);
     final subsAsync = ref.watch(allSubscriptionsProvider);
     final tenancyState = ref.watch(tenancyControllerProvider);
+    final pendingMap = ref.watch(pendingSubscriptionsProvider).value ?? {};
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'parent').snapshots(),
@@ -183,7 +211,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         }
 
         return subsAsync.when(
-          data: (allSubs) => _buildMainSheet(context, allSubs, clientsMap, currentTheme, tenancyState),
+          data: (allSubs) => _buildMainSheet(context, allSubs, clientsMap, pendingMap, currentTheme, tenancyState),
           loading: () => _buildLoadingSheet(context, currentTheme),
           error: (err, stack) => _buildErrorSheet(context, err.toString(), currentTheme),
         );
@@ -224,52 +252,72 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     BuildContext context,
     List<Subscription> allSubs,
     Map<String, Map<String, dynamic>> clientsMap,
+    Map<String, Map<String, dynamic>> pendingMap,
     AppThemeConfig currentTheme,
     TenancyState tenancyState,
   ) {
     final activeBranchId = tenancyState.activeBranchId;
     final isAllLocations = tenancyState.isAllLocationsSelected;
 
-    // 1. Separate Active Subscriptions
-    final activeSubs = allSubs.where(_isSubActive).toList();
+    // 1. Separate Active & Pending Subscriptions
+    final activeSubs = allSubs.where((s) => _isSubActive(s) || pendingMap.containsKey(s.id)).toList();
 
-    // Sort active: expiring soonest first
+    // Sort active: pending approvals first, then expiring soonest
     activeSubs.sort((a, b) {
+      final aPending = pendingMap.containsKey(a.id);
+      final bPending = pendingMap.containsKey(b.id);
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
       if (a.expiryDate == null && b.expiryDate == null) return 0;
       if (a.expiryDate == null) return 1;
       if (b.expiryDate == null) return -1;
       return a.expiryDate!.compareTo(b.expiryDate!);
     });
 
-    final expiringSoonSubs = activeSubs.where(_isSubExpiringSoon).toList();
+    final expiringSoonSubs = activeSubs.where((sub) {
+      if (!_isSubExpiringSoon(sub)) return false;
+      final ownerKey = (sub.ownerName ?? '').trim().toLowerCase();
+      final hasHealthyActiveSub = activeSubs.any((other) =>
+          other.id != sub.id &&
+          other.userId == sub.userId &&
+          (other.ownerName ?? '').trim().toLowerCase() == ownerKey &&
+          !_isSubExpiringSoon(other));
+      return !hasHealthyActiveSub;
+    }).toList();
+
+    final Set<String> activeOrPendingOwnerKeys = {
+      ...activeSubs.map((s) => '${s.userId}_${(s.ownerName ?? '').trim().toLowerCase()}'),
+      ...allSubs.where((s) => pendingMap.containsKey(s.id) || s.pendingApproval).map(
+        (s) => '${s.userId}_${(s.ownerName ?? '').trim().toLowerCase()}',
+      ),
+    };
 
     // 2. Identify Unpaid / Expired / Lapsed clients
     final List<_UnpaidClientItem> unpaidList = [];
+    final Set<String> seenUnpaidOwnerKeys = {};
 
     for (final sub in allSubs) {
-      if (!_isSubActive(sub)) {
+      if (!_isSubActive(sub) && !pendingMap.containsKey(sub.id) && !sub.pendingApproval) {
+        final ownerKey = '${sub.userId}_${(sub.ownerName ?? '').trim().toLowerCase()}';
+        if (activeOrPendingOwnerKeys.contains(ownerKey) ||
+            seenUnpaidOwnerKeys.contains(ownerKey)) {
+          continue;
+        }
+        seenUnpaidOwnerKeys.add(ownerKey);
         final clientData = clientsMap[sub.userId];
-        final clientName = clientData?['name'] ?? sub.ownerName ?? 'Клієнт';
+        final clientName = clientData?['name'] ?? sub.ownerName ?? 'admin.client_default_name'.tr();
         final phone = clientData?['phone'];
         final owner = sub.ownerName ?? clientName;
 
         String reason;
         if (sub.remainingClasses <= 0) {
           final total = sub.totalClasses;
-          reason = 'Вичерпано заняття (0 з $total ${total % 10 == 1 && total % 100 != 11 ? "заняття" : "занять"})';
+          reason = 'admin.payment_reason_exhausted'.tr(namedArgs: {'total': '$total'});
         } else if (sub.expiryDate != null && DateTime.now().isAfter(sub.expiryDate!)) {
           final days = DateTime.now().difference(sub.expiryDate!).inDays;
-          String dayWord;
-          if (days % 10 == 1 && days % 100 != 11) {
-            dayWord = 'день';
-          } else if (days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20)) {
-            dayWord = 'дні';
-          } else {
-            dayWord = 'днів';
-          }
-          reason = 'Закінчився термін (прострочено $days $dayWord)';
+          reason = 'admin.payment_reason_expired_days'.tr(namedArgs: {'days': '$days'});
         } else {
-          reason = 'Неактивний абонемент';
+          reason = 'admin.payment_reason_inactive'.tr();
         }
 
         unpaidList.add(_UnpaidClientItem(
@@ -277,7 +325,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           clientName: clientName,
           ownerName: owner,
           phone: phone,
-          serviceName: sub.serviceName ?? 'Абонемент',
+          serviceName: sub.serviceName ?? 'admin.sub_default_name'.tr(),
           remainingClasses: sub.remainingClasses,
           totalClasses: sub.totalClasses,
           expiryDate: sub.expiryDate,
@@ -297,14 +345,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       if (!userHasSub) {
         unpaidList.add(_UnpaidClientItem(
           clientId: clientId,
-          clientName: data['name'] ?? 'Клієнт',
-          ownerName: data['name'] ?? 'Клієнт',
+          clientName: data['name'] ?? 'admin.client_default_name'.tr(),
+          ownerName: data['name'] ?? 'admin.client_default_name'.tr(),
           phone: data['phone'],
-          serviceName: 'Без абонемента',
+          serviceName: 'admin.without_subscription'.tr(),
           remainingClasses: 0,
           totalClasses: 0,
           expiryDate: null,
-          reason: 'Не брав абонемент (перестав ходити)',
+          reason: 'admin.payment_reason_no_sub'.tr(),
         ));
       }
     });
@@ -322,9 +370,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
+      child: Container(
           height: MediaQuery.of(context).size.height * 0.92,
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF071426) : Colors.white,
@@ -407,12 +453,12 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   unpaidList: finalUnpaidList,
                   clientsMap: clientsMap,
                   currentTheme: currentTheme,
+                  pendingMap: pendingMap,
                 ),
               ),
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -421,7 +467,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   // ==========================================
   Widget _buildHeader(BuildContext context, AppThemeConfig currentTheme, TenancyState tenancyState) {
     final String branchName = tenancyState.isAllLocationsSelected
-        ? 'Всі філії'
+        ? 'admin.all_branches_label'.tr()
         : tenancyState.effectiveBranch.name;
     final String branchEmoji = tenancyState.isAllLocationsSelected
         ? '🌐'
@@ -547,9 +593,50 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: currentTheme.isDark
+                        ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                        : const Color(0xFFF0F9FF),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: currentTheme.isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                          : const Color(0xFFBAE6FD),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    tooltip: 'admin.payment_requisites_tooltip'.tr(),
+                    icon: Icon(
+                      LucideIcons.landmark,
+                      color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      size: 18,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      EditBranchRequisitesSheet.show(
+                        context,
+                        initialBranchId: tenancyState.effectiveBranch.id,
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
@@ -584,7 +671,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       padding: EdgeInsets.zero,
                     ),
                   ),
-                ),
               ),
             ],
           ),
@@ -989,9 +1075,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final isDark = currentTheme.isDark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
+      child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: isDark
@@ -1033,7 +1117,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             ),
             onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             decoration: InputDecoration(
-              hintText: 'Пошук за ім\'ям або телефоном',
+              hintText: 'admin.payment_search_hint'.tr(),
               hintStyle: TextStyle(
                 color: isDark ? const Color(0xFFB0D4EC).withValues(alpha: 0.65) : const Color(0xFF64748B),
                 fontSize: 12.5,
@@ -1063,7 +1147,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -1077,9 +1160,17 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     required List<_UnpaidClientItem> unpaidList,
     required Map<String, Map<String, dynamic>> clientsMap,
     required AppThemeConfig currentTheme,
+    required Map<String, Map<String, dynamic>> pendingMap,
   }) {
     if (_selectedTab == 0) {
-      return _buildActiveSubsTab(allSubs, activeSubs, expiringSoonSubs, clientsMap, currentTheme);
+      return _buildActiveSubsTab(
+        allSubs,
+        activeSubs,
+        expiringSoonSubs,
+        clientsMap,
+        currentTheme,
+        pendingMap,
+      );
     } else {
       return _buildUnpaidSubsTab(unpaidList, currentTheme);
     }
@@ -1094,6 +1185,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     List<Subscription> expiringSoonSubs,
     Map<String, Map<String, dynamic>> clientsMap,
     AppThemeConfig currentTheme,
+    Map<String, Map<String, dynamic>> pendingMap,
   ) {
     List<Subscription> displayList;
     if (_activeFilterMode == 0) {
@@ -1117,19 +1209,94 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       }).toList();
     }
 
+    final isDark = currentTheme.isDark;
+
     return Column(
       children: [
+        if (pendingMap.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 2, 18, 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [
+                          const Color(0xFFF59E0B).withValues(alpha: 0.18),
+                          const Color(0xFFD97706).withValues(alpha: 0.10),
+                        ]
+                      : [
+                          const Color(0xFFFEF3C7),
+                          const Color(0xFFFFFBEB),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.45 : 0.35),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.15 : 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.clock,
+                      size: 16,
+                      color: Color(0xFFF59E0B),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'admin.payment_pending_count'.tr(namedArgs: {'count': '${pendingMap.length}'}),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'admin.payment_pending_desc'.tr(),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFFFDE68A).withValues(alpha: 0.8) : const Color(0xFFB45309),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         const SizedBox(height: 6),
         Expanded(
           child: displayList.isEmpty
               ? _buildEmptyState(
                   icon: LucideIcons.badgeCheck,
-                  title: 'Не знайдено абонементів',
+                  title: 'admin.no_subs_found'.tr(),
                   subtitle: _activeFilterMode == 2
-                      ? 'Чудово! У жодного клієнта абонемент не закінчується в найближчі 5 днів.'
+                      ? 'admin.no_subs_expiring_desc'.tr()
                       : (_activeFilterMode == 0
-                          ? 'В системі ще не створено жодного абонемента.'
-                          : 'Всі абонементи вичерпано або клієнти очікують поновлення.'),
+                          ? 'admin.no_subs_created_desc'.tr()
+                          : 'admin.no_subs_active_desc'.tr()),
                   currentTheme: currentTheme,
                 )
               : ListView.separated(
@@ -1140,10 +1307,11 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   itemBuilder: (ctx, idx) {
                     final sub = displayList[idx];
                     final clientData = clientsMap[sub.userId];
-                    final clientName = clientData?['name'] ?? sub.ownerName ?? 'Клієнт';
-                    final phone = clientData?['phone'] ?? 'Немає номеру';
+                    final clientName = clientData?['name'] ?? sub.ownerName ?? 'admin.client_default_name'.tr();
+                    final phone = clientData?['phone'] ?? 'admin.payment_no_phone'.tr();
                     final owner = sub.ownerName ?? clientName;
                     final isExpiring = _isSubExpiringSoon(sub);
+                    final isPending = pendingMap.containsKey(sub.id);
 
                     return _buildActiveSubCard(
                       sub: sub,
@@ -1151,6 +1319,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                       ownerName: owner,
                       phone: phone,
                       isExpiringSoon: isExpiring,
+                      isPendingApproval: isPending,
                       currentTheme: currentTheme,
                     );
                   },
@@ -1166,6 +1335,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     required String ownerName,
     required String phone,
     required bool isExpiringSoon,
+    bool isPendingApproval = false,
     required AppThemeConfig currentTheme,
   }) {
     final remaining = sub.remainingClasses;
@@ -1176,7 +1346,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final isDark = currentTheme.isDark;
     final bool isSameName = ownerName.trim().toLowerCase() == clientName.trim().toLowerCase();
 
-    String expiryStr = 'Безстроковий';
+    String expiryStr = 'admin.unlimited'.tr();
     String daysLeftStr = '';
     int? daysLeft;
     if (sub.expiryDate != null) {
@@ -1184,21 +1354,21 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       daysLeft = sub.expiryDate!.difference(DateTime.now()).inDays;
       if (!isActive) {
         if (remaining <= 0) {
-          daysLeftStr = 'Вичерпано';
+          daysLeftStr = 'admin.payment_status_exhausted'.tr();
         } else if (daysLeft < 0) {
-          daysLeftStr = 'Прострочено';
+          daysLeftStr = 'admin.payment_status_expired'.tr();
         } else {
-          daysLeftStr = 'Неактивний';
+          daysLeftStr = 'admin.payment_status_inactive'.tr();
         }
       } else {
         if (daysLeft < 0) {
-          daysLeftStr = 'Прострочено';
+          daysLeftStr = 'admin.payment_status_expired'.tr();
         } else if (daysLeft == 0) {
-          daysLeftStr = 'Сьогодні!';
+          daysLeftStr = 'admin.payment_status_today'.tr();
         } else if (daysLeft == 1) {
-          daysLeftStr = '1 день';
+          daysLeftStr = 'admin.payment_days_left_1'.tr();
         } else {
-          daysLeftStr = '$daysLeft дн.';
+          daysLeftStr = 'admin.payment_days_left_many'.tr(namedArgs: {'days': '$daysLeft'});
         }
       }
     }
@@ -1222,21 +1392,24 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
     final avatarGradient = currentTheme.actionCardGradients[ownerName.hashCode.abs() % currentTheme.actionCardGradients.length];
 
-    final accentColor = !isActive
-        ? const Color(0xFF64748B)
-        : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF10B981));
-    final secondaryAccent = !isActive
-        ? const Color(0xFF475569)
-        : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00E5FF));
+    final accentColor = isPendingApproval
+        ? const Color(0xFFF59E0B)
+        : (!isActive
+            ? const Color(0xFF64748B)
+            : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF10B981)));
+    final secondaryAccent = isPendingApproval
+        ? const Color(0xFFFBBF24)
+        : (!isActive
+            ? const Color(0xFF475569)
+            : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00E5FF)));
 
     final bool isSubSending = _sendingReminderClientIds.contains(sub.userId);
     final bool isSubSent = _sentReminderClientIds.contains(sub.userId);
+    final noPhoneLabel = 'admin.payment_no_phone'.tr();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+      child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1346,7 +1519,36 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (!isActive)
+                              if (isPendingApproval)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.22)
+                                        : const Color(0xFFFEF3C7),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.6 : 0.5),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(LucideIcons.clock, size: 10, color: Color(0xFFF59E0B)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'admin.payment_badge_pending'.tr(),
+                                        style: const TextStyle(
+                                          color: Color(0xFFF59E0B),
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else if (!isActive)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
@@ -1357,7 +1559,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                     ),
                                   ),
                                   child: Text(
-                                    'НЕАКТИВНИЙ',
+                                    'admin.payment_badge_inactive'.tr(),
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
                                       fontSize: 9.5,
@@ -1380,14 +1582,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                           : const Color(0xFFFDE68A),
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(LucideIcons.triangleAlert, size: 10, color: Color(0xFFF59E0B)),
-                                      SizedBox(width: 4),
+                                      const Icon(LucideIcons.triangleAlert, size: 10, color: Color(0xFFF59E0B)),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        'ЗАКІНЧУЄТЬСЯ',
-                                        style: TextStyle(
+                                        'admin.payment_badge_expiring'.tr(),
+                                        style: const TextStyle(
                                           color: Color(0xFFF59E0B),
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w900,
@@ -1401,13 +1603,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                           ),
                           const SizedBox(height: 3),
                           InkWell(
-                            onTap: (phone.isNotEmpty && phone != 'Немає номеру')
+                            onTap: (phone.isNotEmpty && phone != noPhoneLabel)
                                 ? () {
                                     HapticFeedback.selectionClick();
                                     Clipboard.setData(ClipboardData(text: phone));
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Номер $phone скопійовано!'),
+                                        content: Text('admin.payment_phone_copied'.tr(namedArgs: {'phone': phone})),
                                         duration: const Duration(seconds: 1),
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1430,7 +1632,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   if (!isSameName) ...[
                                     Flexible(
                                       child: Text(
-                                        'Батьки: $clientName',
+                                        'admin.search_parents_prefix'.tr(namedArgs: {'name': clientName}),
                                         style: TextStyle(
                                           color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
                                           fontSize: 11.5,
@@ -1439,13 +1641,13 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    if (phone.isNotEmpty && phone != 'Немає номеру')
+                                    if (phone.isNotEmpty && phone != noPhoneLabel)
                                       Text(
                                         ' • ',
                                         style: TextStyle(color: isDark ? const Color(0xFFCBD5E1).withValues(alpha: 0.5) : const Color(0xFF94A3B8)),
                                       ),
                                   ],
-                                  if (phone.isNotEmpty && phone != 'Немає номеру')
+                                  if (phone.isNotEmpty && phone != noPhoneLabel)
                                     Text(
                                       phone,
                                       style: TextStyle(
@@ -1484,7 +1686,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                         children: [
                           Expanded(
                             child: Text(
-                              sub.serviceName ?? 'Абонемент',
+                              sub.serviceName ?? 'admin.sub_default_name'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white : currentTheme.textPrimary,
                                 fontSize: 13.5,
@@ -1517,8 +1719,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             ),
                             child: Text(
                               remaining <= 0
-                                  ? '0 з ${sub.totalClasses} (вичерпано)'
-                                  : '$remaining з ${sub.totalClasses} ${sub.totalClasses % 10 == 1 && sub.totalClasses % 100 != 11 ? "заняття" : "занять"}',
+                                  ? 'admin.payment_zero_of_total'.tr(namedArgs: {'total': '${sub.totalClasses}'})
+                                  : 'admin.payment_remaining_of_total'.tr(namedArgs: {'remaining': '$remaining', 'total': '${sub.totalClasses}'}),
                               style: TextStyle(
                                 color: isDark
                                     ? (remaining <= 0 ? const Color(0xFFCBD5E1) : accentColor)
@@ -1580,7 +1782,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
-                                  'Придбано: $purchaseStr',
+                                  'admin.payment_purchased_date'.tr(namedArgs: {'date': purchaseStr}),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
                                     fontSize: 11,
@@ -1604,7 +1806,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
-                                  'Діє до $expiryStr',
+                                  'admin.payment_valid_until_date'.tr(namedArgs: {'date': expiryStr}),
                                   style: TextStyle(
                                     color: !isActive
                                         ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
@@ -1653,14 +1855,74 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    InkWell(
+                    if (isPendingApproval)
+                      InkWell(
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          try {
+                            await ref.read(branchPaymentServiceProvider).confirmPendingSubscription(sub.id);
+                            if (mounted) {
+                              AppSnackBar.showSuccess(
+                                context,
+                                'admin.payment_confirmed_success'.tr(),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              AppSnackBar.showError(
+                                context,
+                                'admin.payment_confirm_error'.tr(namedArgs: {'error': '$e'}),
+                              );
+                            }
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              width: 1.1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.45 : 0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.checkCheck, size: 14, color: Colors.white),
+                              const SizedBox(width: 7),
+                              Text(
+                                'admin.payment_confirm_btn'.tr(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      InkWell(
                       onTap: isSubSent || isSubSending ? null : () => _sendReminderDirectly(
                         clientId: sub.userId,
                         clientName: clientName,
                         ownerName: ownerName,
                         reason: isExpiringSoon
-                            ? 'Закінчується абонемент (залишилось $remaining занять)'
-                            : 'Інформація про абонемент',
+                            ? 'admin.payment_reason_expiring_remaining'.tr(namedArgs: {'remaining': '$remaining'})
+                            : 'admin.payment_reason_sub_info'.tr(),
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -1706,9 +1968,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                 ),
                               ),
                               const SizedBox(width: 7),
-                              const Text(
-                                'Надсилаємо...',
-                                style: TextStyle(
+                              Text(
+                                'admin.payment_sending_btn'.tr(),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
@@ -1717,9 +1979,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             ] else if (isSubSent) ...[
                               const Icon(LucideIcons.checkCheck, size: 14, color: Colors.white),
                               const SizedBox(width: 7),
-                              const Text(
-                                'Надіслано ✓',
-                                style: TextStyle(
+                              Text(
+                                'admin.payment_sent_btn'.tr(),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
@@ -1733,7 +1995,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               ),
                               const SizedBox(width: 7),
                               Text(
-                                isExpiringSoon ? 'Нагадати клієнту' : 'Повідомлення клієнту',
+                                isExpiringSoon
+                                    ? 'admin.payment_remind_client_btn'.tr()
+                                    : 'admin.payment_message_client_btn'.tr(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -1751,7 +2015,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ],
             ),
           ),
-        ),
       ),
     );
   }
@@ -1772,8 +2035,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     if (displayList.isEmpty) {
       return _buildEmptyState(
         icon: LucideIcons.partyPopper,
-        title: 'Усі клієнти мають оплачені абонементи!',
-        subtitle: 'Немає боржників чи тих, у кого закінчились заняття.',
+        title: 'admin.payment_all_paid_title'.tr(),
+        subtitle: 'admin.payment_all_paid_subtitle'.tr(),
         currentTheme: currentTheme,
       );
     }
@@ -1799,9 +2062,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+      child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1906,8 +2167,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                               Flexible(
                                 child: Text(
                                   isSameUnpaidName
-                                      ? (item.phone ?? 'Немає тел.')
-                                      : 'Батьки: ${item.clientName}${item.phone != null && item.phone!.isNotEmpty ? " • ${item.phone}" : ""}',
+                                      ? (item.phone ?? 'admin.payment_no_phone_short'.tr())
+                                      : '${'admin.search_parents_prefix'.tr(namedArgs: {'name': item.clientName})}${item.phone != null && item.phone!.isNotEmpty ? " • ${item.phone}" : ""}',
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
                                     fontSize: 12,
@@ -2019,9 +2280,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Надсилаємо...',
-                            style: TextStyle(
+                          Text(
+                            'admin.payment_sending_btn'.tr(),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w800,
@@ -2035,9 +2296,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             color: Colors.white,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Надіслано ✓',
-                            style: TextStyle(
+                          Text(
+                            'admin.payment_sent_btn'.tr(),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w900,
@@ -2051,9 +2312,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             color: Colors.white,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Надіслати нагадування',
-                            style: TextStyle(
+                          Text(
+                            'admin.payment_send_reminder_btn'.tr(),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w900,
@@ -2068,7 +2329,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ],
             ),
           ),
-        ),
       ),
     );
   }
@@ -2082,9 +2342,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     return Center(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
+        child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             decoration: BoxDecoration(
@@ -2166,7 +2424,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ],
             ),
           ),
-        ),
       ),
     );
   }

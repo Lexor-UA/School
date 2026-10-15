@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_client_operations_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
@@ -147,7 +148,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Видалено клієнта "$name"', admin.id);
+          await logAdminAction('admin.client_action_deleted'.tr(args: [name]), admin.id);
         }
 
         messenger.showSnackBar(
@@ -367,14 +368,17 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           }).toList();
                           final now = DateTime.now();
 
-                          // Fast O(1) set lookup for active subscription userIds
-                          final activeUserIds = allSubscriptions
-                              .where((s) =>
-                                  s.isActive &&
-                                  s.remainingClasses > 0 &&
-                                  (s.expiryDate == null || s.expiryDate!.isAfter(now)))
-                              .map((s) => s.userId)
-                              .toSet();
+                          // Fast O(1) indexing of subscriptions by userId and active userIds in a single pass
+                          final Map<String, List<Subscription>> subsByUserId = {};
+                          final Set<String> activeUserIds = {};
+                          for (final s in allSubscriptions) {
+                            (subsByUserId[s.userId] ??= []).add(s);
+                            if (s.isActive &&
+                                s.remainingClasses > 0 &&
+                                (s.expiryDate == null || s.expiryDate!.isAfter(now))) {
+                              activeUserIds.add(s.userId);
+                            }
+                          }
 
                           final int totalCount = allClients.length;
                           final int withSubCount = allClients.where((c) => activeUserIds.contains(c.id)).length;
@@ -384,14 +388,15 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
 
                           // Filter by search
                           if (_searchQuery.isNotEmpty) {
+                            final query = _searchQuery.trim().toLowerCase();
                             clients = clients.where((c) {
                               final data = c.data();
-                              final name = data['name']?.toString().toLowerCase() ?? '';
-                              final loginId = data['loginId']?.toString().toLowerCase() ?? '';
-                              final phone = data['phone']?.toString().toLowerCase() ?? '';
-                              return name.contains(_searchQuery) ||
-                                  loginId.contains(_searchQuery) ||
-                                  phone.contains(_searchQuery);
+                              final name = (data['name'] ?? data['displayName'] ?? '').toString().toLowerCase();
+                              final loginId = (data['loginId'] ?? '').toString().toLowerCase();
+                              final phone = (data['phone'] ?? '').toString().toLowerCase();
+                              return name.contains(query) ||
+                                  loginId.contains(query) ||
+                                  phone.contains(query);
                             }).toList();
                           }
 
@@ -433,19 +438,19 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                                     final data = clientDoc.data();
                                                     final clientId = clientDoc.id;
                                                     final rawName = (data['name'] as String?)?.trim();
-                                                    final name = (rawName != null && rawName.isNotEmpty && rawName != 'Невідомо')
+                                                    final name = (rawName != null && rawName.isNotEmpty && rawName != 'Невідомо' && rawName != 'common.unknown'.tr())
                                                         ? rawName
                                                         : ((data['displayName'] as String?)?.trim().isNotEmpty == true
                                                             ? (data['displayName'] as String).trim()
                                                             : ((data['email'] as String?)?.trim().isNotEmpty == true
                                                                 ? (data['email'] as String).trim()
-                                                                : 'Невідомо'));
-                                                    final phone = data['phone'] ?? 'Немає номеру';
-                                                    final loginId = data['loginId'] ?? 'Не призначено';
+                                                                : 'common.unknown'.tr()));
+                                                    final phone = data['phone'] ?? 'admin.clients_no_phone'.tr();
+                                                    final loginId = data['loginId'] ?? 'admin.clients_not_assigned'.tr();
                                                     final password = (data['password'] as String?) ?? '1';
                                                     final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
 
-                                                    final userSubs = allSubscriptions.where((s) => s.userId == clientId).toList();
+                                                    final userSubs = subsByUserId[clientId] ?? const <Subscription>[];
                                                     final bool hasDiscounts = (data['subscriptionDiscounts'] as List<dynamic>? ?? []).isNotEmpty;
 
                                                     return _buildClientCard(
@@ -609,7 +614,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ),
             child: IconButton(
               padding: EdgeInsets.zero,
-              tooltip: 'Синхронізація та очищення осиротілих сімей',
+              tooltip: 'admin.clients_sync_families_tooltip'.tr(),
               icon: Icon(
                 LucideIcons.sparkles,
                 color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
@@ -623,8 +628,8 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     SnackBar(
                       content: Text(
                         cleaned > 0
-                            ? 'Видалено $cleaned осиротілих сімей без активних клієнтів'
-                            : 'Усі сімейні зв\'язки в порядку, осиротілих сімей немає',
+                            ? 'admin.clients_orphaned_cleaned'.tr(args: [cleaned.toString()])
+                            : 'admin.clients_orphaned_none'.tr(),
                       ),
                       backgroundColor: const Color(0xFF10B981),
                       behavior: SnackBarBehavior.floating,
@@ -1040,14 +1045,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                       width: 0.9,
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(LucideIcons.tag, size: 10, color: Color(0xFFF59E0B)),
-                                      SizedBox(width: 4),
+                                      const Icon(LucideIcons.tag, size: 10, color: Color(0xFFF59E0B)),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        'ЗНИЖКА',
-                                        style: TextStyle(
+                                        'admin.clients_discount_badge_upper'.tr(),
+                                        style: const TextStyle(
                                           color: Color(0xFFF59E0B),
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w900,
@@ -1137,7 +1142,9 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  branchId == 'vienna' ? '🇦🇹 Відень' : '🇺🇦 Київ',
+                                  branchId == 'vienna'
+                                      ? '🇦🇹 ${'branches.city_vienna'.tr()}'
+                                      : '🇺🇦 ${'branches.city_kyiv'.tr()}',
                                   style: TextStyle(
                                     color: branchId == 'vienna'
                                         ? (currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
@@ -1301,7 +1308,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                           spacing: 6,
                           runSpacing: 6,
                           children: children.map((cData) {
-                            final cName = cData['name'] ?? 'Дитина';
+                            final cName = cData['name'] ?? 'admin.role_child_label'.tr();
                             final cAge = cData['age'];
 
                             return Container(
@@ -1383,7 +1390,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                         Expanded(
                           child: Text(
                             hasActiveSubs
-                                ? (activeSubs.first.serviceName ?? 'Активний абонемент')
+                                ? (activeSubs.first.serviceName ?? 'admin.sub_active_default_title'.tr())
                                 : 'admin.clients_no_subs'.tr(),
                             style: TextStyle(
                               color: hasActiveSubs ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
@@ -1428,14 +1435,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                                 width: 0.8,
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.plus, size: 10, color: Color(0xFFF43F5E)),
-                                SizedBox(width: 3),
+                                const Icon(LucideIcons.plus, size: 10, color: Color(0xFFF43F5E)),
+                                const SizedBox(width: 3),
                                 Text(
-                                  'Оформити',
-                                  style: TextStyle(
+                                  'admin.clients_action_subscribe'.tr(),
+                                  style: const TextStyle(
                                     color: Color(0xFFF43F5E),
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w900,
@@ -1689,7 +1696,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('Тестового клієнта "Олександр Спіян" успішно відновлено!'),
+                          content: Text('admin.clients_demo_restored_msg'.tr()),
                           backgroundColor: const Color(0xFF10B981),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1714,14 +1721,14 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(LucideIcons.userCheck, size: 16, color: Colors.white),
-                      SizedBox(width: 8),
+                      const Icon(LucideIcons.userCheck, size: 16, color: Colors.white),
+                      const SizedBox(width: 8),
                       Text(
-                        'Відновити тестового клієнта',
-                        style: TextStyle(
+                        'admin.clients_restore_demo_btn'.tr(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -1747,7 +1754,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                 ),
                 label: Text(
-                  'Створити нову анкету',
+                  'admin.clients_create_new_profile_btn'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                     fontSize: 13,
@@ -1828,7 +1835,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Помилка завантаження бази клієнтів',
+              'admin.clients_load_error_title'.tr(),
               style: TextStyle(
                 color: currentTheme.textPrimary,
                 fontSize: 16,
@@ -1838,7 +1845,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              error?.toString() ?? 'Не вдалося підключитися до бази даних',
+              error?.toString() ?? 'admin.clients_db_conn_error'.tr(),
               style: TextStyle(
                 color: currentTheme.textSecondary,
                 fontSize: 12.5,
@@ -1851,7 +1858,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
             ElevatedButton.icon(
               onPressed: () => setState(() {}),
               icon: const Icon(LucideIcons.refreshCw, size: 16),
-              label: const Text('Спробувати знову'),
+              label: Text('common.retry'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: currentTheme.accentPrimary,
                 foregroundColor: Colors.white,

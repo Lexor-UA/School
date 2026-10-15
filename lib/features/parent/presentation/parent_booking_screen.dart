@@ -16,6 +16,9 @@ import 'package:swimming_school_app/features/subscription/controllers/subscripti
 import 'package:swimming_school_app/features/subscription/models/subscription.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_main.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_subscription_tab.dart';
+import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 
 class ParentBookingScreen extends ConsumerStatefulWidget {
@@ -90,7 +93,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   
                   // Step 2: Select Child / Participants
                   Text(
-                    isSplitEmpty ? 'Оберіть 2-х учасників' : 'parent.for_whom'.tr(),
+                    isSplitEmpty ? 'parent.select_2_participants'.tr() : 'parent.for_whom'.tr(),
                     style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -119,8 +122,8 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                       : Text(
                           isSplitEmpty
                               ? (_selectedSplitUserIds.length == 2
-                                  ? 'Записати на спліт-тренування'
-                                  : (_selectedSplitUserIds.isEmpty ? 'Оберіть 2-х учасників' : 'Оберіть 2-го учасника'))
+                                  ? 'parent.book_split_btn'.tr()
+                                  : (_selectedSplitUserIds.isEmpty ? 'parent.select_2_participants'.tr() : 'parent.select_2nd_participant'.tr()))
                               : 'parent.confirm_record'.tr(),
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
@@ -163,12 +166,15 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('Помилка: $e', style: const TextStyle(color: Colors.redAccent))),
+      error: (e, st) => Center(child: Text('common.error_with_msg'.tr(args: [e.toString()]), style: const TextStyle(color: Colors.redAccent))),
     );
   }
 
   Widget _buildClassOptionCard(GroupClass c, bool isDark) {
     final bool isFull = c.enrolledChildIds.length >= c.maxCapacity;
+    final langCode = context.locale.languageCode;
+    final localizedTitle = SubscriptionPackageCatalog.localizeServiceName(c.title, langCode);
+    final localizedLane = c.lane.isNotEmpty ? BranchConfig.localizeLaneName(c.lane, langCode) : 'parent.main_pool'.tr();
 
     return GestureDetector(
       onTap: isFull ? null : () => setState(() {
@@ -207,10 +213,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(c.title, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(localizedTitle, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(
-                      '${'parent.places_left'.tr(args: [(c.maxCapacity - c.enrolledChildIds.length).toString()])} · ${c.lane.isNotEmpty ? c.lane : 'parent.main_pool'.tr()}',
+                      '${'parent.places_left'.tr(args: [(c.maxCapacity - c.enrolledChildIds.length).toString()])} · $localizedLane',
                       style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13),
                     ),
                   ],
@@ -228,6 +234,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   }
 
   Widget _buildSelectedClassCard(GroupClass c, bool isDark) {
+    final langCode = context.locale.languageCode;
+    final localizedTitle = SubscriptionPackageCatalog.localizeServiceName(c.title, langCode);
+    final localizedLane = c.lane.isNotEmpty ? BranchConfig.localizeLaneName(c.lane, langCode) : 'parent.main_pool'.tr();
+
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(20),
@@ -243,9 +253,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             children: [
               Icon(LucideIcons.checkCircle2, color: isDark ? Colors.cyanAccent : AppTheme.primaryBlue, size: 24),
               const SizedBox(width: 12),
-              Text(
-                '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')} · ${c.title}',
-                style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')} · $localizedTitle',
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -254,7 +266,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             children: [
               Icon(LucideIcons.user, color: isDark ? Colors.white54 : Colors.black54, size: 16),
               const SizedBox(width: 8),
-              Text('Тренер: ${c.coachName}', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+              Text('parent.coach_prefix'.tr(args: [c.coachName]), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
             ],
           ),
           const SizedBox(height: 4),
@@ -262,7 +274,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             children: [
               Icon(LucideIcons.mapPin, color: isDark ? Colors.white54 : Colors.black54, size: 16),
               const SizedBox(width: 8),
-              Text(c.lane.isNotEmpty ? c.lane : 'parent.main_pool'.tr(), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+              Text(localizedLane, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
             ],
           ),
         ],
@@ -281,7 +293,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       data: (children) {
         final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
         final partnerName = user != null
-            ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+            ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'parent.partner'.tr())
             : null;
 
         final showParent = user != null && !isChildClass;
@@ -293,17 +305,17 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         if (!showParent && eligibleChildren.isEmpty) {
           final hasUnder6 = children.any((c) => (c.currentAge ?? 0) <= 5);
           final under6Msg = (hasUnder6 && (selectedClass?.isGroup == true || selectedClass?.isSplit == true))
-              ? 'Для дітей до 6 років (1–5 років включно) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+              ? 'parent.under6_individual_only'.tr()
               : null;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
               under6Msg ??
                   (selectedClass?.ageRange != null
-                      ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${selectedClass!.ageRange!.$1}-${selectedClass!.ageRange!.$2} р.).'
+                      ? 'parent.children_age_mismatch'.tr(args: [selectedClass!.ageRange!.$1.toString(), selectedClass!.ageRange!.$2.toString()])
                       : (isChildClass
-                          ? 'У вашому профілі ще немає доданих дітей для цього дитячого заняття.'
-                          : 'Немає доступних учасників для запису.')),
+                          ? 'parent.no_children_added_for_class'.tr()
+                          : 'parent.no_available_participants'.tr())),
               style: const TextStyle(color: Colors.orangeAccent, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -341,7 +353,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Спліт-тренування (2 учасники)',
+                            'parent.split_training_2_participants'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black87,
                               fontSize: 14,
@@ -351,8 +363,8 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                           const SizedBox(height: 2),
                           Text(
                             _selectedSplitUserIds.length == 2
-                                ? 'Обрано 2 з 2 учасників (готові до запису)'
-                                : 'Оберіть 2-х учасників (двоє дорослих, дорослий + дитина або двоє дітей): обрано ${_selectedSplitUserIds.length} з 2',
+                                ? 'parent.split_2_of_2_selected'.tr()
+                                : 'parent.split_select_2_hint'.tr(args: [_selectedSplitUserIds.length.toString()]),
                             style: TextStyle(
                               color: _selectedSplitUserIds.length == 2
                                   ? const Color(0xFF10B981)
@@ -371,7 +383,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             if (showParent)
               _buildSelectionCard(
                 user.id,
-                '${user.name} (Я)',
+                '${user.name} (${'parent.me_short'.tr()})',
                 Colors.blue,
                 isDark,
                 true,
@@ -387,7 +399,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 isSplitEmpty: isSplitEmpty,
               ),
             ...eligibleChildren.map((child) {
-              final ageStr = child.currentAge != null ? ' (${child.currentAge} р.)' : '';
+              final ageStr = child.currentAge != null ? ' (${child.currentAge} ${'parent.years_short'.tr()})' : '';
               return _buildSelectionCard(
                 child.id,
                 '${child.name}$ageStr',
@@ -401,7 +413,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         );
       },
       loading: () => const CircularProgressIndicator(),
-      error: (e, st) => Text('Помилка: $e', style: const TextStyle(color: Colors.redAccent)),
+      error: (e, st) => Text('common.error_with_msg'.tr(args: [e.toString()]), style: const TextStyle(color: Colors.redAccent)),
     );
   }
 
@@ -415,7 +427,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
   }) {
     final bool isSelected = isSplitEmpty ? _selectedSplitUserIds.contains(id) : (selectedUserId == id);
     final int splitIndex = isSplitEmpty ? _selectedSplitUserIds.indexOf(id) : -1;
-    final String splitBadge = splitIndex == 0 ? '1-й учасник' : (splitIndex == 1 ? '2-й учасник' : '');
+    final String splitBadge = splitIndex == 0 ? 'parent.participant_1'.tr() : (splitIndex == 1 ? 'parent.participant_2'.tr() : '');
 
     return GestureDetector(
       onTap: () {
@@ -531,7 +543,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     }
 
     if (selectedClass!.startTime.isBefore(DateTime.now())) {
-      AppSnackBar.showError(context, 'Це тренування вже завершилося.');
+      AppSnackBar.showError(context, 'parent.class_already_ended'.tr());
       return;
     }
 
@@ -542,7 +554,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       final id2 = _selectedSplitUserIds[1];
       final name1 = getMemberName(id1);
       final name2 = getMemberName(id2);
-      final bothNames = '$name1 та $name2';
+      final bothNames = '$name1 ${'common.and_conjunction'.tr()} $name2';
 
       // Check split subscription
       final userSubs = subscriptionController.getSubscriptionsForUser(user.id);
@@ -557,20 +569,20 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             context: context,
             builder: (context) => AlertDialog(
               backgroundColor: const Color(0xFF1E293B),
-              title: const Text('Немає спліт-абонемента', style: TextStyle(color: Colors.white)),
-              content: const Text(
-                'Для запису необхідно мати оплачений спліт-абонемент на 2 особи. Бажаєте придбати його у розділі "Абонемент"?',
-                style: TextStyle(color: Colors.white70),
+              title: Text('parent.no_split_subscription_title'.tr(), style: const TextStyle(color: Colors.white)),
+              content: Text(
+                'parent.no_split_subscription_desc'.tr(),
+                style: const TextStyle(color: Colors.white70),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+                TextButton(onPressed: () => Navigator.pop(context), child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54))),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.pop(context);
                     ref.read(parentTabProvider.notifier).setTab(2);
                   },
-                  child: const Text('Придбати абонемент', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                  child: Text('parent.buy_subscription_btn'.tr(), style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -589,7 +601,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
           final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
           final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
-          AppSnackBar.showError(context, 'Термін дії спліт-абонемента закінчується $expiryStr (до дати тренування $dateStr).');
+          AppSnackBar.showError(context, 'parent.split_sub_expires_before_class'.tr(args: [expiryStr, dateStr]));
           return;
         }
       }
@@ -605,10 +617,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
             final range = selectedClass!.ageRange;
             final msg = childAge >= 16 && selectedClass!.isChildOnly
-                ? 'Дитині ${child?.name ?? ''} на дату заняття виповнюється $childAge р. З 16 років відвідування дитячих груп заборонено — потрібно створити окремий дорослий акаунт.'
+                ? 'parent.child_16_plus_adult_required'.tr(args: [child?.name ?? '', childAge.toString()])
                 : (childAge <= 5
-                    ? 'Для дітей до 6 років (1–5 років включно) (${child?.name ?? ''}, $childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
-                    : 'Вік дитини ${child?.name ?? ''} ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).');
+                    ? 'parent.child_under6_individual_only_named'.tr(args: [child?.name ?? '', childAge.toString()])
+                    : 'parent.child_age_mismatch_named'.tr(args: [child?.name ?? '', childAge.toString(), (range?.$1 ?? 0).toString(), (range?.$2 ?? 0).toString()]));
             AppSnackBar.showWarning(context, msg);
             return;
           }
@@ -648,15 +660,15 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: const Color(0xFF1E293B),
-            title: const Text('Немає абонемента', style: TextStyle(color: Colors.white)),
+            title: Text('parent.no_subscription_title'.tr(), style: const TextStyle(color: Colors.white)),
             content: Text(
               isAdult
-                  ? 'Для запису необхідно мати оплачений дорослий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?'
-                  : 'Для запису необхідно мати оплачений дитячий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?',
+                  ? 'parent.no_adult_sub_for_owner_desc'.tr(args: [ownerName])
+                  : 'parent.no_child_sub_for_owner_desc'.tr(args: [ownerName]),
               style: const TextStyle(color: Colors.white70),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+              TextButton(onPressed: () => Navigator.pop(context), child: Text('admin.cancel'.tr(), style: const TextStyle(color: Colors.white54))),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -664,7 +676,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(ownerName);
                   ref.read(parentTabProvider.notifier).setTab(2);
                 },
-                child: const Text('Придбати абонемент', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                child: Text('parent.buy_subscription_btn'.tr(), style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -683,7 +695,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
         final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
         final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
-        AppSnackBar.showError(context, 'Термін дії абонемента для $ownerName закінчується $expiryStr (до дати тренування $dateStr).');
+        AppSnackBar.showError(context, 'parent.sub_for_owner_expires_before_class'.tr(args: [ownerName, expiryStr, dateStr]));
         return;
       }
     }
@@ -691,13 +703,17 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
     if (selectedUserId != user.id) {
       final child = children.where((c) => c.id == selectedUserId).firstOrNull;
       final childAge = child?.ageAt(selectedClass!.startTime) ?? child?.currentAge;
+      if (child != null && (child.isAdultAge || (childAge ?? 0) >= 16)) {
+        GraduateChildSheet.show(context, child);
+        return;
+      }
       if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
         final range = selectedClass!.ageRange;
         final msg = childAge >= 16 && selectedClass!.isChildOnly
-            ? 'Дитині ${child?.name ?? ''} на дату заняття виповнюється $childAge р. З 16 років відвідування дитячих груп заборонено — потрібно створити окремий дорослий акаунт.'
+            ? 'parent.child_16_plus_adult_required'.tr(args: [child?.name ?? '', childAge.toString()])
             : (childAge <= 5
-                ? 'Для дітей до 6 років (1–5 років включно) ($childAge р.) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
-                : 'Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).');
+                ? 'parent.child_under6_individual_only_age'.tr(args: [childAge.toString()])
+                : 'parent.child_age_mismatch_age'.tr(args: [childAge.toString(), (range?.$1 ?? 0).toString(), (range?.$2 ?? 0).toString()]));
         AppSnackBar.showWarning(context, msg);
         return;
       }
@@ -747,7 +763,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 final formattedTime = selectedClass != null
                     ? DateFormat('HH:mm').format(selectedClass!.startTime)
                     : '';
-                final displayName = bookedTargetName.isNotEmpty ? bookedTargetName : 'Учня';
+                final displayName = bookedTargetName.isNotEmpty ? bookedTargetName : 'parent.student_fallback'.tr();
                 return Text(
                   'parent.child_enrolled_time'.tr(args: [displayName, _formatDate(widget.date), formattedTime]),
                   textAlign: TextAlign.center,

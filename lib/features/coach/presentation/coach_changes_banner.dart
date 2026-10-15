@@ -23,15 +23,15 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
     final diff = now.difference(dt);
 
     if (diff.inMinutes < 1) {
-      return 'щойно';
+      return 'coach.just_now'.tr();
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} хв тому';
+      return 'coach.minutes_ago_fmt'.tr(args: ['${diff.inMinutes}']);
     } else if (diff.inHours < 24 && dt.day == now.day) {
-      return 'Сьогодні о ${DateFormat("HH:mm").format(dt)}';
+      return 'coach.today_at_fmt'.tr(args: [DateFormat("HH:mm").format(dt)]);
     } else if (diff.inDays < 2) {
-      return 'Вчора о ${DateFormat("HH:mm").format(dt)}';
+      return 'coach.yesterday_at_fmt'.tr(args: [DateFormat("HH:mm").format(dt)]);
     } else {
-      return DateFormat('d MMM, HH:mm', 'uk').format(dt);
+      return DateFormat('d MMM, HH:mm', context.locale.languageCode).format(dt);
     }
   }
 
@@ -107,7 +107,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                'ІСТОРІЯ ЗМІН ТА ОНОВЛЕНЬ',
+                                'coach.changes_history_upper'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12.5,
@@ -134,7 +134,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                         child: activities.isEmpty
                             ? Center(
                                 child: Text(
-                                  'Змін за останній час не зафіксовано',
+                                  'coach.no_recent_changes'.tr(),
                                   style: TextStyle(color: themeConfig.textMuted),
                                 ),
                               )
@@ -279,7 +279,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'ОСТАННІ ЗМІНИ ПО ЗАНЯТТЯХ',
+                                  'coach.recent_class_changes_upper'.tr(),
                                   style: TextStyle(
                                     color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 11,
@@ -289,7 +289,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  'Записи, скасування та оновлення',
+                                  'coach.changes_banner_sub'.tr(),
                                   style: TextStyle(
                                     color: themeConfig.textSecondary,
                                     fontSize: 12,
@@ -308,7 +308,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                                 border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
                               ),
                               child: Text(
-                                '+$todayCount сьогодні',
+                                'coach.plus_today_count_fmt'.tr(args: ['$todayCount']),
                                 style: TextStyle(
                                   color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                   fontSize: 11,
@@ -390,7 +390,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    _isExpanded ? 'Згорнути' : 'Показати ще (${activities.length})',
+                                    _isExpanded ? 'coach.collapse'.tr() : 'coach.show_more_count'.tr(args: ['${activities.length}']),
                                     style: TextStyle(
                                       color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                       fontSize: 11.5,
@@ -439,7 +439,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Вся історія',
+                                    'coach.full_history'.tr(),
                                     style: TextStyle(
                                       color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                       fontSize: 11.5,
@@ -482,35 +482,35 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
         badgeTextColor = themeConfig.isDark ? const Color(0xFF34D399) : const Color(0xFF047857);
         badgeBgColor = const Color(0xFF10B981).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.userPlus;
-        badgeText = 'Запис';
+        badgeText = 'coach.act_badge_booking'.tr();
         break;
       case ClassActivityType.cancellation:
         iconColor = const Color(0xFFF43F5E);
         badgeTextColor = themeConfig.isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C);
         badgeBgColor = const Color(0xFFF43F5E).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.userMinus;
-        badgeText = 'Скасування';
+        badgeText = 'coach.act_badge_cancellation'.tr();
         break;
       case ClassActivityType.rescheduled:
         iconColor = const Color(0xFFF59E0B);
         badgeTextColor = themeConfig.isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309);
         badgeBgColor = const Color(0xFFF59E0B).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.calendarClock;
-        badgeText = 'Розклад';
+        badgeText = 'coach.act_badge_schedule'.tr();
         break;
       case ClassActivityType.classCancelled:
         iconColor = const Color(0xFFF43F5E);
         badgeTextColor = themeConfig.isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C);
         badgeBgColor = const Color(0xFFF43F5E).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.alertTriangle;
-        badgeText = 'Заняття скасовано';
+        badgeText = 'coach.act_badge_class_cancelled'.tr();
         break;
       default:
         iconColor = const Color(0xFF00E5FF);
         badgeTextColor = themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
         badgeBgColor = const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
         iconData = LucideIcons.info;
-        badgeText = 'Зміна';
+        badgeText = 'coach.act_badge_change'.tr();
     }
 
     return Container(

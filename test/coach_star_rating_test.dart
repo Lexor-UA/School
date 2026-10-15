@@ -99,7 +99,7 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    test('Initial rating state is empty and default average is 5.0 with 0 reviews', () {
+    test('Initial rating state is empty and default average is 0.0 with 0 reviews', () {
       final container = ProviderContainer(
         overrides: [
           sharedPrefsProvider.overrideWithValue(prefs),
@@ -108,7 +108,7 @@ void main() {
       addTearDown(container.dispose);
 
       final avg = container.read(coachAverageRatingProvider('coach_1'));
-      expect(avg.rating, 5.0);
+      expect(avg.rating, 0.0);
       expect(avg.count, 0);
 
       final classRating = container.read(
@@ -257,7 +257,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('Оцініть роботу тренера:'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && (w.data?.contains('Оцініть роботу тренера') == true || w.data?.contains('parent.rate_coach_prompt') == true),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Борис'), findsOneWidget);
       expect(find.byIcon(Icons.star_outline_rounded), findsNWidgets(5));
     });

@@ -39,7 +39,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
     }
     final yesterday = now.subtract(const Duration(days: 1));
     if (yesterday.year == time.year && yesterday.month == time.month && yesterday.day == time.day) {
-      return 'Вчора';
+      return 'chat.yesterday'.tr();
     }
     return DateFormat('dd.MM').format(time);
   }
@@ -165,7 +165,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Чати та повідомлення',
+                                'parent.chats_and_messages'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textPrimary,
                                   fontSize: 18,
@@ -174,7 +174,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                                 ),
                               ),
                               Text(
-                                'Зв\'язок з адміністратором та тренерами',
+                                'parent.contact_admin_and_coaches'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textSecondary,
                                   fontSize: 12,
@@ -237,7 +237,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                                       child: Text(
-                                        'Діалоги з тренерами (${coachDialogs.length})',
+                                        'parent.dialogs_with_coaches'.tr(args: ['${coachDialogs.length}']),
                                         style: TextStyle(
                                           color: themeConfig.textSecondary,
                                           fontSize: 12.5,
@@ -262,7 +262,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                                       child: Text(
-                                        'Тренери ваших занять (${availableCoaches.length})',
+                                        'parent.coaches_of_classes'.tr(args: ['${availableCoaches.length}']),
                                         style: TextStyle(
                                           color: themeConfig.textSecondary,
                                           fontSize: 12.5,
@@ -375,7 +375,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                           Row(
                             children: [
                               Text(
-                                'Адміністрація школи',
+                                'parent.school_admin'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textPrimary,
                                   fontWeight: FontWeight.w800,
@@ -401,7 +401,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Підтримка клієнтів та абонементи',
+                            'parent.support_and_subs'.tr(),
                             style: TextStyle(
                               color: themeConfig.textSecondary,
                               fontSize: 12,
@@ -436,7 +436,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
     required AppThemeConfig themeConfig,
   }) {
     final hasUnread = dialog.unreadClientCount > 0;
-    final displayName = dialog.coachName ?? 'Тренер';
+    final displayName = dialog.coachName ?? 'common.coach_fallback'.tr();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -491,7 +491,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       childName: dialog.childName,
                       type: 'coach_client',
                       title: displayName,
-                      subtitle: 'Тренер басейну',
+                      subtitle: 'parent.pool_coach'.tr(),
                     ),
                   ),
                 );
@@ -563,7 +563,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            dialog.lastMessage.isNotEmpty ? dialog.lastMessage : 'Діалог створено',
+                            dialog.lastMessage.isNotEmpty ? dialog.lastMessage : 'parent.dialog_created'.tr(),
                             style: TextStyle(
                               color: hasUnread
                                   ? themeConfig.textPrimary
@@ -667,7 +667,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       clientName: user?.name,
                       type: 'coach_client',
                       title: coachName,
-                      subtitle: 'Тренер • $classTitle',
+                      subtitle: '${'common.coach_fallback'.tr()} • $classTitle',
                     ),
                   ),
                 );
@@ -745,7 +745,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Написати',
+                            'parent.write_message'.tr(),
                             style: TextStyle(
                               color: isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                               fontSize: 11.5,
@@ -828,7 +828,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Запишіться на заняття',
+            'parent.book_a_class'.tr(),
             style: TextStyle(
               color: themeConfig.textPrimary,
               fontWeight: FontWeight.w800,
@@ -840,7 +840,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              'Після запису на тренування тут з\'явиться можливість прямого зв\'язку з вашим тренером',
+              'parent.after_booking_coach_chat_desc'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: themeConfig.textSecondary,
@@ -893,8 +893,8 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                 size: 16,
                 color: Color(0xFF00E5FF),
               ),
-              label: const Text(
-                'Переглянути розклад',
+              label: Text(
+                'parent.view_schedule'.tr(),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 13.5,

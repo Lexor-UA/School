@@ -26,7 +26,6 @@ String coachTr(String key, String fallback, {List<String>? args}) {
   return val;
 }
 
-String _coachTr(String key, String fallback, {List<String>? args}) => coachTr(key, fallback, args: args);
 void showSwimmerDetailsSheet(
   BuildContext context,
   Child initialChild, {
@@ -151,7 +150,7 @@ void showSwimmerDetailsSheet(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _coachTr('coach.swimmer_details_title', 'ПРОФІЛЬ ПЛАВЦЯ'),
+                              'coach.swimmer_details_title'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                 fontSize: 12,
@@ -278,7 +277,7 @@ void showSwimmerDetailsSheet(
                                                 ),
                                                 const SizedBox(width: 5),
                                                 Text(
-                                                  'ДОРОСЛИЙ ПЛАВЕЦЬ${((child.currentAge ?? child.age ?? 0) > 0) ? ' • ${child.currentAge ?? child.age} р.' : ''}',
+                                                  '${'coach.adult_swimmer_upper'.tr()}${((child.currentAge ?? child.age ?? 0) > 0) ? ' • ${'parent.years_short'.tr(args: ['${child.currentAge ?? child.age}'])}' : ''}',
                                                   style: TextStyle(
                                                     color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
                                                     fontSize: 11,
@@ -306,8 +305,8 @@ void showSwimmerDetailsSheet(
                                             ),
                                             child: Text(
                                               ((child.currentAge ?? child.age ?? 0) > 0)
-                                                  ? '${child.currentAge ?? child.age} р.'
-                                                  : 'Учень',
+                                                  ? 'parent.years_short'.tr(args: ['${child.currentAge ?? child.age}'])
+                                                  : 'coach.student_role'.tr(),
                                               style: TextStyle(
                                                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0369A1),
                                                 fontSize: 11,
@@ -345,7 +344,6 @@ void showSwimmerDetailsSheet(
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const SizedBox(height: 10),
                       ],
                     ),
                   ),

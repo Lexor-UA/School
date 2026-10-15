@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -50,6 +51,16 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
   }
 
   String _formatAge(int age) {
+    final lang = context.locale.languageCode;
+    if (lang == 'en') return age == 1 ? '$age yr' : '$age yrs';
+    if (lang == 'de') return age == 1 ? '$age Jahr' : '$age Jahre';
+    if (lang == 'ru') {
+      if (age % 10 == 1 && age % 100 != 11) return '$age год';
+      if (age % 10 >= 2 && age % 10 <= 4 && (age % 100 < 10 || age % 100 >= 20)) {
+        return '$age года';
+      }
+      return '$age лет';
+    }
     if (age % 10 == 1 && age % 100 != 11) return '$age рік';
     if (age % 10 >= 2 && age % 10 <= 4 && (age % 100 < 10 || age % 100 >= 20)) {
       return '$age роки';
@@ -61,15 +72,20 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
     final subscriptions = ref.watch(subscriptionControllerProvider);
     final user = ref.watch(authControllerProvider);
     final family = ref.watch(familyStreamProvider).value;
+    final children = ref.watch(childrenControllerProvider).value ?? [];
     final relevantUserIds = <String>{
       if (user != null) user.id,
       if (family != null) ...family.parentIds,
     };
 
+    final childName = widget.child.name.trim().toLowerCase();
     int sum = 0;
     for (final sub in subscriptions) {
       if (sub.isActive && relevantUserIds.contains(sub.userId) && sub.isChildSubscription) {
-        sum += sub.remainingClasses;
+        final owner = (sub.ownerName ?? '').trim().toLowerCase();
+        if (owner == childName || ((owner == 'всі' || owner == 'all' || owner == 'alle' || owner == 'все') && children.length <= 1)) {
+          sum += sub.remainingClasses;
+        }
       }
     }
     return sum;
@@ -81,7 +97,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
 
     if (digits.length < 9) {
       setState(() {
-        _errorMessage = 'Введіть коректний номер телефону (наприклад: 067 123 45 67)';
+        _errorMessage = 'graduate.invalid_phone_err'.tr();
       });
       return;
     }
@@ -127,7 +143,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
     final childColor = Color(int.tryParse(widget.child.colorHex) ?? 0xFF00E5FF);
     final ageText = widget.child.currentAge != null
         ? _formatAge(widget.child.currentAge!)
-        : '16 років';
+        : _formatAge(16);
     final remainingChildSessions = _calculateRemainingChildSessions(ref);
 
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -297,7 +313,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Випуск у дорослий акаунт',
+                'graduate.title'.tr(),
                 style: TextStyle(
                   color: textColor,
                   fontSize: 18.5,
@@ -307,7 +323,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Переведення 16-річного плавця у самостійний статус',
+                'graduate.subtitle'.tr(),
                 style: TextStyle(
                   color: subColor,
                   fontSize: 12,
@@ -329,8 +345,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
     Color textColor,
     Color subColor,
   ) {
-    final initial = child.name.isNotEmpty ? child.name[0].toUpperCase() : 'П';
-    final progress = child.maxXp > 0 ? (child.xp / child.maxXp).clamp(0.0, 1.0) : 0.0;
+    final initial = child.name.isNotEmpty ? child.name[0].toUpperCase() : 'S';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -354,116 +369,86 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           width: 1.1,
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              // Avatar
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: childColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: childColor.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+          // Avatar
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: childColor,
+              boxShadow: [
+                BoxShadow(
+                  color: childColor.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
-                child: Center(
-                  child: Text(
-                    initial,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            child.name,
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                    Flexible(
+                      child: Text(
+                        child.name,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.4),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            '$ageText 🎓',
-                            style: const TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Рівень плавця ${child.level}',
-                      style: TextStyle(
-                        color: subColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '$ageText 🎓',
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // XP Progress Bar
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: isDark ? Colors.white12 : Colors.black12,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFF00E5FF)),
-                    minHeight: 7,
+                const SizedBox(height: 3),
+                Text(
+                  'graduate.transition_desc'.tr(),
+                  style: TextStyle(
+                    color: subColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                '${child.xp}/${child.maxXp} XP',
-                style: TextStyle(
-                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -530,7 +515,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Конвертація занять',
+                      'graduate.session_conversion_title'.tr(),
                       style: TextStyle(
                         color: textColor,
                         fontSize: 13.5,
@@ -539,8 +524,8 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                     ),
                     Text(
                       hasSessions
-                          ? 'Залишок: $remainingSessions ${remainingSessions == 1 ? "заняття" : "занять"}'
-                          : 'Всі заняття використано',
+                          ? 'graduate.remaining_sessions_count'.tr(args: [remainingSessions.toString()])
+                          : 'graduate.all_sessions_used'.tr(),
                       style: TextStyle(
                         color: hasSessions ? const Color(0xFF38BDF8) : subColor,
                         fontSize: 11.5,
@@ -565,8 +550,8 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
             const SizedBox(height: 8),
             Text(
               _transferSubscriptions
-                  ? '✅ $remainingSessions занять дитячого абонементу будуть автоматично перенесені на новий дорослий абонемент підлітка «Групові заняття (дорослі 16+)».'
-                  : 'Заняття залишаться на балансі батьківського профілю для інших членів родини.',
+                  ? 'graduate.transfer_sessions_desc'.tr(args: [remainingSessions.toString()])
+                  : 'graduate.keep_sessions_desc'.tr(),
               style: TextStyle(
                 color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155),
                 fontSize: 11.5,
@@ -589,7 +574,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Дані для входу нового дорослого:',
+          'graduate.credentials_title'.tr(),
           style: TextStyle(
             color: textColor,
             fontSize: 13.5,
@@ -604,7 +589,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           keyboardType: TextInputType.phone,
           style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
           decoration: InputDecoration(
-            labelText: 'Номер телефону підлітка *',
+            labelText: 'graduate.teen_phone_label'.tr(),
             hintText: '+380 (99) 000-00-00',
             hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black26),
             labelStyle: TextStyle(color: subColor, fontSize: 13),
@@ -632,8 +617,8 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           obscureText: _obscurePassword,
           style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14),
           decoration: InputDecoration(
-            labelText: 'Пароль для входу',
-            hintText: 'Введіть або залиште 1 для швидкого входу',
+            labelText: 'graduate.login_password_label'.tr(),
+            hintText: 'graduate.login_password_hint'.tr(),
             labelStyle: TextStyle(color: subColor, fontSize: 13),
             prefixIcon: Icon(LucideIcons.lock, color: isDark ? const Color(0xFF00E5FF) : accentColor, size: 18),
             suffixIcon: IconButton(
@@ -667,10 +652,9 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
 
   Widget _buildAdultPrivileges(bool isDark, Color textColor, Color subColor) {
     final privileges = [
-      (LucideIcons.compass, 'Самостійний запис на дорослі тренування у розкладі'),
-      (LucideIcons.users, 'Доступ до спліт-занять (право брати друга чи дружину)'),
-      (LucideIcons.award, 'Повне збереження рівня плавця та накопичених XP'),
-      (LucideIcons.shieldCheck, 'Власне керування сім\'єю та абонементами'),
+      (LucideIcons.compass, 'graduate.priv_1'.tr()),
+      (LucideIcons.users, 'graduate.priv_2'.tr()),
+      (LucideIcons.shieldCheck, 'graduate.priv_3'.tr()),
     ];
 
     return Container(
@@ -742,14 +726,14 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                     valueColor: AlwaysStoppedAnimation(Colors.white),
                   ),
                 )
-              : const Row(
+              : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(LucideIcons.graduationCap, color: Colors.white, size: 20),
-                    SizedBox(width: 10),
+                    const Icon(LucideIcons.graduationCap, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
                     Text(
-                      'Випустити у дорослий акаунт',
-                      style: TextStyle(
+                      'graduate.submit_btn'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15.5,
                         fontWeight: FontWeight.bold,
@@ -801,7 +785,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           ),
           const SizedBox(height: 20),
           Text(
-            '🎉 Вітаємо з випуском!',
+            'graduate.congrats_title'.tr(),
             style: TextStyle(
               color: textColor,
               fontSize: 22,
@@ -811,7 +795,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Акаунт для ${widget.child.name} успішно створено. Рівень плавця, накопичені XP та заняття перенесені!',
+            'graduate.congrats_desc'.tr(args: [widget.child.name]),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: subColor,
@@ -837,7 +821,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Номер для входу:', style: TextStyle(color: subColor, fontSize: 13)),
+                    Text('graduate.login_phone_label'.tr(), style: TextStyle(color: subColor, fontSize: 13)),
                     Text(phone, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14)),
                   ],
                 ),
@@ -845,7 +829,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Пароль:', style: TextStyle(color: subColor, fontSize: 13)),
+                    Text('graduate.password_short_label'.tr(), style: TextStyle(color: subColor, fontSize: 13)),
                     Text(password, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14)),
                   ],
                 ),
@@ -857,17 +841,17 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
           // Copy Button
           OutlinedButton.icon(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: 'Логін: $phone\nПароль: $password'));
+              Clipboard.setData(ClipboardData(text: '${'graduate.login_phone_label'.tr()} $phone\n${'graduate.password_short_label'.tr()} $password'));
               HapticFeedback.mediumImpact();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Дані для входу скопійовано!'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text('graduate.credentials_copied_msg'.tr()),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
             icon: const Icon(LucideIcons.copy, size: 16),
-            label: const Text('Скопіювати дані для входу'),
+            label: Text('graduate.copy_credentials_btn'.tr()),
             style: OutlinedButton.styleFrom(
               foregroundColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
               side: BorderSide(
@@ -888,9 +872,9 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
                 backgroundColor: const Color(0xFF10B981),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text(
-                'Завершити',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+              child: Text(
+                'graduate.finish_btn'.tr(),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ),
           ),

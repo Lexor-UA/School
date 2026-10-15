@@ -65,9 +65,9 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
         targetOwnerName: targetName,
       ).timeout(
         const Duration(seconds: 15),
-        onTimeout: () => const BookingResult(
+        onTimeout: () => BookingResult(
           isSuccess: false,
-          message: 'Час очікування вичерпано. Перевірте зʼєднання або спробуйте ще раз.',
+          message: 'admin.booking_timeout_error'.tr(),
           status: BookingStatus.error,
         ),
       );
@@ -151,29 +151,29 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
     if (c.isSplit) {
       return _badgeContainer(
         icon: LucideIcons.users,
-        label: 'Спліт (2 ос.)',
+        label: 'admin.booking_badge_split'.tr(),
         color: const Color(0xFF38BDF8),
       );
     }
     if (c.isAdultOnly) {
       return _badgeContainer(
         icon: LucideIcons.user,
-        label: 'Доросла група',
+        label: 'admin.booking_badge_adult'.tr(),
         color: const Color(0xFFA5B4FC),
       );
     }
     if (c.isChildOnly) {
       final range = c.ageRange;
-      final rangeStr = range != null ? ' (${range.$1}-${range.$2} р.)' : '';
+      final rangeStr = range != null ? ' (${range.$1}-${range.$2} ${'common.years_short'.tr()})' : '';
       return _badgeContainer(
         icon: LucideIcons.baby,
-        label: 'Дитяча$rangeStr',
+        label: '${'admin.booking_badge_child'.tr()}$rangeStr',
         color: const Color(0xFF34D399),
       );
     }
     return _badgeContainer(
       icon: LucideIcons.waves,
-      label: 'Загальна',
+      label: 'admin.booking_badge_general'.tr(),
       color: const Color(0xFF2DD4BF),
     );
   }
@@ -317,7 +317,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isAdult ? '(Дорослий)' : '(Дитина)',
+                          isAdult ? '(${'admin.role_adult_label'.tr()})' : '(${'admin.role_child_label'.tr()})',
                           style: TextStyle(
                             color: isAdult ? const Color(0xFFA5B4FC) : const Color(0xFF34D399),
                             fontSize: 11,
@@ -357,7 +357,10 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Абонемент: ${clientSubs.first.serviceName ?? 'Активний'} (${clientSubs.first.remainingClasses} занять)',
+                      'admin.booking_sub_status_active'.tr(args: [
+                        clientSubs.first.serviceName ?? 'admin.sub_status_active'.tr(),
+                        clientSubs.first.remainingClasses.toString(),
+                      ]),
                       style: const TextStyle(color: Color(0xFF34D399), fontSize: 12, fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -374,14 +377,14 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(LucideIcons.triangleAlert, size: 14, color: Colors.amber),
-                  SizedBox(width: 6),
+                  const Icon(LucideIcons.triangleAlert, size: 14, color: Colors.amber),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'У клієнта немає активного абонемента. Для запису призначте абонемент.',
-                      style: TextStyle(color: Colors.amber, fontSize: 11.5, fontWeight: FontWeight.w500),
+                      'admin.booking_sub_status_none'.tr(),
+                      style: const TextStyle(color: Colors.amber, fontSize: 11.5, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -393,13 +396,13 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
           // Audience Filter Chips
           Row(
             children: [
-              _buildFilterChip('Всі', ClassAudienceFilter.all),
+              _buildFilterChip('common.all'.tr(), ClassAudienceFilter.all),
               const SizedBox(width: 6),
-              _buildFilterChip('👤 Дорослі', ClassAudienceFilter.adults),
+              _buildFilterChip('👤 ${'admin.filter_adults'.tr()}', ClassAudienceFilter.adults),
               const SizedBox(width: 6),
-              _buildFilterChip('🧒 Дитячі', ClassAudienceFilter.kids),
+              _buildFilterChip('🧒 ${'admin.filter_kids'.tr()}', ClassAudienceFilter.kids),
               const SizedBox(width: 6),
-              _buildFilterChip('👥 Спліт', ClassAudienceFilter.split),
+              _buildFilterChip('👥 ${'admin.filter_split'.tr()}', ClassAudienceFilter.split),
             ],
           ),
 
@@ -473,8 +476,8 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                           : isIncompatible
                               ? () {
                                   final msg = _isCurrentSelectionAdult
-                                      ? 'Це тренування лише для дітей. Оберіть дитину або доросле тренування.'
-                                      : 'Це тренування призначене лише для дорослих.';
+                                      ? 'admin.booking_incompatible_child_only'.tr()
+                                      : 'admin.booking_incompatible_adult_only'.tr();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(msg), backgroundColor: Colors.amber.shade900),
                                   );
@@ -581,7 +584,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                                     const Icon(LucideIcons.triangleAlert, size: 12, color: Colors.amber),
                                     const SizedBox(width: 4),
                                     Text(
-                                      _isCurrentSelectionAdult ? 'Тільки для дітей' : 'Тільки для дорослих',
+                                      _isCurrentSelectionAdult ? 'admin.booking_only_kids_badge'.tr() : 'admin.booking_only_adults_badge'.tr(),
                                       style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.w500),
                                     ),
                                   ],

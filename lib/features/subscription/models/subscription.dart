@@ -19,6 +19,8 @@ abstract class Subscription with _$Subscription {
     @Default('kyiv') String branchId,
     @Default('UAH') String currency,
     @Default('₴') String currencySymbol,
+    @Default(false) bool pendingApproval,
+    String? paymentDocId,
   }) = _Subscription;
 
   factory Subscription.fromJson(Map<String, dynamic> json) => _$SubscriptionFromJson(

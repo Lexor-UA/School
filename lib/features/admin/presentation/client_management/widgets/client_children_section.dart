@@ -74,30 +74,60 @@ class ClientChildrenSection extends ConsumerWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  await FirebaseFirestore.instance
+                  final db = FirebaseFirestore.instance;
+                  await db
                       .collection('children')
                       .doc(childId)
                       .delete();
                   try {
-                    final classesSnap = await FirebaseFirestore.instance
+                    final classesSnap = await db
                         .collection('classes')
                         .where('enrolledChildIds', arrayContains: childId)
                         .get();
                     for (var doc in classesSnap.docs) {
+                      final data = doc.data();
                       final enrolled = List<String>.from(
-                        doc.data()['enrolledChildIds'] ?? [],
-                      );
-                      enrolled.remove(childId);
-                      await doc.reference.update({'enrolledChildIds': enrolled});
+                        data['enrolledChildIds'] ?? [],
+                      )..remove(childId);
+                      final attended = List<String>.from(
+                        data['attendedChildIds'] ?? [],
+                      )..remove(childId);
+                      final bookedMap = Map<String, dynamic>.from(
+                        data['bookedSubscriptions'] as Map? ?? {},
+                      )..remove(childId);
+
+                      final isCustom = data['isCustomBooking'] == true ||
+                          data['createdByRole'] == 'parent';
+                      if (enrolled.isEmpty && isCustom) {
+                        await doc.reference.delete();
+                      } else {
+                        await doc.reference.update({
+                          'enrolledChildIds': enrolled,
+                          'attendedChildIds': attended,
+                          'bookedSubscriptions': bookedMap,
+                        });
+                      }
+                    }
+
+                    // Also delete subscriptions belonging to this child
+                    final subsSnap = await db
+                        .collection('subscriptions')
+                        .where('userId', whereIn: parentIds.isNotEmpty ? parentIds : [clientId])
+                        .get();
+                    for (final sDoc in subsSnap.docs) {
+                      final owner = (sDoc.data()['ownerName'] as String?)?.trim().toLowerCase() ?? '';
+                      if (owner.isNotEmpty && owner == childName.trim().toLowerCase()) {
+                        await sDoc.reference.delete();
+                      }
                     }
                   } catch (err) {
-                    debugPrint('Error cleaning up classes for child: $err');
+                    debugPrint('Error cleaning up classes/subs for child: $err');
                   }
   
                   final admin = ref.read(authControllerProvider);
                   if (admin != null) {
                     await logAdminAction(
-                      'Видалено дитину "$childName" клієнта "$clientName"',
+                      'admin.log_child_deleted'.tr(namedArgs: {'child': childName, 'client': clientName}),
                       admin.id,
                     );
                   }
@@ -239,7 +269,7 @@ class ClientChildrenSection extends ConsumerWidget {
                 children: children.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final cId = doc.id;
-                  final cName = data['name'] ?? 'Дитина';
+                  final cName = data['name'] ?? 'common.child_default'.tr();
                   final cAge = data['age'] is int
                       ? data['age'] as int
                       : int.tryParse(data['age']?.toString() ?? '');
@@ -325,7 +355,9 @@ class ClientChildrenSection extends ConsumerWidget {
                                         ),
                                       ),
                                       child: Text(
-                                        'Спільна (${partnerName ?? "партнер"})',
+                                        'admin.shared_with_partner'.tr(namedArgs: {
+                                          'partner': partnerName ?? 'family.partner_default'.tr(),
+                                        }),
                                         style: const TextStyle(
                                           color: Color(0xFFA78BFA),
                                           fontSize: 10,
@@ -353,9 +385,9 @@ class ClientChildrenSection extends ConsumerWidget {
                                           width: 0.8,
                                         ),
                                       ),
-                                      child: const Text(
-                                        '16+ Дорослий',
-                                        style: TextStyle(
+                                      child: Text(
+                                        'admin.adult_16_plus_badge'.tr(),
+                                        style: const TextStyle(
                                           color: Color(0xFF10B981),
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
@@ -369,7 +401,7 @@ class ClientChildrenSection extends ConsumerWidget {
                               Text(
                                 cAge != null
                                     ? '$cAge ${'admin.years_short'.tr()}'
-                                    : 'Вік не вказано',
+                                    : 'admin.age_not_specified'.tr(),
                                 style: TextStyle(
                                   color: isDark
                                       ? const Color(0xFF00E5FF)
@@ -408,14 +440,14 @@ class ClientChildrenSection extends ConsumerWidget {
                                   width: 0.9,
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text('🎓', style: TextStyle(fontSize: 12)),
-                                  SizedBox(width: 4),
+                                  const Text('🎓', style: TextStyle(fontSize: 12)),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    'Випустити',
-                                    style: TextStyle(
+                                    'parent.graduate_btn'.tr(),
+                                    style: const TextStyle(
                                       color: Color(0xFF10B981),
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,

@@ -38,9 +38,20 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
   }
 
   String _formatDateShort(DateTime date) {
-    const months = [
-      '', 'січ', 'лют', 'бер', 'кві', 'тра', 'чер',
-      'лип', 'сер', 'вер', 'жов', 'лис', 'гру'
+    final months = [
+      '',
+      'months.short_jan'.tr(),
+      'months.short_feb'.tr(),
+      'months.short_mar'.tr(),
+      'months.short_apr'.tr(),
+      'months.short_may'.tr(),
+      'months.short_jun'.tr(),
+      'months.short_jul'.tr(),
+      'months.short_aug'.tr(),
+      'months.short_sep'.tr(),
+      'months.short_oct'.tr(),
+      'months.short_nov'.tr(),
+      'months.short_dec'.tr(),
     ];
     return '${date.day} ${months[date.month]}';
   }
@@ -53,47 +64,57 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
 
     setState(() => _isLoadingChildren = true);
     try {
-      final idsToFetch = childIds.take(20).toList();
-      final snapshot = await FirebaseFirestore.instance
-          .collection('children')
-          .where(FieldPath.documentId, whereIn: idsToFetch)
-          .get();
+      final uniqueIds = childIds.toSet().toList();
+      final List<Child> children = [];
+      final Set<String> foundIds = {};
 
-      final children = snapshot.docs.map((doc) => Child.fromJson({'id': doc.id, ...doc.data()})).toList();
-      final foundIds = children.map((c) => c.id).toSet();
-      final missingIds = idsToFetch.where((id) => !foundIds.contains(id)).toList();
-
-      if (missingIds.isNotEmpty) {
-        final userSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: missingIds)
+      for (var i = 0; i < uniqueIds.length; i += 30) {
+        final chunk = uniqueIds.sublist(
+          i,
+          i + 30 > uniqueIds.length ? uniqueIds.length : i + 30,
+        );
+        final snapshot = await FirebaseFirestore.instance
+            .collection('children')
+            .where(FieldPath.documentId, whereIn: chunk)
             .get();
 
-        for (final doc in userSnapshot.docs) {
-          final data = doc.data();
-          children.add(
-            Child(
-              id: doc.id,
-              parentId: '',
-              name: (data['name'] as String?)?.trim().isNotEmpty == true
-                  ? (data['name'] as String).trim()
-                  : 'Клієнт',
-              level: (data['level'] as num?)?.toInt() ?? 1,
-              xp: (data['xp'] as num?)?.toInt() ?? 0,
-              maxXp: (data['maxXp'] as num?)?.toInt() ?? 100,
-              colorHex: '0xFF00E5FF',
-            ),
-          );
+        for (final doc in snapshot.docs) {
+          final child = Child.fromJson({'id': doc.id, ...doc.data()});
+          children.add(child);
+          foundIds.add(child.id);
         }
+      }
 
-        // Self-heal: purge IDs that do not exist in children or users
-        final foundUserIds = userSnapshot.docs.map((d) => d.id).toSet();
-        final orphanedIds = missingIds.where((id) => !foundUserIds.contains(id)).toList();
-        if (orphanedIds.isNotEmpty && classId != null) {
-          FirebaseFirestore.instance.collection('classes').doc(classId).update({
-            'enrolledChildIds': FieldValue.arrayRemove(orphanedIds),
-          }).catchError((_) {});
-          ref.invalidate(scheduleControllerProvider);
+      final missingIds = uniqueIds.where((id) => !foundIds.contains(id)).toList();
+
+      if (missingIds.isNotEmpty) {
+        for (var i = 0; i < missingIds.length; i += 30) {
+          final chunk = missingIds.sublist(
+            i,
+            i + 30 > missingIds.length ? missingIds.length : i + 30,
+          );
+          final userSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+
+          for (final doc in userSnapshot.docs) {
+            final data = doc.data();
+            children.add(
+              Child(
+                id: doc.id,
+                parentId: '',
+                name: (data['name'] as String?)?.trim().isNotEmpty == true
+                    ? (data['name'] as String).trim()
+                    : 'admin.client_fallback'.tr(),
+                age: (data['age'] as num?)?.toInt(),
+                level: (data['level'] as num?)?.toInt() ?? 1,
+                xp: (data['xp'] as num?)?.toInt() ?? 0,
+                maxXp: (data['maxXp'] as num?)?.toInt() ?? 100,
+                colorHex: '0xFF00E5FF',
+              ),
+            );
+          }
         }
       }
 
@@ -130,8 +151,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
       if (!hasAccess) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('У вас немає доступу до відмітки відвідування в іншій філії'),
+            SnackBar(
+              content: Text('coach.no_access_other_branch'.tr()),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -151,9 +172,11 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
       final docSnap = await classDocRef.get();
       if (docSnap.exists) {
         await classDocRef.update({
-          'attendedChildIds': newAttended,
+          'attendedChildIds': isAttended
+              ? FieldValue.arrayRemove([childId])
+              : FieldValue.arrayUnion([childId]),
         });
-      } else {
+      } else if (!gClass.id.startsWith('seed_') && !gClass.enrolledChildIds.contains('demo_child_1')) {
         final classData = {
           'id': gClass.id,
           'title': gClass.title,
@@ -287,10 +310,10 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
 
           // 1. Filter by selected day
           final dayClasses = branchClasses.where((c) {
-            final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
+            final classDate = DateTime(c.branchStartTime.year, c.branchStartTime.month, c.branchStartTime.day);
             return _isSameDay(classDate, _selectedDate);
           }).toList()
-            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+            ..sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
           // 2. Filter by coach if _onlyMyClasses is active
           final myClasses = dayClasses.where((c) => isClassForCoach(c, user)).toList();
@@ -393,7 +416,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'ТРЕНЕРСЬКИЙ ЖУРНАЛ',
+                                      'coach.journal_badge'.tr(),
                                       style: TextStyle(
                                         color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                         fontSize: 11,
@@ -405,9 +428,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  'coach.journal_heading'.tr() == 'coach.journal_heading'
-                                      ? 'Журнал та відвідуваність'
-                                      : 'coach.journal_heading'.tr(),
+                                  'coach.journal_heading'.tr(),
                                   style: TextStyle(
                                     color: themeConfig.textPrimary,
                                     fontSize: 21,
@@ -425,12 +446,12 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                       // 2. Date Selector Bar & Filter Toggle
                       Row(
                         children: [
-                          // Day Pills: Вчора, Сьогодні, Завтра
-                          _buildDatePill('Вчора', yesterday, _isSameDay(_selectedDate, yesterday), themeConfig),
+                          // Day Pills: Yesterday, Today, Tomorrow
+                          _buildDatePill('common.yesterday'.tr(), yesterday, _isSameDay(_selectedDate, yesterday), themeConfig),
                           const SizedBox(width: 8),
-                          _buildDatePill('Сьогодні', today, _isSameDay(_selectedDate, today), themeConfig),
+                          _buildDatePill('common.today'.tr(), today, _isSameDay(_selectedDate, today), themeConfig),
                           const SizedBox(width: 8),
-                          _buildDatePill('Завтра', tomorrow, _isSameDay(_selectedDate, tomorrow), themeConfig),
+                          _buildDatePill('common.tomorrow'.tr(), tomorrow, _isSameDay(_selectedDate, tomorrow), themeConfig),
                           const SizedBox(width: 8),
                           // Calendar custom date button
                           GestureDetector(
@@ -545,7 +566,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Coach Filter Toggle ("Мої заняття" / "Всі заняття басейну")
+                      // Coach Filter Toggle
                       Row(
                         children: [
                           GestureDetector(
@@ -567,7 +588,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 ),
                               ),
                               child: Text(
-                                'Мої заняття (${myClasses.length})',
+                                '${'coach.filter_my_classes'.tr()} (${myClasses.length})',
                                 style: TextStyle(
                                   color: _onlyMyClasses
                                       ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
@@ -598,7 +619,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 ),
                               ),
                               child: Text(
-                                'Всі заняття басейну (${dayClasses.length})',
+                                'coach.all_pool_classes_count'.tr(args: ['${dayClasses.length}']),
                                 style: TextStyle(
                                   color: !_onlyMyClasses
                                       ? (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
@@ -645,8 +666,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                               const SizedBox(height: 10),
                               Text(
                                 _onlyMyClasses
-                                    ? 'У вас немає занять на ${_formatDateShort(_selectedDate)}'
-                                    : 'Немає занять у басейні на ${_formatDateShort(_selectedDate)}',
+                                    ? 'coach.no_my_classes_on_date'.tr(args: [_formatDateShort(_selectedDate)])
+                                    : 'coach.no_pool_classes_on_date'.tr(args: [_formatDateShort(_selectedDate)]),
                                 style: TextStyle(
                                   color: themeConfig.textPrimary,
                                   fontSize: 14.5,
@@ -659,7 +680,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 OutlinedButton.icon(
                                   onPressed: () => setState(() => _onlyMyClasses = false),
                                   icon: const Icon(LucideIcons.eye, size: 15),
-                                  label: Text('Показати заняття інших тренерів (${dayClasses.length})'),
+                                  label: Text('coach.show_other_coaches_classes_count'.tr(args: ['${dayClasses.length}'])),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     side: BorderSide(
@@ -679,10 +700,10 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                           child: Row(
                             children: effectiveClasses.map((c) {
                               final isSel = activeClass?.id == c.id;
-                              final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
+                              final timeStr = '${c.branchStartTime.hour.toString().padLeft(2, '0')}:${c.branchStartTime.minute.toString().padLeft(2, '0')}';
                               final isGym = c.category.toLowerCase().contains('gym') ||
                                   c.title.toLowerCase().contains('gym') ||
-                                  c.title.toLowerCase().contains('зал');
+                                  RegExp(r'\u0437\u0430\u043b', caseSensitive: false).hasMatch(c.title);
                               final sportIcon = isGym ? '🏋️' : '🏊';
                               final count = c.enrolledChildIds.length;
 
@@ -884,7 +905,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                         Builder(
                           builder: (context) {
                             final selectedClass = activeClass!;
-                            final isClassToday = _isSameDay(selectedClass.startTime, DateTime.now());
+                            final isClassToday = _isSameDay(selectedClass.branchStartTime, DateTime.now());
                             return GestureDetector(
                               onTap: () async {
                                 if (!isClassToday) {
@@ -896,7 +917,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(
-                                              'Сканування перепустки доступне лише в день проведення заняття (${_formatDateShort(selectedClass.startTime)})',
+                                              'coach.scan_only_on_class_day_msg'.tr(args: [_formatDateShort(selectedClass.branchStartTime)]),
                                               style: const TextStyle(fontWeight: FontWeight.bold),
                                             ),
                                           ),
@@ -985,7 +1006,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            !isClassToday ? 'СКАНУВАННЯ ЗАКРИТО' : 'СКАНУВАТИ ПЕРЕПУСТКУ',
+                                            !isClassToday ? 'coach.scan_closed_caps'.tr() : 'coach.scan_pass_caps'.tr(),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w900,
@@ -996,8 +1017,8 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                           const SizedBox(height: 2),
                                           Text(
                                             !isClassToday
-                                                ? 'Доступно в день проведення (${_formatDateShort(selectedClass.startTime)})'
-                                                : 'Миттєва відмітка входу учня біля басейну',
+                                                ? 'coach.available_on_class_day_short'.tr(args: [_formatDateShort(selectedClass.branchStartTime)])
+                                                : 'coach.instant_poolside_checkin_sub'.tr(),
                                             style: TextStyle(
                                               color: Colors.white.withValues(alpha: 0.85),
                                               fontSize: 11.5,
@@ -1035,7 +1056,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'СПИСОК ПЛАВЦІВ (${_enrolledChildren.length})',
+                              'coach.swimmers_list_count_caps'.tr(args: ['${_enrolledChildren.length}']),
                               style: TextStyle(
                                 color: themeConfig.isDark ? Colors.white70 : const Color(0xFF0369A1),
                                 fontSize: 12,
@@ -1073,7 +1094,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
-                                    'Присутні: $presentCount з $enrolledCount',
+                                    'coach.present_of_total'.tr(args: ['$presentCount', '$enrolledCount']),
                                     style: TextStyle(
                                       color: themeConfig.isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                       fontWeight: FontWeight.w800,
@@ -1162,7 +1183,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'На це заняття ще немає записаних учнів',
+                              'coach.no_enrolled_students_for_class'.tr(),
                               style: TextStyle(
                                 color: themeConfig.isDark ? Colors.white : const Color(0xFF0F172A),
                                 fontSize: 15.5,
@@ -1172,7 +1193,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Учні з\'являться тут автоматично після запису або сканування QR-перепустки',
+                              'coach.students_will_appear_after_booking_or_qr'.tr(),
                               style: TextStyle(
                                 color: themeConfig.isDark ? Colors.white60 : const Color(0xFF475569),
                                 fontSize: 12.5,
@@ -1306,7 +1327,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                 ),
                               ),
                               child: Text(
-                                '${child.currentAge ?? child.age} р.',
+                                '${child.currentAge ?? child.age} ${'common.years_short'.tr()}',
                                 style: TextStyle(
                                   color: themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 11,

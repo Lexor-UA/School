@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -8,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 
 class EditCoachSheet extends ConsumerStatefulWidget {
   final String coachId;
@@ -16,6 +16,7 @@ class EditCoachSheet extends ConsumerStatefulWidget {
   final int initialRateGroup;
   final int initialRateIndividual;
   final int initialRateSplit;
+  final String? branchId;
 
   const EditCoachSheet({
     super.key,
@@ -25,6 +26,7 @@ class EditCoachSheet extends ConsumerStatefulWidget {
     this.initialRateGroup = 400,
     this.initialRateIndividual = 450,
     this.initialRateSplit = 600,
+    this.branchId,
   });
 
   @override
@@ -97,7 +99,15 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Оновлено дані та ставки тренера "${_nameController.text.trim()}" (Група: $rateGroup ₴, Інд: $rateIndividual ₴, Спліт: $rateSplit ₴)', admin.id);
+          await logAdminAction(
+            'admin.coach_action_updated'.tr(args: [
+              _nameController.text.trim(),
+              rateGroup.toString(),
+              rateIndividual.toString(),
+              rateSplit.toString(),
+            ]),
+            admin.id,
+          );
         }
 
         navigator.pop();
@@ -121,6 +131,9 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final isDark = currentTheme.isDark;
     final mediaQuery = MediaQuery.of(context);
     final maxHeight = mediaQuery.size.height * 0.90;
+    final activeBranchId = ref.watch(tenancyControllerProvider).activeBranchId;
+    final isVienna = (widget.branchId ?? activeBranchId) == 'vienna';
+    final currencySymbol = isVienna ? '€' : '₴';
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -155,9 +168,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Column(
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildHeader(context, currentTheme),
@@ -187,7 +198,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'Ставки заробітної плати (ЗП)',
+                            'admin.coach_salary_rates_title'.tr(),
                             style: TextStyle(
                               color: currentTheme.textPrimary,
                               fontSize: 15,
@@ -198,27 +209,30 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                       ),
                       const SizedBox(height: 12),
                       _buildRateField(
-                        label: 'Групове тренування (грн / заняття)',
+                        label: 'admin.coach_rate_group_label'.tr(args: [currencySymbol]),
                         icon: LucideIcons.users,
                         controller: _rateGroupController,
                         color: const Color(0xFF00E5FF),
                         currentTheme: currentTheme,
+                        unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
                       ),
                       const SizedBox(height: 10),
                       _buildRateField(
-                        label: 'Індивідуальне тренування (грн / заняття)',
+                        label: 'admin.coach_rate_ind_label'.tr(args: [currencySymbol]),
                         icon: LucideIcons.user,
                         controller: _rateIndividualController,
                         color: const Color(0xFFA855F7),
                         currentTheme: currentTheme,
+                        unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
                       ),
                       const SizedBox(height: 10),
                       _buildRateField(
-                        label: 'Спліт-тренування (2 учні) (грн / заняття)',
+                        label: 'admin.coach_rate_split_label'.tr(args: [currencySymbol]),
                         icon: LucideIcons.userCheck,
                         controller: _rateSplitController,
                         color: const Color(0xFFF59E0B),
                         currentTheme: currentTheme,
+                        unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
                       ),
                       const SizedBox(height: 26),
                   
@@ -231,7 +245,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                             border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            'Помилка: $_errorMessage',
+                            '${'common.error'.tr()}: $_errorMessage',
                             style: const TextStyle(color: Colors.redAccent, fontSize: 14),
                           ),
                         ),
@@ -287,7 +301,6 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -470,6 +483,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     required TextEditingController controller,
     required Color color,
     required AppThemeConfig currentTheme,
+    String? unitBadge,
   }) {
     final isDark = currentTheme.isDark;
     return Container(
@@ -551,7 +565,7 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
               border: Border.all(color: color.withValues(alpha: isDark ? 0.45 : 0.35)),
             ),
             child: Text(
-              '₴ / зан',
+              unitBadge ?? '₴ / ${'admin.coach_rate_unit_short'.tr()}',
               style: TextStyle(
                 color: isDark ? color : (color == const Color(0xFF00E5FF) ? const Color(0xFF0284C7) : color),
                 fontSize: 11,

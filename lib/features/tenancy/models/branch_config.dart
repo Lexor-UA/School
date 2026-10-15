@@ -14,6 +14,12 @@ class BranchPool {
     this.lengthMeters,
   });
 
+  String getLocalizedName(String langCode) =>
+      BranchConfig.localizePoolName(name, langCode);
+
+  List<String> getLocalizedLanes(String langCode) =>
+      lanes.map((l) => BranchConfig.localizeLaneName(l, langCode)).toList();
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -44,6 +50,9 @@ class BranchLocation {
     required this.address,
     this.pools = const [],
   });
+
+  String getLocalizedAddress(String langCode) =>
+      BranchConfig.localizeAddress(address, langCode);
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -205,5 +214,161 @@ class BranchConfig {
     );
     _customConfigs[branchId] = created;
     return created;
+  }
+
+  static String localizePoolName(String rawName, String langCode) {
+    final code = langCode.trim().toLowerCase();
+    final trimmed = rawName.trim();
+    if (trimmed == 'Головний басейн 25м') {
+      switch (code) {
+        case 'en':
+          return 'Main Pool 25m';
+        case 'de':
+          return 'Hauptbecken 25m';
+        case 'ru':
+          return 'Главный бассейн 25м';
+        default:
+          return 'Головний басейн 25м';
+      }
+    }
+    if (trimmed == 'Дитячий теплий басейн') {
+      switch (code) {
+        case 'en':
+          return 'Warm Kids Pool';
+        case 'de':
+          return 'Warmes Kinderbecken';
+        case 'ru':
+          return 'Детский теплый бассейн';
+        default:
+          return 'Дитячий теплий басейн';
+      }
+    }
+    if (trimmed == 'Sports Pool') {
+      switch (code) {
+        case 'uk':
+          return 'Спортивний басейн (Sports Pool)';
+        case 'de':
+          return 'Sportbecken (Sports Pool)';
+        case 'ru':
+          return 'Спортивный бассейн (Sports Pool)';
+        default:
+          return 'Sports Pool';
+      }
+    }
+    if (trimmed == 'Wellenbecken') {
+      switch (code) {
+        case 'uk':
+          return 'Хвильовий басейн (Wellenbecken)';
+        case 'en':
+          return 'Wave Pool (Wellenbecken)';
+        case 'ru':
+          return 'Волновой бассейн (Wellenbecken)';
+        default:
+          return 'Wellenbecken';
+      }
+    }
+    return rawName;
+  }
+
+  static String localizeLaneName(String rawLane, String langCode) {
+    final code = langCode.trim().toLowerCase();
+    final trimmed = rawLane.trim();
+
+    final laneMatchUk = RegExp(r'^Доріжка\s+(\d+)$', caseSensitive: false).firstMatch(trimmed);
+    final laneMatchEn = RegExp(r'^Lane\s+(\d+)$', caseSensitive: false).firstMatch(trimmed);
+    final laneMatchDe = RegExp(r'^Bahn\s+(\d+)$', caseSensitive: false).firstMatch(trimmed);
+    final laneMatchRu = RegExp(r'^Дорожка\s+(\d+)$', caseSensitive: false).firstMatch(trimmed);
+    final numStr = laneMatchUk?.group(1) ??
+        laneMatchEn?.group(1) ??
+        laneMatchDe?.group(1) ??
+        laneMatchRu?.group(1);
+
+    if (numStr != null) {
+      switch (code) {
+        case 'en':
+          return 'Lane $numStr';
+        case 'de':
+          return 'Bahn $numStr';
+        case 'ru':
+          return 'Дорожка $numStr';
+        default:
+          return 'Доріжка $numStr';
+      }
+    }
+
+    if (trimmed == 'Зона А' || trimmed == 'Zone A') {
+      switch (code) {
+        case 'en':
+        case 'de':
+          return 'Zone A';
+        default:
+          return 'Зона А';
+      }
+    }
+    if (trimmed == 'Зона Б' || trimmed == 'Zone B') {
+      switch (code) {
+        case 'en':
+        case 'de':
+          return 'Zone B';
+        default:
+          return 'Зона Б';
+      }
+    }
+
+    final zoneMatch = RegExp(r'^(?:Zone|Зона)\s+(\d+)$', caseSensitive: false).firstMatch(trimmed);
+    if (zoneMatch != null) {
+      final zNum = zoneMatch.group(1)!;
+      switch (code) {
+        case 'en':
+        case 'de':
+          return 'Zone $zNum';
+        default:
+          return 'Зона $zNum';
+      }
+    }
+
+    return rawLane;
+  }
+
+  static String localizeAddress(String rawAddress, String langCode) {
+    final code = langCode.trim().toLowerCase();
+    final trimmed = rawAddress.trim();
+    if (trimmed == 'вул. Ділова, 10, Київ') {
+      switch (code) {
+        case 'en':
+          return '10 Dilova St, Kyiv';
+        case 'de':
+          return 'Dilowa-Str. 10, Kiew';
+        case 'ru':
+          return 'ул. Деловая, 10, Киев';
+        default:
+          return 'вул. Ділова, 10, Київ';
+      }
+    }
+    if (trimmed == 'Klobuckygasse 25, 3400 Klosterneuburg, Wien') {
+      switch (code) {
+        case 'uk':
+          return 'Klobuckygasse 25, 3400 Klosterneuburg, Відень';
+        case 'en':
+          return 'Klobuckygasse 25, 3400 Klosterneuburg, Vienna';
+        case 'ru':
+          return 'Klobuckygasse 25, 3400 Klosterneuburg, Вена';
+        default:
+          return 'Klobuckygasse 25, 3400 Klosterneuburg, Wien';
+      }
+    }
+    return rawAddress;
+  }
+
+  static String translatePoolOrLane(String raw, String langCode) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return raw;
+    if (trimmed.contains('•')) {
+      final parts = trimmed.split('•').map((p) => translatePoolOrLane(p.trim(), langCode)).toList();
+      return parts.join(' • ');
+    }
+    final byPool = localizePoolName(trimmed, langCode);
+    if (byPool != trimmed) return byPool;
+    return localizeLaneName(trimmed, langCode);
   }
 }

@@ -57,10 +57,10 @@ class ClassConflictDialog extends StatelessWidget {
           Expanded(
             child: Text(
               conflict.type == ClassConflictType.laneConflict
-                  ? 'Конфлікт доріжки'
+                  ? 'admin.conflict_lane_title'.tr()
                   : (conflict.type == ClassConflictType.coachConflict
-                      ? 'Конфлікт тренера'
-                      : 'Конфлікт у розкладі'),
+                      ? 'admin.conflict_coach_title'.tr()
+                      : 'admin.conflict_schedule_title'.tr()),
               style: TextStyle(
                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                 fontSize: 17,
@@ -106,7 +106,7 @@ class ClassConflictDialog extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Будь ласка, оберіть іншу вільну доріжку, змініть час або призначте іншого тренера.',
+                    'admin.conflict_resolve_hint'.tr(),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 12,

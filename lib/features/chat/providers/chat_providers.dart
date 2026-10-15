@@ -18,7 +18,7 @@ final adminChatDialogsStreamProvider = StreamProvider<List<ChatDialog>>((ref) {
   }
   final repo = ref.watch(chatRepositoryProvider);
   final tenancy = ref.watch(tenancyControllerProvider);
-  final branchId = tenancy.isAllLocationsSelected ? null : tenancy.activeBranchId;
+  final branchId = tenancy.isAllLocationsSelected ? null : tenancy.effectiveBranch.id;
   return repo.streamAdminDialogs(branchId: branchId);
 });
 

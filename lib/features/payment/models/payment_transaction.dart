@@ -7,16 +7,55 @@ enum PaymentStatus {
   failed,
   refunded;
 
-  String get label {
+  String get label => getLocalizedLabel('uk');
+
+  String getLocalizedLabel(String langCode) {
+    final code = langCode.trim().toLowerCase();
     switch (this) {
       case PaymentStatus.completed:
-        return 'Оплачено';
+        switch (code) {
+          case 'en':
+            return 'Paid';
+          case 'de':
+            return 'Bezahlt';
+          case 'ru':
+            return 'Оплачено';
+          default:
+            return 'Оплачено';
+        }
       case PaymentStatus.pending:
-        return 'В обробці';
+        switch (code) {
+          case 'en':
+            return 'Pending';
+          case 'de':
+            return 'In Bearbeitung';
+          case 'ru':
+            return 'В обработке';
+          default:
+            return 'В обробці';
+        }
       case PaymentStatus.failed:
-        return 'Відхилено';
+        switch (code) {
+          case 'en':
+            return 'Declined';
+          case 'de':
+            return 'Abgelehnt';
+          case 'ru':
+            return 'Отклонено';
+          default:
+            return 'Відхилено';
+        }
       case PaymentStatus.refunded:
-        return 'Повернуто';
+        switch (code) {
+          case 'en':
+            return 'Refunded';
+          case 'de':
+            return 'Erstattet';
+          case 'ru':
+            return 'Возвращено';
+          default:
+            return 'Повернуто';
+        }
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:swimming_school_app/features/schedule/models/class_conflict.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
@@ -110,8 +111,12 @@ class RecurringScheduleGenerator {
     // O(N) optimization: index existing classes by calendar day key (in UTC) to eliminate quadratic loop hangs
     final Map<String, List<GroupClass>> dayBuckets = {};
     void addToBucket(GroupClass c) {
-      final startUtc = c.startTime.toUtc();
-      final endUtc = c.endTime.toUtc();
+      final startUtc = c.startTime.isUtc
+          ? c.startTime
+          : BranchTimezoneHelper.toUtc(c.startTime, c.branchId);
+      final endUtc = c.endTime.isUtc
+          ? c.endTime
+          : BranchTimezoneHelper.toUtc(c.endTime, c.branchId);
       final key = '${startUtc.year}-${startUtc.month}-${startUtc.day}';
       (dayBuckets[key] ??= []).add(c);
       if (endUtc.year != startUtc.year || endUtc.month != startUtc.month || endUtc.day != startUtc.day) {
@@ -196,6 +201,10 @@ class RecurringScheduleGenerator {
     );
   }
 
+  static String _resolveTr(String translated, String key, String fallback) {
+    return translated == key ? fallback : translated;
+  }
+
   /// Оцінка конфлікту для одного слоту тренування
   static ClassConflict? evaluateConflict({
     required List<GroupClass> classes,
@@ -209,11 +218,24 @@ class RecurringScheduleGenerator {
     String? excludeClassId,
     List<String> enrolledChildIds = const [],
   }) {
+    final targetStartUtc = startTimeUtc.isUtc
+        ? startTimeUtc
+        : BranchTimezoneHelper.toUtc(startTimeUtc, branchId);
+    final targetEndUtc = endTimeUtc.isUtc
+        ? endTimeUtc
+        : BranchTimezoneHelper.toUtc(endTimeUtc, branchId);
+
     // 1. Фільтрація: тільки заняття цієї ж філії, що перетинаються в часі
     final overlapping = classes.where((c) {
       if (excludeClassId != null && c.id == excludeClassId) return false;
       if (c.branchId != branchId) return false;
-      return c.startTime.isBefore(endTimeUtc) && c.endTime.isAfter(startTimeUtc);
+      final cStartUtc = c.startTime.isUtc
+          ? c.startTime
+          : BranchTimezoneHelper.toUtc(c.startTime, c.branchId);
+      final cEndUtc = c.endTime.isUtc
+          ? c.endTime
+          : BranchTimezoneHelper.toUtc(c.endTime, c.branchId);
+      return cStartUtc.isBefore(targetEndUtc) && cEndUtc.isAfter(targetStartUtc);
     }).toList();
 
     if (overlapping.isEmpty) return null;
@@ -224,11 +246,21 @@ class RecurringScheduleGenerator {
       for (final c in overlapping) {
         if (c.coachId.trim().isNotEmpty && c.coachId.trim() != 'unassigned' && c.coachId == coachId) {
           final timeStr = c.formatBranchTime();
-          final laneDisplay = c.lane.isNotEmpty ? c.lane : 'басейн';
+          final defaultPool = _resolveTr('schedule.pool_default'.tr(), 'schedule.pool_default', 'pool');
+          final laneDisplay = c.lane.isNotEmpty ? c.lane : defaultPool;
           return ClassConflict(
             type: ClassConflictType.coachConflict,
             conflictingClass: c,
-            message: 'Тренер ${c.coachName} вже проводить заняття «${c.title}» о $timeStr ($laneDisplay).',
+            message: _resolveTr(
+              'schedule.conflict_coach_busy'.tr(namedArgs: {
+                'coach': c.coachName,
+                'title': c.title,
+                'time': timeStr,
+                'lane': laneDisplay,
+              }),
+              'schedule.conflict_coach_busy',
+              'Coach ${c.coachName} is already teaching "${c.title}" at $timeStr ($laneDisplay).',
+            ),
           );
         }
       }
@@ -242,7 +274,14 @@ class RecurringScheduleGenerator {
           return ClassConflict(
             type: ClassConflictType.participantConflict,
             conflictingClass: c,
-            message: 'Один з учасників вже записаний на інше тренування о $timeStr («${c.title}»).',
+            message: _resolveTr(
+              'schedule.conflict_participant_busy'.tr(namedArgs: {
+                'time': timeStr,
+                'title': c.title,
+              }),
+              'schedule.conflict_participant_busy',
+              'Participant is already enrolled in "${c.title}" at $timeStr.',
+            ),
           );
         }
       }
@@ -275,36 +314,69 @@ class RecurringScheduleGenerator {
       return ClassConflict(
         type: ClassConflictType.laneConflict,
         conflictingClass: samePoolClasses.first,
-        message: 'Усі $maxPoolLanes доріжок басейну вже зайняті з $timeStr до $endTimeStr.',
+        message: _resolveTr(
+          'schedule.conflict_all_lanes_busy'.tr(namedArgs: {
+            'count': maxPoolLanes.toString(),
+            'start': timeStr,
+            'end': endTimeStr,
+          }),
+          'schedule.conflict_all_lanes_busy',
+          'All $maxPoolLanes lanes are busy from $timeStr to $endTimeStr.',
+        ),
       );
     }
 
     final l1 = lane.trim().toLowerCase();
-    final isWholePool1 = l1.contains('весь') || l1.contains('всі') || l1.contains('whole');
-    final hasLane1 = lane.trim().isNotEmpty && lane.trim() != 'Будь-яка';
+    final isWholePool1 = l1.contains('весь') || l1.contains('всі') || l1.contains('whole') || l1.contains('gesamtes');
+    final hasLane1 = lane.trim().isNotEmpty && lane.trim() != 'Будь-яка' && lane.trim() != 'schedule.any_lane'.tr();
 
     for (final c in samePoolClasses) {
       final l2 = c.lane.trim().toLowerCase();
-      final isWholePool2 = l2.contains('весь') || l2.contains('всі') || l2.contains('whole');
-      final hasLane2 = c.lane.trim().isNotEmpty && c.lane.trim() != 'Будь-яка';
+      final isWholePool2 = l2.contains('весь') || l2.contains('всі') || l2.contains('whole') || l2.contains('gesamtes');
+      final hasLane2 = c.lane.trim().isNotEmpty && c.lane.trim() != 'Будь-яка' && c.lane.trim() != 'schedule.any_lane'.tr();
 
       if (isWholePool1 || isWholePool2) {
         final timeStr = c.formatBranchTime();
-        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : 'не вказано';
+        final defaultCoach = _resolveTr('common.not_specified'.tr(), 'common.not_specified', 'N/A');
+        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : defaultCoach;
         return ClassConflict(
           type: ClassConflictType.laneConflict,
           conflictingClass: c,
           message: isWholePool2
-              ? 'Весь басейн вже зайнятий о $timeStr заняттям «${c.title}» (тренер: $coachNameDisplay).'
-              : 'Для оренди всього басейну на цей час ($timeStr) не повинно бути інших занять.',
+              ? _resolveTr(
+                  'schedule.conflict_whole_pool_busy'.tr(namedArgs: {
+                    'time': timeStr,
+                    'title': c.title,
+                    'coach': coachNameDisplay,
+                  }),
+                  'schedule.conflict_whole_pool_busy',
+                  'Whole pool (${c.lane}) is busy at $timeStr with "${c.title}" (coach: $coachNameDisplay).',
+                )
+              : _resolveTr(
+                  'schedule.conflict_whole_pool_requires_empty'.tr(namedArgs: {
+                    'time': timeStr,
+                  }),
+                  'schedule.conflict_whole_pool_requires_empty',
+                  'No other classes allowed at $timeStr for whole pool booking.',
+                ),
         );
       } else if (hasLane1 && hasLane2 && l1 == l2) {
         final timeStr = c.formatBranchTime();
-        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : 'не вказано';
+        final defaultCoach = _resolveTr('common.not_specified'.tr(), 'common.not_specified', 'N/A');
+        final coachNameDisplay = c.coachName.isNotEmpty ? c.coachName : defaultCoach;
         return ClassConflict(
           type: ClassConflictType.laneConflict,
           conflictingClass: c,
-          message: 'Доріжка «$lane» вже зайнята о $timeStr заняттям «${c.title}» (тренер: $coachNameDisplay).',
+          message: _resolveTr(
+            'schedule.conflict_lane_busy'.tr(namedArgs: {
+              'lane': lane,
+              'time': timeStr,
+              'title': c.title,
+              'coach': coachNameDisplay,
+            }),
+            'schedule.conflict_lane_busy',
+            'Lane "$lane" is already busy at $timeStr with "${c.title}" (coach: $coachNameDisplay).',
+          ),
         );
       }
     }

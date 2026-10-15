@@ -17,7 +17,8 @@ import 'package:swimming_school_app/features/parent/presentation/parent_subscrip
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
-import 'package:intl/intl.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 
 class CreateIndividualClassSheet extends ConsumerStatefulWidget {
   final DateTime selectedDate;
@@ -57,10 +58,15 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     if (widget.isAdult) {
       _availableServices = [
         'Індивідуальні тренування для дорослих',
+        'Спліт-тренування (2 особи)',
       ];
     } else {
+      final children = ref.read(childrenControllerProvider).value ?? [];
+      final child = children.firstWhereOrNull((c) => c.id == widget.selectedUserId);
+      final childAge = child?.ageAt(widget.selectedDate) ?? child?.currentAge ?? 6;
       _availableServices = [
         'Індивідуальні тренування для дітей',
+        if (childAge >= 6) 'Спліт-тренування (2 особи)',
       ];
     }
     _selectedService = _availableServices.first;
@@ -128,8 +134,8 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
     if (_isSplit && _selectedParticipantIds.length != 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Будь ласка, оберіть двох учасників для спліт-тренування'),
+        SnackBar(
+          content: Text('parent.select_2_participants_split_err'.tr()),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -138,8 +144,8 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
     if (_selectedParticipantIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Будь ласка, оберіть хоча б одного учасника'),
+        SnackBar(
+          content: Text('parent.select_at_least_1_participant_err'.tr()),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -187,15 +193,15 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
                 ),
               ),
-              title: Text('Немає спліт-абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+              title: Text('parent.no_split_subscription_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
               content: Text(
-                'Для запису на спліт-тренування необхідно мати активний спліт-абонемент (на 2 особи). Бажаєте придбати його у розділі "Абонемент"?',
+                'parent.no_split_subscription_desc'.tr(),
                 style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Скасувати', style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
+                  child: Text('admin.cancel'.tr(), style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
                 ),
                 TextButton(
                   onPressed: () {
@@ -204,7 +210,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
                   },
                   child: Text(
-                    'Придбати абонемент',
+                    'parent.buy_subscription_btn'.tr(),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       fontWeight: FontWeight.bold,
@@ -246,15 +252,15 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
                   ),
                 ),
-                title: Text('Термін дії абонемента закінчився', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                title: Text('parent.sub_expired_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
                 content: Text(
-                  'Термін дії вашого спліт-абонемента закінчується $expiryStr, що передує даті тренування ($dateStr). Будь ласка, оберіть дату в межах дії абонемента або оформіть новий абонемент.',
+                  'parent.split_sub_expired_desc'.tr(args: [expiryStr, dateStr]),
                   style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Зрозуміло', style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
+                    child: Text('parent.understood_btn'.tr(), style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
                   ),
                 ],
               ),
@@ -285,7 +291,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
             final range = parseAgeRange(_selectedService!);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Вік дитини $ownerName ($age р.) не відповідає віковій групі (${range!.$1}-${range.$2} р.)'),
+                content: Text('parent.child_age_mismatch_named'.tr(args: [ownerName, age.toString(), range!.$1.toString(), range.$2.toString()])),
                 backgroundColor: Colors.redAccent,
               ),
             );
@@ -324,17 +330,17 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
                   ),
                 ),
-                title: Text('Немає абонемента', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                title: Text('parent.no_subscription_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
                 content: Text(
                   pIsAdult
-                      ? 'Для запису необхідно мати оплачений дорослий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?'
-                      : 'Для запису необхідно мати оплачений дитячий абонемент для $ownerName. Бажаєте придбати його у розділі "Абонемент"?',
+                      ? 'parent.no_adult_sub_for_owner_desc'.tr(args: [ownerName])
+                      : 'parent.no_child_sub_for_owner_desc'.tr(args: [ownerName]),
                   style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Скасувати', style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
+                    child: Text('admin.cancel'.tr(), style: TextStyle(color: isDark ? Colors.white54 : currentTheme.textMuted)),
                   ),
                   TextButton(
                     onPressed: () {
@@ -344,7 +350,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       ref.read(parentTabProvider.notifier).setTab(2); // Switch to Subscriptions tab
                     },
                     child: Text(
-                      'Придбати абонемент',
+                      'parent.buy_subscription_btn'.tr(),
                       style: TextStyle(
                         color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         fontWeight: FontWeight.bold,
@@ -365,7 +371,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
             final subRange = subscription.ageRange;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Абонемент для $ownerName призначений для віку ${subRange?.$1}-${subRange?.$2} р. (вік дитини: $age р.).'),
+                content: Text('parent.sub_for_owner_age_mismatch_err'.tr(args: [ownerName, (subRange?.$1 ?? 0).toString(), (subRange?.$2 ?? 0).toString(), age.toString()])),
                 backgroundColor: Colors.redAccent,
               ),
             );
@@ -401,15 +407,15 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       color: isDark ? Colors.white.withValues(alpha: 0.2) : currentTheme.cardBorder,
                     ),
                   ),
-                  title: Text('Термін дії абонемента закінчився', style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
+                  title: Text('parent.sub_expired_title'.tr(), style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold)),
                   content: Text(
-                    'Термін дії абонемента для $ownerName закінчується $expiryStr, що передує даті тренування ($dateStr). Будь ласка, оберіть дату в межах дії абонемента або оформіть новий абонемент.',
+                    'parent.sub_for_owner_expired_desc'.tr(args: [ownerName, expiryStr, dateStr]),
                     style: TextStyle(color: isDark ? Colors.white70 : currentTheme.textSecondary),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('Зрозуміло', style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
+                      child: Text('parent.understood_btn'.tr(), style: TextStyle(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
                     ),
                   ],
                 ),
@@ -437,8 +443,8 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
 
     if (startTime.isBefore(branchNow)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Неможливо обрати минулий час для тренування'),
+        SnackBar(
+          content: Text('parent.cannot_select_past_time_err'.tr()),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -477,10 +483,10 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_isSplit
-                  ? 'Спліт-заняття для 2 осіб успішно заплановано!'
+                  ? 'parent.split_class_scheduled_msg'.tr()
                   : (_isGroup
-                      ? 'Групове тренування успішно заплановано (учасників: ${enrolledIds.length})!'
-                      : 'Заняття успішно заплановано!')),
+                      ? 'parent.group_class_scheduled_msg'.tr(args: [enrolledIds.length.toString()])
+                      : 'parent.class_scheduled_msg'.tr())),
               backgroundColor: const Color(0xFF10B981),
             ),
           );
@@ -488,7 +494,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
           final conflict = ref.read(scheduleControllerProvider.notifier).lastConflict;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(conflict?.message ?? 'Не вдалося запланувати: обраний час недоступний або відсутній активний абонемент.'),
+              content: Text(conflict?.message ?? 'parent.schedule_failed_fallback_err'.tr()),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -498,7 +504,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка: $e'),
+            content: Text('common.error_with_msg'.tr(args: [e.toString()])),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -516,13 +522,13 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     final family = ref.watch(familyStreamProvider).value;
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
     final partnerName = user != null
-        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'parent.partner'.tr())
         : null;
 
     final List<({String id, String name, bool isAdult})> eligibleMembers = [];
 
     if (_isSplit) {
-      if (user != null) eligibleMembers.add((id: user.id, name: '${user.name} (Я)', isAdult: true));
+      if (user != null) eligibleMembers.add((id: user.id, name: '${user.name} (${'parent.me_short'.tr()})', isAdult: true));
       if (partnerId != null && partnerName != null) {
         eligibleMembers.add((id: partnerId, name: partnerName, isAdult: true));
       }
@@ -530,7 +536,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
         children.where((c) => (c.currentAge ?? 0) >= 6).map((c) => (id: c.id, name: c.name, isAdult: false)),
       );
     } else if (_isAdultGroup) {
-      if (user != null) eligibleMembers.add((id: user.id, name: '${user.name} (Я)', isAdult: true));
+      if (user != null) eligibleMembers.add((id: user.id, name: '${user.name} (${'parent.me_short'.tr()})', isAdult: true));
       if (partnerId != null && partnerName != null) {
         eligibleMembers.add((id: partnerId, name: partnerName, isAdult: true));
       }
@@ -546,7 +552,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
       }).toList();
 
       eligibleMembers.addAll(
-        matchedChildren.map((c) => (id: c.id, name: '${c.name}${c.currentAge != null ? " (${c.currentAge} р.)" : ""}', isAdult: false)),
+        matchedChildren.map((c) => (id: c.id, name: '${c.name}${c.currentAge != null ? " (${c.currentAge} ${'parent.years_short'.tr()})" : ""}', isAdult: false)),
       );
     }
 
@@ -556,18 +562,18 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
     final isReady = _isSplit ? (count == 2) : (count >= 1);
 
     final title = _isSplit
-        ? 'Учасники спліт-тренування'
-        : (_isAdultGroup ? 'Учасники групового заняття' : 'Діти на групове заняття');
+        ? 'parent.split_participants_title'.tr()
+        : (_isAdultGroup ? 'parent.group_participants_title'.tr() : 'parent.group_children_title'.tr());
 
     final badgeText = _isSplit
-        ? (isReady ? '2 з 2 обрано' : 'Обрано $count з 2')
-        : 'Обрано: $count';
+        ? (isReady ? 'parent.split_2_of_2_badge'.tr() : 'parent.split_count_of_2_badge'.tr(args: [count.toString()]))
+        : 'parent.selected_count_badge'.tr(args: [count.toString()]);
 
     final subtitle = _isSplit
-        ? 'Оберіть двох членів сім\'ї для спільного заняття:'
+        ? 'parent.split_select_2_family_sub'.tr()
         : (_isAdultGroup
-            ? 'Оберіть дорослих членів сім\'ї, які братимуть участь:'
-            : 'Оберіть дітей, які братимуть участь у групі:');
+            ? 'parent.group_select_adults_sub'.tr()
+            : 'parent.group_select_children_sub'.tr());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -778,7 +784,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                               ),
                             ),
                             Text(
-                              member.isAdult ? 'Дорослий' : 'Дитина',
+                              member.isAdult ? 'parent.adult_badge'.tr() : 'parent.child_badge'.tr(),
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
@@ -843,7 +849,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Увага: для спліт-тренування додайте дитину або запросіть другого учасника.',
+                      'parent.split_add_second_member_warn'.tr(),
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
@@ -1053,7 +1059,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Запланувати заняття',
+                  'parent.schedule_class'.tr(),
                   style: TextStyle(
                     color: isDark ? Colors.white : currentTheme.textPrimary,
                     fontSize: 20,
@@ -1095,7 +1101,10 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Термін дії абонемента закінчується ${DateFormat('dd.MM.yyyy').format(earliestExpiryForSelected)}. Запис на обрану дату (${DateFormat('dd.MM.yyyy').format(widget.selectedDate)}) неможливий.',
+                            'parent.sub_expires_booking_impossible'.tr(args: [
+                              DateFormat('dd.MM.yyyy').format(earliestExpiryForSelected),
+                              DateFormat('dd.MM.yyyy').format(widget.selectedDate),
+                            ]),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFFECACA) : const Color(0xFFB91C1C),
                               fontSize: 12.5,
@@ -1116,10 +1125,10 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       final age = currentChild.currentAge;
                       final isUnder6 = age != null && age <= 5;
                       final ageGroup = isUnder6
-                          ? 'Тільки індивідуальні заняття (до 6 р.)'
+                          ? 'parent.only_individual_under6'.tr()
                           : ((age != null && age >= 16)
-                              ? 'Доросла категорія (16+ р.)'
-                              : ((age != null && age >= 9) ? 'Старша група (9-15 р.)' : 'Молодша група (6-8 р.)'));
+                              ? 'parent.adult_category_16_plus'.tr()
+                              : ((age != null && age >= 9) ? 'parent.older_group_9_15'.tr() : 'parent.younger_group_6_8'.tr()));
                       return Container(
                         margin: const EdgeInsets.only(top: 8, bottom: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -1146,7 +1155,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                             Icon(isUnder6 ? LucideIcons.sparkles : LucideIcons.baby, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                             const SizedBox(width: 8),
                             Text(
-                              '${currentChild.name}${age != null ? " ($age р.)" : ""} • $ageGroup',
+                              '${currentChild.name}${age != null ? " ($age ${'parent.years_short'.tr()})" : ""} • $ageGroup',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -1161,7 +1170,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                 const SizedBox(height: 10),
                 
                 Text(
-                  'Оберіть послугу',
+                  'parent.choose_service'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFFCBD5E1) : currentTheme.textSecondary,
                     fontSize: 13.5,
@@ -1234,7 +1243,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                                 const SizedBox(width: 6),
                               ],
                               Text(
-                                service,
+                                SubscriptionPackageCatalog.localizeServiceName(service, context.locale.languageCode),
                                 style: TextStyle(
                                   color: isSelected
                                       ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
@@ -1258,7 +1267,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                 if (_isSplit || _isGroup) _buildParticipantSelector(isDark, currentTheme),
 
                 Text(
-                  'Оберіть час',
+                  'parent.choose_time'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFFCBD5E1) : currentTheme.textSecondary,
                     fontSize: 13.5,
@@ -1416,10 +1425,10 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   _isSplit && _selectedParticipantIds.length != 2
-                                      ? 'Оберіть 2 учасників (${_selectedParticipantIds.length}/2)'
+                                      ? 'parent.select_2_participants_ratio'.tr(args: [_selectedParticipantIds.length.toString()])
                                       : (_isGroup && _selectedParticipantIds.length > 1
-                                          ? 'Записати (${_selectedParticipantIds.length} ос.)'
-                                          : 'Підтвердити'),
+                                          ? 'parent.book_multi_btn'.tr(args: [_selectedParticipantIds.length.toString()])
+                                          : 'parent.confirm'.tr()),
                                   style: TextStyle(
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w800,

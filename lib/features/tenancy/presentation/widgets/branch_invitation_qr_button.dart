@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -75,7 +76,7 @@ class BranchInvitationQrButton extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'QR рецепції',
+                'admin.qr_reception'.tr(),
                 style: TextStyle(
                   color: currentTheme.textPrimary,
                   fontSize: 12,

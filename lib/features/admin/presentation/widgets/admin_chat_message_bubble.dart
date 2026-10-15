@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
@@ -156,7 +156,7 @@ class AdminChatMessageBubble extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Повідомлення скопійовано: "${msg.text}"',
+                        'admin_chat.message_copied'.tr(namedArgs: {'text': msg.text}),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w600),
@@ -203,13 +203,11 @@ class AdminChatMessageBubble extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: bubbleBorderRadius,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: hasImage ? 10 : 16,
-                  vertical: hasImage ? 10 : 12,
-                ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: hasImage ? 10 : 16,
+                vertical: hasImage ? 10 : 12,
+              ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -227,8 +225,10 @@ class AdminChatMessageBubble extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             isCoachSender
-                                ? 'Тренер: ${coachName ?? msg.senderName ?? 'Тренер'}'
-                                : 'Клієнт: $clientName',
+                                ? 'admin_chat.coach_prefix'.tr(namedArgs: {
+                                    'name': coachName ?? msg.senderName ?? 'common.coach_default'.tr(),
+                                  })
+                                : 'admin_chat.client_prefix'.tr(namedArgs: {'name': clientName}),
                             style: TextStyle(
                               color: isCoachSender
                                   ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
@@ -345,7 +345,6 @@ class AdminChatMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-          ),
         ),
       ).animate().fadeIn(delay: (20 * index).ms).slideY(begin: 0.08),
     );

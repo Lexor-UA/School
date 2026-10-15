@@ -20,6 +20,7 @@ import 'package:swimming_school_app/features/owner/presentation/owner_staff_scre
 import 'package:swimming_school_app/features/owner/presentation/owner_payouts_screen.dart';
 import 'package:swimming_school_app/features/admin/presentation/payment_sheet.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
+import 'package:swimming_school_app/features/payment/presentation/widgets/edit_branch_requisites_sheet.dart';
 
 /// Головний екран Власника (CitySwim CEO)
 /// Виконано за стандартом Apple VisionOS Deep Sapphire Glass:
@@ -37,37 +38,37 @@ class OwnerMain extends ConsumerStatefulWidget {
 
 class _OwnerMainState extends ConsumerState<OwnerMain> {
   int _selectedTabIndex = 0;
-  String _selectedTimeframe = 'Місяць';
+  String _selectedTimeframe = 'month';
   int? _selectedChartPointIndex;
 
   String _formatClientsCount(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
     if (mod100 >= 11 && mod100 <= 19) {
-      return '$count клієнтів';
+      return 'owner.clients_count_many'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 == 1) {
-      return '$count клієнт';
+      return 'owner.clients_count_one'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 >= 2 && mod10 <= 4) {
-      return '$count клієнти';
+      return 'owner.clients_count_few'.tr(namedArgs: {'count': '$count'});
     }
-    return '$count клієнтів';
+    return 'owner.clients_count_many'.tr(namedArgs: {'count': '$count'});
   }
 
   String _formatCoachesCount(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
     if (mod100 >= 11 && mod100 <= 19) {
-      return '$count тренерів';
+      return 'owner.coaches_count_many'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 == 1) {
-      return '$count тренер';
+      return 'owner.coaches_count_one'.tr(namedArgs: {'count': '$count'});
     }
     if (mod10 >= 2 && mod10 <= 4) {
-      return '$count тренери';
+      return 'owner.coaches_count_few'.tr(namedArgs: {'count': '$count'});
     }
-    return '$count тренерів';
+    return 'owner.coaches_count_many'.tr(namedArgs: {'count': '$count'});
   }
 
   void _showOwnerDevSnackbar(String msg) {
@@ -371,7 +372,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ФІНАНСИ ТА АНАЛІТИКА',
+                    'owner.finances_and_analytics_upper'.tr(),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                       fontSize: 11,
@@ -381,7 +382,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Динаміка мережі',
+                    'owner.network_dynamics'.tr(),
                     style: TextStyle(
                       color: themeConfig.textPrimary,
                       fontSize: 20,
@@ -393,7 +394,56 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               ),
             ],
           ),
-          const ThemeHeaderButton(size: 38),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0C2238).withValues(alpha: 0.85)
+                        : const Color(0xFFF0F9FF),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                          : const Color(0xFFBAE6FD),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.15 : 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    tooltip: 'owner.payment_requisites_tooltip'.tr(),
+                    icon: Icon(
+                      LucideIcons.landmark,
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                      size: 18,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      final tenancy = ref.read(tenancyControllerProvider);
+                      EditBranchRequisitesSheet.show(
+                        context,
+                        initialBranchId: tenancy.effectiveBranch.id,
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const ThemeHeaderButton(size: 38),
+            ],
+          ),
         ],
       ),
     );
@@ -442,7 +492,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            '${'owner.hello'.tr()}, ${user?.name ?? "Власник"}',
+                            '${'owner.hello'.tr()}, ${user?.name ?? 'auth.default_owner'.tr()}',
                             style: TextStyle(
                               color: themeConfig.textPrimary,
                               fontSize: 17,
@@ -533,7 +583,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     color: isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
                     size: 18,
                   ),
-                  tooltip: 'Вийти з акаунту',
+                  tooltip: 'owner.logout_tooltip'.tr(),
                   style: IconButton.styleFrom(
                     backgroundColor: isDark
                         ? const Color(0xFFF43F5E).withValues(alpha: 0.16)
@@ -570,9 +620,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     final isDark = themeConfig.isDark;
 
     final tabs = [
-      {'id': 'all', 'label': 'Вся мережа', 'flag': '🌐', 'currency': '₴ / €'},
-      {'id': 'kyiv', 'label': 'Київ', 'flag': '🇺🇦', 'currency': '₴'},
-      {'id': 'vienna', 'label': 'Відень', 'flag': '🇦🇹', 'currency': '€'},
+      {'id': 'all', 'label': 'owner.all_network'.tr(), 'flag': '🌐', 'currency': '₴ / €'},
+      {'id': 'kyiv', 'label': 'branches.city_kyiv'.tr(), 'flag': '🇺🇦', 'currency': '₴'},
+      {'id': 'vienna', 'label': 'branches.city_vienna'.tr(), 'flag': '🇦🇹', 'currency': '€'},
     ];
 
     return ClipRRect(
@@ -717,7 +767,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           profitText: analytics.kyiv.formatNetProfit(),
           expensesText: analytics.kyiv.formatExpenses(),
           growthText: '+${analytics.kyiv.revenueGrowth}%',
-          statusText: '🟢 Стабільна робота • ${_formatClientsCount(analytics.kyiv.clientCount)} • ${_formatCoachesCount(analytics.kyiv.coachCount)}',
+          statusText: '🟢 ${'owner.status_stable_operation'.tr()} • ${_formatClientsCount(analytics.kyiv.clientCount)} • ${_formatCoachesCount(analytics.kyiv.coachCount)}',
           primaryGradient: isDark
               ? [const Color(0xFF0C2442), const Color(0xFF051222)]
               : [Colors.white, const Color(0xFFF0F9FF)],
@@ -740,7 +790,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           profitText: analytics.vienna.formatNetProfit(),
           expensesText: analytics.vienna.formatExpenses(),
           growthText: '+${analytics.vienna.revenueGrowth}%',
-          statusText: '🟢 Активне зростання • ${_formatClientsCount(analytics.vienna.clientCount)} • ${_formatCoachesCount(analytics.vienna.coachCount)}',
+          statusText: '🟢 ${'owner.status_active_growth'.tr()} • ${_formatClientsCount(analytics.vienna.clientCount)} • ${_formatCoachesCount(analytics.vienna.coachCount)}',
           primaryGradient: isDark
               ? [const Color(0xFF1E1742), const Color(0xFF0A0C22)]
               : [Colors.white, const Color(0xFFFAF5FF)],
@@ -786,7 +836,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Мультивалютний контроль: кожна філія має ізольований баланс (₴ та €)',
+                  'owner.multicurrency_control_note'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                     fontSize: 11,
@@ -932,7 +982,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
                   // Large Revenue
                   Text(
-                    'МІСЯЧНИЙ ДОХІД',
+                    'owner.monthly_revenue_upper'.tr(),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 11,
@@ -975,7 +1025,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Прибуток: $profitText',
+                              'owner.profit_with_amount'.tr(namedArgs: {'amount': profitText}),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 12.5,
@@ -985,7 +1035,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           ],
                         ),
                         Text(
-                          'Витрати: $expensesText',
+                          'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': expensesText}),
                           style: TextStyle(
                             color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
                             fontSize: 12,
@@ -1140,7 +1190,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Маржинальність бізнесу',
+                    'owner.business_margin'.tr(),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 12,
@@ -1148,7 +1198,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                     ),
                   ),
                   Text(
-                    '$marginPercentStr чистий прибуток',
+                    'owner.net_profit_percent'.tr(namedArgs: {'percent': marginPercentStr}),
                     style: const TextStyle(
                       color: Color(0xFF10B981),
                       fontSize: 12,
@@ -1192,7 +1242,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Чистий прибуток',
+                              'owner.net_profit_label'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 11,
@@ -1226,7 +1276,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Витрати школи',
+                              'owner.school_expenses'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                 fontSize: 11,
@@ -1260,7 +1310,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'LTV Клієнта',
+                              'owner.client_ltv'.tr(),
                               style: TextStyle(
                                 color: isDark
                                     ? primaryAccent
@@ -1328,7 +1378,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 12),
           child: Text(
-            'ОПЕРАЦІЙНА СИТУАЦІЯ',
+            'owner.operational_status'.tr(),
             style: TextStyle(
               color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
               fontSize: 12,
@@ -1354,7 +1404,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 icon: LucideIcons.users,
                 title: 'owner.clients'.tr(),
                 value: '$clientsValue',
-                sublabel: isAll ? '🇺🇦 ${branchMetrics['kyiv']?.activeClientsCount ?? 0} • 🇦🇹 ${branchMetrics['vienna']?.activeClientsCount ?? 0}' : 'Активні відвідувачі',
+                sublabel: isAll ? '🇺🇦 ${branchMetrics['kyiv']?.activeClientsCount ?? 0} • 🇦🇹 ${branchMetrics['vienna']?.activeClientsCount ?? 0}' : 'owner.active_visitors'.tr(),
                 accentColor: const Color(0xFF00E5FF),
                 themeConfig: themeConfig,
               ),
@@ -1369,7 +1419,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 value: isAll
                     ? '${analytics.averageOccupancy}%'
                     : (isVienna ? '${analytics.vienna.occupancyPercent}%' : '${analytics.kyiv.occupancyPercent}%'),
-                sublabel: isAll ? '🇺🇦 ${analytics.kyiv.occupancyPercent}% • 🇦🇹 ${analytics.vienna.occupancyPercent}%' : 'Завантаженість',
+                sublabel: isAll ? '🇺🇦 ${analytics.kyiv.occupancyPercent}% • 🇦🇹 ${analytics.vienna.occupancyPercent}%' : 'owner.occupancy_sublabel'.tr(),
                 accentColor: const Color(0xFFF59E0B),
                 themeConfig: themeConfig,
               ),
@@ -1383,9 +1433,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             Expanded(
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.userCheck,
-                title: 'Тренери',
+                title: 'owner.coaches'.tr(),
                 value: _formatCoachesCount(coachesValue),
-                sublabel: isAll ? '🇺🇦 ${branchMetrics['kyiv']?.totalCoachesCount ?? 0} • 🇦🇹 ${branchMetrics['vienna']?.totalCoachesCount ?? 0} ➔' : 'Штат у нормі ➔',
+                sublabel: isAll ? '🇺🇦 ${branchMetrics['kyiv']?.totalCoachesCount ?? 0} • 🇦🇹 ${branchMetrics['vienna']?.totalCoachesCount ?? 0} ➔' : 'owner.staff_normal_arrow'.tr(),
                 accentColor: const Color(0xFF10B981),
                 themeConfig: themeConfig,
                 onTap: () {
@@ -1400,9 +1450,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             Expanded(
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.alertTriangle,
-                title: 'Потребує уваги',
-                value: '$unpaidValue без оплати',
-                sublabel: 'Без оплати ➔',
+                title: 'owner.requires_attention'.tr(),
+                value: 'owner.unpaid_count'.tr(namedArgs: {'count': '$unpaidValue'}),
+                sublabel: 'owner.unpaid_arrow'.tr(),
                 accentColor: const Color(0xFFF43F5E),
                 themeConfig: themeConfig,
                 isAttention: unpaidValue > 0,
@@ -1489,9 +1539,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                               color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.30 : 0.25),
                             ),
                           ),
-                          child: const Text(
-                            'УВАГА',
-                            style: TextStyle(
+                          child: Text(
+                            'owner.attention_badge'.tr(),
+                            style: const TextStyle(
                               color: Color(0xFFF43F5E),
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
@@ -1560,35 +1610,45 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     final isDark = themeConfig.isDark;
     final isVienna = analytics.isViennaSelected;
 
-    double childRevenue = 0.0;
-    double adultRevenue = 0.0;
-    
+    double childPercent = 0.0;
+    double adultPercent = 0.0;
+
     if (tenancyState.isAllLocations) {
-      childRevenue = analytics.kyiv.childRevenue + analytics.vienna.childRevenue;
-      adultRevenue = analytics.kyiv.adultRevenue + analytics.vienna.adultRevenue;
-    } else if (isVienna) {
-      childRevenue = analytics.vienna.childRevenue;
-      adultRevenue = analytics.vienna.adultRevenue;
+      final kyivTotal = analytics.kyiv.childRevenue + analytics.kyiv.adultRevenue;
+      final viennaTotal = analytics.vienna.childRevenue + analytics.vienna.adultRevenue;
+      final kyivChildRatio = kyivTotal > 0 ? analytics.kyiv.childRevenue / kyivTotal : 0.0;
+      final viennaChildRatio = viennaTotal > 0 ? analytics.vienna.childRevenue / viennaTotal : 0.0;
+      if (kyivTotal > 0 && viennaTotal > 0) {
+        childPercent = (kyivChildRatio + viennaChildRatio) / 2.0;
+        adultPercent = 1.0 - childPercent;
+      } else if (kyivTotal > 0) {
+        childPercent = kyivChildRatio;
+        adultPercent = 1.0 - childPercent;
+      } else if (viennaTotal > 0) {
+        childPercent = viennaChildRatio;
+        adultPercent = 1.0 - childPercent;
+      }
     } else {
-      childRevenue = analytics.kyiv.childRevenue;
-      adultRevenue = analytics.kyiv.adultRevenue;
+      final branch = isVienna ? analytics.vienna : analytics.kyiv;
+      final totalRevenue = branch.childRevenue + branch.adultRevenue;
+      childPercent = totalRevenue > 0 ? branch.childRevenue / totalRevenue : 0.0;
+      adultPercent = totalRevenue > 0 ? branch.adultRevenue / totalRevenue : 0.0;
     }
-    
-    final totalRevenue = childRevenue + adultRevenue;
-    
-    double childPercent = totalRevenue > 0 ? childRevenue / totalRevenue : 0.0;
-    double adultPercent = totalRevenue > 0 ? adultRevenue / totalRevenue : 0.0;
-    
+
     final childPercentStr = '${(childPercent * 100).round()}%';
     final adultPercentStr = '${(adultPercent * 100).round()}%';
 
     final childAmountStr = tenancyState.isAllLocations
-        ? '${analytics.kyiv.formatMoney(analytics.kyiv.childRevenue)} / ${analytics.vienna.formatMoney(analytics.vienna.childRevenue)}'
-        : (isVienna ? analytics.vienna.formatMoney(childRevenue) : analytics.kyiv.formatMoney(childRevenue));
+        ? '🇺🇦 ${analytics.kyiv.formatMoney(analytics.kyiv.childRevenue)} / 🇦🇹 ${analytics.vienna.formatMoney(analytics.vienna.childRevenue)}'
+        : (isVienna
+            ? analytics.vienna.formatMoney(analytics.vienna.childRevenue)
+            : analytics.kyiv.formatMoney(analytics.kyiv.childRevenue));
 
     final adultAmountStr = tenancyState.isAllLocations
-        ? '${analytics.kyiv.formatMoney(analytics.kyiv.adultRevenue)} / ${analytics.vienna.formatMoney(analytics.vienna.adultRevenue)}'
-        : (isVienna ? analytics.vienna.formatMoney(adultRevenue) : analytics.kyiv.formatMoney(adultRevenue));
+        ? '🇺🇦 ${analytics.kyiv.formatMoney(analytics.kyiv.adultRevenue)} / 🇦🇹 ${analytics.vienna.formatMoney(analytics.vienna.adultRevenue)}'
+        : (isVienna
+            ? analytics.vienna.formatMoney(analytics.vienna.adultRevenue)
+            : analytics.kyiv.formatMoney(analytics.kyiv.adultRevenue));
 
 
     return ClipRRect(
@@ -1619,7 +1679,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    tenancyState.isAllLocations ? 'СТРУКТУРА ДОХОДІВ МЕРЕЖІ' : 'СТРУКТУРА ДОХОДІВ',
+                    tenancyState.isAllLocations ? 'owner.network_revenue_structure'.tr() : 'owner.revenue_structure'.tr(),
                     style: TextStyle(
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0369A1),
                       fontSize: 11,
@@ -1633,7 +1693,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
               // Item 1
               _buildBreakdownItem(
-                label: 'Дитячі абонементи',
+                label: 'owner.child_subscriptions'.tr(),
                 percent: childPercentStr,
                 value: childPercent,
                 amount: childAmountStr,
@@ -1645,7 +1705,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
 
               // Item 2
               _buildBreakdownItem(
-                label: 'Дорослі абонементи',
+                label: 'owner.adult_subscriptions'.tr(),
                 percent: adultPercentStr,
                 value: adultPercent,
                 amount: adultAmountStr,
@@ -1753,7 +1813,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 12),
           child: Text(
-            'КЛЮЧОВІ ФІНАНСОВІ МЕТРИКИ',
+            'owner.key_financial_metrics'.tr(),
             style: TextStyle(
               color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
               fontSize: 11,
@@ -1776,11 +1836,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             Expanded(
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.trendingUp,
-                title: 'LTV Клієнта',
+                title: 'owner.client_ltv'.tr(),
                 value: isAll
                     ? '${analytics.kyiv.formatLtv()} / ${analytics.vienna.formatLtv()}'
                     : (isVienna ? analytics.vienna.formatLtv() : analytics.kyiv.formatLtv()),
-                sublabel: 'Середній дохід на клієнта',
+                sublabel: 'owner.avg_revenue_per_client'.tr(),
                 accentColor: const Color(0xFF00E5FF),
                 themeConfig: themeConfig,
               ),
@@ -1789,11 +1849,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             Expanded(
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.userMinus,
-                title: 'Відтік (Churn)',
+                title: 'owner.churn_title'.tr(),
                 value: isAll
                     ? '${analytics.kyiv.churnPercent}% / ${analytics.vienna.churnPercent}%'
                     : (isVienna ? '${analytics.vienna.churnPercent}%' : '${analytics.kyiv.churnPercent}%'),
-                sublabel: 'За поточний місяць',
+                sublabel: 'owner.for_current_month'.tr(),
                 accentColor: const Color(0xFF10B981),
                 themeConfig: themeConfig,
               ),
@@ -1806,11 +1866,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             Expanded(
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.shoppingCart,
-                title: 'Нові абонементи',
+                title: 'owner.new_subscriptions_title'.tr(),
                 value: isAll
                     ? '${analytics.kyiv.newSubscriptions} / ${analytics.vienna.newSubscriptions}'
                     : (isVienna ? '${analytics.vienna.newSubscriptions}' : '${analytics.kyiv.newSubscriptions}'),
-                sublabel: 'За поточний місяць',
+                sublabel: 'owner.for_current_month'.tr(),
                 accentColor: const Color(0xFFA855F7),
                 themeConfig: themeConfig,
               ),
@@ -1819,11 +1879,11 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
             Expanded(
               child: _buildExecutiveKpiCard(
                 icon: LucideIcons.receipt,
-                title: 'Середній чек',
+                title: 'owner.average_check_title'.tr(),
                 value: isAll
                     ? '${analytics.kyiv.formatMoney(analytics.kyiv.averageCheck)} / ${analytics.vienna.formatMoney(analytics.vienna.averageCheck)}'
                     : (isVienna ? analytics.vienna.formatMoney(analytics.vienna.averageCheck) : analytics.kyiv.formatMoney(analytics.kyiv.averageCheck)),
-                sublabel: 'Абонементи та разові',
+                sublabel: 'owner.subs_and_single_sublabel'.tr(),
                 accentColor: const Color(0xFFF59E0B),
                 themeConfig: themeConfig,
               ),
@@ -1946,44 +2006,47 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
     final isDark = themeConfig.isDark;
 
     final isVienna = tenancyState.activeBranchId == 'vienna';
-    final currency = isVienna ? '€' : '₴';
-    final totalRev = isVienna
-        ? analytics.vienna.totalRevenue
-        : (tenancyState.isAllLocations
-            ? (analytics.kyiv.totalRevenue + analytics.vienna.totalRevenue)
-            : analytics.kyiv.totalRevenue);
-    final effectiveTotal = totalRev > 0 ? totalRev : (isVienna ? 14850.0 : 25500.0);
+    final isAll = tenancyState.isAllLocations;
+    final kyivRev = analytics.kyiv.totalRevenue;
+    final viennaRev = analytics.vienna.totalRevenue;
+    final hasAnyRevenue = isAll
+        ? (kyivRev > 0 || viennaRev > 0)
+        : (isVienna ? viennaRev > 0 : kyivRev > 0);
 
-    String fmt(double val) {
-      final formatted = val.round().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (Match m) => '${m[1]} ',
-      );
-      return currency == '€' ? '€ $formatted' : '$formatted ₴';
+    String fmtFraction(double fraction) {
+      if (isAll) {
+        return '${analytics.kyiv.formatMoney(kyivRev * fraction)} • ${analytics.vienna.formatMoney(viennaRev * fraction)}';
+      }
+      if (isVienna) {
+        return analytics.vienna.formatMoney(viennaRev * fraction);
+      }
+      return analytics.kyiv.formatMoney(kyivRev * fraction);
     }
 
+    double yPos(double activeY) => hasAnyRevenue ? activeY : 0.85;
+
     final List<OwnerChartPoint> points;
-    if (_selectedTimeframe == 'День') {
+    if (_selectedTimeframe == 'day') {
       points = [
-        OwnerChartPoint(dateLabel: '09:00', amountLabel: fmt(effectiveTotal * 0.18), xFraction: 0.10, yFraction: 0.82),
-        OwnerChartPoint(dateLabel: '13:00', amountLabel: fmt(effectiveTotal * 0.45), xFraction: 0.40, yFraction: 0.58),
-        OwnerChartPoint(dateLabel: '17:00', amountLabel: fmt(effectiveTotal * 0.76), xFraction: 0.70, yFraction: 0.32),
-        OwnerChartPoint(dateLabel: '21:00', amountLabel: fmt(effectiveTotal * 1.00), xFraction: 1.00, yFraction: 0.12),
+        OwnerChartPoint(dateLabel: '09:00', amountLabel: fmtFraction(0.18), xFraction: 0.10, yFraction: yPos(0.82)),
+        OwnerChartPoint(dateLabel: '13:00', amountLabel: fmtFraction(0.45), xFraction: 0.40, yFraction: yPos(0.58)),
+        OwnerChartPoint(dateLabel: '17:00', amountLabel: fmtFraction(0.76), xFraction: 0.70, yFraction: yPos(0.32)),
+        OwnerChartPoint(dateLabel: '21:00', amountLabel: fmtFraction(1.00), xFraction: 1.00, yFraction: yPos(0.12)),
       ];
-    } else if (_selectedTimeframe == 'Тиждень') {
+    } else if (_selectedTimeframe == 'week') {
       points = [
-        OwnerChartPoint(dateLabel: 'Пн', amountLabel: fmt(effectiveTotal * 0.15), xFraction: 0.05, yFraction: 0.88),
-        OwnerChartPoint(dateLabel: 'Ср', amountLabel: fmt(effectiveTotal * 0.38), xFraction: 0.35, yFraction: 0.65),
-        OwnerChartPoint(dateLabel: 'Пт', amountLabel: fmt(effectiveTotal * 0.62), xFraction: 0.60, yFraction: 0.45),
-        OwnerChartPoint(dateLabel: 'Сб', amountLabel: fmt(effectiveTotal * 0.85), xFraction: 0.80, yFraction: 0.22),
-        OwnerChartPoint(dateLabel: 'Нд', amountLabel: fmt(effectiveTotal * 1.00), xFraction: 1.00, yFraction: 0.08),
+        OwnerChartPoint(dateLabel: 'common.day_short_1'.tr(), amountLabel: fmtFraction(0.15), xFraction: 0.05, yFraction: yPos(0.88)),
+        OwnerChartPoint(dateLabel: 'common.day_short_3'.tr(), amountLabel: fmtFraction(0.38), xFraction: 0.35, yFraction: yPos(0.65)),
+        OwnerChartPoint(dateLabel: 'common.day_short_5'.tr(), amountLabel: fmtFraction(0.62), xFraction: 0.60, yFraction: yPos(0.45)),
+        OwnerChartPoint(dateLabel: 'common.day_short_6'.tr(), amountLabel: fmtFraction(0.85), xFraction: 0.80, yFraction: yPos(0.22)),
+        OwnerChartPoint(dateLabel: 'common.day_short_7'.tr(), amountLabel: fmtFraction(1.00), xFraction: 1.00, yFraction: yPos(0.08)),
       ];
     } else {
       points = [
-        OwnerChartPoint(dateLabel: '1 тижд', amountLabel: fmt(effectiveTotal * 0.22), xFraction: 0.0, yFraction: 0.80),
-        OwnerChartPoint(dateLabel: '2 тижд', amountLabel: fmt(effectiveTotal * 0.48), xFraction: 0.40, yFraction: 0.40),
-        OwnerChartPoint(dateLabel: '3 тижд', amountLabel: fmt(effectiveTotal * 0.76), xFraction: 0.80, yFraction: 0.20),
-        OwnerChartPoint(dateLabel: '4 тижд', amountLabel: fmt(effectiveTotal * 1.00), xFraction: 1.00, yFraction: 0.05),
+        OwnerChartPoint(dateLabel: 'owner.week_num'.tr(namedArgs: {'num': '1'}), amountLabel: fmtFraction(0.22), xFraction: 0.0, yFraction: yPos(0.80)),
+        OwnerChartPoint(dateLabel: 'owner.week_num'.tr(namedArgs: {'num': '2'}), amountLabel: fmtFraction(0.48), xFraction: 0.40, yFraction: yPos(0.40)),
+        OwnerChartPoint(dateLabel: 'owner.week_num'.tr(namedArgs: {'num': '3'}), amountLabel: fmtFraction(0.76), xFraction: 0.80, yFraction: yPos(0.20)),
+        OwnerChartPoint(dateLabel: 'owner.week_num'.tr(namedArgs: {'num': '4'}), amountLabel: fmtFraction(1.00), xFraction: 1.00, yFraction: yPos(0.05)),
       ];
     }
 
@@ -2034,7 +2097,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                           maxLines: 1,
                         ),
                         Text(
-                          'Тренд надходжень',
+                          'owner.revenue_trend'.tr(),
                           style: TextStyle(
                             color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                             fontSize: 11.5,
@@ -2047,9 +2110,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                   ),
                   Row(
                     children: [
-                      {'key': 'owner.day'.tr(), 'val': 'День'},
-                      {'key': 'owner.week'.tr(), 'val': 'Тиждень'},
-                      {'key': 'owner.month'.tr(), 'val': 'Місяць'},
+                      {'key': 'owner.day'.tr(), 'val': 'day'},
+                      {'key': 'owner.week'.tr(), 'val': 'week'},
+                      {'key': 'owner.month'.tr(), 'val': 'month'},
                     ].map((item) {
                       final periodLabel = item['key']!;
                       final periodVal = item['val']!;
@@ -2156,7 +2219,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 12),
           child: Text(
-            'ОСТАННІ ОПЕРАЦІЇ В МЕРЕЖІ',
+            'owner.recent_network_operations'.tr(),
             style: TextStyle(
               color: themeConfig.isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
               fontSize: 12,
@@ -2178,7 +2241,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
-              'Немає недавніх операцій',
+              'owner.no_recent_operations'.tr(),
               style: TextStyle(
                 color: themeConfig.isDark ? Colors.white54 : Colors.black54,
                 fontSize: 13,

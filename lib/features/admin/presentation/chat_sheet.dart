@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,7 +43,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
     }
     // 2. Check users collection by ID or name
     final role = userRoles[dialog.clientId] ?? userRoles['name_${dialog.clientName.trim().toLowerCase()}'];
-    if (role == 'coach' || lowerName.startsWith('тренер') || lowerName.contains('антон')) {
+    if (role == 'coach' || lowerName.startsWith('тренер') || lowerName.startsWith('coach')) {
       return 'coach';
     }
     return 'parent';
@@ -109,9 +108,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: SafeArea(
+          child: SafeArea(
               top: false,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -326,7 +323,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                         ),
                                         const SizedBox(width: 5),
                                         Text(
-                                          _onlyUnread ? 'Тільки нові' : '$unreadCount нових',
+                                          _onlyUnread
+                                              ? 'admin_chat.only_unread'.tr()
+                                              : 'admin_chat.unread_count_new'.tr(namedArgs: {'count': '$unreadCount'}),
                                           style: TextStyle(
                                             color: _onlyUnread
                                                 ? Colors.white
@@ -523,9 +522,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                             },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                                child: Container(
+                              child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
@@ -581,7 +578,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Запит на відновлення пароля ($recoveryCount)',
+                                              'admin_chat.recovery_alert_title'.tr(namedArgs: {'count': '$recoveryCount'}),
                                               style: TextStyle(
                                                 color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
                                                 fontWeight: FontWeight.w800,
@@ -591,8 +588,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                             const SizedBox(height: 1),
                                             Text(
                                               _searchQuery == 'відновлення'
-                                                  ? 'Фільтр застосовано (натисніть для скасування)'
-                                                  : 'Потребує швидкої реакції адміністратора',
+                                                  ? 'admin_chat.recovery_filter_applied'.tr()
+                                                  : 'admin_chat.recovery_needs_action'.tr(),
                                               style: TextStyle(
                                                 color: isDark ? const Color(0xFFFEF3C7) : const Color(0xFFB45309),
                                                 fontSize: 11.5,
@@ -626,7 +623,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                                 ],
                                         ),
                                         child: Text(
-                                          _searchQuery == 'відновлення' ? 'Скинути' : 'Показати',
+                                          _searchQuery == 'відновлення'
+                                              ? 'admin_chat.reset_btn'.tr()
+                                              : 'admin_chat.show_btn'.tr(),
                                           style: TextStyle(
                                             color: _searchQuery == 'відновлення'
                                                 ? (isDark ? Colors.white : currentTheme.textPrimary)
@@ -641,7 +640,6 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 ),
                               ),
                             ),
-                          ),
                         ],
                         const SizedBox(height: 14),
 
@@ -680,7 +678,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               color: const Color(0xFF0284C7).withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                          child: const Icon(
                               LucideIcons.wifiOff,
                               color: Color(0xFF38BDF8),
                               size: 28,
@@ -688,7 +686,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Підключення до Центру Підтримки...',
+                            'admin_chat.connecting_support'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : currentTheme.textPrimary,
                               fontSize: 16,
@@ -697,7 +695,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Синхронізація сесії та перевірка прав доступу',
+                            'admin_chat.syncing_session'.tr(),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
@@ -720,7 +718,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                               ref.invalidate(adminChatDialogsStreamProvider);
                             },
                             icon: const Icon(LucideIcons.refreshCw, size: 16),
-                            label: const Text('Спробувати знову', style: TextStyle(fontWeight: FontWeight.bold)),
+                            label: Text('common.retry'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -731,7 +729,6 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -913,14 +910,14 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
     final isCoachClient = role == 'coach_client';
 
     String displayName = isCoachClient
-        ? '${dialog.coachName ?? 'Тренер'} ↔ ${dialog.clientName}'
+        ? '${dialog.coachName ?? 'common.coach_default'.tr()} ↔ ${dialog.clientName}'
         : dialog.clientName;
     if (isRecovery) {
       displayName = displayName
           .replaceFirst(RegExp(r'^🔑\s*'), '')
           .replaceFirst(RegExp(r'^Відновлення пароля:\s*', caseSensitive: false), '')
           .trim();
-      if (displayName.isEmpty) displayName = 'Запит відновлення';
+      if (displayName.isEmpty) displayName = 'admin_chat.recovery_request_title'.tr();
     }
 
     // Role-specific card background gradient
@@ -991,9 +988,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Material(
+      child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
@@ -1006,7 +1001,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                     'clientId': dialog.clientId,
                     'clientName': dialog.clientName,
                     'coachId': dialog.coachId ?? '',
-                    'coachName': dialog.coachName ?? 'Тренер',
+                    'coachName': dialog.coachName ?? 'common.coach_default'.tr(),
                     if (dialog.childName != null && dialog.childName!.isNotEmpty)
                       'childName': dialog.childName!,
                     'isMonitoring': 'true',
@@ -1287,7 +1282,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        dialog.coachName?.isNotEmpty == true ? dialog.coachName! : 'Тренер',
+                                        dialog.coachName?.isNotEmpty == true ? dialog.coachName! : 'common.coach_default'.tr(),
                                         style: TextStyle(
                                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                                           fontWeight: isUnread ? FontWeight.w800 : FontWeight.w700,
@@ -1358,7 +1353,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                           children: [
                                             const Text('🔑 ', style: TextStyle(fontSize: 8.5)),
                                             Text(
-                                              'ВІДНОВЛЕННЯ',
+                                              'admin_chat.recovery_badge'.tr(),
                                               style: TextStyle(
                                                 color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
                                                 fontSize: 9.5,
@@ -1389,7 +1384,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                           children: [
                                             const Text('🏊 ', style: TextStyle(fontSize: 8.5)),
                                             Text(
-                                              'ТРЕНЕР',
+                                              'admin_chat.coach_badge'.tr(),
                                               style: TextStyle(
                                                 color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
                                                 fontSize: 9.5,
@@ -1525,7 +1520,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                         ),
                                         const SizedBox(width: 4.5),
                                         Text(
-                                          'НАГЛЯД',
+                                          'admin_chat.monitoring_badge'.tr(),
                                           style: TextStyle(
                                             color: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF7E22CE),
                                             fontSize: 9.5,
@@ -1604,7 +1599,6 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
             ),
           ),
         ),
-      ),
     ).animate().fadeIn(delay: (40 * index).ms).slideX(begin: 0.04);
   }
 }

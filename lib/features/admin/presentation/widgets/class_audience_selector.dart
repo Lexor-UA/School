@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 enum ClassAudience {
   adult,
@@ -28,19 +29,19 @@ class ClassAudienceSelector extends StatelessWidget {
     final options = [
       (
         audience: ClassAudience.adult,
-        label: 'Для дорослих',
+        label: 'admin.audience_adult'.tr(),
         icon: LucideIcons.user,
         disabled: isBabyPool,
       ),
       (
         audience: ClassAudience.child,
-        label: 'Для дітей',
+        label: 'admin.audience_child'.tr(),
         icon: LucideIcons.baby,
         disabled: false,
       ),
       (
         audience: ClassAudience.split,
-        label: 'Спліт',
+        label: 'admin.audience_split'.tr(),
         icon: LucideIcons.users,
         disabled: isBabyPool,
       ),
@@ -71,7 +72,7 @@ class ClassAudienceSelector extends StatelessWidget {
                       HapticFeedback.lightImpact();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('Дитячий басейн призначений лише для дитячих тренувань.'),
+                          content: Text('admin.baby_pool_warning'.tr()),
                           backgroundColor: Colors.orangeAccent,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

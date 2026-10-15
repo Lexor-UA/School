@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
@@ -15,10 +15,7 @@ class AdminChatMonitoringBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
+    return Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -80,7 +77,7 @@ class AdminChatMonitoringBanner extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Скритний нагляд',
+                          'admin_chat.stealth_monitoring'.tr(),
                           style: TextStyle(
                             color: isDark ? const Color(0xFFE9D5FF) : const Color(0xFF581C87),
                             fontWeight: FontWeight.w800,
@@ -109,7 +106,7 @@ class AdminChatMonitoringBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Тільки читання • Учасники не знають про нагляд',
+                      'admin_chat.read_only_stealth_hint'.tr(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -154,8 +151,6 @@ class AdminChatMonitoringBanner extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }

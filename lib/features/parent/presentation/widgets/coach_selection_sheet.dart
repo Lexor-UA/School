@@ -40,13 +40,13 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
     }
     final yesterday = now.subtract(const Duration(days: 1));
     if (yesterday.year == time.year && yesterday.month == time.month && yesterday.day == time.day) {
-      return 'Вчора';
+      return 'chat.yesterday'.tr();
     }
     return DateFormat('dd.MM').format(time);
   }
 
   String _formatClassDate(DateTime time) {
-    return DateFormat('dd.MM \'о\' HH:mm').format(time);
+    return DateFormat('dd.MM, HH:mm').format(time);
   }
 
   @override
@@ -181,7 +181,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Вибір тренера',
+                                'parent.coach_selection_title'.tr(),
                                 style: TextStyle(
                                   color: themeConfig.textPrimary,
                                   fontSize: 18,
@@ -191,7 +191,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Чати за майбутніми тренуваннями',
+                                'parent.coach_selection_subtitle'.tr(),
                                 style: TextStyle(
                                   color: isLight ? const Color(0xFF64748B) : Colors.white60,
                                   fontSize: 12,
@@ -227,12 +227,11 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                               final activeDialogs = snapshot.data ?? [];
 
                               // Rule: If classes with a coach already passed and no future class exists,
-                              // that coach's dialogue MUST disappear.
-                              // Therefore, we only keep coach dialogs where d.coachId is in futureCoachIds!
+                              // that coach's dialogue disappears unless there are unread messages for the client.
                               final validCoachDialogs = activeDialogs.where((d) {
                                 return d.type == 'coach_client' &&
                                     d.coachId != null &&
-                                    futureCoachIds.contains(d.coachId);
+                                    (futureCoachIds.contains(d.coachId) || d.unreadClientCount > 0);
                               }).toList();
 
                               final existingDialogCoachIds = validCoachDialogs
@@ -244,8 +243,8 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                                   .where((e) => !existingDialogCoachIds.contains(e.key))
                                   .toList();
 
-                              // Empty state: no future booked classes with assigned coaches
-                              if (futureCoachIds.isEmpty) {
+                              // Empty state: no future booked classes with assigned coaches and no unread coach dialogs
+                              if (futureCoachIds.isEmpty && validCoachDialogs.isEmpty) {
                                 return _buildNoFutureCoachesState(context, isLight, themeConfig);
                               }
 
@@ -257,7 +256,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                                     child: Text(
-                                      'Тренери ваших занять (${futureCoachIds.length})',
+                                      'parent.coaches_of_classes'.tr(args: [futureCoachIds.length.toString()]),
                                       style: TextStyle(
                                         color: isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8),
                                         fontSize: 12.5,
@@ -312,10 +311,10 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
     required (String coachName, String classTitle, DateTime startTime)? futureInfo,
   }) {
     final hasUnread = dialog.unreadClientCount > 0;
-    final displayName = dialog.coachName ?? futureInfo?.$1 ?? 'Тренер';
+    final displayName = dialog.coachName ?? futureInfo?.$1 ?? 'common.coach_fallback'.tr();
     final classSubtitle = futureInfo != null
         ? '${futureInfo.$2} • ${_formatClassDate(futureInfo.$3)}'
-        : (dialog.childName != null ? 'Пловець: ${dialog.childName}' : 'Заплановане заняття');
+        : (dialog.childName != null ? 'parent.swimmer_prefix'.tr(args: [dialog.childName!]) : 'parent.scheduled_class'.tr());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -369,7 +368,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                       childName: dialog.childName,
                       type: 'coach_client',
                       title: displayName,
-                      subtitle: futureInfo != null ? 'Тренер • ${futureInfo.$2}' : 'Тренер басейну',
+                      subtitle: futureInfo != null ? '${'common.coach_fallback'.tr()} • ${futureInfo.$2}' : 'parent.pool_coach'.tr(),
                     ),
                   ),
                 );
@@ -454,7 +453,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                           Text(
                             dialog.lastMessage.isNotEmpty
                                 ? dialog.lastMessage
-                                : 'Розпочати діалог...',
+                                : 'parent.start_dialog'.tr(),
                             style: TextStyle(
                               color: hasUnread
                                   ? themeConfig.textPrimary
@@ -565,7 +564,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                       clientName: user?.name,
                       type: 'coach_client',
                       title: coachName,
-                      subtitle: 'Тренер • $classTitle',
+                      subtitle: '${'common.coach_fallback'.tr()} • $classTitle',
                     ),
                   ),
                 );
@@ -643,7 +642,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Написати',
+                            'parent.write_message'.tr(),
                             style: TextStyle(
                               color: isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF),
                               fontSize: 11.5,
@@ -727,7 +726,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
           ),
           const SizedBox(height: 14),
           Text(
-            'Немає запланованих занять',
+            'parent.no_future_classes'.tr(),
             style: TextStyle(
               color: themeConfig.textPrimary,
               fontWeight: FontWeight.w800,
@@ -739,7 +738,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              'Чат із тренером стає доступним після бронювання заняття. Якщо всі ваші заняття з тренером уже відбулися, доступ до листування закривається автоматично.',
+              'parent.coach_chat_availability_desc'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isLight ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
@@ -772,15 +771,15 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(LucideIcons.calendar, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
+                    const Icon(LucideIcons.calendar, color: Colors.white, size: 16),
+                    const SizedBox(width: 8),
                     Text(
-                      'Перейти до розкладу',
-                      style: TextStyle(
+                      'parent.go_to_schedule'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 13.5,

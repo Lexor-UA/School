@@ -141,6 +141,9 @@ class Branch {
     return city;
   }
 
+  /// Локалізована назва філії/міста для UI
+  String localizedName(String languageCode) => localizedCity(languageCode);
+
   Branch copyWith({
     String? id,
     String? organizationId,

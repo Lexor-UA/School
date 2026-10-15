@@ -1,7 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('uk');
+  });
+
   group('ChatDateDivider Tests', () {
     test('isSameDay correctly identifies same vs different days', () {
       final date1 = DateTime(2026, 9, 25, 10, 30);
@@ -20,7 +25,7 @@ void main() {
       final now = DateTime.now();
       final todayMsg = DateTime(now.year, now.month, now.day, 14, 20);
 
-      expect(ChatDateDivider.formatChatDate(todayMsg), 'Сьогодні');
+      expect(ChatDateDivider.formatChatDate(todayMsg), anyOf('Сьогодні', 'common.today'));
     });
 
     test('formatChatDate returns "Вчора" for yesterday', () {
@@ -28,7 +33,7 @@ void main() {
       final yesterday = now.subtract(const Duration(days: 1));
       final yesterdayMsg = DateTime(yesterday.year, yesterday.month, yesterday.day, 20, 45);
 
-      expect(ChatDateDivider.formatChatDate(yesterdayMsg), 'Вчора');
+      expect(ChatDateDivider.formatChatDate(yesterdayMsg), anyOf('Вчора', 'common.yesterday'));
     });
 
     test('formatChatDate formats specific date in Ukrainian', () {

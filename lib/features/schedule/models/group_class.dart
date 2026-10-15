@@ -156,6 +156,163 @@ extension GroupClassAudienceX on GroupClass {
     if (range == null) return true;
     return age >= range.$1 && age <= range.$2;
   }
+
+  String localizedTitle(String langCode) {
+    final code = langCode.trim().toLowerCase();
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return localizedCategory(code);
+
+    final lower = trimmed.toLowerCase();
+    if (trimmed == 'Плавання для дорослих' || lower == 'групові тренування для дорослих' || lower == 'доросла група') {
+      switch (code) {
+        case 'en':
+          return 'Adult Swimming';
+        case 'de':
+          return 'Erwachsenenschwimmen';
+        case 'ru':
+          return 'Плавание для взрослых';
+        default:
+          return 'Плавання для дорослих';
+      }
+    }
+    if (trimmed == 'Дитяча група' || trimmed == 'Дитяче плавання') {
+      switch (code) {
+        case 'en':
+          return 'Kids Group';
+        case 'de':
+          return 'Kindergruppe';
+        case 'ru':
+          return 'Детская группа';
+        default:
+          return trimmed;
+      }
+    }
+    if (trimmed == 'Спліт-тренування (2 особи)' || lower == 'спліт-тренування' || lower == 'спліт') {
+      switch (code) {
+        case 'en':
+          return 'Split Training (2 people)';
+        case 'de':
+          return 'Split-Training (2 Personen)';
+        case 'ru':
+          return 'Сплит-тренировка (2 чел.)';
+        default:
+          return 'Спліт-тренування (2 особи)';
+      }
+    }
+    if (lower == 'індивідуальне тренування' || lower == 'індивідуальне заняття' || lower == 'персональне тренування') {
+      switch (code) {
+        case 'en':
+          return 'Individual Training';
+        case 'de':
+          return 'Einzeltraining';
+        case 'ru':
+          return 'Индивидуальная тренировка';
+        default:
+          return 'Індивідуальне тренування';
+      }
+    }
+    if (lower == 'аквааеробіка') {
+      switch (code) {
+        case 'en':
+          return 'Aqua Aerobics';
+        case 'de':
+          return 'Wassergymnastik';
+        case 'ru':
+          return 'Аквааэробика';
+        default:
+          return 'Аквааеробіка';
+      }
+    }
+    if (lower == 'стрибки') {
+      switch (code) {
+        case 'en':
+          return 'Diving';
+        case 'de':
+          return 'Wasserspringen';
+        case 'ru':
+          return 'Прыжки в воду';
+        default:
+          return 'Стрибки';
+      }
+    }
+    if (lower == 'тренування' || lower == 'плавання') {
+      switch (code) {
+        case 'en':
+          return 'Swimming';
+        case 'de':
+          return 'Schwimmen';
+        case 'ru':
+          return 'Плавание';
+        default:
+          return trimmed;
+      }
+    }
+    final range = parseAgeRange(trimmed);
+    if (range != null && isChildOnly && isGroup) {
+      switch (code) {
+        case 'en':
+          return 'Kids Group (${range.$1}-${range.$2} yrs)';
+        case 'de':
+          return 'Kindergruppe (${range.$1}-${range.$2} J.)';
+        case 'ru':
+          return 'Детская группа (${range.$1}-${range.$2} лет)';
+        default:
+          return trimmed;
+      }
+    }
+    return title;
+  }
+
+  String localizedCategory(String langCode) {
+    final code = langCode.trim().toLowerCase();
+    final lower = category.trim().toLowerCase();
+    if (lower.contains('аква')) {
+      switch (code) {
+        case 'en':
+          return 'Aqua Aerobics';
+        case 'de':
+          return 'Wassergymnastik';
+        case 'ru':
+          return 'Аквааэробика';
+        default:
+          return 'Аквааеробіка';
+      }
+    }
+    if (lower.contains('стриб')) {
+      switch (code) {
+        case 'en':
+          return 'Diving';
+        case 'de':
+          return 'Wasserspringen';
+        case 'ru':
+          return 'Прыжки в воду';
+        default:
+          return 'Стрибки';
+      }
+    }
+    if (lower.contains('спліт') || lower.contains('split')) {
+      switch (code) {
+        case 'en':
+          return 'Split';
+        case 'de':
+          return 'Split';
+        case 'ru':
+          return 'Сплит';
+        default:
+          return 'Спліт';
+      }
+    }
+    switch (code) {
+      case 'en':
+        return 'Swimming';
+      case 'de':
+        return 'Schwimmen';
+      case 'ru':
+        return 'Плавание';
+      default:
+        return category.isNotEmpty ? category : 'Плавання';
+    }
+  }
 }
 
 (int, int)? parseAgeRange(String text) {

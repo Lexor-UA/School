@@ -12,6 +12,20 @@ final branchPaymentServiceProvider = Provider<BranchPaymentService>((ref) {
   return BranchPaymentService();
 });
 
+/// Stream provider for live branch payment configuration
+final branchPaymentConfigStreamProvider = StreamProvider.family<BranchPaymentConfig, String>((ref, branchId) {
+  return FirebaseFirestore.instance
+      .collection('branch_payment_configs')
+      .doc(branchId)
+      .snapshots()
+      .map((doc) {
+    if (!doc.exists || doc.data() == null) {
+      return BranchPaymentConfig.forBranch(branchId);
+    }
+    return BranchPaymentConfig.fromMap(doc.data()!, defaultBranchId: branchId);
+  });
+});
+
 /// Сервіс обробки платежів та інвойсингу для філій (ТЗ п. 20, 21, 22)
 /// Працює у безпечному тестовому/емуляційному режимі (Mock Mode) без реальних списувань коштів.
 class BranchPaymentService {
@@ -21,9 +35,30 @@ class BranchPaymentService {
 
   FirebaseFirestore get _db => firestore ?? FirebaseFirestore.instance;
 
-  /// Отримати конфігурацію платіжного шлюзу для філії
+  /// Отримати конфігурацію платіжного шлюзу для філії (синхронний фолбек)
   BranchPaymentConfig getPaymentConfig(String branchId) {
     return BranchPaymentConfig.forBranch(branchId);
+  }
+
+  /// Асинхронне отримання конфігурації з Firestore або дефолтної
+  Future<BranchPaymentConfig> getPaymentConfigAsync(String branchId) async {
+    try {
+      final doc = await _db.collection('branch_payment_configs').doc(branchId).get();
+      if (doc.exists && doc.data() != null) {
+        return BranchPaymentConfig.fromMap(doc.data()!, defaultBranchId: branchId);
+      }
+    } catch (e) {
+      debugPrint('BranchPaymentService.getPaymentConfigAsync error: $e');
+    }
+    return BranchPaymentConfig.forBranch(branchId);
+  }
+
+  /// Збереження оновлених реквізитів у Firestore
+  Future<void> savePaymentConfig(BranchPaymentConfig config) async {
+    await _db
+        .collection('branch_payment_configs')
+        .doc(config.branchId)
+        .set(config.toMap(), SetOptions(merge: true));
   }
 
   /// Проведення безпечної тестової оплати пакетного абонемента
@@ -180,5 +215,168 @@ class BranchPaymentService {
       classesCount: package.classes,
       validityDays: package.validityDays,
     );
+  }
+
+  /// Створення замовлення абонемента з оплатою за банківськими реквізитами (ТЗ п. 20-22)
+  /// Абонемент створюється зі статусом pendingApproval: true, isActive: false,
+  /// а запис платежу зі статусом PaymentStatus.pending.
+  Future<PaymentReceipt> submitBankTransferPayment({
+    required String branchId,
+    required String clientId,
+    required String clientName,
+    String? childId,
+    String? childName,
+    required SubscriptionPackage package,
+    BranchPaymentConfig? customConfig,
+  }) async {
+    final config = customConfig ?? await getPaymentConfigAsync(branchId);
+
+    final timestamp = DateTime.now();
+    final epoch = timestamp.millisecondsSinceEpoch;
+    final txPrefix = branchId == 'vienna' ? 'TX-VIE-BANK' : 'TX-KYIV-BANK';
+    final txId = '$txPrefix-${epoch.toString().substring(epoch.toString().length - 6)}';
+
+    final recPrefix = branchId == 'vienna' ? 'REC-VIE-REQ' : 'REC-KYIV-REQ';
+    final recNumber = '$recPrefix-${epoch.toString().substring(epoch.toString().length - 5)}';
+
+    final paymentDocId = 'pay_${epoch}_${package.id}';
+    final subId = 'sub_${epoch}_${(childName ?? clientName).hashCode}';
+    final expiryDate = timestamp.add(Duration(days: package.validityDays));
+
+    final transaction = PaymentTransaction(
+      id: paymentDocId,
+      organizationId: config.organizationId,
+      branchId: branchId,
+      clientId: clientId,
+      clientName: clientName,
+      childId: childId,
+      childName: childName,
+      packageId: package.id,
+      packageName: package.name,
+      amount: package.price.toDouble(),
+      currency: config.currency,
+      currencySymbol: config.currencySymbol,
+      paymentGateway: 'BankTransfer',
+      status: PaymentStatus.pending,
+      transactionId: txId,
+      receiptNumber: recNumber,
+      paymentMethod: 'bank_transfer',
+      createdAt: timestamp,
+      metadata: {
+        'classesCount': package.classes,
+        'validityDays': package.validityDays,
+        'isMockPayment': true,
+        'isTestMode': config.isTestMode,
+        'pendingApproval': true,
+        'subscriptionId': subId,
+        'iban': config.legalEntityDetails['iban'] ?? '',
+        'companyName': config.legalEntityDetails['companyName'] ?? '',
+      },
+    );
+
+    try {
+      final batch = _db.batch();
+
+      final paymentRef = _db.collection('payments').doc(transaction.id);
+      batch.set(paymentRef, transaction.toMap());
+
+      final newSubscription = Subscription(
+        id: subId,
+        userId: clientId,
+        totalClasses: package.classes,
+        remainingClasses: package.classes,
+        isActive: false, // inactive until approved!
+        serviceName: package.name,
+        expiryDate: expiryDate,
+        ownerName: childName ?? clientName,
+        organizationId: config.organizationId,
+        branchId: branchId,
+        currency: config.currency,
+        currencySymbol: config.currencySymbol,
+      );
+
+      final subData = {
+        ...newSubscription.toJson(),
+        'user_id': clientId,
+        'userId': clientId,
+        'branch_id': branchId,
+        'branchId': branchId,
+        'organization_id': config.organizationId,
+        'organizationId': config.organizationId,
+        'pendingApproval': true,
+        'paymentMethod': 'bank_transfer',
+        'paymentDocId': paymentDocId,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      final subRef = _db.collection('subscriptions').doc(newSubscription.id);
+      batch.set(subRef, subData);
+
+      await batch.commit();
+      debugPrint('BranchPaymentService: Bank transfer payment $paymentDocId and Subscription $subId queued for approval.');
+    } catch (e) {
+      debugPrint('Notice: Firestore batch commit error for bank transfer: $e');
+    }
+
+    return PaymentReceipt.fromTransaction(
+      transaction: transaction,
+      config: config,
+      classesCount: package.classes,
+      validityDays: package.validityDays,
+    );
+  }
+
+  /// Підтвердження оплати за реквізитами адміністратором або власником
+  Future<void> confirmPendingSubscription(String subId, {String? paymentId}) async {
+    try {
+      final subRef = _db.collection('subscriptions').doc(subId);
+      final subSnap = await subRef.get();
+      if (!subSnap.exists) return;
+
+      final data = subSnap.data() ?? {};
+      final String? clientId = data['userId'] as String? ?? data['user_id'] as String?;
+      final String? effectivePaymentId = paymentId ?? data['paymentDocId'] as String?;
+      final String serviceName = data['serviceName'] as String? ?? 'Абонемент';
+      final String branchId = data['branchId'] as String? ?? data['branch_id'] as String? ?? 'kyiv';
+
+      final batch = _db.batch();
+
+      batch.update(subRef, {
+        'isActive': true,
+        'pendingApproval': false,
+        'confirmedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (effectivePaymentId != null && effectivePaymentId.isNotEmpty) {
+        final payRef = _db.collection('payments').doc(effectivePaymentId);
+        batch.set(payRef, {
+          'status': 'completed',
+          'confirmedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      if (clientId != null && clientId.isNotEmpty) {
+        final notifRef = _db.collection('notifications').doc();
+        batch.set(notifRef, {
+          'userId': clientId,
+          'title': branchId == 'vienna' ? 'Abonnement aktiviert' : 'Абонемент активовано',
+          'message': branchId == 'vienna'
+              ? 'Ihre Überweisung für "$serviceName" wurde bestätigt. Viel Erfolg beim Schwimmtraining!'
+              : 'Оплату за реквізитами для абонемента "$serviceName" підтверджено. Бажаємо чудових тренувань!',
+          'timestamp': FieldValue.serverTimestamp(),
+          'icon': 'creditCard',
+          'iconColor': 0xFF10B981,
+          'type': 'payment_confirmed',
+          'isRead': false,
+          'branchId': branchId,
+        });
+      }
+
+      await batch.commit();
+      debugPrint('BranchPaymentService: Subscription $subId confirmed and activated.');
+    } catch (e) {
+      debugPrint('BranchPaymentService.confirmPendingSubscription error: $e');
+      rethrow;
+    }
   }
 }

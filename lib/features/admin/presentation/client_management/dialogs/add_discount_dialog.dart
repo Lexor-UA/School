@@ -111,7 +111,7 @@ Future<void> showAddDiscountDialog({
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Надати персональну знижку',
+                        'admin.grant_personal_discount_title'.tr(),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white
@@ -121,7 +121,7 @@ Future<void> showAddDiscountDialog({
                         ),
                       ),
                       Text(
-                        'для клієнта "$initialName"',
+                        'admin.for_client_subtitle'.tr(namedArgs: {'client': initialName}),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white60
@@ -142,7 +142,7 @@ Future<void> showAddDiscountDialog({
                 children: [
                   // 1. Target Member
                   Text(
-                    'Для кого діє знижка:',
+                    'admin.discount_target_label'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white70 : const Color(0xFF475569),
                       fontSize: 12.5,
@@ -190,10 +190,10 @@ Future<void> showAddDiscountDialog({
                                       : const Color(0xFF0284C7),
                                 ),
                                 const SizedBox(width: 8),
-                                const Expanded(
+                                Expanded(
                                   child: Text(
-                                    'Вся сім\'я (будь-хто з членів родини)',
-                                    style: TextStyle(
+                                    'admin.whole_family_option'.tr(),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -230,7 +230,7 @@ Future<void> showAddDiscountDialog({
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        '$name (${isParent ? "дорослий" : "дитина, $age р."})',
+                                        '$name (${isParent ? 'admin.adult_role_lower'.tr() : 'admin.child_role_with_age'.tr(namedArgs: {'age': '${age ?? ''}'})})',
                                         style: const TextStyle(fontSize: 13),
                                         overflow: TextOverflow.ellipsis,
                                         maxLines: 1,
@@ -254,7 +254,7 @@ Future<void> showAddDiscountDialog({
 
                   // 2. Discount Mode Selector (Tabs)
                   Text(
-                    'Спосіб розрахунку знижки:',
+                    'admin.discount_calc_mode_label'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white70 : const Color(0xFF475569),
                       fontSize: 12.5,
@@ -301,7 +301,7 @@ Future<void> showAddDiscountDialog({
                               ),
                               child: Center(
                                 child: Text(
-                                  'Нова ціна ($currSymbol)',
+                                  'admin.new_price_tab'.tr(namedArgs: {'symbol': currSymbol}),
                                   style: TextStyle(
                                     color: discountMode == 'fixedPrice'
                                         ? (isDark
@@ -348,7 +348,7 @@ Future<void> showAddDiscountDialog({
                               ),
                               child: Center(
                                 child: Text(
-                                  'Відсоток (%)',
+                                  'admin.percent_tab'.tr(),
                                   style: TextStyle(
                                     color: discountMode == 'percent'
                                         ? (isDark
@@ -383,7 +383,7 @@ Future<void> showAddDiscountDialog({
                         fontSize: 15,
                       ),
                       decoration: InputDecoration(
-                        labelText: 'Акційна ціна для клієнта',
+                        labelText: 'admin.promo_price_input_label'.tr(),
                         labelStyle: TextStyle(
                           color: isDark
                               ? Colors.white60
@@ -432,7 +432,7 @@ Future<void> showAddDiscountDialog({
                         fontSize: 15,
                       ),
                       decoration: InputDecoration(
-                        labelText: 'Відсоток знижки (1 - 99%)',
+                        labelText: 'admin.discount_percent_input_label'.tr(),
                         labelStyle: TextStyle(
                           color: isDark
                               ? Colors.white60
@@ -551,7 +551,7 @@ Future<void> showAddDiscountDialog({
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Попередній перегляд для клієнта:',
+                              'admin.discount_preview_title'.tr(),
                               style: TextStyle(
                                 color: isDark
                                     ? const Color(0xFFFDE68A)
@@ -627,7 +627,7 @@ Future<void> showAddDiscountDialog({
                           if (previewSavings != null && previewSavings > 0) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Економія клієнта: $previewSavings $currSymbol',
+                              'admin.client_savings_label'.tr(namedArgs: {'amount': '$previewSavings', 'symbol': currSymbol}),
                               style: TextStyle(
                                 color: isDark
                                     ? const Color(0xFF34D399)
@@ -639,7 +639,7 @@ Future<void> showAddDiscountDialog({
                           ],
                         ] else ...[
                           Text(
-                            'Введіть значення знижки вище, щоб побачити фінальну вартість.',
+                            'admin.enter_discount_value_hint'.tr(),
                             style: TextStyle(
                               color: isDark
                                   ? Colors.white54
@@ -697,14 +697,14 @@ Future<void> showAddDiscountDialog({
                     if (val == null || val <= 0) {
                       setStateDialog(
                         () =>
-                            localError = 'Введіть коректну ціну в $currSymbol',
+                            localError = 'admin.enter_valid_price_error'.tr(namedArgs: {'symbol': currSymbol}),
                       );
                       return;
                     }
                     if (basePrice > 0 && val >= basePrice) {
                       setStateDialog(
                         () => localError =
-                            'Акційна ціна має бути меншою за базову ($basePrice $currSymbol)',
+                            'admin.promo_price_less_than_base_error'.tr(namedArgs: {'base': '$basePrice', 'symbol': currSymbol}),
                       );
                       return;
                     }
@@ -718,7 +718,7 @@ Future<void> showAddDiscountDialog({
                     if (val == null || val < 1 || val > 99) {
                       setStateDialog(
                         () =>
-                            localError = 'Введіть відсоток знижки від 1 до 99%',
+                            localError = 'admin.enter_valid_percent_error'.tr(),
                       );
                       return;
                     }
@@ -757,7 +757,7 @@ Future<void> showAddDiscountDialog({
                           ? '$discountedPrice $currSymbol'
                           : '-$discountPercent%';
                       await logAdminAction(
-                        'Надано знижку ($desc) для "$initialName"',
+                        'admin.log_discount_granted'.tr(namedArgs: {'desc': desc, 'client': initialName}),
                         admin.id,
                       );
                     }
@@ -775,7 +775,7 @@ Future<void> showAddDiscountDialog({
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Персональну знижку успішно збережено для $initialName!',
+                                  'admin.personal_discount_saved_msg'.tr(namedArgs: {'client': initialName}),
                                 ),
                               ),
                             ],
@@ -792,9 +792,9 @@ Future<void> showAddDiscountDialog({
                     debugPrint('Error adding discount: $e');
                   }
                 },
-                child: const Text(
-                  'Зберегти знижку',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  'admin.save_discount_btn'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],

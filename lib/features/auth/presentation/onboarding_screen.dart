@@ -276,7 +276,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                             ),
                                             const SizedBox(width: 6),
                                             Text(
-                                              'Я плаваю сам',
+                                              'onboarding.i_swim_myself'.tr(),
                                               style: TextStyle(
                                                 color: _isAdultOnly ? Colors.white : Colors.white70,
                                                 fontWeight: FontWeight.bold,
@@ -312,7 +312,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                             ),
                                             const SizedBox(width: 6),
                                             Text(
-                                              'Для моїх дітей',
+                                              'onboarding.for_my_children'.tr(),
                                               style: TextStyle(
                                                 color: !_isAdultOnly ? Colors.white : Colors.white70,
                                                 fontWeight: FontWeight.bold,
@@ -374,7 +374,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 final age = int.tryParse(v.trim());
                                 if (age == null || age < 16 || age > 110) {
                                   return age != null && age < 16
-                                      ? 'Реєстрація особистого акаунта доступна від 16 років'
+                                      ? 'onboarding.age_min_16_error'.tr()
                                       : 'onboarding.age_error'.tr();
                                 }
                                 return null;
@@ -406,22 +406,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       child: const Icon(LucideIcons.sparkles, color: Color(0xFF00E5FF), size: 22),
                                     ),
                                     const SizedBox(width: 14),
-                                    const Expanded(
+                                    Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Дорослий плавець',
-                                            style: TextStyle(
+                                            'onboarding.adult_swimmer_title'.tr(),
+                                            style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 14.5,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          SizedBox(height: 3),
+                                          const SizedBox(height: 3),
                                           Text(
-                                            'Кабінет буде налаштовано для ваших індивідуальних та групових занять.',
-                                            style: TextStyle(
+                                            'onboarding.adult_swimmer_desc'.tr(),
+                                            style: const TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12.5,
                                             ),
@@ -468,7 +468,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Дитина ${index + 1}',
+                                            'onboarding.child_index'.tr(args: ['${index + 1}']),
                                             style: const TextStyle(
                                               color: Color(0xFF00E5FF),
                                               fontWeight: FontWeight.w700,
@@ -511,8 +511,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                           final a = int.tryParse(v.trim());
                                           if (a == null || a < 1 || a > 15) {
                                             return a != null && a > 15
-                                                ? 'Від 16 років особа реєструється окремо як дорослий (до 15 років включно)'
-                                                : 'Вік дитини має бути від 1 до 15 років';
+                                                ? 'onboarding.child_age_max_15_error'.tr()
+                                                : 'onboarding.child_age_range_error'.tr();
                                           }
                                           return null;
                                         },
@@ -643,7 +643,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               const Icon(LucideIcons.mapPin, size: 14, color: Color(0xFF00E5FF)),
               const SizedBox(width: 6),
               Text(
-                'Філія та басейн навчання:',
+                'onboarding.branch_and_pool_label'.tr(),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 13,
@@ -661,10 +661,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: _buildBranchCard(
                 id: 'kyiv',
                 flag: '🇺🇦',
-                city: 'Київ',
+                city: 'onboarding.city_kyiv'.tr(),
                 pool: '',
-                address: 'вул. Спортивна, 1',
-                subAddress: 'Київ',
+                address: 'onboarding.address_kyiv'.tr(),
+                subAddress: 'onboarding.city_kyiv'.tr(),
                 currencyBadge: '₴ UAH',
                 isSelected: _selectedBranchId == 'kyiv',
                 onTap: () => setState(() => _selectedBranchId = 'kyiv'),
@@ -676,7 +676,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: _buildBranchCard(
                 id: 'vienna',
                 flag: '🇦🇹',
-                city: 'Відень',
+                city: 'onboarding.city_vienna'.tr(),
                 pool: '',
                 address: 'In der Au 1',
                 subAddress: 'Klosterneuburg',

@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
@@ -48,18 +48,18 @@ class AdminChatInputBar extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(
-            'Надсилання фотографії...',
-            style: TextStyle(
+            'chat_ui.uploading_photo'.tr(),
+            style: const TextStyle(
               color: Color(0xFF00E5FF),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -72,18 +72,18 @@ class AdminChatInputBar extends StatelessWidget {
 
   Widget _buildQuickRepliesBar() {
     final recoveryChips = [
-      '✅ Доступ відновлено!',
-      '🔑 Тимчасовий пароль: 1',
-      '📞 Надішліть ваш контактний телефон',
-      '📩 Інструкцію надіслано на пошту',
+      'admin_chat.chip_access_restored'.tr(),
+      'admin_chat.chip_temp_password'.tr(),
+      'admin_chat.chip_send_phone'.tr(),
+      'admin_chat.chip_instructions_sent'.tr(),
     ];
 
     final defaultChips = [
-      '👋 Вітаємо у CitySwim!',
-      '📅 Нагадуємо про розклад',
-      '🏊 Чекаємо на тренуванні!',
-      '💳 Інформація про оплату',
-      '👌 Домовились!',
+      'admin_chat.chip_welcome'.tr(),
+      'admin_chat.chip_schedule_reminder'.tr(),
+      'admin_chat.chip_see_you'.tr(),
+      'admin_chat.chip_payment_info'.tr(),
+      'admin_chat.chip_agreed'.tr(),
     ];
 
     final chips = isRecovery ? recoveryChips : defaultChips;
@@ -170,15 +170,12 @@ class AdminChatInputBar extends StatelessWidget {
   }
 
   Widget _buildInputArea(BuildContext context) {
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.white.withValues(alpha: 0.94),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF0F1E32)
+            : Colors.white,
             border: Border(
               top: BorderSide(
                 color: isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFBAE6FD),
@@ -217,7 +214,7 @@ class AdminChatInputBar extends StatelessWidget {
                     color: isDark ? Colors.white70 : const Color(0xFF0284C7),
                     size: 20,
                   ),
-                  tooltip: 'Обрати фото з медіатеки',
+                  tooltip: 'chat_ui.pick_gallery_tooltip'.tr(),
                   onPressed: onPickGallery,
                   constraints: const BoxConstraints(minWidth: 42, minHeight: 42),
                   padding: EdgeInsets.zero,
@@ -250,7 +247,7 @@ class AdminChatInputBar extends StatelessWidget {
                       fontSize: 14.5,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Повідомлення...',
+                      hintText: 'admin.message_hint'.tr(),
                       hintStyle: TextStyle(
                         color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
                         fontWeight: FontWeight.w500,
@@ -290,8 +287,6 @@ class AdminChatInputBar extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }

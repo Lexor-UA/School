@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
@@ -114,7 +115,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
               children: [
                 const Icon(LucideIcons.checkCircle, color: Colors.white, size: 20),
                 const SizedBox(width: 10),
-                Expanded(child: Text('Філію ${_name.trim()} та адміністратора успішно створено!')),
+                Expanded(child: Text('tenancy.branch_created_msg'.tr(namedArgs: {'name': _name.trim()}))),
               ],
             ),
             backgroundColor: const Color(0xFF10B981),
@@ -127,7 +128,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка: $e'),
+            content: Text('${'common.error'.tr()}: $e'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -181,7 +182,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Створення нової філії',
+                      'tenancy.create_branch_title'.tr(),
                       style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 18,
@@ -208,20 +209,20 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                 
                 // Name
                 _buildTextField(
-                  label: 'Назва філії (напр. Warsaw)',
+                  label: 'tenancy.branch_name_hint_example'.tr(),
                   icon: LucideIcons.building,
                   onSaved: (val) => _name = val ?? '',
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Введіть назву' : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'tenancy.enter_name_error'.tr() : null,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 16),
                 
                 // City
                 _buildTextField(
-                  label: 'Місто (для відображення)',
+                  label: 'tenancy.city_display_label'.tr(),
                   icon: LucideIcons.mapPin,
                   onSaved: (val) => _city = val ?? '',
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Введіть місто' : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'tenancy.enter_city_error'.tr() : null,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 16),
@@ -230,7 +231,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                   children: [
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Країна',
+                        label: 'tenancy.country_label'.tr(),
                         value: _country,
                         items: _countries,
                         onChanged: (val) => setState(() => _country = val!),
@@ -240,7 +241,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Валюта',
+                        label: 'tenancy.currency_label'.tr(),
                         value: _currency,
                         items: _currencies,
                         onChanged: (val) {
@@ -254,7 +255,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                 const SizedBox(height: 16),
                 
                 _buildDropdown(
-                  label: 'Часовий пояс',
+                  label: 'tenancy.timezone_label'.tr(),
                   value: _timezone,
                   items: _timezones,
                   onChanged: (val) => setState(() => _timezone = val!),
@@ -266,7 +267,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                   children: [
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Провайдер оплат',
+                        label: 'tenancy.payment_provider_label'.tr(),
                         value: _paymentProvider,
                         items: _paymentProviders,
                         onChanged: (val) => setState(() => _paymentProvider = val!),
@@ -276,7 +277,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildDropdown(
-                        label: 'Основна мова',
+                        label: 'tenancy.default_language_label'.tr(),
                         value: _defaultLanguage,
                         items: _languages,
                         onChanged: (val) => setState(() => _defaultLanguage = val!),
@@ -298,7 +299,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'АДМІНІСТРАТОР ФІЛІЇ',
+                      'tenancy.branch_admin_section'.tr().toUpperCase(),
                       style: TextStyle(
                         color: isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.9)
@@ -313,7 +314,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                 const SizedBox(height: 12),
                 
                 _buildTextField(
-                  label: 'Ім\'я адміністратора (необов\'язково)',
+                  label: 'tenancy.admin_name_optional'.tr(),
                   icon: LucideIcons.user,
                   onSaved: (val) => _adminName = val ?? '',
                   validator: (_) => null,
@@ -330,7 +331,7 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Початковий місячний оклад (${_getCurrencySymbol(_currency)})',
+                    labelText: 'tenancy.initial_monthly_salary'.tr(namedArgs: {'currency': _getCurrencySymbol(_currency)}),
                     labelStyle: TextStyle(
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 13,
@@ -411,9 +412,9 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                               color: isDark ? const Color(0xFF001F3F) : Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Розгорнути філію та адміністратора',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        : Text(
+                            'tenancy.deploy_branch_btn'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                   ),
                 ),

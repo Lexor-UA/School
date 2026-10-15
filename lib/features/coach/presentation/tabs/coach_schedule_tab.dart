@@ -158,7 +158,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       const SizedBox(width: 8),
                       // Quick QR Scanner Action Button (VisionOS cyan cyber-lens)
                       Tooltip(
-                        message: _coachTr('coach.scan_qr_pass', 'Сканувати перепустку'),
+                        message: _coachTr('coach.scan_qr_pass', 'coach.scan_qr_pass'.tr()),
                         child: GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -211,7 +211,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       const SizedBox(width: 8),
                       // Quick Logout button (Luxury frosted ruby crystal orb)
                       Tooltip(
-                        message: 'Вийти з кабінету',
+                        message: 'common.logout'.tr(),
                         child: GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -306,7 +306,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                         ],
                       ),
                       Tooltip(
-                        message: 'Відкрити календар на місяць / рік',
+                        message: 'coach.open_month_year_calendar_tooltip'.tr(),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -384,14 +384,21 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
               final now = DateTime.now();
               final today = DateTime(now.year, now.month, now.day);
 
-              // Filter strictly by TODAY
+              final coachBranch = user?.branchId ?? 'kyiv';
+              final coachBranches = user?.branchIds ?? [coachBranch];
+
+              // Filter strictly by TODAY and coach's branch
               final dateFiltered = allClasses.where((c) {
-                final classDate = DateTime(c.startTime.year, c.startTime.month, c.startTime.day);
+                if (user != null && c.branchId != coachBranch && !coachBranches.contains(c.branchId)) {
+                  return false;
+                }
+                final classDate = DateTime(c.branchStartTime.year, c.branchStartTime.month, c.branchStartTime.day);
                 return classDate.isAtSameMomentAs(today);
               }).toList();
 
               // Filter strictly by this coach (NO fallback to other coaches)
-              final coachClasses = dateFiltered.where((c) => isClassForCoach(c, user)).toList();
+              final coachClasses = dateFiltered.where((c) => isClassForCoach(c, user)).toList()
+                ..sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
               final displayClasses = coachClasses;
 
               if (displayClasses.isEmpty) {
@@ -1001,8 +1008,8 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
     );
   }
   Widget _buildClassCard(GroupClass gClass, int index, AppThemeConfig themeConfig) {
-    final startTimeStr = '${gClass.startTime.hour.toString().padLeft(2, '0')}:${gClass.startTime.minute.toString().padLeft(2, '0')}';
-    final endTimeStr = '${gClass.endTime.hour.toString().padLeft(2, '0')}:${gClass.endTime.minute.toString().padLeft(2, '0')}';
+    final startTimeStr = '${gClass.branchStartTime.hour.toString().padLeft(2, '0')}:${gClass.branchStartTime.minute.toString().padLeft(2, '0')}';
+    final endTimeStr = '${gClass.branchEndTime.hour.toString().padLeft(2, '0')}:${gClass.branchEndTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = gClass.enrolledChildIds.length;
     final attendedCount = gClass.attendedChildIds.length;
     final maxCap = gClass.maxCapacity > 0 ? gClass.maxCapacity : 8;
@@ -1159,7 +1166,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                               ),
                               const SizedBox(width: 4.5),
                               Text(
-                                freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
+                                freeSlots == 0 ? 'coach.class_full'.tr() : 'coach.free_slots_short'.tr(args: ['$freeSlots']),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -1251,7 +1258,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                 children: [
                   Flexible(
                     child: Text(
-                      'Записано: $enrolledCount з $maxCap учнів (присутні: $attendedCount)',
+                      'coach.enrolled_and_present_fmt'.tr(args: ['$enrolledCount', '$maxCap', '$attendedCount']),
                       style: TextStyle(color: themeConfig.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1368,7 +1375,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                       const Icon(LucideIcons.users, color: Colors.white, size: 17),
                       const SizedBox(width: 8),
                       Text(
-                        'Склад групи ($enrolledCount)',
+                        'coach.group_roster_count'.tr(args: ['$enrolledCount']),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,

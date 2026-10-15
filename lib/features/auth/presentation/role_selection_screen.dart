@@ -179,15 +179,24 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
         bool authenticated = false;
         try {
           authenticated = await _auth.authenticate(
-            localizedReason: 'Відскануйте обличчя або відбиток пальця для входу',
+            localizedReason: 'auth.biometrics_reason'.tr(),
             biometricOnly: false,
             persistAcrossBackgrounding: true,
           );
         } catch (e) {
           debugPrint('Biometric auth error during authenticate: $e');
-          // If biometrics not enrolled on device/emulator (noCredentialsSet, NotEnrolled, etc.),
-          // smoothly let the authorized user enter directly:
-          authenticated = true;
+          final errStr = e.toString().toLowerCase();
+          // Only bypass if biometrics/credentials are not enrolled or unavailable on emulator/device
+          if (errStr.contains('notenrolled') ||
+              errStr.contains('nocredentialsset') ||
+              errStr.contains('passcodenotset') ||
+              errStr.contains('notavailable') ||
+              errStr.contains('otheroperating') ||
+              errStr.contains('missingplugin')) {
+            authenticated = true;
+          } else {
+            authenticated = false;
+          }
         }
 
         if (authenticated && mounted) {
@@ -421,9 +430,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                       },
                       icon: const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFFFFB300)),
                       label: Text(
-                        'auth.staff_portal'.tr().isNotEmpty && !'auth.staff_portal'.tr().startsWith('auth.')
-                            ? 'auth.staff_portal'.tr()
-                            : '🔐 Вхід для співробітників (Команда)',
+                        'auth.staff_portal'.tr(),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -540,7 +547,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       children: [
         _buildPremiumAuthButton(
           context,
-          title: 'auth.login_google'.tr().isNotEmpty && !'auth.login_google'.tr().startsWith('auth.') ? 'auth.login_google'.tr() : 'Увійти через Google',
+          title: 'auth.login_google'.tr(),
           imageAsset: 'assets/images/google_logo.png',
           borderColor: Colors.blue.withValues(alpha: 0.5),
           onPressed: () async {
@@ -559,13 +566,13 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               if (errStr.contains('canceled') || errStr.contains('cancelled') || errStr.contains('sign_in_canceled')) {
                 return;
               }
-              String friendlyMsg = 'Помилка Google Sign In: $e';
+              String friendlyMsg = 'auth.google_signin_error'.tr(args: ['$e']);
               if (errStr.contains('-1017') ||
                   errStr.contains('Connection error') ||
                   errStr.contains('org.openid.appauth.general: -5') ||
                   errStr.contains('network_error') ||
                   errStr.contains('kCFErrorDomainCFNetwork')) {
-                friendlyMsg = 'Помилка зв\'язку із сервером Google (код -1017). Будь ласка, перевірте з\'єднання з Інтернетом, вимкніть VPN та спробуйте ще раз.';
+                friendlyMsg = 'auth.google_network_error'.tr();
               }
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -596,7 +603,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
         _buildPremiumAuthButton(
           context,
-          title: 'auth.login_apple'.tr().isNotEmpty && !'auth.login_apple'.tr().startsWith('auth.') ? 'auth.login_apple'.tr() : 'Увійти через Apple',
+          title: 'auth.login_apple'.tr(),
           imageAsset: 'assets/images/apple_logo.png',
           borderColor: Colors.white.withValues(alpha: 0.5),
           backgroundColor: Colors.white.withValues(alpha: 0.04),
@@ -624,7 +631,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Помилка Apple Sign In: $e',
+                          'auth.apple_signin_error'.tr(args: ['$e']),
                           style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
                         ),
                       ),
@@ -660,9 +667,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
         _buildPremiumAuthButton(
           context,
-          title: 'auth.login_email'.tr().isNotEmpty && !'auth.login_email'.tr().startsWith('auth.')
-              ? 'auth.login_email'.tr()
-              : 'Увійти через Email / Логін',
+          title: 'auth.login_email'.tr(),
           icon: LucideIcons.mail,
           iconColor: Colors.white,
           borderColor: Colors.cyanAccent.withValues(alpha: 0.5),
@@ -927,7 +932,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               final login = loginController.text.trim();
               final password = loginPasswordController.text.trim();
               if (login.isEmpty || password.isEmpty) {
-                _showModalToast(modalContext, 'Будь ласка, заповніть усі поля для входу', color: Colors.amber.shade800);
+                _showModalToast(modalContext, 'auth.fill_all_login_fields'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
@@ -938,7 +943,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);
-                  _showModalToast(modalContext, 'Помилка входу: $e');
+                  _showModalToast(modalContext, 'auth.login_error'.tr(args: ['$e']));
                 }
               }
             }
@@ -949,17 +954,17 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               final password = regPasswordController.text.trim();
 
               if (name.isEmpty) {
-                _showModalToast(modalContext, "Введіть ваше ім'я та прізвище", color: Colors.amber.shade800);
+                _showModalToast(modalContext, 'auth.enter_full_name'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
               if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-                _showModalToast(modalContext, 'Введіть коректну електронну пошту (email)', color: Colors.amber.shade800);
+                _showModalToast(modalContext, 'auth.enter_valid_email'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
               if (password.length < 6) {
-                _showModalToast(modalContext, 'Пароль має містити щонайменше 6 символів', color: Colors.amber.shade800);
+                _showModalToast(modalContext, 'auth.password_min_length'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
@@ -975,7 +980,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isModalLoading = false);
-                  _showModalToast(modalContext, 'Помилка реєстрації: $e');
+                  _showModalToast(modalContext, 'auth.register_error'.tr(args: ['$e']));
                 }
               }
             }
@@ -1104,9 +1109,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(
-                                                    'auth.tab_login'.tr().isNotEmpty && !'auth.tab_login'.tr().startsWith('auth.')
-                                                        ? 'auth.tab_login'.tr()
-                                                        : 'Увійти',
+                                                    'auth.tab_login'.tr(),
                                                     style: TextStyle(
                                                       color: activeTab == 0 ? Colors.white : Colors.white60,
                                                       fontSize: 13.5,
@@ -1156,9 +1159,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(
-                                                    'auth.tab_register'.tr().isNotEmpty && !'auth.tab_register'.tr().startsWith('auth.')
-                                                        ? 'auth.tab_register'.tr()
-                                                        : 'Реєстрація',
+                                                    'auth.tab_register'.tr(),
                                                     style: TextStyle(
                                                       color: activeTab == 1 ? Colors.white : Colors.white60,
                                                       fontSize: 13.5,
@@ -1217,9 +1218,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               autocorrect: false,
                                               textInputAction: TextInputAction.next,
                                               decoration: _modalInputDecoration(
-                                                hintText: 'auth.email_login'.tr().isNotEmpty && !'auth.email_login'.tr().startsWith('auth.')
-                                                    ? 'auth.email_login'.tr()
-                                                    : 'Емейл або логін',
+                                                hintText: 'auth.email_login'.tr(),
                                                 prefixIcon: LucideIcons.mail,
                                                 suffixIcon: loginController.text.isNotEmpty
                                                     ? IconButton(
@@ -1244,7 +1243,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               textInputAction: TextInputAction.done,
                                               onSubmitted: (_) => submitLogin(),
                                               decoration: _modalInputDecoration(
-                                                hintText: 'Пароль',
+                                                hintText: 'auth.password_hint'.tr(),
                                                 prefixIcon: LucideIcons.lock,
                                                 suffixIcon: IconButton(
                                                   icon: Icon(
@@ -1280,9 +1279,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                   );
                                                 },
                                                 icon: const Icon(LucideIcons.keyRound, size: 13),
-                                                label: const Text(
-                                                  'Забули пароль?',
-                                                  style: TextStyle(
+                                                label: Text(
+                                                  'auth.forgot_password_btn'.tr(),
+                                                  style: const TextStyle(
                                                     color: Color(0xFF00E5FF),
                                                     fontSize: 12.5,
                                                     fontWeight: FontWeight.w600,
@@ -1295,7 +1294,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                                             // Login Submit Button
                                             _buildSubmitButton(
-                                              title: 'Увійти',
+                                              title: 'auth.tab_login'.tr(),
                                               icon: LucideIcons.logIn,
                                               isLoading: isModalLoading,
                                               onPressed: submitLogin,
@@ -1350,7 +1349,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                             Text(
                                                               currentBranch.name.startsWith('CitySwim')
                                                                   ? currentBranch.name
-                                                                  : 'CitySwim ${currentBranch.name}',
+                                                                  : 'CitySwim ${currentBranch.localizedCity(context.locale.languageCode)}',
                                                               style: const TextStyle(
                                                                 color: Colors.white,
                                                                 fontSize: 12.5,
@@ -1358,7 +1357,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                               ),
                                                             ),
                                                             Text(
-                                                              '${currentBranch.city} · Валюта: ${currentBranch.currency} (${currentBranch.currencySymbol})',
+                                                              '${currentBranch.localizedCity(context.locale.languageCode)} · ${'auth.currency_label'.tr()}: ${currentBranch.currency} (${currentBranch.currencySymbol})',
                                                               style: TextStyle(
                                                                 color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
                                                                 fontSize: 11,
@@ -1386,7 +1385,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                       const Icon(LucideIcons.mapPin, size: 13, color: Color(0xFF00E5FF)),
                                                       const SizedBox(width: 5),
                                                       Text(
-                                                        'Оберіть філію навчання:',
+                                                        'auth.select_training_branch'.tr(),
                                                         style: TextStyle(
                                                           color: Colors.white.withValues(alpha: 0.85),
                                                           fontSize: 12.5,
@@ -1431,7 +1430,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                                               Text(b.flagEmoji, style: const TextStyle(fontSize: 15)),
                                                               const SizedBox(width: 6),
                                                               Text(
-                                                                b.city,
+                                                                b.localizedCity(context.locale.languageCode),
                                                                 style: const TextStyle(
                                                                   color: Colors.white,
                                                                   fontSize: 13,
@@ -1485,7 +1484,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
                                               textInputAction: TextInputAction.next,
                                               decoration: _modalInputDecoration(
-                                                hintText: "Ім'я та прізвище",
+                                                hintText: 'auth.full_name_hint'.tr(),
                                                 prefixIcon: LucideIcons.user,
                                               ),
                                             ),
@@ -1500,7 +1499,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
                                               textInputAction: TextInputAction.next,
                                               decoration: _modalInputDecoration(
-                                                hintText: 'Електронна пошта (email)',
+                                                hintText: 'auth.email_hint'.tr(),
                                                 prefixIcon: LucideIcons.mail,
                                                 suffixIcon: regLoginController.text.isNotEmpty
                                                     ? IconButton(
@@ -1525,7 +1524,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                               textInputAction: TextInputAction.done,
                                               onSubmitted: (_) => submitRegister(),
                                               decoration: _modalInputDecoration(
-                                                hintText: 'Пароль',
+                                                hintText: 'auth.password_hint'.tr(),
                                                 prefixIcon: LucideIcons.lock,
                                                 suffixIcon: IconButton(
                                                   icon: Icon(
@@ -1544,7 +1543,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                                             // Register Submit Button
                                             _buildSubmitButton(
-                                              title: 'Зареєструватися',
+                                              title: 'auth.register_submit_btn'.tr(),
                                               icon: LucideIcons.userCheck,
                                               isLoading: isModalLoading,
                                               onPressed: submitRegister,
@@ -1587,7 +1586,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               final login = staffLoginController.text.trim();
               final password = staffPasswordController.text.trim();
               if (login.isEmpty || password.isEmpty) {
-                _showModalToast(modalContext, 'Введіть службовий логін та пароль', color: Colors.amber.shade800);
+                _showModalToast(modalContext, 'auth.enter_staff_credentials'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
@@ -1607,7 +1606,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isStaffLoading = false);
-                  _showModalToast(modalContext, 'Помилка службового входу: $e');
+                  _showModalToast(modalContext, 'auth.staff_login_error'.tr(args: ['$e']));
                 }
               }
             }
@@ -1702,23 +1701,23 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 14),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'PORTAL ДЛЯ КОМАНДИ',
-                                        style: TextStyle(
+                                        'auth.staff_portal_title'.tr(),
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 16.5,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 1.5,
                                         ),
                                       ),
-                                      SizedBox(height: 2),
+                                      const SizedBox(height: 2),
                                       Text(
-                                        'Тренери • Адміністрація • Власник',
-                                        style: TextStyle(
+                                        'auth.staff_portal_subtitle'.tr(),
+                                        style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
                                         ),
@@ -1747,7 +1746,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               autocorrect: false,
                               textInputAction: TextInputAction.next,
                               decoration: _modalInputDecoration(
-                                hintText: 'Робочий логін (admin, coach...) або email',
+                                hintText: 'auth.staff_login_hint'.tr(),
                                 prefixIcon: LucideIcons.badgeCheck,
                                 accentColor: const Color(0xFFFFB300),
                               ),
@@ -1763,7 +1762,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               textInputAction: TextInputAction.done,
                               onSubmitted: (_) => submitStaffLogin(),
                               decoration: _modalInputDecoration(
-                                hintText: 'Службовий пароль',
+                                hintText: 'auth.staff_password_hint'.tr(),
                                 prefixIcon: LucideIcons.keyRound,
                                 accentColor: const Color(0xFFFFB300),
                                 suffixIcon: IconButton(
@@ -1793,10 +1792,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                 children: [
                                   Icon(LucideIcons.info, size: 14, color: Colors.amber.withValues(alpha: 0.8)),
                                   const SizedBox(width: 8),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
-                                      'Вхід лише для співробітників за робочими обліковими записами.',
-                                      style: TextStyle(color: Colors.white60, fontSize: 11.5),
+                                      'auth.staff_only_notice'.tr(),
+                                      style: const TextStyle(color: Colors.white60, fontSize: 11.5),
                                     ),
                                   ),
                                 ],
@@ -1807,7 +1806,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                             // Staff Submit Button
                             _buildSubmitButton(
-                              title: 'СЛУЖБОВИЙ ВХІД',
+                              title: 'auth.staff_submit_btn'.tr(),
                               icon: LucideIcons.logIn,
                               isLoading: isStaffLoading,
                               accentColors: const [Color(0xFFFFB300), Color(0xFFE65100)],

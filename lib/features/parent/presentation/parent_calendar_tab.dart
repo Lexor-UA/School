@@ -59,7 +59,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
     final partnerName = user != null
-        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'parent.partner'.tr())
         : null;
 
     final allFamilyIds = [...parentIds, ...children.map((c) => c.id)];
@@ -82,7 +82,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         ? user.name.trim()
         : (fbUser?.displayName?.trim().isNotEmpty == true
             ? fbUser!.displayName!.trim()
-            : 'Мій розклад');
+            : 'parent.my_schedule'.tr());
 
     final hasPartner = partnerId != null && partnerName != null;
     final hasMultipleMembers = children.isNotEmpty || hasPartner;
@@ -169,7 +169,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     final todayDate = DateTime(now.year, now.month, now.day);
     final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     if (selectedDateOnly.isBefore(todayDate)) {
-      AppSnackBar.showWarning(context, 'Неможливо записатися на тренування у минулому');
+      AppSnackBar.showWarning(context, 'parent.cannot_book_past_class'.tr());
       return;
     }
 
@@ -188,7 +188,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         ? user.name.trim()
         : (FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
             ? FirebaseAuth.instance.currentUser!.displayName!.trim()
-            : 'Мій розклад');
+            : 'parent.my_schedule'.tr());
     if (!isAdult) {
       final ch = children.firstWhereOrNull((c) => c.id == selectedChildId);
       if (ch != null) {
@@ -199,7 +199,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         }
       }
     } else if (selectedChildId == partnerId) {
-      memberName = family?.getOtherParentName(user?.id ?? '') ?? 'Партнер';
+      memberName = family?.getOtherParentName(user?.id ?? '') ?? 'parent.partner'.tr();
     }
 
     final subscriptionController = ref.read(subscriptionControllerProvider.notifier);
@@ -214,7 +214,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
         final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
         AppSnackBar.showError(
           context,
-          'Термін дії абонемента для $memberName закінчується $expiryStr (до обраної дати $selDateStr). Оберіть дату в межах дії абонемента.',
+          'parent.sub_expires_before_date_select_valid'.tr(args: [memberName, expiryStr, selDateStr]),
         );
         return;
       }
@@ -260,7 +260,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
 
     final allMembers = [
       if (user != null)
-        (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
+        (id: user.id, name: '${user.name} (${'parent.me'.tr()})', isParent: true, color: currentTheme.accentPrimary),
       if (partnerId != null && partnerName != null)
         (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       ...children.map((ch) => (
@@ -315,7 +315,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Для кого забронювати тренування?',
+                'parent.booking_for_whom'.tr(),
                 style: TextStyle(
                   color: isDark ? Colors.white : currentTheme.textPrimary,
                   fontSize: 17.5,
@@ -325,7 +325,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               ),
               const SizedBox(height: 5),
               Text(
-                'Оберіть члена сім\'ї для створення індивідуального розкладу',
+                'parent.choose_family_member_desc'.tr(),
                 style: TextStyle(
                   color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
                   fontSize: 13,
@@ -363,7 +363,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                           final selDateStr = DateFormat('dd.MM.yyyy').format(selectedDate);
                           AppSnackBar.showError(
                             context,
-                            'Термін дії абонемента для $memberName закінчується $expiryStr (до обраної дати $selDateStr).',
+                            'parent.sub_expires_before_date'.tr(args: [memberName, expiryStr, selDateStr]),
                           );
                           return;
                         }
@@ -432,7 +432,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                                 ),
                                 if (m.isParent)
                                   Text(
-                                    'Батьки / Дорослий',
+                                    'parent.parent_adult'.tr(),
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
                                       fontSize: 11.5,
@@ -490,7 +490,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
             // "✨ Всі" chip for family-wide view
             _buildChildChip(
               id: 'all',
-              name: '✨ Всі',
+              name: '✨ ${'common.all'.tr()}',
               color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
               isSelected: selectedChildId == 'all',
               currentTheme: currentTheme,
@@ -767,7 +767,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Розклад на $dateFormatted',
+                  'parent.schedule_for_date'.tr(args: [dateFormatted]),
                   style: TextStyle(
                     color: currentTheme.textPrimary,
                     fontSize: 15,
@@ -810,9 +810,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     children: [
                       Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : Colors.white, size: 13),
                       const SizedBox(width: 4.5),
-                      const Text(
-                        'Записатись',
-                        style: TextStyle(
+                      Text(
+                        'parent.enroll'.tr(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -877,7 +877,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       ),
                       const SizedBox(width: 7),
                       Text(
-                        'Ваші заплановані заняття (${upcomingEnrolledClasses.length})',
+                        'parent.your_upcoming_classes'.tr(args: [upcomingEnrolledClasses.length.toString()]),
                         style: TextStyle(
                           color: isDark ? Colors.white : currentTheme.textPrimary,
                           fontSize: 12,
@@ -933,7 +933,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       ),
                       const SizedBox(width: 7),
                       Text(
-                        'Ваші завершені тренування (${completedEnrolledClasses.length})',
+                        'parent.your_completed_classes'.tr(args: [completedEnrolledClasses.length.toString()]),
                         style: TextStyle(
                           color: isDark ? Colors.white : currentTheme.textPrimary,
                           fontSize: 12,
@@ -989,7 +989,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       ),
                       const SizedBox(width: 7),
                       Text(
-                        'Доступні для запису (${availableClasses.length})',
+                        'parent.available_for_booking'.tr(args: ['${availableClasses.length}']),
                         style: TextStyle(
                           color: isDark ? Colors.white : currentTheme.textPrimary,
                           fontSize: 12,
@@ -1107,7 +1107,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               ),
               const SizedBox(height: 10),
               Text(
-                isPastDay ? 'Занять у цей день не було' : 'parent.no_classes_this_day_calendar'.tr(),
+                isPastDay ? 'parent.no_classes_past_day'.tr() : 'parent.no_classes_this_day_calendar'.tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.white : currentTheme.textPrimary,
@@ -1119,8 +1119,8 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               const SizedBox(height: 3),
               Text(
                 isPastDay
-                    ? 'На обрану дату не було заплановано тренувань'
-                    : 'Бажаєте провести тренування у цей день?',
+                    ? 'parent.no_classes_this_day'.tr()
+                    : 'parent.wish_to_train'.tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? const Color(0xFFCBD5E1) : currentTheme.textSecondary,
@@ -1162,9 +1162,9 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       children: [
                         Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : Colors.white, size: 15),
                         const SizedBox(width: 6),
-                        const Text(
-                          'Забронювати тренування',
-                          style: TextStyle(
+                        Text(
+                          'parent.book_training_btn'.tr(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 13,

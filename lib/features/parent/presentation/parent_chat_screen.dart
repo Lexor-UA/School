@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -76,7 +77,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
     final effectiveCoachId = widget.coachId ?? (user.role == UserRole.coach ? user.id : null);
     final effectiveCoachName = widget.coachName ?? (user.role == UserRole.coach ? user.name : null);
     final effectiveClientId = widget.clientId ?? (user.role != UserRole.coach ? user.id : (widget.recipientId ?? ''));
-    final effectiveClientName = widget.clientName ?? (user.role != UserRole.coach ? user.name : (widget.recipientName ?? 'Клієнт'));
+    final effectiveClientName = widget.clientName ?? (user.role != UserRole.coach ? user.name : (widget.recipientName ?? 'auth.client_fallback'.tr()));
 
     final repo = ref.read(chatRepositoryProvider);
     repo.sendMessage(
@@ -128,7 +129,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка відкриття фото: $e'),
+            content: Text('chat.photo_open_error'.tr(args: [e.toString()])),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -142,7 +143,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
   void _showSendPreviewDialog(Uint8List bytes, AppThemeConfig theme, {bool isMedicalDoc = false}) {
     final isDark = theme.isDark;
     final TextEditingController captionController = TextEditingController(
-      text: isMedicalDoc ? 'Медична довідка для тренувань у басейні' : '',
+      text: isMedicalDoc ? 'chat.medical_cert_caption'.tr() : '',
     );
     bool isSending = false;
 
@@ -203,7 +204,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Попередній перегляд',
+                              'chat.preview_title'.tr(),
                               style: TextStyle(
                                 color: theme.textPrimary,
                                 fontSize: 17,
@@ -263,7 +264,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                             style: TextStyle(color: theme.textPrimary),
                             enabled: !isSending,
                             decoration: InputDecoration(
-                              hintText: 'Додати підпис до фото...',
+                              hintText: 'chat.add_photo_caption_hint'.tr(),
                               hintStyle: TextStyle(
                                 color: isDark ? Colors.white54 : theme.textMuted,
                               ),
@@ -288,7 +289,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                                 ),
                                 onPressed: isSending ? null : () => Navigator.pop(ctx),
                                 child: Text(
-                                  'Скасувати',
+                                  'common.cancel'.tr(),
                                   style: TextStyle(
                                     color: theme.textPrimary,
                                     fontWeight: FontWeight.w700,
@@ -335,7 +336,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                                         )
                                       : const Icon(LucideIcons.send, color: Colors.white, size: 18),
                                   label: Text(
-                                    isSending ? 'Надсилання...' : 'Надіслати',
+                                    isSending ? 'chat.sending'.tr() : 'chat.send_btn'.tr(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
@@ -397,7 +398,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       final effectiveCoachId = widget.coachId ?? (user.role == UserRole.coach ? user.id : null);
       final effectiveCoachName = widget.coachName ?? (user.role == UserRole.coach ? user.name : null);
       final effectiveClientId = widget.clientId ?? (user.role != UserRole.coach ? user.id : (widget.recipientId ?? ''));
-      final effectiveClientName = widget.clientName ?? (user.role != UserRole.coach ? user.name : (widget.recipientName ?? 'Клієнт'));
+      final effectiveClientName = widget.clientName ?? (user.role != UserRole.coach ? user.name : (widget.recipientName ?? 'auth.client_fallback'.tr()));
 
       final repo = ref.read(chatRepositoryProvider);
       await repo.sendMessage(
@@ -433,7 +434,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Не вдалося надіслати фото: $e'),
+            content: Text('chat.photo_send_error'.tr(args: [e.toString()])),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -544,8 +545,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                         return Center(
                           child: Text(
                             widget.type == 'coach_client'
-                                ? 'Немає повідомлень.\nПочніть спілкування прямо зараз!'
-                                : 'Немає повідомлень.\nНапишіть нам, і ми обов\'язково допоможемо!',
+                                ? 'chat.no_messages_coach'.tr()
+                                : 'chat.no_messages_support'.tr(),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: theme.isDark ? Colors.white54 : theme.textSecondary,
@@ -587,7 +588,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
-                    error: (err, stack) => Center(child: Text('Помилка завантаження: $err', style: TextStyle(color: theme.textPrimary))),
+                    error: (err, stack) => Center(child: Text('chat.load_error'.tr(args: [err.toString()]), style: TextStyle(color: theme.textPrimary))),
                   ),
                 ),
                 if (_isUploadingAttachment) _buildUploadingBanner(theme),
@@ -650,7 +651,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Скритний нагляд адміністратора',
+                  'chat.admin_monitoring_title'.tr(),
                   style: TextStyle(
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
                     fontSize: 13,
@@ -659,7 +660,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Ви спостерігаєте за діалогом між тренером та клієнтом. Учасники не знають про вашу присутність.',
+                  'chat.admin_monitoring_desc'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
                     fontSize: 11.5,
@@ -688,18 +689,18 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
           width: 1,
         ),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(
-            'Надсилання фотографії...',
-            style: TextStyle(
+            'chat.sending_photo'.tr(),
+            style: const TextStyle(
               color: Color(0xFF00E5FF),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -804,7 +805,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.title ?? (widget.type == 'coach_client' ? (widget.recipientName ?? 'Чат') : 'Підтримка CitySwim'),
+                      widget.title ?? (widget.type == 'coach_client' ? (widget.recipientName ?? 'chat.chat'.tr()) : 'chat.cityswim_support'.tr()),
                       style: TextStyle(
                         color: theme.textPrimary,
                         fontSize: 17,
@@ -817,8 +818,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                     const SizedBox(height: 2),
                     Text(
                       widget.subtitle ?? (widget.isMonitoring
-                          ? '👁️ Скритний нагляд • Онлайн'
-                          : (widget.type == 'coach_client' ? 'Діалог • Онлайн' : 'Служба турботи про клієнтів')),
+                          ? 'chat.monitoring_online_badge'.tr()
+                          : (widget.type == 'coach_client' ? 'chat.dialog_online'.tr() : 'chat.customer_care'.tr())),
                       style: TextStyle(
                         color: isDark
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.85)
@@ -936,8 +937,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                       ),
                       child: Text(
                         msg.senderRole == 'coach'
-                            ? '🏊‍♂️ Тренер: ${msg.senderName ?? widget.coachName ?? 'Тренер'}'
-                            : '👤 Клієнт: ${msg.senderName ?? widget.clientName ?? 'Клієнт'}',
+                            ? '🏊‍♂️ ${'common.coach_fallback'.tr()}: ${msg.senderName ?? widget.coachName ?? 'common.coach_fallback'.tr()}'
+                            : '👤 ${'auth.client_fallback'.tr()}: ${msg.senderName ?? widget.clientName ?? 'auth.client_fallback'.tr()}',
                         style: TextStyle(
                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontSize: 10.5,
@@ -1110,7 +1111,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   color: isDark ? const Color(0xFF00E5FF) : theme.accentPrimary,
                   size: 22,
                 ),
-                tooltip: 'Обрати фото з медіатеки',
+                tooltip: 'chat.choose_photo_tooltip'.tr(),
                 onPressed: () => _pickImage(ImageSource.gallery, theme),
               ),
               Expanded(
@@ -1131,7 +1132,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                     controller: _messageController,
                     style: TextStyle(color: theme.textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'Повідомлення...',
+                      hintText: 'chat.type_message'.tr(),
                       hintStyle: TextStyle(
                         color: isDark ? Colors.white54 : theme.textMuted,
                       ),

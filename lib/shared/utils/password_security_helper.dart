@@ -21,12 +21,18 @@ class PasswordSecurityHelper {
     final cleanInput = inputPassword.trim();
     final cleanStored = storedCredential.trim();
 
-    // 1. Direct match for legacy plain-text credentials (e.g. '1', initial pins)
+    // 1. If stored credential is already a 64-char SHA-256 hex hash, verify strictly via hash comparison
+    // to prevent Pass-the-Hash attacks where a raw hash is pasted as the password.
+    if (isHashed(cleanStored)) {
+      return hashPassword(cleanInput).toLowerCase() == cleanStored.toLowerCase();
+    }
+
+    // 2. Direct match for legacy plain-text credentials (e.g. '1', initial pins)
     if (cleanInput == cleanStored) {
       return true;
     }
 
-    // 2. Hash verification
+    // 3. Fallback hash verification
     final computedHash = hashPassword(cleanInput);
     return computedHash == cleanStored;
   }

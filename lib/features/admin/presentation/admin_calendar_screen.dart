@@ -14,6 +14,7 @@ import 'package:swimming_school_app/features/coach/presentation/coach_class_atte
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
 
 class AdminCalendarScreen extends ConsumerStatefulWidget {
   final String? initialCoachId;
@@ -27,6 +28,10 @@ class AdminCalendarScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<AdminCalendarScreen> createState() => _AdminCalendarScreenState();
+}
+
+String _getLocalizedClassTitle(GroupClass c, String langCode) {
+  return c.localizedTitle(langCode);
 }
 
 class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
@@ -218,6 +223,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final daysInMonth = DateUtils.getDaysInMonth(_selectedDate.year, _selectedDate.month);
     final firstDayOffset = DateTime(_selectedDate.year, _selectedDate.month, 1).weekday - 1;
     final totalCells = ((daysInMonth + firstDayOffset) / 7).ceil() * 7;
+    final selectedYear = _selectedDate.year;
+    final selectedMonth = _selectedDate.month;
+    final daysWithClasses = <int>{};
+    for (final c in allClasses) {
+      if (c.startTime.year == selectedYear && c.startTime.month == selectedMonth) {
+        daysWithClasses.add(c.startTime.day);
+      }
+    }
     final daysOfWeek = [
       'admin.wd_mon'.tr(),
       'admin.wd_tue'.tr(),
@@ -369,7 +382,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Сьогодні',
+                                      'admin.today'.tr(),
                                       style: TextStyle(
                                         color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                         fontSize: 10.5,
@@ -453,10 +466,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   final now = DateTime.now();
                   final isToday = cellDate.year == now.year && cellDate.month == now.month && cellDate.day == now.day;
 
-                  final hasClasses = allClasses.any((c) =>
-                      c.startTime.year == cellDate.year &&
-                      c.startTime.month == cellDate.month &&
-                      c.startTime.day == cellDate.day);
+                  final hasClasses = daysWithClasses.contains(day);
 
                   return GestureDetector(
                     onTap: () {
@@ -689,7 +699,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Всі тренери',
+                    'admin.all_coaches'.tr(),
                     style: TextStyle(
                       color: _selectedCoachId == null
                           ? Colors.white
@@ -707,7 +717,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
           // Individual coach chips
           ...coachDocs.map((coach) {
             final cId = coach.id;
-            final cName = coach.name.isNotEmpty ? coach.name : 'Тренер';
+            final cName = coach.name.isNotEmpty ? coach.name : 'common.coach_default'.tr();
             final isSelected = _selectedCoachId == cId ||
                 (_selectedCoachName != null && _selectedCoachName!.toLowerCase() == cName.toLowerCase());
 
@@ -1018,7 +1028,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Фільтр: тренер $_selectedCoachName',
+                          'admin.cal_filter_coach_banner'.tr(namedArgs: {'coach': _selectedCoachName ?? ''}),
                           style: TextStyle(
                             color: currentTheme.isDark ? Colors.white : const Color(0xFF0F172A),
                             fontSize: 12,
@@ -1054,7 +1064,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Скинути',
+                                'admin_chat.reset_btn'.tr(),
                                 style: TextStyle(
                                   color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 11,
@@ -1080,16 +1090,23 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               // Classes List or Empty State
               if (dayClasses.isEmpty)
                 _buildEmptyDayState(dateStr, currentTheme)
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 4),
-                  itemCount: dayClasses.length,
-                  itemBuilder: (context, index) {
-                    return _buildAdminClassCard(dayClasses[index], currentTheme, dayClasses);
+              else ...[
+                Builder(
+                  builder: (context) {
+                    final conflictsMap = _computeConflicts(dayClasses);
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 4),
+                      itemCount: dayClasses.length,
+                      itemBuilder: (context, index) {
+                        final c = dayClasses[index];
+                        return _buildAdminClassCard(c, currentTheme, conflictsMap[c.id]);
+                      },
+                    );
                   },
                 ),
+              ],
             ],
           ),
         ),
@@ -1170,7 +1187,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
             const SizedBox(height: 16),
             Text(
               hasCoachFilter
-                  ? 'У тренера $_selectedCoachName немає занять'
+                  ? 'admin.cal_coach_no_classes'.tr(namedArgs: {'coach': _selectedCoachName ?? ''})
                   : 'admin.cal_no_classes'.tr(),
               style: TextStyle(
                 color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
@@ -1185,7 +1202,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 hasCoachFilter
-                    ? 'На $dateStr ще не призначено жодних тренувань'
+                    ? 'admin.cal_coach_no_classes_desc'.tr(namedArgs: {'date': dateStr})
                     : 'admin.cal_no_classes_desc'.tr(args: [dateStr]),
                 style: TextStyle(
                   color: currentTheme.isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary,
@@ -1232,7 +1249,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Показати всі заняття дня',
+                          'admin.cal_show_all_day_classes'.tr(),
                           style: TextStyle(
                             color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                             fontWeight: FontWeight.w800,
@@ -1278,7 +1295,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   icon: LucideIcons.sunrise,
                   iconColor: const Color(0xFFFBBF24),
                   label: '09:00',
-                  subLabel: 'Ранок',
+                  subLabel: 'admin.cal_time_morning'.tr(),
                   time: const TimeOfDay(hour: 9, minute: 0),
                   currentTheme: currentTheme,
                 ),
@@ -1286,7 +1303,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   icon: LucideIcons.sun,
                   iconColor: const Color(0xFFF59E0B),
                   label: '14:00',
-                  subLabel: 'День',
+                  subLabel: 'admin.cal_time_day'.tr(),
                   time: const TimeOfDay(hour: 14, minute: 0),
                   currentTheme: currentTheme,
                 ),
@@ -1294,7 +1311,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   icon: LucideIcons.moon,
                   iconColor: const Color(0xFF818CF8),
                   label: '18:00',
-                  subLabel: 'Вечір',
+                  subLabel: 'admin.cal_time_evening'.tr(),
                   time: const TimeOfDay(hour: 18, minute: 0),
                   currentTheme: currentTheme,
                 ),
@@ -1353,7 +1370,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       const SizedBox(width: 8),
                       Text(
                         hasCoachFilter
-                            ? '+ Створити заняття для $_selectedCoachName'
+                            ? 'admin.cal_create_for_coach'.tr(namedArgs: {'coach': _selectedCoachName ?? ''})
                             : 'admin.cal_create_for_date'.tr(),
                         style: const TextStyle(
                           color: Colors.white,
@@ -1458,7 +1475,62 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     );
   }
 
-  Widget _buildAdminClassCard(GroupClass c, AppThemeConfig currentTheme, [List<GroupClass>? siblingClasses]) {
+  Map<String, _ClassConflictPair> _computeConflicts(List<GroupClass> classes) {
+    if (classes.length < 2) return const {};
+    final map = <String, _ClassConflictPair>{};
+    for (int i = 0; i < classes.length; i++) {
+      final a = classes[i];
+      final isUnassignedA = a.coachId == 'unassigned' ||
+          a.coachId.isEmpty ||
+          a.coachName.isEmpty ||
+          a.coachName == 'Тренер не призначений' ||
+          a.coachName.toLowerCase().contains('не призначен');
+
+      GroupClass? conflictingLane;
+      GroupClass? conflictingCoach;
+
+      for (int j = 0; j < classes.length; j++) {
+        if (i == j) continue;
+        final b = classes[j];
+        final overlaps = b.startTime.isBefore(a.endTime) && b.endTime.isAfter(a.startTime);
+        if (!overlaps) continue;
+
+        // Lane conflict check
+        if (conflictingLane == null &&
+            a.lane.isNotEmpty &&
+            b.lane.isNotEmpty &&
+            a.lane != 'Будь-яка') {
+          final isSameLane = a.lane == b.lane;
+          final wholePoolConflict = (a.lane == 'Весь басейн' && b.lane.startsWith('Доріжка')) ||
+              (b.lane == 'Весь басейн' && a.lane.startsWith('Доріжка'));
+          if (isSameLane || wholePoolConflict) {
+            conflictingLane = b;
+          }
+        }
+
+        // Coach conflict check
+        if (conflictingCoach == null &&
+            !isUnassignedA &&
+            a.coachId.isNotEmpty &&
+            b.coachId.isNotEmpty &&
+            a.coachId == b.coachId) {
+          conflictingCoach = b;
+        }
+
+        if (conflictingLane != null && conflictingCoach != null) break;
+      }
+
+      if (conflictingLane != null || conflictingCoach != null) {
+        map[a.id] = _ClassConflictPair(
+          conflictingLaneClass: conflictingLane,
+          conflictingCoachClass: conflictingCoach,
+        );
+      }
+    }
+    return map;
+  }
+
+  Widget _buildAdminClassCard(GroupClass c, AppThemeConfig currentTheme, [_ClassConflictPair? conflictPair]) {
     final timeStr = '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${c.endTime.hour.toString().padLeft(2, '0')}:${c.endTime.minute.toString().padLeft(2, '0')}';
     final enrolledCount = c.enrolledChildIds.length;
@@ -1470,34 +1542,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
         c.coachName == 'Тренер не призначений' ||
         c.coachName.toLowerCase().contains('не призначен');
 
-    // Conflict detection against sibling classes on the same day
-    GroupClass? conflictingLaneClass;
-    GroupClass? conflictingCoachClass;
-
-    if (siblingClasses != null) {
-      for (final other in siblingClasses) {
-        if (other.id == c.id) continue;
-        final overlaps = other.startTime.isBefore(c.endTime) && other.endTime.isAfter(c.startTime);
-        if (!overlaps) continue;
-
-        // Lane conflict check
-        if (c.lane.isNotEmpty && other.lane.isNotEmpty && c.lane != 'Будь-яка') {
-          final isSameLane = c.lane == other.lane;
-          final wholePoolConflict = (c.lane == 'Весь басейн' && other.lane.startsWith('Доріжка')) ||
-              (other.lane == 'Весь басейн' && c.lane.startsWith('Доріжка'));
-          if (isSameLane || wholePoolConflict) {
-            conflictingLaneClass ??= other;
-          }
-        }
-
-        // Coach conflict check
-        if (!isUnassigned && c.coachId.isNotEmpty && other.coachId.isNotEmpty && c.coachId == other.coachId) {
-          conflictingCoachClass ??= other;
-        }
-      }
-    }
-
-    final hasConflict = conflictingLaneClass != null || conflictingCoachClass != null;
+    // Precomputed conflict detection against sibling classes
+    final conflictingLaneClass = conflictPair?.conflictingLaneClass;
+    final conflictingCoachClass = conflictPair?.conflictingCoachClass;
+    final hasConflict = conflictPair?.hasConflict ?? false;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1628,7 +1676,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             ),
                             const SizedBox(width: 4.5),
                             Text(
-                              conflictingLaneClass != null ? '${c.lane} (ДУБЛЬ)' : c.lane,
+                              conflictingLaneClass != null
+                                  ? '${BranchConfig.translatePoolOrLane(c.lane, context.locale.languageCode)} (${'admin.cal_duplicate_badge'.tr()})'
+                                  : BranchConfig.translatePoolOrLane(c.lane, context.locale.languageCode),
                               style: TextStyle(
                                 color: conflictingLaneClass != null
                                     ? const Color(0xFFEF4444)
@@ -1652,14 +1702,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             width: 1,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.triangleAlert, color: Color(0xFFF59E0B), size: 11),
-                            SizedBox(width: 4),
+                            const Icon(LucideIcons.triangleAlert, color: Color(0xFFF59E0B), size: 11),
+                            const SizedBox(width: 4),
                             Text(
-                              'ДУБЛЬ ТРЕНЕРА',
-                              style: TextStyle(
+                              'admin.cal_duplicate_coach_badge'.tr(),
+                              style: const TextStyle(
                                 color: Color(0xFFF59E0B),
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
@@ -1732,7 +1782,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                 style: TextStyle(color: currentTheme.textPrimary, fontWeight: FontWeight.bold),
                               ),
                               content: Text(
-                                'admin.cal_delete_confirm'.tr(args: [c.title]),
+                                'admin.cal_delete_confirm'.tr(args: [_getLocalizedClassTitle(c, context.locale.languageCode)]),
                                 style: TextStyle(color: currentTheme.textSecondary),
                               ),
                               actions: [
@@ -1760,7 +1810,13 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             if (success) {
                               final admin = ref.read(authControllerProvider);
                               if (admin != null) {
-                                await logAdminAction('Скасовано заняття "${c.title}" (${c.startTime.day}.${c.startTime.month})', admin.id);
+                                await logAdminAction(
+                                  'admin.cal_log_class_cancelled'.tr(namedArgs: {
+                                    'title': c.title,
+                                    'date': '${c.startTime.day}.${c.startTime.month}',
+                                  }),
+                                  admin.id,
+                                );
                               }
                             }
                           }
@@ -1774,7 +1830,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               Icon(LucideIcons.users, size: 16, color: currentTheme.accentPrimary),
                               const SizedBox(width: 8),
                               Text(
-                                'Список клієнтів',
+                                'admin.cal_attendees_list'.tr(),
                                 style: TextStyle(
                                   color: currentTheme.textPrimary,
                                   fontSize: 13,
@@ -1791,7 +1847,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               Icon(LucideIcons.pencil, size: 16, color: currentTheme.accentPrimary),
                               const SizedBox(width: 8),
                               Text(
-                                'Редагувати заняття',
+                                'admin.cal_edit_class'.tr(),
                                 style: TextStyle(
                                   color: currentTheme.textPrimary,
                                   fontSize: 13,
@@ -1820,7 +1876,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 ),
                 const SizedBox(height: 9),
                 Text(
-                  c.title,
+                  _getLocalizedClassTitle(c, context.locale.languageCode),
                   style: TextStyle(
                     color: currentTheme.isDark ? Colors.white : currentTheme.textPrimary,
                     fontSize: 16.5,
@@ -1854,8 +1910,19 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             Expanded(
                               child: Text(
                                 conflictingLaneClass != null
-                                    ? 'Накладка: доріжка «${c.lane}» вже зайнята заняттям «${conflictingLaneClass.title}» (${conflictingLaneClass.coachName.isNotEmpty ? conflictingLaneClass.coachName : "без тренера"})'
-                                    : 'Накладка: тренер ${c.coachName} вже веде заняття «${conflictingCoachClass?.title}» в цей самий час',
+                                    ? 'admin.cal_conflict_lane_msg'.tr(namedArgs: {
+                                        'lane': BranchConfig.translatePoolOrLane(c.lane, context.locale.languageCode),
+                                        'title': _getLocalizedClassTitle(conflictingLaneClass, context.locale.languageCode),
+                                        'coach': conflictingLaneClass.coachName.isNotEmpty
+                                            ? conflictingLaneClass.coachName
+                                            : 'admin.coach_unassigned'.tr(),
+                                      })
+                                    : 'admin.cal_conflict_coach_msg'.tr(namedArgs: {
+                                        'coach': c.coachName,
+                                        'title': conflictingCoachClass != null
+                                            ? _getLocalizedClassTitle(conflictingCoachClass, context.locale.languageCode)
+                                            : '',
+                                      }),
                                 style: TextStyle(
                                   color: currentTheme.isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
                                   fontSize: 12,
@@ -1889,13 +1956,20 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                           child: const Icon(LucideIcons.trash2, color: Color(0xFFEF4444), size: 20),
                                         ),
                                         const SizedBox(width: 10),
-                                        const Expanded(
-                                          child: Text('Видалити дублікат?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                                        Expanded(
+                                          child: Text(
+                                            'admin.cal_delete_duplicate_title'.tr(),
+                                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                          ),
                                         ),
                                       ],
                                     ),
                                     content: Text(
-                                      'Видалити це дублююче заняття «${c.title}» (${c.coachName.isNotEmpty ? c.coachName : "без тренера"}, ${c.lane})?',
+                                      'admin.cal_delete_duplicate_confirm'.tr(namedArgs: {
+                                        'title': _getLocalizedClassTitle(c, context.locale.languageCode),
+                                        'coach': c.coachName.isNotEmpty ? c.coachName : 'admin.coach_unassigned'.tr(),
+                                        'lane': BranchConfig.translatePoolOrLane(c.lane, context.locale.languageCode),
+                                      }),
                                       style: TextStyle(fontSize: 14, color: currentTheme.textSecondary),
                                     ),
                                     actions: [
@@ -1909,7 +1983,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                         ),
                                         onPressed: () => Navigator.pop(ctx, true),
-                                        child: const Text('Видалити', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                        child: Text(
+                                          'common.delete'.tr(),
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1919,7 +1996,13 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                   if (success) {
                                     final admin = ref.read(authControllerProvider);
                                     if (admin != null) {
-                                      await logAdminAction('Видалено дублікат заняття "${c.title}" (${c.lane})', admin.id);
+                                      await logAdminAction(
+                                        'admin.cal_log_duplicate_deleted'.tr(namedArgs: {
+                                          'title': c.title,
+                                          'lane': c.lane,
+                                        }),
+                                        admin.id,
+                                      );
                                     }
                                   }
                                 }
@@ -1935,14 +2018,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                     width: 0.8,
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(LucideIcons.trash2, color: Color(0xFFEF4444), size: 13),
-                                    SizedBox(width: 5),
+                                    const Icon(LucideIcons.trash2, color: Color(0xFFEF4444), size: 13),
+                                    const SizedBox(width: 5),
                                     Text(
-                                      'Видалити цей дублікат',
-                                      style: TextStyle(
+                                      'admin.cal_delete_this_duplicate_btn'.tr(),
+                                      style: const TextStyle(
                                         color: Color(0xFFEF4444),
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w700,
@@ -1989,14 +2072,14 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                 width: 1.1,
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.userX, color: Color(0xFFF59E0B), size: 12),
-                                SizedBox(width: 4.5),
+                                const Icon(LucideIcons.userX, color: Color(0xFFF59E0B), size: 12),
+                                const SizedBox(width: 4.5),
                                 Text(
-                                  'Без тренера ✎',
-                                  style: TextStyle(
+                                  'admin.no_coach_edit'.tr(),
+                                  style: const TextStyle(
                                     color: Color(0xFFF59E0B),
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w800,
@@ -2061,7 +2144,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                         ),
                         const SizedBox(width: 4.5),
                         Text(
-                          '$enrolledCount/${c.maxCapacity} • ${spotsLeft > 0 ? "вільно $spotsLeft" : "повний"}',
+                          '$enrolledCount/${c.maxCapacity} • ${spotsLeft > 0 ? 'admin.cal_spots_free_inline'.tr(namedArgs: {'count': '$spotsLeft'}) : 'admin.cal_spots_full_inline'.tr()}',
                           style: TextStyle(
                             color: spotsLeft == 0
                                 ? const Color(0xFFF43F5E)
@@ -2125,4 +2208,16 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
       ),
     );
   }
+}
+
+class _ClassConflictPair {
+  final GroupClass? conflictingLaneClass;
+  final GroupClass? conflictingCoachClass;
+
+  const _ClassConflictPair({
+    this.conflictingLaneClass,
+    this.conflictingCoachClass,
+  });
+
+  bool get hasConflict => conflictingLaneClass != null || conflictingCoachClass != null;
 }

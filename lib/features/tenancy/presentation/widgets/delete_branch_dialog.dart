@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
@@ -52,7 +53,8 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                      'Філію "${widget.branch.name}" успішно видалено!'),
+                    'tenancy.branch_deleted_msg'.tr(namedArgs: {'name': widget.branch.name}),
+                  ),
                 ),
               ],
             ),
@@ -68,7 +70,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка видалення: $e'),
+            content: Text('tenancy.delete_error_msg'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -119,7 +121,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
 
           // Title
           Text(
-            isProtected ? 'Філія захищена від видалення' : 'Видалення філії',
+            isProtected ? 'tenancy.branch_protected_title'.tr() : 'tenancy.delete_branch_title'.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -184,8 +186,8 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
                   Expanded(
                     child: Text(
                       widget.branch.isSystemDefault
-                          ? 'Це базова системна філія. Вона забезпечує кореневу роботу додатку та не може бути видалена.'
-                          : 'Ця філія наразі захищена від випадкового видалення. Щоб видалити її, спочатку вимкніть захист у вікні редагування.',
+                          ? 'tenancy.system_default_branch_desc'.tr()
+                          : 'tenancy.protected_branch_desc'.tr(),
                       style: TextStyle(
                         color: isDark
                             ? Colors.amber.shade200
@@ -209,9 +211,9 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Ви точно впевнені, що хочете видалити цю філію зі всіма її даними?',
-                    style: TextStyle(
+                  Text(
+                    'tenancy.delete_confirm_question'.tr(),
+                    style: const TextStyle(
                       color: Colors.redAccent,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -219,9 +221,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '• Будуть видалені всі басейни та доріжки цієї філії\n'
-                    '• Будуть скасовані розклад та конфігурація занять\n'
-                    '• Обліковий запис адміністратора філії буде вилучено',
+                    'tenancy.delete_consequences'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white70 : const Color(0xFF475569),
                       fontSize: 12,
@@ -251,7 +251,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
                       ),
                       Expanded(
                         child: Text(
-                          'Я підтверджую безповоротне видалення філії та всіх її даних',
+                          'tenancy.confirm_irreversible_delete'.tr(),
                           style: TextStyle(
                             color: isDark
                                 ? Colors.white
@@ -274,7 +274,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
         if (isProtected && !widget.branch.isSystemDefault)
           TextButton.icon(
             icon: const Icon(LucideIcons.pencil, size: 16),
-            label: const Text('Вимкнути захист'),
+            label: Text('tenancy.disable_protection'.tr()),
             onPressed: () {
               Navigator.of(context).pop();
               showModalBottomSheet(
@@ -288,7 +288,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: Text(
-            'Скасувати',
+            'common.cancel'.tr(),
             style: TextStyle(
               color: isDark ? Colors.white60 : const Color(0xFF64748B),
               fontWeight: FontWeight.w600,
@@ -305,7 +305,7 @@ class _DeleteBranchDialogState extends ConsumerState<DeleteBranchDialog> {
                         strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(LucideIcons.trash2, size: 16),
-            label: const Text('Видалити назавжди'),
+            label: Text('tenancy.delete_forever'.tr()),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,

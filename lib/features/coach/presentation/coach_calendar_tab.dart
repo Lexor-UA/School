@@ -37,11 +37,11 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
 
     // Filter classes for selected day
     final dayClassesAll = branchClasses.where((c) =>
-      c.startTime.year == _selectedDate.year &&
-      c.startTime.month == _selectedDate.month &&
-      c.startTime.day == _selectedDate.day
+      c.branchStartTime.year == _selectedDate.year &&
+      c.branchStartTime.month == _selectedDate.month &&
+      c.branchStartTime.day == _selectedDate.day
     ).toList();
-    dayClassesAll.sort((a, b) => a.startTime.compareTo(b.startTime));
+    dayClassesAll.sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
     // Filter by coach if toggle active
     final myDayClasses = dayClassesAll.where((c) => isClassForCoach(c, user)).toList();
@@ -259,9 +259,9 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
 
                   // Check if classes exist on this day
                   final dayClasses = allClasses.where((c) =>
-                      c.startTime.year == cellDate.year &&
-                      c.startTime.month == cellDate.month &&
-                      c.startTime.day == cellDate.day).toList();
+                      c.branchStartTime.year == cellDate.year &&
+                      c.branchStartTime.month == cellDate.month &&
+                      c.branchStartTime.day == cellDate.day).toList();
                   final hasClasses = dayClasses.isNotEmpty;
                   final hasMyClasses = user != null && dayClasses.any((c) => isClassForCoach(c, user));
                   final hasOtherClasses = dayClasses.any((c) => !isClassForCoach(c, user));
@@ -728,7 +728,9 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Учнів: $totalKidsInDay • ${totalFreeInDay > 0 ? "Вільних місць: $totalFreeInDay з $totalCapInDay" : "Всі місця зайняті"}',
+                          totalFreeInDay > 0
+                              ? 'coach.cal_students_and_free'.tr(args: ['$totalKidsInDay', '$totalFreeInDay', '$totalCapInDay'])
+                              : 'coach.cal_students_all_full'.tr(args: ['$totalKidsInDay']),
                           style: TextStyle(
                             color: themeConfig.textPrimary,
                             fontSize: 12.5,
@@ -843,8 +845,8 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       itemBuilder: (context, index) {
                         final gClass = dayClasses[index];
                         final isMyClass = isClassForCoach(gClass, user);
-                        final startTimeStr = '${gClass.startTime.hour.toString().padLeft(2, '0')}:${gClass.startTime.minute.toString().padLeft(2, '0')}';
-                        final endTimeStr = '${gClass.endTime.hour.toString().padLeft(2, '0')}:${gClass.endTime.minute.toString().padLeft(2, '0')}';
+                        final startTimeStr = '${gClass.branchStartTime.hour.toString().padLeft(2, '0')}:${gClass.branchStartTime.minute.toString().padLeft(2, '0')}';
+                        final endTimeStr = '${gClass.branchEndTime.hour.toString().padLeft(2, '0')}:${gClass.branchEndTime.minute.toString().padLeft(2, '0')}';
                         final enrolledCount = gClass.enrolledChildIds.length;
                         final maxCap = gClass.maxCapacity > 0 ? gClass.maxCapacity : 8;
                         final freeSlots = (maxCap - enrolledCount).clamp(0, maxCap);
@@ -984,7 +986,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                             ),
                                             const SizedBox(width: 3.5),
                                             Text(
-                                              freeSlots == 0 ? 'Заповнено' : 'Вільно: $freeSlots',
+                                              freeSlots == 0 ? 'coach.class_full'.tr() : 'coach.free_slots_short'.tr(args: ['$freeSlots']),
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 10.5,
@@ -1063,7 +1065,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Записано: $enrolledCount/$maxCap',
+                                    'coach.enrolled_ratio'.tr(args: ['$enrolledCount', '$maxCap']),
                                     style: TextStyle(
                                       color: themeConfig.isDark ? themeConfig.textSecondary : const Color(0xFF475569),
                                       fontSize: 12,
@@ -1108,7 +1110,7 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                       const Icon(LucideIcons.users, color: Colors.white, size: 15),
                                       const SizedBox(width: 7),
                                       Text(
-                                        'Склад ($enrolledCount)',
+                                        'coach.roster_btn_short'.tr(args: ['$enrolledCount']),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 12.5,

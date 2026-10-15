@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -68,7 +69,7 @@ class ClientBranchSelector extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Закріплена філія клієнта',
+                      'admin.client_assigned_branch'.tr(),
                       style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w800,
@@ -76,7 +77,7 @@ class ClientBranchSelector extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Визначає валюту (₴/€), доступні пакети та локації',
+                      'admin.client_assigned_branch_hint'.tr(),
                       style: TextStyle(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.50)
@@ -95,9 +96,9 @@ class ClientBranchSelector extends StatelessWidget {
               Expanded(
                 child: _buildBranchOption(
                   branchId: 'kyiv',
-                  title: 'Київ',
+                  title: 'branches.kyiv_short'.tr(),
                   flag: '🇺🇦',
-                  subtitle: 'Гривня (₴)',
+                  subtitle: 'branches.currency_uah'.tr(),
                   isSelected: selectedBranchId == 'kyiv',
                   isDark: isDark,
                 ),
@@ -106,7 +107,7 @@ class ClientBranchSelector extends StatelessWidget {
               Expanded(
                 child: _buildBranchOption(
                   branchId: 'vienna',
-                  title: 'Відень',
+                  title: 'branches.vienna_short'.tr(),
                   flag: '🇦🇹',
                   subtitle: 'Euro (€)',
                   isSelected: selectedBranchId == 'vienna',

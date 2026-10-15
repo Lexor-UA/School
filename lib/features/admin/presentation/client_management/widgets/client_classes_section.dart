@@ -50,7 +50,7 @@ class ClientClassesSection extends ConsumerWidget {
               for (var doc in childSnap.data!.docs) {
                 allRelatedIds.add(doc.id);
                 final cData = doc.data() as Map<String, dynamic>;
-                idToName[doc.id] = (cData['name'] as String? ?? 'Дитина')
+                idToName[doc.id] = (cData['name'] as String? ?? 'common.child_default'.tr())
                     .trim();
               }
             }
@@ -90,7 +90,7 @@ class ClientClassesSection extends ConsumerWidget {
                     ),
                     child: Center(
                       child: Text(
-                        'Немає активних записів',
+                        'admin.no_active_bookings'.tr(),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.65)
@@ -143,7 +143,7 @@ class ClientClassesSection extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${DateFormat('dd.MM.yyyy').format(session.startTime)} о ${session.startTime.hour.toString().padLeft(2, '0')}:${session.startTime.minute.toString().padLeft(2, '0')}',
+                                  '${DateFormat('dd.MM.yyyy').format(session.startTime)} ${'common.at_time'.tr()} ${session.startTime.hour.toString().padLeft(2, '0')}:${session.startTime.minute.toString().padLeft(2, '0')}',
                                   style: TextStyle(
                                     color: isDark
                                         ? Colors.white
@@ -193,7 +193,7 @@ class ClientClassesSection extends ConsumerWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    idToName[enrolledId] ?? 'Дитина',
+                                    idToName[enrolledId] ?? 'common.child_default'.tr(),
                                     style: TextStyle(
                                       color: isDark
                                           ? Colors.white70
@@ -295,7 +295,7 @@ class ClientClassesSection extends ConsumerWidget {
                 availableIds.add(d.id);
                 availableNames.add(
                   (d.data() as Map<String, dynamic>)['name'] as String? ??
-                      'Дитина',
+                      'common.child_default'.tr(),
                 );
               }
             }

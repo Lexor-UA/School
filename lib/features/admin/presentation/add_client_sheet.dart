@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -77,10 +76,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     for (var child in validChildren) {
       final a = int.tryParse(child.ageController.text.trim());
       if (a == null || a < 1 || a > 15) {
+        final cName = child.nameController.text.trim();
         setState(() {
           _errorMessage = a != null && a > 15
-              ? 'Вік дитини "${child.nameController.text.trim()}" не може перевищувати 15 років (від 16 років клієнт реєструється як дорослий)'
-              : 'Вік дитини "${child.nameController.text.trim()}" має бути від 1 до 15 років';
+              ? 'admin.add_client_child_age_max_error'.tr(namedArgs: {'name': cName})
+              : 'admin.add_client_child_age_range_error'.tr(namedArgs: {'name': cName});
         });
         return;
       }
@@ -148,7 +148,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           'level': 1,
           'xp': 0,
           'maxXp': 100,
-          'notes': childAge != null ? 'Вік: $childAge' : '',
+          'notes': childAge != null ? '${'common.age'.tr()}: $childAge' : '',
           'organizationId': organizationId,
           'branchId': branchId,
         };
@@ -163,7 +163,13 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       if (mounted) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Додано нового клієнта "${_nameController.text.trim()}" ($generatedLogin)', admin.id);
+          await logAdminAction(
+            'admin.client_action_added'.tr(namedArgs: {
+              'name': _nameController.text.trim(),
+              'login': generatedLogin,
+            }),
+            admin.id,
+          );
         }
         if (!mounted) return;
         ref.invalidate(adminDashboardProvider);
@@ -177,7 +183,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Помилка збереження: $e';
+          _errorMessage = 'admin.save_error'.tr(namedArgs: {'error': e.toString()});
         });
       }
     }
@@ -232,37 +238,34 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: _isSuccess
-              ? Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    22,
-                    12,
-                    22,
-                    bottomInset + bottomSafePadding + 24,
-                  ),
-                  child: _buildSuccessState(isDark: isDark),
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildHeader(context, isDark: isDark),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
-                          22,
-                          16,
-                          22,
-                          bottomInset + bottomSafePadding + 32,
-                        ),
-                        child: _buildFormFields(isDark: isDark),
-                      ),
-                    ),
-                  ],
+        child: _isSuccess
+            ? Padding(
+                padding: EdgeInsets.fromLTRB(
+                  22,
+                  12,
+                  22,
+                  bottomInset + bottomSafePadding + 24,
                 ),
-        ),
+                child: _buildSuccessState(isDark: isDark),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildHeader(context, isDark: isDark),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        22,
+                        16,
+                        22,
+                        bottomInset + bottomSafePadding + 32,
+                      ),
+                      child: _buildFormFields(isDark: isDark),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -271,7 +274,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     final effectiveBranch = ref.watch(effectiveBranchProvider);
     final activeId = _selectedBranchId ?? effectiveBranch.id;
     final isVienna = activeId == 'vienna';
-    final branchName = isVienna ? 'Відень 🇦🇹' : 'Київ 🇺🇦';
+    final branchName = '${isVienna ? 'branches.vienna_short'.tr() : 'branches.kyiv_short'.tr()} ${isVienna ? '🇦🇹' : '🇺🇦'}';
     final clientName = _nameController.text.trim();
     final clientPhone = _phoneController.text.trim();
     final validChildren = _childrenEntries
@@ -315,9 +318,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
         const SizedBox(height: 16),
         Text(
-          'admin.add_client_success_title'.tr().isNotEmpty && !'admin.add_client_success_title'.tr().startsWith('admin.')
-              ? 'admin.add_client_success_title'.tr()
-              : 'Клієнта успішно створено!',
+          'admin.add_client_success_title'.tr(),
           style: TextStyle(
             color: isDark ? Colors.white : const Color(0xFF0F172A),
             fontSize: 22,
@@ -327,7 +328,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 4),
         Text(
-          'Акаунт активовано та готовий до входу',
+          'admin.add_client_success_subtitle'.tr(),
           style: TextStyle(
             color: isDark ? const Color(0xFFA5F3FC).withValues(alpha: 0.85) : const Color(0xFF64748B),
             fontSize: 13,
@@ -511,7 +512,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                           const Icon(LucideIcons.baby, size: 12, color: Color(0xFF00E5FF)),
                           const SizedBox(width: 4),
                           Text(
-                            '$cName ($cAge р.)',
+                            '$cName ($cAge ${'common.years_short'.tr()})',
                             style: TextStyle(
                               color: isDark ? Colors.white70 : const Color(0xFF334155),
                               fontSize: 11,
@@ -547,7 +548,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ЛОГІН',
+                            'admin.login_upper'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                               fontSize: 10,
@@ -579,7 +580,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ПАРОЛЬ',
+                            'admin.password_upper'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                               fontSize: 10,
@@ -616,16 +617,22 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         onTap: () {
                           HapticFeedback.lightImpact();
                           final childrenNames = validChildren.map((c) => c.nameController.text.trim()).toList();
-                          final childrenLine = childrenNames.isNotEmpty ? '\nУчні: ${childrenNames.join(', ')}' : '';
-                          final welcomeMsg = 'Вітаємо у Swim School ($branchName)! 🏊‍♂️\nВаш особистий кабінет активовано.$childrenLine\n\nДані для входу в додаток:\nЛогін: ${_generatedLogin ?? ""}\nПароль: 1\n\nЗавантажуйте додаток та слідкуйте за розкладом!';
+                          final childrenLine = childrenNames.isNotEmpty
+                              ? '\n${'admin.welcome_msg_students_line'.tr(namedArgs: {'names': childrenNames.join(', ')})}'
+                              : '';
+                          final welcomeMsg = 'admin.add_client_welcome_share_msg'.tr(namedArgs: {
+                            'branch': branchName,
+                            'childrenLine': childrenLine,
+                            'login': _generatedLogin ?? '',
+                          });
                           Clipboard.setData(ClipboardData(text: welcomeMsg));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Row(
+                              content: Row(
                                 children: [
-                                  Icon(LucideIcons.messageSquare, color: Colors.white, size: 16),
-                                  SizedBox(width: 8),
-                                  Expanded(child: Text('Вітальне повідомлення скопійовано для Viber / Telegram')),
+                                  const Icon(LucideIcons.messageSquare, color: Colors.white, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text('admin.welcome_msg_copied_toast'.tr())),
                                 ],
                               ),
                               backgroundColor: const Color(0xFF0284C7),
@@ -659,7 +666,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Для Viber / Telegram',
+                                'admin.for_viber_telegram_btn'.tr(),
                                 style: TextStyle(
                                   color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontSize: 12,
@@ -680,11 +687,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                       onTap: () {
                         HapticFeedback.lightImpact();
                         Clipboard.setData(ClipboardData(
-                          text: 'Логін: ${_generatedLogin ?? ""}\nПароль: 1',
+                          text: '${'admin.login_label'.tr()}: ${_generatedLogin ?? ""}\n${'admin.password_label'.tr()}: 1',
                         ));
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('Дані входу скопійовано'),
+                            content: Text('admin.credentials_copied_msg'.tr()),
                             backgroundColor: const Color(0xFF0284C7),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -716,7 +723,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              'Копіювати',
+                              'common.copy'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : const Color(0xFF0284C7),
                                 fontSize: 12,
@@ -771,9 +778,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               },
               child: Center(
                 child: Text(
-                  'admin.done'.tr().isNotEmpty && !'admin.done'.tr().startsWith('admin.')
-                      ? 'admin.done'.tr()
-                      : 'Готово',
+                  'common.done'.tr(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -861,9 +866,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'admin.add_client_title'.tr().isNotEmpty && !'admin.add_client_title'.tr().startsWith('admin.')
-                          ? 'admin.add_client_title'.tr()
-                          : 'Новий Клієнт',
+                      'admin.add_client_title'.tr(),
                       style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 20,
@@ -873,9 +876,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'admin.add_client_subtitle'.tr().isNotEmpty && !'admin.add_client_subtitle'.tr().startsWith('admin.')
-                          ? 'admin.add_client_subtitle'.tr()
-                          : 'Швидка реєстрація батьків та учнів',
+                      'admin.add_client_subtitle'.tr(),
                       style: TextStyle(
                         color: isDark ? const Color(0xFFA5F3FC).withValues(alpha: 0.8) : const Color(0xFF64748B),
                         fontSize: 12.5,
@@ -935,11 +936,11 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
         // Branch selector (Kyiv vs Vienna)
         _buildBranchSelector(isDark: isDark),
         const SizedBox(height: 16),
-        _buildTextField("ПІБ або ім'я клієнта", LucideIcons.user, _nameController, isDark: isDark),
+        _buildTextField('admin.add_client_name_hint'.tr(), LucideIcons.user, _nameController, isDark: isDark),
         const SizedBox(height: 14),
-        _buildTextField('Номер телефону', LucideIcons.phone, _phoneController, isNumber: true, isDark: isDark),
+        _buildTextField('admin.add_client_phone_hint'.tr(), LucideIcons.phone, _phoneController, isNumber: true, isDark: isDark),
         const SizedBox(height: 14),
-        _buildTextField('Вік клієнта (років)', LucideIcons.calendar, _ageController, isNumber: true, isDark: isDark),
+        _buildTextField('admin.add_client_age_hint'.tr(), LucideIcons.calendar, _ageController, isNumber: true, isDark: isDark),
         const SizedBox(height: 20),
         
         // Children Section (Prominent & Intuitive)
@@ -1015,7 +1016,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '+ Додати дитину (учня)',
+                            'admin.add_client_add_child_full'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : const Color(0xFF0284C7),
                               fontSize: 15,
@@ -1025,7 +1026,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Прив\'язати юного плавця до анкети',
+                            'admin.add_client_link_child_desc'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFA5F3FC).withValues(alpha: 0.8) : const Color(0xFF64748B),
                               fontSize: 12,
@@ -1086,7 +1087,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Діти / Учні (${_childrenEntries.length})',
+                '${'admin.add_client_children_title'.tr()} (${_childrenEntries.length})',
                 style: TextStyle(
                   color: isDark ? Colors.white : const Color(0xFF0F172A),
                   fontWeight: FontWeight.w800,
@@ -1136,7 +1137,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         Icon(LucideIcons.plus, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 14),
                         const SizedBox(width: 5),
                         Text(
-                          'Ще дитина',
+                          'admin.add_client_add_more_child_short'.tr(),
                           style: TextStyle(
                             color: isDark ? Colors.white : const Color(0xFF0284C7),
                             fontWeight: FontWeight.w800,
@@ -1205,7 +1206,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Учень #${index + 1}',
+                            'admin.add_client_student_num'.tr(namedArgs: {'num': '${index + 1}'}),
                             style: TextStyle(
                               color: isDark ? Colors.white : const Color(0xFF0F172A),
                               fontWeight: FontWeight.w800,
@@ -1213,7 +1214,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                             ),
                           ),
                           Text(
-                            'Юний плавець',
+                            'admin.add_client_young_swimmer'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFA5F3FC).withValues(alpha: 0.8) : const Color(0xFF64748B),
                               fontWeight: FontWeight.w500,
@@ -1245,14 +1246,14 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                                 width: 1,
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.trash2, color: Color(0xFFF87171), size: 13),
-                                SizedBox(width: 4),
+                                const Icon(LucideIcons.trash2, color: Color(0xFFF87171), size: 13),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Видалити',
-                                  style: TextStyle(
+                                  'common.delete'.tr(),
+                                  style: const TextStyle(
                                     color: Color(0xFFF87171),
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
@@ -1271,12 +1272,12 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                     children: [
                       Expanded(
                         flex: 3,
-                        child: _buildTextField("Ім'я дитини", LucideIcons.user, entry.nameController, isDark: isDark),
+                        child: _buildTextField('admin.add_client_child_name_hint'.tr(), LucideIcons.user, entry.nameController, isDark: isDark),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         flex: 2,
-                        child: _buildTextField('Вік (р.)', LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
+                        child: _buildTextField('admin.add_client_child_age_hint'.tr(), LucideIcons.calendarDays, entry.ageController, isNumber: true, isDark: isDark),
                       ),
                     ],
                   ),
@@ -1353,9 +1354,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                           const Icon(LucideIcons.userCheck, color: Colors.white, size: 20),
                           const SizedBox(width: 10),
                           Text(
-                            'admin.add_client_save_btn'.tr().isNotEmpty && !'admin.add_client_save_btn'.tr().startsWith('admin.')
-                                ? 'admin.add_client_save_btn'.tr()
-                                : 'Зберегти клієнта',
+                            'admin.add_client_save_btn'.tr(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -1380,18 +1379,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
     bool isNumber = false,
     required bool isDark,
   }) {
-    String displayHint = hint;
-    if (displayHint == 'admin.add_client_age_hint' || displayHint.isEmpty) {
-      displayHint = 'Вік клієнта (років)';
-    } else if (displayHint == 'admin.add_client_child_age_hint') {
-      displayHint = 'Вік (р.)';
-    } else if (displayHint == 'admin.add_client_name_hint') {
-      displayHint = "ПІБ або ім'я клієнта";
-    } else if (displayHint == 'admin.add_client_phone_hint') {
-      displayHint = 'Номер телефону';
-    } else if (displayHint == 'admin.add_client_child_age_hint') {
-      displayHint = "Вік (р.)";
-    }
+    final displayHint = hint;
 
     return Focus(
       child: Builder(
@@ -1518,7 +1506,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Філія реєстрації клієнта',
+                    'admin.client_branch_registration'.tr(),
                     style: TextStyle(
                       color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF64748B),
                       fontSize: 11,
@@ -1527,7 +1515,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    isVienna ? 'CitySwim Відень (EUR €)' : 'CitySwim Київ (UAH ₴)',
+                    isVienna
+                        ? 'CitySwim ${'branches.vienna_short'.tr()} (EUR €)'
+                        : 'CitySwim ${'branches.kyiv_short'.tr()} (UAH ₴)',
                     style: TextStyle(
                       color: isDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 14,
@@ -1543,9 +1533,9 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
                 color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'Авто',
-                style: TextStyle(
+              child: Text(
+                'admin.auto_badge'.tr(),
+                style: const TextStyle(
                   color: Color(0xFF94A3B8),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -1572,7 +1562,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           Expanded(
             child: _buildBranchOption(
               branchId: 'kyiv',
-              title: 'Київ',
+              title: 'branches.kyiv_short'.tr(),
               flag: '🇺🇦',
               subtitle: 'UAH ₴',
               isSelected: activeId == 'kyiv',
@@ -1583,7 +1573,7 @@ class _AddClientSheetState extends ConsumerState<AddClientSheet> {
           Expanded(
             child: _buildBranchOption(
               branchId: 'vienna',
-              title: 'Відень',
+              title: 'branches.vienna_short'.tr(),
               flag: '🇦🇹',
               subtitle: 'EUR €',
               isSelected: activeId == 'vienna',

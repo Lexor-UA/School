@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,19 +18,18 @@ class FakeAuthController extends AuthController {
 class TestAdminAssetLoader extends AssetLoader {
   const TestAdminAssetLoader();
   @override
-  Future<Map<String, dynamic>> load(String path, Locale locale) async => {
-    'admin.add_client_title': 'Новий Клієнт',
-    'admin.add_client_subtitle': 'Швидка реєстрація батьків та учнів',
-    'admin.add_client_save_btn': 'Зберегти клієнта',
-    'admin': {
-      'add_client_title': 'Новий Клієнт',
-      'add_client_subtitle': 'Швидка реєстрація батьків та учнів',
-      'add_client_save_btn': 'Зберегти клієнта',
-    },
-  };
+  Future<Map<String, dynamic>> load(String path, Locale locale) async {
+    final file = File('assets/translations/uk.json');
+    return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+  }
 }
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await EasyLocalization.ensureInitialized();
+  });
+
   testWidgets('Test AddClientSheet full layout and rendering', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -47,9 +48,14 @@ void main() {
             sharedPrefsProvider.overrideWithValue(prefs),
             authControllerProvider.overrideWith(FakeAuthController.new),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: AddClientSheet(),
+          child: Builder(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: context.localizationDelegates,
+              supportedLocales: context.supportedLocales,
+              locale: context.locale,
+              home: const Scaffold(
+                body: AddClientSheet(),
+              ),
             ),
           ),
         ),

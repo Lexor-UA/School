@@ -29,13 +29,13 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(LucideIcons.checkCircle2, color: Colors.greenAccent, size: 18),
-            SizedBox(width: 8),
+            const Icon(LucideIcons.checkCircle2, color: Colors.greenAccent, size: 18),
+            const SizedBox(width: 8),
             Text(
-              'Пароль скинуто до стандартного: 1',
-              style: TextStyle(color: Colors.white),
+              'admin.password_reset_default_msg'.tr(),
+              style: const TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -61,9 +61,9 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
               color: Color(0xFF00E5FF),
               size: 18,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
-              'Згенеровано новий PIN: $randomPin',
+              'admin.pin_generated_msg'.tr(namedArgs: {'pin': randomPin}),
               style: const TextStyle(color: Colors.white),
             ),
           ],
@@ -79,16 +79,16 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
   void _copyCredentials() {
     final login = widget.loginIdController.text.trim();
     final pass = widget.passwordController.text.trim();
-    Clipboard.setData(ClipboardData(text: 'Логін: $login\nПароль: $pass'));
+    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()} $login\n${'admin.clients_password_label'.tr()} $pass'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(LucideIcons.copy, color: Color(0xFF38BDF8), size: 18),
-            SizedBox(width: 8),
+            const Icon(LucideIcons.copy, color: Color(0xFF38BDF8), size: 18),
+            const SizedBox(width: 8),
             Text(
-              'Дані для входу скопійовано в буфер обміну!',
-              style: TextStyle(color: Colors.white),
+              'admin.credentials_copied_msg'.tr(),
+              style: const TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -138,17 +138,7 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
               fontSize: 15,
             ),
             decoration: InputDecoration(
-              labelText:
-                  'admin.clients_password_label'
-                      .tr()
-                      .replaceAll(':', '')
-                      .trim()
-                      .isEmpty
-                  ? 'Пароль клієнта'
-                  : 'admin.clients_password_label'
-                        .tr()
-                        .replaceAll(':', '')
-                        .trim(),
+              labelText: 'admin.clients_password_label'.tr().replaceAll(':', '').trim(),
               labelStyle: TextStyle(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.55)
@@ -170,8 +160,8 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
                   size: 20,
                 ),
                 tooltip: _obscurePassword
-                    ? 'Показати пароль'
-                    : 'Приховати пароль',
+                    ? 'admin.show_password'.tr()
+                    : 'admin.hide_password'.tr(),
                 onPressed: () =>
                     setState(() => _obscurePassword = !_obscurePassword),
               ),
@@ -194,7 +184,7 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
                   children: [
                     _buildPasswordActionButton(
                       icon: LucideIcons.rotateCcw,
-                      label: 'Скинути на "1"',
+                      label: 'admin.reset_to_one_btn'.tr(),
                       color: isDark
                           ? const Color(0xFFF59E0B)
                           : const Color(0xFFD97706),
@@ -203,7 +193,7 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
                     ),
                     _buildPasswordActionButton(
                       icon: LucideIcons.sparkles,
-                      label: 'Згенерувати PIN',
+                      label: 'admin.generate_pin_btn'.tr(),
                       color: isDark
                           ? const Color(0xFF00E5FF)
                           : const Color(0xFF0284C7),
@@ -212,7 +202,7 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
                     ),
                     _buildPasswordActionButton(
                       icon: LucideIcons.copy,
-                      label: 'Копіювати',
+                      label: 'common.copy'.tr(),
                       color: isDark
                           ? const Color(0xFF38BDF8)
                           : const Color(0xFF0EA5E9),
@@ -234,7 +224,7 @@ class _ClientCredentialsFormState extends State<ClientCredentialsForm> {
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        'Збережіть зміни, щоб оновити пароль у базі даних',
+                        'admin.save_changes_to_update_password_hint'.tr(),
                         style: TextStyle(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.45)

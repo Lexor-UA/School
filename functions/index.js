@@ -60,6 +60,9 @@ exports.sendPushNotificationOnFirestoreCreate = onDocumentCreated(
           notificationId: String(event.params.notificationId || ""),
           type: String(data.type || "general"),
           actionType: String(data.actionType || ""),
+          dialogId: String(data.dialogId || ""),
+          senderId: String(data.senderId || ""),
+          branchId: String(data.branchId || ""),
         },
         apns: {
           headers: {

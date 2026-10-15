@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,11 +91,11 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   String _getDefaultTitleFor(ClassAudience audience) {
     switch (audience) {
       case ClassAudience.adult:
-        return 'Плавання для дорослих';
+        return 'admin.default_title_adult'.tr();
       case ClassAudience.child:
-        return 'Дитяча група';
+        return 'admin.default_title_child'.tr();
       case ClassAudience.split:
-        return 'Спліт-тренування (2 особи)';
+        return 'admin.default_title_split'.tr();
     }
   }
 
@@ -104,6 +103,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
     final trimmed = text.trim();
     return trimmed.isEmpty ||
         trimmed == 'Junior Pro' ||
+        trimmed == 'admin.default_title_adult'.tr() ||
+        trimmed == 'admin.default_title_child'.tr() ||
+        trimmed == 'admin.default_title_split'.tr() ||
+        trimmed == 'Schwimmen für Erwachsene' ||
+        trimmed == 'Kindergruppe' ||
+        trimmed == 'Split-Training (2 Personen)' ||
+        trimmed == 'Adult Swimming' ||
+        trimmed == 'Children Group' ||
+        trimmed == 'Split Session (2 people)' ||
         trimmed == 'Плавання для дорослих' ||
         trimmed == 'Дитяча група' ||
         trimmed == 'Дитяче плавання' ||
@@ -159,47 +167,31 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   }
 
   String _formatClassesCount(int count) {
-    final mod100 = count % 100;
-    final mod10 = count % 10;
-    if (mod100 >= 11 && mod100 <= 14) {
-      return '$count занять';
+    if (count == 1) {
+      return 'admin.search_classes_count_1'.tr(namedArgs: {'count': '$count'});
     }
-    if (mod10 == 1) {
-      return '$count заняття';
-    }
-    if (mod10 >= 2 && mod10 <= 4) {
-      return '$count заняття';
-    }
-    return '$count занять';
+    return 'admin.search_classes_count_many'.tr(namedArgs: {'count': '$count'});
   }
 
   String _formatSpotsCount(int count) {
-    final mod100 = count % 100;
-    final mod10 = count % 10;
-    if (mod100 >= 11 && mod100 <= 14) {
-      return '$count місць';
+    if (count == 1) {
+      return 'admin.spots_count_1'.tr(namedArgs: {'count': '$count'});
     }
-    if (mod10 == 1) {
-      return '$count місце';
-    }
-    if (mod10 >= 2 && mod10 <= 4) {
-      return '$count місця';
-    }
-    return '$count місць';
+    return 'admin.spots_count_many'.tr(namedArgs: {'count': '$count'});
   }
 
   String _getWeekdaysNamesSummary() {
-    final Map<int, String> names = {
-      1: 'понеділках',
-      2: 'вівторках',
-      3: 'середах',
-      4: 'четвергах',
-      5: 'п\'ятницях',
-      6: 'суботах',
-      7: 'неділях',
+    final map = <int, String>{
+      1: 'admin.on_mondays'.tr(),
+      2: 'admin.on_tuesdays'.tr(),
+      3: 'admin.on_wednesdays'.tr(),
+      4: 'admin.on_thursdays'.tr(),
+      5: 'admin.on_fridays'.tr(),
+      6: 'admin.on_saturdays'.tr(),
+      7: 'admin.on_sundays'.tr(),
     };
     final sorted = _selectedWeekdays.toList()..sort();
-    return sorted.map((w) => names[w] ?? '').where((s) => s.isNotEmpty).join(', ');
+    return sorted.map((w) => map[w] ?? '').where((s) => s.isNotEmpty).join(', ');
   }
 
   String _getCategoryLabel(String cat) {
@@ -242,13 +234,15 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           branchId: c.branchId,
         );
       }
+      final branchStart = c.branchStartTime;
       _titleController = TextEditingController(text: c.title);
-      _selectedDate = c.startTime;
-      _selectedTime = TimeOfDay(hour: c.startTime.hour, minute: c.startTime.minute);
+      _selectedDate = branchStart;
+      _selectedTime = TimeOfDay(hour: branchStart.hour, minute: branchStart.minute);
       _maxCapacity = c.maxCapacity;
       _selectedCategory = _categories.contains(c.category) ? c.category : _categories.first;
+      _selectedPoolId = c.poolId.isNotEmpty ? c.poolId : null;
       _selectedLane = c.lane;
-      _selectedWeekdays = {c.startTime.weekday};
+      _selectedWeekdays = {branchStart.weekday};
     } else {
       _selectedDate = widget.initialDate ?? DateTime.now();
       if (widget.initialDate != null) {
@@ -367,6 +361,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       lane: lane,
       coachId: coachId ?? (_selectedCoach?.id ?? ''),
       excludeClassId: widget.classToEdit?.id,
+      locationId: _currentLocation?.id,
+      poolId: _selectedPoolId ?? _activePool?.id,
     );
   }
 
@@ -418,7 +414,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(coachCheck.errorMessage ?? 'Тренер не має доступу до цієї філії'),
+              content: Text(coachCheck.errorMessage ?? 'admin.err_coach_no_branch_access'.tr()),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -440,7 +436,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(poolCheck.errorMessage ?? 'Невірна локація або басейн для цієї філії'),
+            content: Text(poolCheck.errorMessage ?? 'admin.err_invalid_location_or_pool'.tr()),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -533,17 +529,17 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
           final timeFmt = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
-          await logAdminAction('Оновлено заняття "${_titleController.text.trim()}" на $timeFmt', admin.id);
+          await logAdminAction('admin.log_updated_class'.tr(namedArgs: {'title': _titleController.text.trim(), 'time': timeFmt}), admin.id);
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(LucideIcons.check, color: Colors.white, size: 20),
-                  SizedBox(width: 10),
+                  const Icon(LucideIcons.check, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Заняття успішно оновлено!'),
+                    child: Text('admin.class_updated_success'.tr()),
                   ),
                 ],
               ),
@@ -564,7 +560,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Не вдалося зберегти зміни. Перевірте зайнятість тренера або доріжки.'),
+                content: Text('admin.class_save_changes_failed'.tr()),
                 backgroundColor: Colors.redAccent,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -606,7 +602,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           context,
           result.conflicts.first,
           isDark,
-          extraInfo: 'Усі обрані дати серії (${result.skippedDates.length}) мають конфлікт із зайнятою доріжкою або тренером. Жодного заняття не створено.',
+          extraInfo: 'admin.recurring_all_dates_conflict'.tr(namedArgs: {'count': '${result.skippedDates.length}'}),
         );
         return;
       }
@@ -615,16 +611,20 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       if (success) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Створено регулярну групу "${_titleController.text.trim()}" на $_durationWeeks тиж. (${_formatClassesCount(result.createdCount)})', admin.id);
+          await logAdminAction('admin.log_created_recurring_group'.tr(namedArgs: {'title': _titleController.text.trim(), 'weeks': '$_durationWeeks', 'count': _formatClassesCount(result.createdCount)}), admin.id);
         }
         if (mounted) {
           if (result.hasSkipped) {
-            final skippedDatesStr = result.skippedDates.take(3).map((d) => DateFormat('d MMMM', 'uk').format(d)).join(', ');
-            final moreCount = result.skippedDates.length > 3 ? ' та ще ${result.skippedDates.length - 3}' : '';
+            final skippedDatesStr = result.skippedDates.take(3).map((d) => DateFormat('d MMMM', context.locale.languageCode).format(d)).join(', ');
+            final moreCount = result.skippedDates.length > 3 ? ' ${'admin.and_more_count'.tr(namedArgs: {'count': '${result.skippedDates.length - 3}'})}' : '';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Створено ${result.createdCount} занять. Пропущено ${result.skippedDates.length} дат через зайнятість ($skippedDatesStr$moreCount).',
+                  'admin.recurring_created_with_skipped'.tr(namedArgs: {
+                    'created': '${result.createdCount}',
+                    'skipped': '${result.skippedDates.length}',
+                    'dates': '$skippedDatesStr$moreCount',
+                  }),
                 ),
                 backgroundColor: Colors.orangeAccent,
                 duration: const Duration(seconds: 5),
@@ -661,6 +661,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         endTime: endTime,
         lane: _selectedLane,
         coachId: effectiveCoachId,
+        locationId: _currentLocation?.id,
+        poolId: _selectedPoolId ?? _activePool?.id,
       );
       if (conflict != null) {
         setState(() => _isSaving = false);
@@ -677,12 +679,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         maxCapacity: _maxCapacity,
         category: effectiveCategory,
         lane: _selectedLane,
+        locationId: _currentLocation?.id,
+        poolId: _selectedPoolId ?? _activePool?.id,
       );
 
       if (success) {
         final admin = ref.read(authControllerProvider);
         if (admin != null) {
-          await logAdminAction('Створено заняття "${_titleController.text.trim()}"', admin.id);
+          await logAdminAction('admin.log_created_class'.tr(namedArgs: {'title': _titleController.text.trim()}), admin.id);
         }
       } else {
         if (!mounted) return;
@@ -766,9 +770,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Padding(
+        child: Padding(
             padding: EdgeInsets.fromLTRB(
               22,
               12,
@@ -833,7 +835,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           children: [
                             Text(
                               _isEditing
-                                  ? 'Редагувати заняття'
+                                  ? 'admin.edit_class_title'.tr()
                                   : (_isRecurring
                                       ? 'admin.group_create_title'.tr()
                                       : 'admin.class_single_title'.tr()),
@@ -847,7 +849,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             const SizedBox(height: 2),
                             Text(
                               _isEditing
-                                  ? 'Зміна часу та параметрів тренування'
+                                  ? 'admin.edit_class_subtitle'.tr()
                                   : (_isRecurring
                                       ? 'admin.group_create_subtitle'.tr()
                                       : 'admin.class_single_subtitle'.tr()),
@@ -882,8 +884,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                   const SizedBox(height: 22),
 
-                  // Target Audience Selector (Для дорослих / Для дітей / Спліт)
-                  _buildLabel('Цільова аудиторія', isDark: isDark),
+                  // Target Audience Selector (Für Erwachsene / Für Kinder / Split)
+                  _buildLabel('admin.target_audience'.tr(), isDark: isDark),
                   _buildAudienceSelector(isDark: isDark),
                   const SizedBox(height: 16),
 
@@ -1002,7 +1004,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ],
 
                   // Date Picker Card
-                  _buildLabel(_isRecurring ? 'Дата першого тренування (старт)' : 'admin.class_date'.tr(), isDark: isDark),
+                  _buildLabel(_isRecurring ? 'admin.first_class_date'.tr() : 'admin.class_date'.tr(), isDark: isDark),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -1091,7 +1093,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildLabel(_isRecurring ? 'Місткість групи (кількість учнів)' : 'admin.class_students_limit'.tr(), isDark: isDark),
+                      _buildLabel(_isRecurring ? 'admin.group_capacity'.tr() : 'admin.class_students_limit'.tr(), isDark: isDark),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
@@ -1194,7 +1196,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                         const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2)),
                                         const SizedBox(width: 10),
                                         Text(
-                                          _isRecurring ? 'Створення групи (${_formatClassesCount(_calculatedRecurringCount)})...' : 'Збереження...',
+                                          _isRecurring ? '${'admin.creating_group_loading'.tr()} (${_formatClassesCount(_calculatedRecurringCount)})...' : '${'admin.saving_loading'.tr()}...',
                                           style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w600),
                                         ),
                                       ],
@@ -1213,12 +1215,12 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                                         Text(
                                           hasConflict
                                               ? (activeConflict.type == ClassConflictType.laneConflict
-                                                  ? 'Доріжка зайнята (Конфлікт)'
-                                                  : 'Тренер зайнятий (Конфлікт)')
+                                                  ? 'admin.conflict_lane_short'.tr()
+                                                  : 'admin.conflict_coach_short'.tr())
                                               : (_isEditing
-                                                  ? 'Зберегти зміни'
+                                                  ? 'admin.save_changes'.tr()
                                                   : (_isRecurring
-                                                      ? 'Створити групу (${_formatClassesCount(_calculatedRecurringCount)})'
+                                                      ? 'admin.create_group_btn'.tr(namedArgs: {'count': _formatClassesCount(_calculatedRecurringCount)})
                                                       : 'admin.class_create_btn'.tr())),
                                           style: const TextStyle(
                                             color: Colors.white,
@@ -1239,7 +1241,6 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               ),
             ),
           ),
-        ),
       ),
     );
   }
@@ -1392,7 +1393,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           selectedItemBuilder: (context) {
             return items.map((i) {
               final isUnassigned = i.id == 'unassigned';
-              final displayName = isUnassigned ? 'Не обрано' : i.name;
+              final displayName = isUnassigned ? 'admin.unassigned_coach_short'.tr() : i.name;
               return Align(
                 alignment: Alignment.centerLeft,
                 child: Row(
@@ -1439,7 +1440,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ],
                   Expanded(
                     child: Text(
-                      isUnassigned ? 'Не обрано (без тренера)' : i.name,
+                      isUnassigned ? 'admin.unassigned_coach_full'.tr() : i.name,
                       style: TextStyle(
                         color: isUnassigned
                             ? const Color(0xFFD97706)
@@ -1516,7 +1517,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Постійна група',
+                      'admin.mode_regular_group'.tr(),
                       style: TextStyle(
                         color: _isRecurring
                             ? Colors.white
@@ -1572,7 +1573,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Разове заняття',
+                      'admin.mode_single_class'.tr(),
                       style: TextStyle(
                         color: !_isRecurring
                             ? Colors.white
@@ -1593,13 +1594,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
 
   Widget _buildWeekdaysSelector({required bool isDark}) {
     final days = [
-      {'id': 1, 'label': 'Пн'},
-      {'id': 2, 'label': 'Вт'},
-      {'id': 3, 'label': 'Ср'},
-      {'id': 4, 'label': 'Чт'},
-      {'id': 5, 'label': 'Пт'},
-      {'id': 6, 'label': 'Сб'},
-      {'id': 7, 'label': 'Нд'},
+      {'id': 1, 'label': 'admin.wd_mon'.tr()},
+      {'id': 2, 'label': 'admin.wd_tue'.tr()},
+      {'id': 3, 'label': 'admin.wd_wed'.tr()},
+      {'id': 4, 'label': 'admin.wd_thu'.tr()},
+      {'id': 5, 'label': 'admin.wd_fri'.tr()},
+      {'id': 6, 'label': 'admin.wd_sat'.tr()},
+      {'id': 7, 'label': 'admin.wd_sun'.tr()},
     ];
 
     return Column(
@@ -1608,9 +1609,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildLabel('Дні тижня для регулярної групи', isDark: isDark),
+            _buildLabel('admin.weekdays_for_group'.tr(), isDark: isDark),
             Text(
-              'Обрано: ${_selectedWeekdays.length}',
+              '${'admin.selected_label'.tr()}: ${_selectedWeekdays.length}',
               style: TextStyle(
                 color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 fontSize: 12,
@@ -1697,30 +1698,30 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
   String _getDurationPeriodSummary() {
     switch (_durationWeeks) {
       case 52:
-        return 'рік (52 тиж.)';
+        return 'admin.duration_summary_52'.tr();
       case 26:
-        return 'пів року (26 тиж.)';
+        return 'admin.duration_summary_26'.tr();
       case 13:
-        return '3 місяці (13 тиж.)';
+        return 'admin.duration_summary_13'.tr();
       case 4:
-        return '1 місяць (4 тиж.)';
+        return 'admin.duration_summary_4'.tr();
       default:
-        return '$_durationWeeks тиж.';
+        return 'admin.duration_summary_custom'.tr(namedArgs: {'weeks': '$_durationWeeks'});
     }
   }
 
   Widget _buildDurationSelector({required bool isDark}) {
     final durations = [
-      {'weeks': 52, 'title': 'Рік', 'sub': '52 тиж.'},
-      {'weeks': 26, 'title': 'Пів року', 'sub': '26 тиж.'},
-      {'weeks': 13, 'title': '3 місяці', 'sub': '13 тиж.'},
-      {'weeks': 4, 'title': '1 місяць', 'sub': '4 тиж.'},
+      {'weeks': 52, 'title': 'admin.period_year'.tr(), 'sub': 'admin.period_52_weeks'.tr()},
+      {'weeks': 26, 'title': 'admin.period_half_year'.tr(), 'sub': 'admin.period_26_weeks'.tr()},
+      {'weeks': 13, 'title': 'admin.period_3_months'.tr(), 'sub': 'admin.period_13_weeks'.tr()},
+      {'weeks': 4, 'title': 'admin.period_1_month'.tr(), 'sub': 'admin.period_4_weeks'.tr()},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Період розкладу', isDark: isDark),
+        _buildLabel('admin.schedule_period'.tr(), isDark: isDark),
         const SizedBox(height: 6),
         Row(
           children: durations.map((dur) {
@@ -1870,7 +1871,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 Row(
                   children: [
                     Text(
-                      'Розклад постійної групи',
+                      'admin.recurring_schedule_title'.tr(),
                       style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 13.5,
@@ -1904,7 +1905,13 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Група займатиметься щотижня по $weekdaysSummary о $timeStr на «$_selectedLane». Буде автоматично згенеровано ${_formatClassesCount(count)} на ${_getDurationPeriodSummary()}.',
+                  'admin.recurring_banner_desc'.tr(namedArgs: {
+                    'weekdays': weekdaysSummary,
+                    'time': timeStr,
+                    'lane': _selectedLane,
+                    'count': _formatClassesCount(count),
+                    'period': _getDurationPeriodSummary(),
+                  }),
                   style: TextStyle(
                     color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF334155),
                     fontSize: 12,
@@ -1965,10 +1972,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 children: [
                   Text(
                     activeConflict.type == ClassConflictType.laneConflict
-                        ? 'Доріжка вже зайнята в цей час!'
+                        ? 'admin.conflict_lane_full'.tr()
                         : (activeConflict.type == ClassConflictType.coachConflict
-                            ? 'Тренер вже веде інше заняття в цей час!'
-                            : 'Конфлікт у розкладі!'),
+                            ? 'admin.conflict_coach_full'.tr()
+                            : 'admin.conflict_schedule_full'.tr()),
                     style: const TextStyle(
                       color: Colors.amberAccent,
                       fontWeight: FontWeight.bold,
@@ -2070,7 +2077,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Оновити всю регулярну серію',
+                  'admin.update_entire_series'.tr(),
                   style: TextStyle(
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
                     fontWeight: FontWeight.w700,
@@ -2078,7 +2085,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                   ),
                 ),
                 Text(
-                  'Застосувати зміни для всіх занять цієї групи',
+                  'admin.update_entire_series_desc'.tr(),
                   style: TextStyle(
                     color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     fontSize: 11,

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +89,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Філії CitySwim',
+                                  'tenancy.branches_title'.tr(),
                                   style: TextStyle(
                                     color: isDark ? Colors.white : currentTheme.textPrimary,
                                     fontSize: 20,
@@ -123,7 +124,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              'Керування філією або перегляд всієї мережі',
+                              'tenancy.branches_subtitle'.tr(),
                               style: TextStyle(
                                 color: isDark ? Colors.white60 : currentTheme.textSecondary,
                                 fontSize: 12.5,
@@ -175,8 +176,8 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                       branch: branch,
                       title: branch.name.startsWith('CitySwim')
                           ? branch.name
-                          : 'CitySwim ${branch.name}',
-                      subtitle: '${branch.city} • ${branch.currency} (${branch.currencySymbol})',
+                          : 'CitySwim ${branch.localizedCity(ctx.locale.languageCode)}',
+                      subtitle: '${branch.localizedCity(ctx.locale.languageCode)} • ${branch.currency} (${branch.currencySymbol})',
                       flag: branch.flagEmoji,
                       isSelected: !tenancyState.isAllLocations && tenancyState.activeBranch?.id == branch.id,
                       onTap: () {
@@ -412,7 +413,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     Row(
                       children: [
                         Text(
-                          'Всі філії (All locations)',
+                          'tenancy.all_branches_option'.tr(),
                           style: TextStyle(
                             color: currentTheme.textPrimary,
                             fontSize: 16,
@@ -443,7 +444,7 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Зведена аналітика та загальні показники мережі',
+                      'tenancy.all_branches_desc'.tr(),
                       style: TextStyle(
                         color: isDark ? currentTheme.textSecondary : const Color(0xFF64748B),
                         fontSize: 12,
@@ -494,11 +495,11 @@ class _BranchSelectorPillState extends ConsumerState<BranchSelectorPill> {
 
     if (tenancyState.isAllLocations) {
       flag = '🌐';
-      label = 'Всі філії';
+      label = 'tenancy.all_branches_pill'.tr();
     } else {
       final b = tenancyState.effectiveBranch;
       flag = b.flagEmoji;
-      label = b.id == 'vienna' ? 'CitySwim Vienna' : 'CitySwim Kyiv';
+      label = 'CitySwim ${b.localizedCity(context.locale.languageCode)}';
     }
 
     final canSwitchBranch = user?.isOwnerOrSuperAdmin == true;

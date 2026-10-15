@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
 import 'package:swimming_school_app/shared/widgets/water_particles.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/chat_date_divider.dart';
 import 'package:swimming_school_app/features/chat/utils/chat_image_helper.dart';
@@ -50,6 +52,9 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
     if (text.isEmpty) return;
     if (widget.clientId.isEmpty) return;
 
+    final tenancy = ref.read(tenancyControllerProvider);
+    final branchId = tenancy.isAllLocationsSelected ? null : tenancy.effectiveBranch.id;
+
     final repo = ref.read(chatRepositoryProvider);
     repo.sendMessage(
       dialogId: _effectiveDialogId,
@@ -58,6 +63,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
       clientAvatar: '',
       senderId: 'admin',
       text: text,
+      branchId: branchId,
     );
     
     _messageController.clear();
@@ -95,7 +101,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка відкриття фото: $e'),
+            content: Text('chat_ui.photo_open_error'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -122,6 +128,9 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
         imageUrl = await ChatImageHelper.toSafeDataUri(bytes);
       }
 
+      final tenancy = ref.read(tenancyControllerProvider);
+      final branchId = tenancy.isAllLocationsSelected ? null : tenancy.effectiveBranch.id;
+
       final repo = ref.read(chatRepositoryProvider);
       await repo.sendMessage(
         dialogId: _effectiveDialogId,
@@ -131,6 +140,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
         senderId: 'admin',
         text: caption,
         imageUrl: imageUrl,
+        branchId: branchId,
       );
 
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -146,7 +156,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Не вдалося надіслати фото: $e'),
+            content: Text('chat_ui.photo_send_error'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -198,7 +208,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
           .replaceFirst(RegExp(r'^Відновлення пароля:\s*', caseSensitive: false), '')
           .replaceFirst(RegExp(r'^Запит на відновлення:\s*', caseSensitive: false), '')
           .trim();
-      if (cleanDisplayName.isEmpty) cleanDisplayName = 'Запит на відновлення';
+      if (cleanDisplayName.isEmpty) cleanDisplayName = 'admin_chat.recovery_request_title'.tr();
     }
 
     return Scaffold(
@@ -289,7 +299,7 @@ class _AdminChatScreenState extends ConsumerState<AdminChatScreen> {
                     ),
                     error: (err, stack) => Center(
                       child: Text(
-                        'Помилка: $err',
+                        'common.error_with_detail'.tr(namedArgs: {'error': '$err'}),
                         style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),

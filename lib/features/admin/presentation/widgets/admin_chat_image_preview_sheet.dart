@@ -1,6 +1,6 @@
 import 'dart:typed_data';
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 
@@ -58,9 +58,7 @@ class _AdminChatImagePreviewSheetState extends State<AdminChatImagePreviewSheet>
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
+        child: Container(
             padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -102,7 +100,7 @@ class _AdminChatImagePreviewSheetState extends State<AdminChatImagePreviewSheet>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Попередній перегляд',
+                      'chat_ui.preview_title'.tr(),
                       style: TextStyle(
                         color: widget.theme.textPrimary,
                         fontSize: 17,
@@ -160,7 +158,7 @@ class _AdminChatImagePreviewSheetState extends State<AdminChatImagePreviewSheet>
                     style: TextStyle(color: widget.theme.textPrimary),
                     enabled: !_isSending,
                     decoration: InputDecoration(
-                      hintText: 'Додати підпис до фото...',
+                      hintText: 'chat_ui.add_caption_hint'.tr(),
                       hintStyle: TextStyle(
                         color: isDark ? Colors.white54 : widget.theme.textMuted,
                       ),
@@ -184,7 +182,7 @@ class _AdminChatImagePreviewSheetState extends State<AdminChatImagePreviewSheet>
                         ),
                         onPressed: _isSending ? null : () => Navigator.pop(context),
                         child: Text(
-                          'Скасувати',
+                          'common.cancel'.tr(),
                           style: TextStyle(
                             color: widget.theme.textPrimary,
                             fontWeight: FontWeight.w700,
@@ -231,7 +229,7 @@ class _AdminChatImagePreviewSheetState extends State<AdminChatImagePreviewSheet>
                                 )
                               : const Icon(LucideIcons.send, color: Colors.white, size: 18),
                           label: Text(
-                            _isSending ? 'Надсилання...' : 'Надіслати',
+                            _isSending ? 'chat_ui.sending'.tr() : 'chat_ui.send'.tr(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
@@ -257,7 +255,6 @@ class _AdminChatImagePreviewSheetState extends State<AdminChatImagePreviewSheet>
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

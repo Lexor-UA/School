@@ -16,10 +16,12 @@ void main() {
       expect(PasswordSecurityHelper.verifyPassword('wrong', '1'), isFalse);
     });
 
-    test('Verifies hashed password correctly', () {
+    test('Verifies hashed password correctly and blocks Pass-the-Hash', () {
       final hash = PasswordSecurityHelper.hashPassword('SecretPass2026');
       expect(PasswordSecurityHelper.verifyPassword('SecretPass2026', hash), isTrue);
       expect(PasswordSecurityHelper.verifyPassword('WrongPass', hash), isFalse);
+      // Pass-the-Hash attack must be rejected
+      expect(PasswordSecurityHelper.verifyPassword(hash, hash), isFalse);
     });
 
     test('Detects hashed strings correctly', () {

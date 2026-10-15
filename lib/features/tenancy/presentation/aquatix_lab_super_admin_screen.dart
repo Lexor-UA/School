@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/tenancy/models/white_label_config.dart';
@@ -29,75 +30,75 @@ class _AquatixLabSuperAdminScreenState
   int _selectedColorValue = 0xFF00E5FF;
   late TextEditingController _appNameController;
 
-  final List<Map<String, dynamic>> _acceptanceCriteria = [
+  List<Map<String, dynamic>> get _acceptanceCriteria => [
     {
       'id': '1',
-      'title': 'Відень: Валюта EUR (€) та часовий пояс Europe/Vienna',
-      'detail': 'Автономний розклад, точний розрахунок літнього/зимового часу (DST), ціни виключно в €.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_1_title'.tr(),
+      'detail': 'tenancy.qa_1_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'branch_settings_pricing_test.dart',
     },
     {
       'id': '2',
-      'title': 'Київ: Валюта UAH (₴) та Europe/Kyiv без регресії',
-      'detail': 'Існуючі дані спадково збережені, відсутність конфліктів та зсувів розкладу.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_2_title'.tr(),
+      'detail': 'tenancy.qa_2_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'kyiv_migration_test.dart',
     },
     {
       'id': '3',
-      'title': 'Роздільні каталоги абонементів та цін за філіями',
-      'detail': 'SubscriptionPackageCatalog віддає UAH для Києва та EUR для Відня, багатомовні назви.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_3_title'.tr(),
+      'detail': 'tenancy.qa_3_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'branch_settings_pricing_test.dart',
     },
     {
       'id': '4',
-      'title': 'Ізоляція розкладу, басейнів та локацій',
-      'detail': 'HappyLand Klosterneuburg (Sports Pool, Wellenbecken) та Київ (25м, Baby Pool) не змішуються.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_4_title'.tr(),
+      'detail': 'tenancy.qa_4_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'vienna_provisioning_test.dart',
     },
     {
       'id': '5',
-      'title': 'Ізоляція доріжок з однаковими назвами (Lane 1)',
-      'detail': 'Доріжки однієї назви у різних філіях чи басейнах ізольовані через branchId і не мають колізій.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_5_title'.tr(),
+      'detail': 'tenancy.qa_5_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'recurring_schedule_generator_test.dart',
     },
     {
       'id': '6',
-      'title': 'Строга ізоляція екранів персоналу (Admin & Coach)',
-      'detail': 'Адміністратори та тренери бачать тільки своїх учнів, групи та розклад поточної філії.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_6_title'.tr(),
+      'detail': 'tenancy.qa_6_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'staff_screens_isolation_test.dart',
     },
     {
       'id': '7',
-      'title': 'Реєстрація за QR-кодом рецепції та філіальними посиланнями',
-      'detail': 'Клієнт при скануванні QR автоматично закріплюється за потрібною філією.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_7_title'.tr(),
+      'detail': 'tenancy.qa_7_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'branch_registration_flow_test.dart',
     },
     {
       'id': '8',
-      'title': 'Захист від крос-філіальних списань абонементів',
-      'detail': 'BranchDataIntegrityValidator суворо блокує package.branchId != lesson.branchId != client.branchId.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_8_title'.tr(),
+      'detail': 'tenancy.qa_8_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'data_integrity_validation_test.dart',
     },
     {
       'id': '9',
-      'title': 'Консолідований перемикач філій для Власника (Owner)',
-      'detail': 'Преміальний BranchSelectorPill з вибором Vienna 🇦🇹, Kyiv 🇺🇦, або Всі локації 🌐.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_9_title'.tr(),
+      'detail': 'tenancy.qa_9_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'owner_multibranch_test.dart',
     },
     {
       'id': '10',
-      'title': 'Платіжна архітектура без реальних списувань (Mock & Invoices)',
-      'detail': 'Емуляція оплат LiqPay (Kyiv) / Stripe (Vienna) із генерацією фіскальних квитанцій.',
-      'status': 'Пройдено',
+      'title': 'tenancy.qa_10_title'.tr(),
+      'detail': 'tenancy.qa_10_detail'.tr(),
+      'status': 'tenancy.qa_status_passed'.tr(),
       'testRef': 'branch_payment_invoicing_test.dart',
     },
   ];
@@ -105,7 +106,7 @@ class _AquatixLabSuperAdminScreenState
   @override
   void initState() {
     super.initState();
-    _config = WhiteLabelConfig.citySwimDefault;
+    _config = ref.read(tenancyControllerProvider).organization.whiteLabelConfig;
     _selectedColorValue = _config.primaryColorValue;
     _appNameController = TextEditingController(text: _config.appName);
   }
@@ -292,7 +293,7 @@ class _AquatixLabSuperAdminScreenState
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'ГЛОБАЛЬНІ МЕТРИКИ ПЛАТФОРМИ',
+                              'tenancy.global_platform_metrics'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
                                 fontSize: 11,
@@ -357,7 +358,7 @@ class _AquatixLabSuperAdminScreenState
                         Row(
                           children: [
                             _MetricCard(
-                              title: 'Організації',
+                              title: 'tenancy.organizations_title'.tr(),
                               value: '1 Active',
                               subtitle: 'CitySwim Global',
                               icon: LucideIcons.building2,
@@ -366,8 +367,8 @@ class _AquatixLabSuperAdminScreenState
                             ),
                             const SizedBox(width: 12),
                             _MetricCard(
-                              title: 'Філії школи',
-                              value: '${availableBranches.length} Вузли',
+                              title: 'tenancy.school_branches_title'.tr(),
+                              value: 'tenancy.nodes_count'.tr(namedArgs: {'count': '${availableBranches.length}'}),
                               subtitle: availableBranches.map((b) => '${b.name} ${b.flagEmoji}').join(' · '),
                               icon: LucideIcons.network,
                               accentColor: const Color(0xFF10B981),
@@ -379,18 +380,18 @@ class _AquatixLabSuperAdminScreenState
                         Row(
                           children: [
                             _MetricCard(
-                              title: 'Басейни / Доріжки',
-                              value: '$totalPools Басейни',
-                              subtitle: '$totalLanes активних доріжок',
+                              title: 'tenancy.pools_lanes_title'.tr(),
+                              value: 'tenancy.pools_count'.tr(namedArgs: {'count': '$totalPools'}),
+                              subtitle: 'tenancy.active_lanes_count'.tr(namedArgs: {'count': '$totalLanes'}),
                               icon: LucideIcons.waves,
                               accentColor: const Color(0xFF38BDF8),
                               isDark: isDark,
                             ),
                             const SizedBox(width: 12),
                             _MetricCard(
-                              title: 'Аптайм ізоляції',
+                              title: 'tenancy.isolation_uptime_title'.tr(),
                               value: '100%',
-                              subtitle: '0 витоків даних',
+                              subtitle: 'tenancy.zero_data_leaks'.tr(),
                               icon: LucideIcons.shieldCheck,
                               accentColor: const Color(0xFFA855F7),
                               isDark: isDark,
@@ -415,7 +416,7 @@ class _AquatixLabSuperAdminScreenState
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'АКТИВНІ ФІЛІЇ ТА ОРГАНІЗАЦІЇ',
+                              'tenancy.active_branches_orgs'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF64748B) : const Color(0xFF0369A1),
                                 fontSize: 11,
@@ -437,7 +438,7 @@ class _AquatixLabSuperAdminScreenState
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Додати філію',
+                                      'tenancy.add_branch_btn'.tr(),
                                       style: TextStyle(
                                         color: isDark ? Color(_selectedColorValue) : const Color(0xFF0284C7),
                                         fontSize: 12,
@@ -471,8 +472,8 @@ class _AquatixLabSuperAdminScreenState
                               currency: '${branch.currency} (${branch.currencySymbol})',
                               timezone: branch.timezone,
                               gateway: branch.paymentProvider == 'liqpay'
-                                  ? 'LiqPay Mock (Картка, Apple Pay, Privat24)'
-                                  : 'Stripe Mock (Картка, Apple Pay, SEPA, EPS)',
+                                  ? 'tenancy.gateway_liqpay_mock'.tr()
+                                  : 'tenancy.gateway_stripe_mock'.tr(),
                               locationsCount: config.locations.length,
                               poolsCount: config.locations.expand((l) => l.pools).length,
                               poolsNames: config.locations
@@ -566,7 +567,7 @@ class _AquatixLabSuperAdminScreenState
                                       ),
                                     ),
                                     Text(
-                                      'Налаштування бренду школи та теми оформлення',
+                                      'tenancy.white_label_subtitle'.tr(),
                                       style: TextStyle(
                                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                         fontSize: 12,
@@ -579,7 +580,7 @@ class _AquatixLabSuperAdminScreenState
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Первинний колір теми бренду:',
+                            'tenancy.primary_brand_color'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
                               fontSize: 12,
@@ -629,7 +630,7 @@ class _AquatixLabSuperAdminScreenState
                               fontSize: 14,
                             ),
                             decoration: InputDecoration(
-                              labelText: 'Назва додатку (App Title)',
+                              labelText: 'tenancy.app_title_label'.tr(),
                               labelStyle: TextStyle(
                                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                 fontSize: 13,
@@ -665,6 +666,51 @@ class _AquatixLabSuperAdminScreenState
                               ),
                             ),
                           ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                HapticFeedback.lightImpact();
+                                await ref
+                                    .read(tenancyControllerProvider.notifier)
+                                    .updateWhiteLabelBranding(
+                                      appName: _appNameController.text,
+                                      primaryColorValue: _selectedColorValue,
+                                    );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'tenancy.branding_saved_msg'.tr(namedArgs: {
+                                          'name': _appNameController.text.trim().isEmpty
+                                              ? 'CitySwim'
+                                              : _appNameController.text.trim(),
+                                        }),
+                                      ),
+                                      backgroundColor: const Color(0xFF10B981),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(LucideIcons.check, size: 16),
+                              label: Text(
+                                'tenancy.save_brand_config_btn'.tr(),
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(_selectedColorValue),
+                                foregroundColor: _selectedColorValue == 0xFF00E5FF
+                                    ? const Color(0xFF0F172A)
+                                    : Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -689,7 +735,7 @@ class _AquatixLabSuperAdminScreenState
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'МАТРИЦЯ ПРИЙОМКИ ТЗ: 10 З 10 ВЕРИФІКОВАНО',
+                              'tenancy.acceptance_matrix_title'.tr(),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
                                 fontSize: 11,
@@ -939,7 +985,7 @@ class _BranchNodeCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        branch.isSystemDefault ? 'Базова' : 'Захищена',
+                        branch.isSystemDefault ? 'tenancy.base_badge'.tr() : 'tenancy.protected_badge'.tr(),
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,
@@ -985,21 +1031,21 @@ class _BranchNodeCard extends StatelessWidget {
           const SizedBox(height: 10),
           _DetailRow(
             icon: LucideIcons.clock,
-            label: 'Часовий пояс',
+            label: 'tenancy.timezone_label'.tr(),
             value: timezone,
             isDark: isDark,
           ),
           const SizedBox(height: 6),
           _DetailRow(
             icon: LucideIcons.creditCard,
-            label: 'Еквайринг',
+            label: 'tenancy.acquiring_label'.tr(),
             value: gateway,
             isDark: isDark,
           ),
           const SizedBox(height: 6),
           _DetailRow(
             icon: LucideIcons.waves,
-            label: 'Басейни ($poolsCount)',
+            label: 'tenancy.pools_label_count'.tr(namedArgs: {'count': '$poolsCount'}),
             value: poolsNames,
             isDark: isDark,
           ),
@@ -1047,7 +1093,7 @@ class _BranchNodeCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Редагувати',
+                        'common.edit'.tr(),
                         style: TextStyle(
                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontSize: 12,
@@ -1081,7 +1127,7 @@ class _BranchNodeCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'Системна',
+                        'tenancy.system_badge'.tr(),
                         style: TextStyle(
                           color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
                           fontSize: 12,
@@ -1104,18 +1150,18 @@ class _BranchNodeCard extends StatelessWidget {
                         color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.35 : 0.4),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           LucideIcons.trash2,
                           size: 13,
                           color: Color(0xFFEF4444),
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          'Видалити',
-                          style: TextStyle(
+                          'common.delete'.tr(),
+                          style: const TextStyle(
                             color: Color(0xFFEF4444),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -1348,7 +1394,7 @@ class _CriteriaItemTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Тест: ${item['testRef']}',
+                  '${'tenancy.test_ref_prefix'.tr()}: ${item['testRef']}',
                   style: TextStyle(
                     color: isDark ? const Color(0xFF64748B) : const Color(0xFF0284C7),
                     fontSize: 10,

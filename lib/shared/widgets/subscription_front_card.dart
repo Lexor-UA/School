@@ -203,7 +203,7 @@ class SubscriptionFrontCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ДІЄ ДО',
+                          'parent.valid_until'.tr().toUpperCase(),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 9,

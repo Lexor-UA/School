@@ -15,7 +15,10 @@ import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
 import 'package:swimming_school_app/features/parent/presentation/parent_chat_screen.dart';
 import 'package:swimming_school_app/features/parent/presentation/widgets/completed_class_coach_rating_bar.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/features/tenancy/models/branch_config.dart';
 import 'package:swimming_school_app/features/tenancy/utils/branch_timezone_helper.dart';
+import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
+import 'package:swimming_school_app/features/subscription/models/subscription_package.dart';
 import 'package:collection/collection.dart';
 
 Future<bool?> _showCancelConfirmationDialog({
@@ -158,7 +161,7 @@ Future<bool?> _showCancelConfirmationDialog({
                         ),
                         child: Center(
                           child: Text(
-                            'Назад',
+                            'common.back'.tr(),
                             style: TextStyle(
                               color: isDark ? Colors.white : const Color(0xFF334155),
                               fontSize: 14,
@@ -249,12 +252,16 @@ class ParentEnrolledClassCard extends ConsumerWidget {
     final user = this.user;
     final family = this.family;
     final isDark = currentTheme.isDark;
+    final langCode = context.locale.languageCode;
+    final meShort = 'parent.me_short'.tr();
+    final partnerFallback = 'parent.partner'.tr();
+    final localizedTitle = _getLocalizedClassTitle(c.title, langCode);
     final timeFormatted =
         "${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}";
 
     final partnerId = (user != null && family != null) ? family.getOtherParentId(user.id) : null;
     final partnerName = (user != null && family != null && partnerId != null)
-        ? (family.getOtherParentName(user.id) ?? family.parentNames[partnerId] ?? 'Партнер')
+        ? (family.getOtherParentName(user.id) ?? family.parentNames[partnerId] ?? partnerFallback)
         : null;
 
     final familyIds = {
@@ -271,7 +278,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
       if (user != null && id == user.id) {
         return (
           id: user.id,
-          name: '${user.name} (Я)',
+          name: '${user.name} ($meShort)',
           isParent: true,
           color: currentTheme.accentPrimary,
         );
@@ -306,7 +313,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
       }
 
       if (family != null && family.parentIds.contains(id)) {
-        final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? 'Партнер';
+        final name = family.getOtherParentName(user?.id ?? '') ?? partnerName ?? partnerFallback;
         return (
           id: id,
           name: name,
@@ -315,7 +322,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
         );
       }
 
-      if (partnerName != null && partnerName.isNotEmpty && partnerName != 'Партнер') {
+      if (partnerName != null && partnerName.isNotEmpty && partnerName != partnerFallback) {
         return (
           id: id,
           name: partnerName,
@@ -326,7 +333,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
 
       return (
         id: id,
-        name: user?.name ?? 'Я',
+        name: user?.name ?? meShort,
         isParent: true,
         color: const Color(0xFFA78BFA),
       );
@@ -336,7 +343,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
       if (user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly)
         (
           id: user.id,
-          name: '${user.name} (Я)',
+          name: '${user.name} ($meShort)',
           isParent: true,
           color: currentTheme.accentPrimary,
         ),
@@ -482,7 +489,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Відвідано',
+                                    'parent.status_attended'.tr(),
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
                                       fontSize: 11,
@@ -518,7 +525,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Пропущено',
+                                  'parent.status_missed'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                                     fontSize: 11,
@@ -608,22 +615,31 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                         ),
                         onSelected: (value) async {
                           if (value == 'cancel') {
+                            final nowInBranch = BranchTimezoneHelper.toBranchLocalTime(DateTime.now(), c.branchId);
+                            final minutesUntilStart = c.branchStartTime.difference(nowInBranch).inMinutes;
+                            if (minutesUntilStart < 300) {
+                              AppSnackBar.showWarning(
+                                context,
+                                'parent.cancel_5h_cutoff_warn'.tr(),
+                              );
+                              return;
+                            }
                             if (targetChildId != 'all') {
                               final matchedChild = children.where((ch) => ch.id == targetChildId).firstOrNull;
                               final targetCancelName = targetChildId == user?.id
-                                  ? (user?.name ?? 'себе')
+                                  ? (user?.name ?? 'parent.cancel_target_self'.tr())
                                   : (targetChildId == partnerId
-                                      ? (partnerName ?? 'партнера')
-                                      : (matchedChild?.name ?? 'дитину'));
+                                      ? (partnerName ?? 'parent.cancel_target_partner'.tr())
+                                      : (matchedChild?.name ?? 'parent.cancel_target_child'.tr()));
 
                               final confirm = await _showCancelConfirmationDialog(
                                 context: context,
                                 isDark: isDark,
-                                title: c.isSplit ? 'Скасувати спліт-заняття?' : 'Скасувати запис?',
+                                title: c.isSplit ? 'parent.cancel_split_title'.tr() : 'parent.cancel_booking_title'.tr(),
                                 message: c.isSplit
-                                    ? 'Оскільки це спліт-тренування (2 особи), скасування скасує запис для ОБОХ учасників, а заняття буде повернено на ваші абонементи. Продовжити?'
-                                    : 'Ви впевнені, що хочете скасувати запис для $targetCancelName на заняття "${c.title}"?',
-                                confirmButtonText: c.isSplit ? 'Скасувати для обох' : 'Скасувати',
+                                    ? 'parent.cancel_split_confirm_msg'.tr()
+                                    : 'parent.cancel_booking_confirm_msg'.tr(args: [targetCancelName, localizedTitle]),
+                                confirmButtonText: c.isSplit ? 'parent.cancel_for_both_btn'.tr() : 'common.cancel'.tr(),
                               );
                               if (confirm == true) {
                                 await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, targetChildId);
@@ -631,12 +647,15 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                             } else {
                               // On 'all' view: if split class, cancel both participants
                               if (c.isSplit) {
+                                final bothNames = enrolledMembers
+                                    .map((e) => e.name.replaceAll(' ($meShort)', '').replaceAll(' (Я)', ''))
+                                    .join(' ${'common.and_conjunction'.tr()} ');
                                 final confirm = await _showCancelConfirmationDialog(
                                   context: context,
                                   isDark: isDark,
-                                  title: 'Скасувати спліт-заняття?',
-                                  message: 'Оскільки це спліт-тренування (2 особи), скасування зніме запис для обох учасників (${enrolledMembers.map((e) => e.name.replaceAll(' (Я)', '')).join(' та ')}), а заняття буде повернено на ваші абонементи. Продовжити?',
-                                  confirmButtonText: 'Скасувати для обох',
+                                  title: 'parent.cancel_split_title'.tr(),
+                                  message: 'parent.cancel_split_named_confirm_msg'.tr(args: [bothNames]),
+                                  confirmButtonText: 'parent.cancel_for_both_btn'.tr(),
                                 );
                                 if (confirm == true && enrolledMembers.isNotEmpty) {
                                   await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, enrolledMembers.first.id);
@@ -646,9 +665,9 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                 final confirm = await _showCancelConfirmationDialog(
                                   context: context,
                                   isDark: isDark,
-                                  title: 'Скасувати запис?',
-                                  message: 'Ви впевнені, що хочете скасувати запис для ${m.name} на заняття "${c.title}"?',
-                                  confirmButtonText: 'Скасувати',
+                                  title: 'parent.cancel_booking_title'.tr(),
+                                  message: 'parent.cancel_booking_confirm_msg'.tr(args: [m.name, localizedTitle]),
+                                  confirmButtonText: 'common.cancel'.tr(),
                                 );
                                 if (confirm == true) {
                                   await ref.read(scheduleControllerProvider.notifier).cancelClass(c.id, m.id);
@@ -698,7 +717,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            'Чий запис скасувати?',
+                                            'parent.whose_booking_to_cancel'.tr(),
                                             style: TextStyle(
                                               color: isDark ? Colors.white : currentTheme.textPrimary,
                                               fontSize: 17.5,
@@ -756,9 +775,9 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                                         ),
                                                       ),
                                                       const Spacer(),
-                                                      const Text(
-                                                        'Скасувати',
-                                                        style: TextStyle(
+                                                      Text(
+                                                        'common.cancel'.tr(),
+                                                        style: const TextStyle(
                                                           color: Colors.redAccent,
                                                           fontSize: 13.5,
                                                           fontWeight: FontWeight.w800,
@@ -793,9 +812,9 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                   child: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 14),
                                 ),
                                 const SizedBox(width: 10),
-                                const Text(
-                                  'Скасувати запис',
-                                  style: TextStyle(
+                                Text(
+                                  'parent.cancel_booking_menu'.tr(),
+                                  style: const TextStyle(
                                     color: Colors.redAccent,
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
@@ -812,7 +831,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
 
                 // Title
                 Text(
-                  c.title,
+                  localizedTitle,
                   style: TextStyle(
                     color: currentTheme.textPrimary,
                     fontSize: 15.5,
@@ -882,8 +901,8 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                 const SizedBox(width: 3),
                                 Text(
                                   unenrolledMembers.length == 1 && unenrolledMembers.first.isParent
-                                      ? 'Додати дорослого'
-                                      : (c.isSplit ? 'Додати другого учасника' : 'Додати дитину'),
+                                      ? 'parent.add_adult_btn'.tr()
+                                      : (c.isSplit ? 'parent.add_second_participant_btn'.tr() : 'parent.add_child_btn'.tr()),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                     fontSize: 11,
@@ -959,7 +978,9 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    c.isSplit ? 'Вільне 2-ге місце (Спліт)' : 'Вільне місце ($freeSlots)',
+                                    c.isSplit
+                                        ? 'parent.free_2nd_spot_split'.tr()
+                                        : 'parent.free_spots_label'.tr(args: [freeSlots.toString()]),
                                     style: TextStyle(
                                       color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
                                       fontSize: 10.5,
@@ -971,11 +992,17 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                   Text(
                                     unenrolledMembers.length == 1
                                         ? (unenrolledMembers.first.id == user?.id
-                                            ? 'Записатися на це тренування'
+                                            ? 'parent.book_this_class'.tr()
                                             : (unenrolledMembers.first.isParent
-                                                ? 'Записати партнера: ${unenrolledMembers.first.name.replaceAll(' (Я)', '')}'
-                                                : 'Записати дитину: ${unenrolledMembers.first.name}'))
-                                        : (c.isSplit ? 'Записати 2-го учасника' : 'Записати ще члена сім\'ї'),
+                                                ? 'parent.book_partner_named'.tr(args: [
+                                                    unenrolledMembers.first.name
+                                                        .replaceAll(' ($meShort)', '')
+                                                        .replaceAll(' (Я)', '')
+                                                  ])
+                                                : 'parent.book_child_named'.tr(args: [unenrolledMembers.first.name])))
+                                        : (c.isSplit
+                                            ? 'parent.book_2nd_participant'.tr()
+                                            : 'parent.book_another_family_member'.tr()),
                                     style: TextStyle(
                                       color: currentTheme.textPrimary,
                                       fontSize: 12.5,
@@ -1007,14 +1034,14 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(LucideIcons.plus, color: Colors.white, size: 12),
-                                  SizedBox(width: 4),
+                                  const Icon(LucideIcons.plus, color: Colors.white, size: 12),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    'Записати',
-                                    style: TextStyle(
+                                    'parent.book_short_btn'.tr(),
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w800,
@@ -1045,8 +1072,8 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(
                         (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
-                            ? 'Тренер призначається'
-                            : 'Тренер: ${c.coachName}',
+                            ? 'parent.trainer_assigning'.tr()
+                            : 'parent.trainer_prefix'.tr(args: [c.coachName]),
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
@@ -1075,7 +1102,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                   childName: childEnrolled?.name,
                                   type: 'coach_client',
                                   title: c.coachName,
-                                  subtitle: 'Тренер • ${c.title}',
+                                  subtitle: '${'common.coach_fallback'.tr()} • $localizedTitle',
                                 ),
                               ),
                             );
@@ -1102,7 +1129,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 3),
                                 Text(
-                                  'Написати',
+                                  'parent.message_coach_btn'.tr(),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     fontSize: 10,
@@ -1124,7 +1151,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        c.lane,
+                        BranchConfig.localizeLaneName(c.lane, langCode),
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
@@ -1146,6 +1173,29 @@ class ParentEnrolledClassCard extends ConsumerWidget {
     );
   }
 
+}
+
+String _formatSlotsCount(int count, [String? langCode]) {
+  if (langCode == 'de') {
+    return '$count ${count == 1 ? "Platz" : "Plätze"}';
+  } else if (langCode == 'en') {
+    return '$count ${count == 1 ? "spot" : "spots"}';
+  } else if (langCode == 'ru') {
+    return '$count ${count == 1 ? "место" : (count >= 2 && count <= 4 ? "места" : "мест")}';
+  }
+  return '$count ${count == 1 ? "місце" : (count >= 2 && count <= 4 ? "місця" : "місць")}';
+}
+
+String _getLocalizedClassTitle(String title, [String? langCode]) {
+  if (title == 'Плавання для дорослих') return 'parent.class_adult_swimming'.tr();
+  if (title == 'Дитяча група' || title == 'Дитяче плавання') return 'parent.class_kids_group'.tr();
+  if (title == 'Спліт-тренування (2 особи)' || title.startsWith('Спліт-тренування')) return 'parent.class_split_training'.tr();
+  if (title == 'Індивідуальні тренування для дорослих') return 'parent.service_individual_adult'.tr();
+  if (title == 'Індивідуальні тренування для дітей') return 'parent.service_individual_child'.tr();
+  if (langCode != null) {
+    return SubscriptionPackageCatalog.localizeServiceName(title, langCode);
+  }
+  return title;
 }
 
 class ParentAvailableClassCard extends ConsumerWidget {
@@ -1285,7 +1335,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
                               ),
                             ),
                             child: Text(
-                              '$freeSlots ${freeSlots == 1 ? "місце" : (freeSlots >= 2 && freeSlots <= 4 ? "місця" : "місць")}',
+                              _formatSlotsCount(freeSlots, context.locale.languageCode),
                               style: TextStyle(
                                 color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
                                 fontSize: 11,
@@ -1333,10 +1383,10 @@ class ParentAvailableClassCard extends ConsumerWidget {
                                   const SizedBox(width: 3.5),
                                   Text(
                                     c.isChildOnly
-                                        ? 'Для дітей'
+                                        ? 'parent.audience_kids'.tr()
                                         : (c.isAdultOnly
-                                            ? 'Для дорослих'
-                                            : (c.isSplit ? 'Спліт' : 'Загальна')),
+                                            ? 'parent.audience_adults'.tr()
+                                            : (c.isSplit ? 'parent.audience_split'.tr() : 'parent.audience_general'.tr())),
                                     style: TextStyle(
                                       color: c.isChildOnly
                                           ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
@@ -1372,8 +1422,11 @@ class ParentAvailableClassCard extends ConsumerWidget {
                                   const SizedBox(width: 3.5),
                                   Text(
                                     childAge <= 5
-                                        ? 'Тільки індивідуально (до 6 р.) ⚠️'
-                                        : 'Група ${c.ageRange!.$1}-${c.ageRange!.$2} р. ⚠️',
+                                        ? 'parent.under6_individual_only_badge'.tr()
+                                        : 'parent.group_age_range_badge'.tr(namedArgs: {
+                                            'min': '${c.ageRange!.$1}',
+                                            'max': '${c.ageRange!.$2}',
+                                          }),
                                     style: TextStyle(
                                       color: isDark ? Colors.orangeAccent : const Color(0xFFD97706),
                                       fontSize: 10.5,
@@ -1406,33 +1459,41 @@ class ParentAvailableClassCard extends ConsumerWidget {
                         if (targetChildId != 'all') {
                           final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
                           final isAdultTarget = targetChildId == user?.id || (partnerId != null && targetChildId == partnerId);
+                          if (!isAdultTarget && targetChild != null && (targetChild.isAdultAge || (childAge ?? 0) >= 16)) {
+                            GraduateChildSheet.show(context, targetChild);
+                            return;
+                          }
                           if (isAdultTarget && c.isChildOnly) {
                             showChildPickerForQuickBooking(context, ref, c, user, children, family);
                             return;
                           }
                           if (!isAdultTarget && c.isAdultOnly) {
-                            AppSnackBar.showWarning(context, 'Це тренування призначене лише для дорослих.');
+                            AppSnackBar.showWarning(context, 'parent.adult_only_class_warn'.tr());
                             return;
                           }
                           if (isAgeMismatch) {
                             if (childAge <= 5) {
                               AppSnackBar.showWarning(
                                 context,
-                                'Для дітей до 6 років (1–5 років включно) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.',
+                                'parent.under6_individual_only'.tr(),
                               );
                               return;
                             }
                             final range = c.ageRange;
                             AppSnackBar.showWarning(
                               context,
-                              'Вік дитини ($childAge р.) не відповідає віковій групі цього тренування (${range?.$1 ?? 0}-${range?.$2 ?? 0} р.).',
+                              'parent.child_age_mismatch_age'.tr(namedArgs: {
+                                'age': '$childAge',
+                                'min': '${range?.$1 ?? 0}',
+                                'max': '${range?.$2 ?? 0}',
+                              }),
                             );
                             return;
                           }
                           final res = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, targetChildId);
                           if (!context.mounted) return;
                           final bookedChild = children.where((ch) => ch.id == targetChildId).firstOrNull;
-                          final partnerName = user != null ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер') : null;
+                          final partnerName = user != null ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'parent.partner'.tr()) : null;
                           final bookedName = targetChildId == user?.id ? user?.name : (targetChildId == partnerId ? partnerName : bookedChild?.name);
                           if (res.isSuccess) {
                             AppSnackBar.showSuccess(context, res.message);
@@ -1442,7 +1503,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
                               res.message,
                               action: res.status == BookingStatus.noSubscription
                                   ? SnackBarAction(
-                                      label: 'Придбати',
+                                      label: 'parent.buy_action'.tr(),
                                       textColor: Colors.white,
                                       onPressed: () {
                                         if (bookedName != null) {
@@ -1481,12 +1542,12 @@ class ParentAvailableClassCard extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        child: const FittedBox(
+                        child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Записатись',
+                            'parent.sign_up_btn'.tr(),
                             maxLines: 1,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w800,
@@ -1501,7 +1562,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
 
                 // Title
                 Text(
-                  c.title,
+                  _getLocalizedClassTitle(c.title, context.locale.languageCode),
                   style: TextStyle(
                     color: currentTheme.textPrimary,
                     fontSize: 15.5,
@@ -1515,7 +1576,9 @@ class ParentAvailableClassCard extends ConsumerWidget {
                   children: [
                     if (c.coachName.isNotEmpty) ...[
                       Icon(
-                        (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
+                        (c.coachName == 'Тренер не призначений' ||
+                                c.coachName == 'schedule.coach_unassigned'.tr() ||
+                                c.coachName.toLowerCase().contains('не призначен'))
                             ? LucideIcons.clock
                             : LucideIcons.user,
                         size: 13,
@@ -1523,9 +1586,11 @@ class ParentAvailableClassCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        (c.coachName == 'Тренер не призначений' || c.coachName.toLowerCase().contains('не призначен'))
-                            ? 'Тренер призначається'
-                            : 'Тренер: ${c.coachName}',
+                        (c.coachName == 'Тренер не призначений' ||
+                                c.coachName == 'schedule.coach_unassigned'.tr() ||
+                                c.coachName.toLowerCase().contains('не призначен'))
+                            ? 'parent.coach_assigning'.tr()
+                            : 'parent.coach_prefix'.tr(namedArgs: {'name': c.coachName}),
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
@@ -1542,7 +1607,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        c.lane,
+                        BranchConfig.localizeLaneName(c.lane, context.locale.languageCode),
                         style: TextStyle(
                           color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569),
                           fontSize: 12,
@@ -1681,7 +1746,7 @@ class ParentPastClassCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Завершено',
+                            'parent.status_completed'.tr(),
                             style: TextStyle(
                               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                               fontSize: 11,
@@ -1697,7 +1762,7 @@ class ParentPastClassCard extends StatelessWidget {
 
                 // Title
                 Text(
-                  classItem.title,
+                  _getLocalizedClassTitle(classItem.title, context.locale.languageCode),
                   style: TextStyle(
                     color: isDark ? Colors.white70 : currentTheme.textPrimary,
                     fontSize: 15,
@@ -1711,7 +1776,9 @@ class ParentPastClassCard extends StatelessWidget {
                   children: [
                     if (classItem.coachName.isNotEmpty) ...[
                       Icon(
-                        (classItem.coachName == 'Тренер не призначений' || classItem.coachName.toLowerCase().contains('не призначен'))
+                        (classItem.coachName == 'Тренер не призначений' ||
+                                classItem.coachName == 'schedule.coach_unassigned'.tr() ||
+                                classItem.coachName.toLowerCase().contains('не призначен'))
                             ? LucideIcons.clock
                             : LucideIcons.user,
                         size: 13,
@@ -1719,9 +1786,11 @@ class ParentPastClassCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        (classItem.coachName == 'Тренер не призначений' || classItem.coachName.toLowerCase().contains('не призначен'))
-                            ? 'Тренер призначається'
-                            : 'Тренер: ${classItem.coachName}',
+                        (classItem.coachName == 'Тренер не призначений' ||
+                                classItem.coachName == 'schedule.coach_unassigned'.tr() ||
+                                classItem.coachName.toLowerCase().contains('не призначен'))
+                            ? 'parent.coach_assigning'.tr()
+                            : 'parent.coach_prefix'.tr(namedArgs: {'name': classItem.coachName}),
                         style: TextStyle(
                           color: isDark ? Colors.white54 : const Color(0xFF64748B),
                           fontSize: 12,
@@ -1738,7 +1807,7 @@ class ParentPastClassCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        classItem.lane,
+                        BranchConfig.localizeLaneName(classItem.lane, context.locale.languageCode),
                         style: TextStyle(
                           color: isDark ? Colors.white54 : const Color(0xFF64748B),
                           fontSize: 12,
@@ -1773,7 +1842,7 @@ void showChildPickerForQuickBooking(
 
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
     final partnerName = user != null
-        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'parent.partner'.tr())
         : null;
 
     final includeParent = user != null && !c.enrolledChildIds.contains(user.id) && !c.isChildOnly;
@@ -1782,12 +1851,13 @@ void showChildPickerForQuickBooking(
         !c.enrolledChildIds.contains(partnerId) &&
         !c.isChildOnly;
     final includeChildren = !c.isAdultOnly;
+    final meSuffix = ' (${'parent.me_short'.tr()})';
 
     final availableMembers = [
       if (includeParent)
-        (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
+        (id: user.id, name: '${user.name}$meSuffix', rawName: user.name, isParent: true, color: currentTheme.accentPrimary),
       if (includePartner)
-        (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
+        (id: partnerId, name: partnerName, rawName: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       if (includeChildren)
         ...children
             .where((ch) => !c.enrolledChildIds.contains(ch.id))
@@ -1796,7 +1866,8 @@ void showChildPickerForQuickBooking(
               final age = ch.ageAt(c.startTime) ?? ch.currentAge;
               return (
                 id: ch.id,
-                name: age != null ? '${ch.name} ($age р.)' : ch.name,
+                name: age != null ? '${ch.name} ($age ${'parent.years_short'.tr()})' : ch.name,
+                rawName: ch.name,
                 isParent: false,
                 color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
               );
@@ -1804,22 +1875,39 @@ void showChildPickerForQuickBooking(
     ];
 
     if (availableMembers.isEmpty) {
+      final adultAgeChild = children.firstWhereOrNull(
+        (ch) => ch.isAdultAge || (ch.ageAt(c.startTime) ?? ch.currentAge ?? 0) >= 16,
+      );
+      if (adultAgeChild != null) {
+        GraduateChildSheet.show(context, adultAgeChild);
+        return;
+      }
       final hasUnder6Only = children.isNotEmpty && children.every((ch) => (ch.currentAge ?? 0) <= 5);
       final msg = hasUnder6Only && (c.isGroup || c.isSplit)
-          ? 'Для дітей до 6 років (1–5 років включно) доступні лише персональні індивідуальні заняття. Групові та спліт-тренування доступні від 6 років.'
+          ? 'parent.under6_individual_only'.tr()
           : (c.ageRange != null
-              ? 'Вік ваших дітей не відповідає віковій групі цього тренування (${c.ageRange!.$1}-${c.ageRange!.$2} р.).'
+              ? 'parent.children_age_mismatch'.tr(namedArgs: {
+                  'min': '${c.ageRange!.$1}',
+                  'max': '${c.ageRange!.$2}',
+                })
               : (c.isChildOnly
-                  ? 'На це тренування можуть записуватися лише діти.'
+                  ? 'parent.child_only_class_warn'.tr()
                   : (c.isAdultOnly
-                      ? 'На це тренування можуть записуватися лише дорослі.'
-                      : 'Всі члени сім\'ї вже записані на це тренування')));
+                      ? 'parent.adult_only_class_warn'.tr()
+                      : 'parent.all_family_already_enrolled'.tr())));
       AppSnackBar.showWarning(context, msg);
       return;
     }
 
     if (availableMembers.length == 1) {
       final m = availableMembers.first;
+      if (!m.isParent) {
+        final matchedChild = children.firstWhereOrNull((ch) => ch.id == m.id);
+        if (matchedChild != null && (matchedChild.isAdultAge || (matchedChild.ageAt(c.startTime) ?? matchedChild.currentAge ?? 0) >= 16)) {
+          GraduateChildSheet.show(context, matchedChild);
+          return;
+        }
+      }
       ref.read(scheduleControllerProvider.notifier).bookClass(c.id, m.id).then((res) {
         if (!context.mounted) return;
         final msg = '${res.message} (${m.name})';
@@ -1831,10 +1919,10 @@ void showChildPickerForQuickBooking(
             msg,
             action: res.status == BookingStatus.noSubscription
                 ? SnackBarAction(
-                    label: 'Придбати',
+                    label: 'parent.buy_action'.tr(),
                     textColor: Colors.white,
                     onPressed: () {
-                      ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(m.name.replaceAll(' (Я)', ''));
+                      ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(m.rawName);
                       ref.read(parentTabProvider.notifier).setTab(2);
                     },
                   )
@@ -1889,7 +1977,7 @@ void showChildPickerForQuickBooking(
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Для кого записатися?',
+                  'parent.book_for_whom_title'.tr(),
                   style: TextStyle(
                     color: currentTheme.textPrimary,
                     fontSize: 17,
@@ -1898,7 +1986,7 @@ void showChildPickerForQuickBooking(
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  c.title,
+                  _getLocalizedClassTitle(c.title, context.locale.languageCode),
                   style: TextStyle(
                     color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
                     fontSize: 13.5,
@@ -1913,6 +2001,13 @@ void showChildPickerForQuickBooking(
                     child: InkWell(
                       onTap: () async {
                         Navigator.pop(ctx);
+                        if (!m.isParent) {
+                          final matchedChild = children.firstWhereOrNull((ch) => ch.id == m.id);
+                          if (matchedChild != null && (matchedChild.isAdultAge || (matchedChild.ageAt(c.startTime) ?? matchedChild.currentAge ?? 0) >= 16)) {
+                            GraduateChildSheet.show(context, matchedChild);
+                            return;
+                          }
+                        }
                         final res = await ref.read(scheduleControllerProvider.notifier).bookClass(c.id, m.id);
                         if (!context.mounted) return;
                         final msg = '${res.message} (${m.name})';
@@ -1924,10 +2019,10 @@ void showChildPickerForQuickBooking(
                             msg,
                             action: res.status == BookingStatus.noSubscription
                                 ? SnackBarAction(
-                                    label: 'Придбати',
+                                    label: 'parent.buy_action'.tr(),
                                     textColor: Colors.white,
                                     onPressed: () {
-                                      ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(m.name.replaceAll(' (Я)', ''));
+                                      ref.read(selectedSubscriptionOwnerProvider.notifier).setSelectedOwner(m.rawName);
                                       ref.read(parentTabProvider.notifier).setTab(2);
                                     },
                                   )
@@ -2002,12 +2097,13 @@ void showSplitBookingSheet(
     final currentTheme = ref.read(appThemeControllerProvider);
     final partnerId = user != null ? family?.getOtherParentId(user.id) : null;
     final partnerName = user != null
-        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'Партнер')
+        ? (family?.getOtherParentName(user.id) ?? (partnerId != null ? family?.parentNames[partnerId] : null) ?? 'parent.partner'.tr())
         : null;
+    final meSuffix = ' (${'parent.me_short'.tr()})';
 
     final availableMembers = [
       if (user != null)
-        (id: user.id, name: '${user.name} (Я)', isParent: true, color: currentTheme.accentPrimary),
+        (id: user.id, name: '${user.name}$meSuffix', isParent: true, color: currentTheme.accentPrimary),
       if (partnerId != null && partnerName != null)
         (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
       ...children
@@ -2016,7 +2112,7 @@ void showSplitBookingSheet(
             final age = ch.ageAt(c.startTime) ?? ch.currentAge;
             return (
               id: ch.id,
-              name: age != null ? '${ch.name} ($age р.)' : ch.name,
+              name: age != null ? '${ch.name} ($age ${'parent.years_short'.tr()})' : ch.name,
               isParent: false,
               color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
             );
@@ -2026,7 +2122,7 @@ void showSplitBookingSheet(
     if (availableMembers.length < 2) {
       AppSnackBar.showWarning(
         context,
-        'Для запису на спліт-тренування потрібно щонайменше 2 доступних учасники у вашій родині (додайте дитину від 6 років або запросіть партнера/дружину).',
+        'parent.split_min_2_members_warn'.tr(),
       );
       return;
     }
@@ -2047,13 +2143,18 @@ void showSplitBookingSheet(
           builder: (BuildContext sheetCtx, StateSetter setSheetState) {
             String? getMemberDisplayName(String id) {
               final m = availableMembers.where((m) => m.id == id).firstOrNull;
-              return m?.name.replaceAll(' (Я)', '');
+              return m?.name.replaceAll(meSuffix, '');
             }
 
             final isReady = selectedIds.length == 2;
             final buttonText = isReady
-                ? 'Записати (${getMemberDisplayName(selectedIds[0])} та ${getMemberDisplayName(selectedIds[1])})'
-                : (selectedIds.isEmpty ? 'Оберіть 2-х учасників' : 'Оберіть 2-го учасника');
+                ? 'parent.book_split_btn'.tr(namedArgs: {
+                    'p1': getMemberDisplayName(selectedIds[0]) ?? '',
+                    'p2': getMemberDisplayName(selectedIds[1]) ?? '',
+                  })
+                : (selectedIds.isEmpty
+                    ? 'parent.select_2_participants'.tr()
+                    : 'parent.select_2nd_participant'.tr());
 
             return ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -2118,16 +2219,16 @@ void showSplitBookingSheet(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Запис на Спліт-тренування',
+                                  'parent.split_booking_sheet_title'.tr(),
                                   style: TextStyle(
                                     color: isDark ? Colors.white : Colors.black87,
-                                    fontSize: 17,
+                                    fontSize: 17.5,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  c.title,
+                                  _getLocalizedClassTitle(c.title, context.locale.languageCode),
                                   style: TextStyle(
                                     color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
                                     fontSize: 13,
@@ -2166,7 +2267,7 @@ void showSplitBookingSheet(
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Спліт розрахований на 2 особи (за одним абонементом). Оберіть двох учасників із родини (двоє дорослих, дорослий + дитина або двоє дітей):',
+                                'parent.split_booking_sheet_info'.tr(),
                                 style: TextStyle(
                                   color: isDark ? Colors.white70 : const Color(0xFF0C4A6E),
                                   fontSize: 12,
@@ -2180,7 +2281,7 @@ void showSplitBookingSheet(
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Оберіть учасників (${selectedIds.length}/2):',
+                        'parent.select_2_participants_ratio'.tr(namedArgs: {'count': '${selectedIds.length}'}),
                         style: TextStyle(
                           color: currentTheme.textPrimary,
                           fontSize: 14,
@@ -2195,7 +2296,9 @@ void showSplitBookingSheet(
                             children: availableMembers.map((m) {
                               final isSelected = selectedIds.contains(m.id);
                               final index = isSelected ? selectedIds.indexOf(m.id) : -1;
-                              final badgeText = index == 0 ? '1-й учасник' : (index == 1 ? '2-й учасник' : '');
+                              final badgeText = index == 0
+                                  ? 'parent.participant_1'.tr()
+                                  : (index == 1 ? 'parent.participant_2'.tr() : '');
 
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
@@ -2263,7 +2366,7 @@ void showSplitBookingSheet(
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
-                                                  m.isParent ? 'Дорослий' : 'Дитина',
+                                                  m.isParent ? 'parent.adult_label'.tr() : 'parent.child_label'.tr(),
                                                   style: TextStyle(
                                                     color: m.isParent
                                                         ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF6366F1))
@@ -2349,7 +2452,7 @@ void showSplitBookingSheet(
                                       res.message,
                                       action: res.status == BookingStatus.noSubscription
                                           ? SnackBarAction(
-                                              label: 'Придбати',
+                                              label: 'parent.buy_action'.tr(),
                                               textColor: Colors.white,
                                               onPressed: () {
                                                 ref.read(parentTabProvider.notifier).setTab(2);

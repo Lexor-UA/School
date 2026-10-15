@@ -63,7 +63,7 @@ class _ClientSubscriptionsSectionState
       final admin = ref.read(authControllerProvider);
       if (admin != null) {
         await logAdminAction(
-          'Змінено залишок занять для "${widget.clientName}" (стало $newClasses)',
+          'admin.log_sub_classes_updated'.tr(namedArgs: {'client': widget.clientName, 'count': '$newClasses'}),
           admin.id,
         );
       }
@@ -92,7 +92,10 @@ class _ClientSubscriptionsSectionState
           ),
         ),
         content: Text(
-          'Ви дійсно бажаєте видалити абонемент "${sub.serviceName ?? 'Абонемент'}" для ${sub.ownerName ?? widget.clientName}?',
+          'admin.sub_delete_confirm'.tr(namedArgs: {
+            'service': sub.serviceName ?? 'admin.cat_subscriptions'.tr(),
+            'owner': sub.ownerName ?? widget.clientName,
+          }),
           style: TextStyle(
             color: isDark ? Colors.white70 : const Color(0xFF475569),
           ),
@@ -142,7 +145,7 @@ class _ClientSubscriptionsSectionState
       final admin = ref.read(authControllerProvider);
       if (admin != null) {
         await logAdminAction(
-          'Видалено абонемент клієнта "${widget.clientName}"',
+          'admin.log_sub_deleted'.tr(namedArgs: {'client': widget.clientName}),
           admin.id,
         );
       }
@@ -157,7 +160,9 @@ class _ClientSubscriptionsSectionState
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Абонемент "${sub.serviceName ?? 'Абонемент'}" видалено',
+                    'admin.sub_deleted_msg'.tr(namedArgs: {
+                      'service': sub.serviceName ?? 'admin.cat_subscriptions'.tr(),
+                    }),
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -184,7 +189,7 @@ class _ClientSubscriptionsSectionState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Помилка видалення: $e',
+              'common.error_with_detail'.tr(namedArgs: {'error': '$e'}),
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -259,7 +264,7 @@ class _ClientSubscriptionsSectionState
             if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
               for (var doc in snapshot.data!.docs) {
                 final cData = doc.data() as Map<String, dynamic>;
-                final cName = (cData['name'] as String? ?? 'Дитина').trim();
+                final cName = (cData['name'] as String? ?? 'common.child_default'.tr()).trim();
                 familyMembers.add({
                   'name': cName,
                   'isParent': false,
@@ -401,7 +406,7 @@ class _ClientSubscriptionsSectionState
                                   ),
                                   const SizedBox(width: 7),
                                   Text(
-                                    isParent ? '$mName (Клієнт)' : mName,
+                                    isParent ? '$mName (${'admin.client_role_short'.tr()})' : mName,
                                     style: TextStyle(
                                       color: isSelected
                                           ? (isDark
@@ -470,7 +475,7 @@ class _ClientSubscriptionsSectionState
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Немає активного абонемента для $effectiveOwner',
+                          'admin.no_active_sub_for_owner'.tr(namedArgs: {'owner': effectiveOwner}),
                           style: TextStyle(
                             color: isDark
                                 ? Colors.white70
@@ -481,7 +486,7 @@ class _ClientSubscriptionsSectionState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Призначте 1 абонемент для цієї особи',
+                          'admin.assign_one_sub_hint'.tr(),
                           style: TextStyle(
                             color: isDark
                                 ? Colors.white38
@@ -552,7 +557,7 @@ class _ClientSubscriptionsSectionState
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      'Для: ${sub.ownerName ?? widget.clientName}',
+                                      '${'admin.for_label'.tr()}: ${sub.ownerName ?? widget.clientName}',
                                       style: TextStyle(
                                         color: isDark
                                             ? Colors.white.withValues(
@@ -615,7 +620,7 @@ class _ClientSubscriptionsSectionState
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(
-                                      '⚠️ Закінчується через $daysLeft ${daysLeft == 1 ? 'день' : 'днів'}',
+                                      'admin.expires_in_days_warning'.tr(namedArgs: {'days': '$daysLeft'}),
                                       style: const TextStyle(
                                         color: Color(0xFFD97706),
                                         fontSize: 12,
@@ -768,8 +773,8 @@ class _ClientSubscriptionsSectionState
                     ),
                     label: Text(
                       hasActiveSubForMember
-                          ? 'Призначити новий абонемент (замінить поточний)'
-                          : 'Призначити абонемент для "$effectiveOwner"',
+                          ? 'admin.assign_new_sub_replace_btn'.tr()
+                          : 'admin.assign_sub_for_owner_btn'.tr(namedArgs: {'owner': effectiveOwner}),
                       style: TextStyle(
                         color: isDark
                             ? const Color(0xFF00E5FF)

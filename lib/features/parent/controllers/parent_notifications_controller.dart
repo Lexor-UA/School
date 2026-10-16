@@ -7,6 +7,7 @@ import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/chat/providers/chat_providers.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/features/schedule/models/class_activity.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
@@ -132,8 +133,12 @@ final parentFirestoreNotificationsStreamProvider =
         list.add(
           ParentNotification(
             id: doc.id,
-            title: data['title']?.toString() ?? 'notifications.sub_reminder_title'.tr(),
-            message: data['message']?.toString() ?? '',
+            title: ClassActivity.sanitizeNotificationText(
+              data['title']?.toString() ?? 'notifications.sub_reminder_title'.tr(),
+            ),
+            message: ClassActivity.sanitizeNotificationText(
+              data['message']?.toString() ?? '',
+            ),
             timestamp: timestamp,
             icon: iconData,
             iconColor: iconColor ?? const Color(0xFFF59E0B),
@@ -246,7 +251,7 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
             ParentNotification(
               id: id,
               title: activity.classTitle.isNotEmpty ? activity.classTitle : 'notifications.schedule_update_title'.tr(),
-              message: activity.message,
+              message: activity.localizedMessage,
               timestamp: activity.timestamp,
               icon: LucideIcons.calendarClock,
               iconColor: const Color(0xFF38BDF8),

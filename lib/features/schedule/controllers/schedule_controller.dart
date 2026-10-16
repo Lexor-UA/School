@@ -232,6 +232,7 @@ class ScheduleController extends _$ScheduleController {
   }
 
   static List<GroupClass>? cachedClasses;
+  final Set<String> _healedClassIds = {};
 
   static List<GroupClass> getImmediateSeedClasses([String branchId = 'kyiv']) {
     final now = DateTime.now();
@@ -283,9 +284,11 @@ class ScheduleController extends _$ScheduleController {
           ? cachedClasses!
           : cachedClasses!.where((c) => c.branchId == activeBranchId).toList();
       yield initialFiltered;
-    } else {
-      final seed = getImmediateSeedClasses(activeBranchId ?? 'kyiv');
+    } else if (activeBranchId == null || activeBranchId == 'kyiv') {
+      final seed = getImmediateSeedClasses('kyiv');
       yield seed;
+    } else {
+      yield const <GroupClass>[];
     }
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('classes');
@@ -303,10 +306,10 @@ class ScheduleController extends _$ScheduleController {
           final data = Map<String, dynamic>.from(doc.data());
           data['id'] = doc.id;
           if (data['startTime'] is Timestamp) {
-            data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+            data['startTime'] = (data['startTime'] as Timestamp).toDate().toUtc().toIso8601String();
           }
           if (data['endTime'] is Timestamp) {
-            data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+            data['endTime'] = (data['endTime'] as Timestamp).toDate().toUtc().toIso8601String();
           }
 
           // Self-heal group classes created with maxCapacity <= 2 or wrong category
@@ -317,12 +320,15 @@ class ScheduleController extends _$ScheduleController {
             data['maxCapacity'] = 10;
             final correctCategory = titleLower.contains('аквааеробіка') ? 'Аквааеробіка' : 'Групове';
             data['category'] = correctCategory;
-            doc.reference.update({
-              'maxCapacity': 10,
-              'category': correctCategory,
-            }).catchError((e) {
-              debugPrint('Failed to auto-heal group class ${doc.id}: $e');
-            });
+            if (!_healedClassIds.contains('${doc.id}_cap')) {
+              _healedClassIds.add('${doc.id}_cap');
+              doc.reference.update({
+                'maxCapacity': 10,
+                'category': correctCategory,
+              }).catchError((e) {
+                debugPrint('Failed to auto-heal group class ${doc.id}: $e');
+              });
+            }
           }
 
           // Self-heal classes created in adult 25m pool where title defaulted to 'Junior Pro'
@@ -335,12 +341,15 @@ class ScheduleController extends _$ScheduleController {
           if (titleLower == 'junior pro' && isAdultPoolOrLane) {
             data['title'] = 'Плавання для дорослих';
             data['category'] = 'Плавання (Дорослі)';
-            doc.reference.update({
-              'title': 'Плавання для дорослих',
-              'category': 'Плавання (Дорослі)',
-            }).catchError((e) {
-              debugPrint('Failed to auto-heal adult pool class ${doc.id}: $e');
-            });
+            if (!_healedClassIds.contains('${doc.id}_adult')) {
+              _healedClassIds.add('${doc.id}_adult');
+              doc.reference.update({
+                'title': 'Плавання для дорослих',
+                'category': 'Плавання (Дорослі)',
+              }).catchError((e) {
+                debugPrint('Failed to auto-heal adult pool class ${doc.id}: $e');
+              });
+            }
           }
 
           final groupClass = GroupClass.fromJson(data);
@@ -1626,6 +1635,13 @@ class ScheduleController extends _$ScheduleController {
           existingData['enrolledChildIds'] ?? inMem?.enrolledChildIds ?? []);
       final currentAttended = List<String>.from(
           existingData['attendedChildIds'] ?? inMem?.attendedChildIds ?? []);
+      final currentBookedSubs = existingData['bookedSubscriptions'] is Map
+          ? Map<String, String>.from(
+              (existingData['bookedSubscriptions'] as Map).map(
+                (k, v) => MapEntry(k.toString(), v.toString()),
+              ),
+            )
+          : const <String, String>{};
       final currentLocationId = locationId ??
           existingData['locationId'] as String? ??
           inMem?.locationId ??
@@ -1650,6 +1666,7 @@ class ScheduleController extends _$ScheduleController {
         'timezone': currentTimezone,
         'enrolledChildIds': currentEnrolled,
         'attendedChildIds': currentAttended,
+        'bookedSubscriptions': currentBookedSubs,
         'locationId': currentLocationId,
         'poolId': currentPoolId,
       };
@@ -1921,6 +1938,8 @@ class ScheduleController extends _$ScheduleController {
       String coachId = '';
       String coachName = '';
       List<String> enrolledChildIds = [];
+      List<String> attendedChildIds = [];
+      DateTime? classStartTime;
       Map<String, dynamic>? bookedSubMap;
 
       if (doc.exists) {
@@ -1929,16 +1948,24 @@ class ScheduleController extends _$ScheduleController {
         coachId = data['coachId'] as String? ?? coachId;
         coachName = data['coachName'] as String? ?? coachName;
         enrolledChildIds = List<String>.from(data['enrolledChildIds'] ?? []);
+        attendedChildIds = List<String>.from(data['attendedChildIds'] ?? []);
+        if (data['startTime'] is Timestamp) {
+          classStartTime = (data['startTime'] as Timestamp).toDate();
+        } else if (data['startTime'] is String) {
+          classStartTime = DateTime.tryParse(data['startTime'] as String);
+        }
         if (data['bookedSubscriptions'] is Map) {
           bookedSubMap = Map<String, dynamic>.from(data['bookedSubscriptions'] as Map);
         }
       }
 
-      // Pre-resolve subscriptions to refund
+      // Pre-resolve subscriptions to refund (only for future classes and non-attended participants)
       final Set<String> targetSubIds = {};
+      final bool isFutureClass = classStartTime == null || classStartTime.isAfter(DateTime.now());
       
-      if (enrolledChildIds.isNotEmpty) {
+      if (isFutureClass && enrolledChildIds.isNotEmpty) {
         for (final childId in enrolledChildIds) {
+          if (attendedChildIds.contains(childId)) continue;
           try {
             final bookedSubId = bookedSubMap?[childId] as String?;
             if (bookedSubId != null) {

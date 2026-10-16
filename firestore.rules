@@ -346,6 +346,11 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
+    match /branch_payment_configs/{branchId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isOwner() || (isAdmin() && staffBelongsToBranch(branchId));
+    }
+
     // Fallback: deny public access, allow superAdmin/owner
     match /{document=**} {
       allow read, write: if isSuperAdmin() || isOwner();

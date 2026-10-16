@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/features/subscription/controllers/subscription_controller.dart';
+import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 enum ClassAudienceFilter { all, adults, kids, split }
@@ -415,24 +416,31 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.cyanAccent));
                 
+                final tenancyState = ref.watch(tenancyControllerProvider);
+                final activeBranchId = tenancyState.activeBranchId;
+                final isAllLocations = tenancyState.isAllLocationsSelected;
+
                 final allClasses = <GroupClass>[];
                 for (final d in snapshot.data!.docs) {
                   try {
                     final data = Map<String, dynamic>.from(d.data() as Map);
                     data['id'] = d.id;
-                    allClasses.add(GroupClass.fromJson(data));
+                    final gc = GroupClass.fromJson(data);
+                    if (isAllLocations || activeBranchId == null || gc.branchId == activeBranchId) {
+                      allClasses.add(gc);
+                    }
                   } catch (e) {
                     debugPrint('Skipping malformed class doc ${d.id}: $e');
                   }
                 }
 
                 final dayClasses = allClasses.where((c) {
-                  final d1 = c.startTime;
+                  final d1 = c.branchStartTime;
                   final d2 = _selectedDate;
                   return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
                 }).toList();
                 
-                dayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
+                dayClasses.sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
                 final filteredClasses = dayClasses.where((c) {
                   switch (_audienceFilter) {
@@ -513,7 +521,7 @@ class _AdminBookingSheetState extends ConsumerState<AdminBookingSheet> {
                                 Row(
                                   children: [
                                     Text(
-                                      '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}',
+                                      '${c.branchStartTime.hour.toString().padLeft(2, '0')}:${c.branchStartTime.minute.toString().padLeft(2, '0')}',
                                       style: TextStyle(
                                         color: isSelected ? Colors.cyanAccent : Colors.white,
                                         fontWeight: FontWeight.bold,

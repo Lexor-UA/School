@@ -60,10 +60,10 @@ class SubscriptionController extends _$SubscriptionController {
 
     if (user != null) {
       if (isParent) {
-        final relevantUserIds = <String>[
+        final relevantUserIds = <String>{
           user.id,
           if (family != null) ...family.parentIds,
-        ];
+        }.toList();
         if (relevantUserIds.length == 1) {
           query = query.where('userId', isEqualTo: relevantUserIds.first);
         } else if (relevantUserIds.length > 1) {
@@ -665,21 +665,36 @@ class SubscriptionController extends _$SubscriptionController {
       }
 
       // Also check family members if the parent belongs to a family
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(sub.userId).get();
-      final familyId = userDoc.data()?['familyId'] as String?;
-      if (familyId != null && familyId.isNotEmpty) {
-        final famDoc = await FirebaseFirestore.instance.collection('families').doc(familyId).get();
-        final memberIds = List<String>.from((famDoc.data()?['memberIds'] as List?) ?? []);
-        for (final memberId in memberIds) {
-          if (memberId == sub.userId) continue;
-          final partnerChildren = await FirebaseFirestore.instance
-              .collection('children')
-              .where('parentId', isEqualTo: memberId)
-              .get();
-          for (final doc in partnerChildren.docs) {
-            final cName = (doc.data()['name'] as String?)?.trim() ?? 'Учень';
-            familyChildrenById[doc.id] = cName;
-          }
+      final Set<String> partnerParentIds = {};
+      final famSnap = await FirebaseFirestore.instance
+          .collection('families')
+          .where('parentIds', arrayContains: sub.userId)
+          .limit(1)
+          .get();
+      if (famSnap.docs.isNotEmpty) {
+        final famData = famSnap.docs.first.data();
+        partnerParentIds.addAll(List<String>.from((famData['parentIds'] as List?) ?? []));
+        partnerParentIds.addAll(List<String>.from((famData['memberIds'] as List?) ?? []));
+      } else {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(sub.userId).get();
+        final familyId = userDoc.data()?['familyId'] as String?;
+        if (familyId != null && familyId.isNotEmpty) {
+          final famDoc = await FirebaseFirestore.instance.collection('families').doc(familyId).get();
+          final famData = famDoc.data() ?? {};
+          partnerParentIds.addAll(List<String>.from((famData['parentIds'] as List?) ?? []));
+          partnerParentIds.addAll(List<String>.from((famData['memberIds'] as List?) ?? []));
+        }
+      }
+
+      for (final memberId in partnerParentIds) {
+        if (memberId == sub.userId) continue;
+        final partnerChildren = await FirebaseFirestore.instance
+            .collection('children')
+            .where('parentId', isEqualTo: memberId)
+            .get();
+        for (final doc in partnerChildren.docs) {
+          final cName = (doc.data()['name'] as String?)?.trim() ?? 'Учень';
+          familyChildrenById[doc.id] = cName;
         }
       }
 

@@ -1425,7 +1425,7 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   _isSplit && _selectedParticipantIds.length != 2
-                                      ? 'parent.select_2_participants_ratio'.tr(args: [_selectedParticipantIds.length.toString()])
+                                      ? 'parent.select_2_participants_ratio'.tr(namedArgs: {'count': _selectedParticipantIds.length.toString()})
                                       : (_isGroup && _selectedParticipantIds.length > 1
                                           ? 'parent.book_multi_btn'.tr(args: [_selectedParticipantIds.length.toString()])
                                           : 'parent.confirm'.tr()),

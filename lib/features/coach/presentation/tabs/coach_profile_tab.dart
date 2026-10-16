@@ -48,8 +48,8 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
     _currencyLabel = isEur ? '€' : 'common.uah_short'.tr();
 
     final int defaultGroupRate = isEur ? 25 : 400;
-    final int defaultIndividualRate = isEur ? 30 : 450;
-    final int defaultSplitRate = isEur ? 40 : 600;
+    final int defaultIndividualRate = isEur ? 35 : 450;
+    final int defaultSplitRate = isEur ? 45 : 600;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -516,7 +516,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        DateFormat('HH:mm').format(upcomingClass.startTime),
+                        DateFormat('HH:mm').format(upcomingClass.branchStartTime),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,

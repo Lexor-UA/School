@@ -21,6 +21,7 @@ import 'edit_client_sheet.dart';
 import 'payment_sheet.dart';
 import 'package:swimming_school_app/features/parent/controllers/family_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
 import 'widgets/branch_selector_pill.dart';
 
 class AdminClientsScreen extends ConsumerStatefulWidget {
@@ -31,6 +32,10 @@ class AdminClientsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
+  static final RegExp _whitespaceRegex = RegExp(r'\s+');
+  static final RegExp _nonUpperRegex = RegExp(r'[^A-ZА-ЯІЇЄ]');
+  static bool _hasCleanedUpOrphansThisSession = false;
+
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   int _selectedFilterIndex = 0; // 0: Всі, 1: З абонементом, 2: Без оплати
@@ -38,33 +43,33 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   String _getInitials(String name, [String fallback = 'К']) {
     final clean = name.trim();
     if (clean.isEmpty) return fallback;
-    final parts = clean.split(RegExp(r'\s+'));
+    final parts = clean.split(_whitespaceRegex);
     if (parts.length > 1 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     // Check if CamelCase (e.g. CitySwim -> CS)
-    final uppercaseLetters = clean.replaceAll(RegExp(r'[^A-ZА-ЯІЇЄ]'), '');
+    final uppercaseLetters = clean.replaceAll(_nonUpperRegex, '');
     if (uppercaseLetters.length >= 2) {
       return uppercaseLetters.substring(0, 2);
     }
     return clean.length >= 2 ? clean.substring(0, 2).toUpperCase() : clean[0].toUpperCase();
   }
 
-  late final Stream<QuerySnapshot<Map<String, dynamic>>> _clientsStream;
-
   @override
   void initState() {
     super.initState();
-    _clientsStream = FirebaseFirestore.instance.collection('users').snapshots();
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      ref.read(familyControllerProvider).cleanupOrphanedFamilies();
-      FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'staff_auth').get().then((snap) {
-        for (final doc in snap.docs) {
-          doc.reference.delete().catchError((_) {});
-        }
-      }).catchError((_) {});
-    });
+    if (!_hasCleanedUpOrphansThisSession) {
+      _hasCleanedUpOrphansThisSession = true;
+      Future.delayed(const Duration(milliseconds: 2500), () {
+        if (!mounted) return;
+        ref.read(familyControllerProvider).cleanupOrphanedFamilies();
+        FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'staff_auth').get().then((snap) {
+          for (final doc in snap.docs) {
+            doc.reference.delete().catchError((_) {});
+          }
+        }).catchError((_) {});
+      });
+    }
   }
 
   @override
@@ -74,7 +79,10 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
   }
 
   void _copyCredentials(String loginId, String name, [String password = '1']) {
-    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}$password'));
+    final displayPassword = PasswordSecurityHelper.isHashed(password)
+        ? '1 (або змінений клієнтом)'
+        : password;
+    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}$displayPassword'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -327,12 +335,18 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                   child: _buildSearchBar(currentTheme),
                 ),
 
-                // 3 & 4. Filter Chips & Clients List backed by real-time Stream
+                // 3 & 4. Filter Chips & Clients List backed by pre-warmed real-time Stream
                 Builder(
                   builder: (context) {
                     final tenancyState = ref.watch(tenancyControllerProvider);
                     final activeBranchId = tenancyState.activeBranchId;
                     final isAllLocations = tenancyState.isAllLocationsSelected;
+                    final usersAsync = ref.watch(adminAllUsersDocsProvider);
+
+                    if (usersAsync.hasError && !usersAsync.hasValue) {
+                      debugPrint('[AdminClientsScreen] Firestore stream error: ${usersAsync.error}');
+                      return Expanded(child: _buildErrorState(usersAsync.error, currentTheme));
+                    }
 
                     // Group children by parentId in-memory ($O(N)$ once)
                     final Map<String, List<Map<String, dynamic>>> childrenByParent = {};
@@ -343,138 +357,135 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
                       }
                     }
 
+                    final rawDocs = usersAsync.value ?? const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+                    final allClients = rawDocs.where((c) {
+                      final d = c.data();
+                      final role = (d['role'] as String?)?.toLowerCase();
+                      // Exclude coaches, admins, owners, superadmins, and staff auth aliases
+                      final isStaffAlias = d['aliasOf'] != null && d['aliasOf'] != c.id && d['aliasOf'] != d['id'];
+                      if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin' || role == 'staff_auth' || isStaffAlias) {
+                        return false;
+                      }
+                      if (isAllLocations || activeBranchId == null) return true;
+                      final bId = d['branchId'] as String? ?? 'kyiv';
+                      final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
+                      return bId == activeBranchId || bIds.contains(activeBranchId);
+                    }).toList();
+                    final now = DateTime.now();
+
+                    // Fast O(1) indexing of subscriptions by userId and active userIds in a single pass
+                    final Map<String, List<Subscription>> subsByUserId = {};
+                    final Set<String> activeUserIds = {};
+                    for (final s in allSubscriptions) {
+                      (subsByUserId[s.userId] ??= []).add(s);
+                      if (s.isActive &&
+                          s.remainingClasses > 0 &&
+                          (s.expiryDate == null || s.expiryDate!.isAfter(now))) {
+                        activeUserIds.add(s.userId);
+                      }
+                    }
+
+                    final int totalCount = allClients.length;
+                    final int withSubCount = allClients.where((c) => activeUserIds.contains(c.id)).length;
+                    final int withoutSubCount = (totalCount - withSubCount).clamp(0, totalCount);
+
+                    var clients = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(allClients);
+
+                    // Filter by search
+                    if (_searchQuery.isNotEmpty) {
+                      final query = _searchQuery.trim().toLowerCase();
+                      clients = clients.where((c) {
+                        final data = c.data();
+                        final name = (data['name'] ?? data['displayName'] ?? '').toString().toLowerCase();
+                        final loginId = (data['loginId'] ?? '').toString().toLowerCase();
+                        final phone = (data['phone'] ?? '').toString().toLowerCase();
+                        return name.contains(query) ||
+                            loginId.contains(query) ||
+                            phone.contains(query);
+                      }).toList();
+                    }
+
+                    // Filter by tab
+                    if (_selectedFilterIndex == 1) {
+                      // Тільки з активним абонементом
+                      clients = clients.where((c) => activeUserIds.contains(c.id)).toList();
+                    } else if (_selectedFilterIndex == 2) {
+                      // Без активного абонемента
+                      clients = clients.where((c) => !activeUserIds.contains(c.id)).toList();
+                    }
+
+                    final unknownLabel = 'common.unknown'.tr();
+                    final noPhoneLabel = 'admin.clients_no_phone'.tr();
+                    final notAssignedLabel = 'admin.clients_not_assigned'.tr();
+
                     return Expanded(
-                      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: _clientsStream,
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            debugPrint('[AdminClientsScreen] Firestore stream error: ${snapshot.error}');
-                            return _buildErrorState(snapshot.error, currentTheme);
-                          }
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: _buildFilterTabs(
+                              currentTheme,
+                              totalCount: totalCount,
+                              withSubCount: withSubCount,
+                              withoutSubCount: withoutSubCount,
+                            ),
+                          ),
+                          Expanded(
+                            child: (usersAsync.isLoading && !usersAsync.hasValue)
+                                ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
+                                : (allClients.isEmpty
+                                    ? _buildEmptyState(currentTheme, activeBranchId)
+                                    : (clients.isEmpty
+                                        ? _buildNoSearchResults(currentTheme)
+                                        : RepaintBoundary(
+                                            child: ListView.separated(
+                                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                                              physics: const BouncingScrollPhysics(
+                                                parent: AlwaysScrollableScrollPhysics(),
+                                              ),
+                                              addAutomaticKeepAlives: false,
+                                              itemCount: clients.length,
+                                              separatorBuilder: (ctx, idx) => const SizedBox(height: 14),
+                                              itemBuilder: (context, index) {
+                                                final clientDoc = clients[index];
+                                                final data = clientDoc.data();
+                                                final clientId = clientDoc.id;
+                                                final rawName = (data['name'] as String?)?.trim();
+                                                final name = (rawName != null && rawName.isNotEmpty && rawName != 'Невідомо' && rawName != unknownLabel)
+                                                    ? rawName
+                                                    : ((data['displayName'] as String?)?.trim().isNotEmpty == true
+                                                        ? (data['displayName'] as String).trim()
+                                                        : ((data['email'] as String?)?.trim().isNotEmpty == true
+                                                            ? (data['email'] as String).trim()
+                                                            : unknownLabel));
+                                                final phone = data['phone'] ?? noPhoneLabel;
+                                                final loginId = data['loginId'] ?? notAssignedLabel;
+                                                final password = (data['password'] as String?) ?? '1';
+                                                final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
 
-                          final rawDocs = snapshot.hasData ? snapshot.data!.docs : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-                          final allClients = rawDocs.where((c) {
-                            final d = c.data();
-                            final role = (d['role'] as String?)?.toLowerCase();
-                            // Exclude coaches, admins, owners, superadmins, and staff auth aliases
-                            final isStaffAlias = d['aliasOf'] != null && d['aliasOf'] != c.id && d['aliasOf'] != d['id'];
-                            if (role == 'coach' || role == 'admin' || role == 'owner' || role == 'superadmin' || role == 'staff_auth' || isStaffAlias) {
-                              return false;
-                            }
-                            if (isAllLocations || activeBranchId == null) return true;
-                            final bId = d['branchId'] as String? ?? 'kyiv';
-                            final bIds = (d['branchIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [bId];
-                            return bId == activeBranchId || bIds.contains(activeBranchId);
-                          }).toList();
-                          final now = DateTime.now();
+                                                final userSubs = subsByUserId[clientId] ?? const <Subscription>[];
+                                                final bool hasDiscounts = (data['subscriptionDiscounts'] as List<dynamic>? ?? []).isNotEmpty;
 
-                          // Fast O(1) indexing of subscriptions by userId and active userIds in a single pass
-                          final Map<String, List<Subscription>> subsByUserId = {};
-                          final Set<String> activeUserIds = {};
-                          for (final s in allSubscriptions) {
-                            (subsByUserId[s.userId] ??= []).add(s);
-                            if (s.isActive &&
-                                s.remainingClasses > 0 &&
-                                (s.expiryDate == null || s.expiryDate!.isAfter(now))) {
-                              activeUserIds.add(s.userId);
-                            }
-                          }
-
-                          final int totalCount = allClients.length;
-                          final int withSubCount = allClients.where((c) => activeUserIds.contains(c.id)).length;
-                          final int withoutSubCount = (totalCount - withSubCount).clamp(0, totalCount);
-
-                          var clients = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(allClients);
-
-                          // Filter by search
-                          if (_searchQuery.isNotEmpty) {
-                            final query = _searchQuery.trim().toLowerCase();
-                            clients = clients.where((c) {
-                              final data = c.data();
-                              final name = (data['name'] ?? data['displayName'] ?? '').toString().toLowerCase();
-                              final loginId = (data['loginId'] ?? '').toString().toLowerCase();
-                              final phone = (data['phone'] ?? '').toString().toLowerCase();
-                              return name.contains(query) ||
-                                  loginId.contains(query) ||
-                                  phone.contains(query);
-                            }).toList();
-                          }
-
-                          // Filter by tab
-                          if (_selectedFilterIndex == 1) {
-                            // Тільки з активним абонементом
-                            clients = clients.where((c) => activeUserIds.contains(c.id)).toList();
-                          } else if (_selectedFilterIndex == 2) {
-                            // Без активного абонемента
-                            clients = clients.where((c) => !activeUserIds.contains(c.id)).toList();
-                          }
-
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                                child: _buildFilterTabs(
-                                  currentTheme,
-                                  totalCount: totalCount,
-                                  withSubCount: withSubCount,
-                                  withoutSubCount: withoutSubCount,
-                                ),
-                              ),
-                              Expanded(
-                                child: snapshot.connectionState == ConnectionState.waiting
-                                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
-                                    : (allClients.isEmpty
-                                        ? _buildEmptyState(currentTheme, activeBranchId)
-                                        : (clients.isEmpty
-                                            ? _buildNoSearchResults(currentTheme)
-                                            : RepaintBoundary(
-                                                child: ListView.separated(
-                                                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
-                                                  physics: const BouncingScrollPhysics(),
-                                                  itemCount: clients.length,
-                                                  separatorBuilder: (ctx, idx) => const SizedBox(height: 14),
-                                                  itemBuilder: (context, index) {
-                                                    final clientDoc = clients[index];
-                                                    final data = clientDoc.data();
-                                                    final clientId = clientDoc.id;
-                                                    final rawName = (data['name'] as String?)?.trim();
-                                                    final name = (rawName != null && rawName.isNotEmpty && rawName != 'Невідомо' && rawName != 'common.unknown'.tr())
-                                                        ? rawName
-                                                        : ((data['displayName'] as String?)?.trim().isNotEmpty == true
-                                                            ? (data['displayName'] as String).trim()
-                                                            : ((data['email'] as String?)?.trim().isNotEmpty == true
-                                                                ? (data['email'] as String).trim()
-                                                                : 'common.unknown'.tr()));
-                                                    final phone = data['phone'] ?? 'admin.clients_no_phone'.tr();
-                                                    final loginId = data['loginId'] ?? 'admin.clients_not_assigned'.tr();
-                                                    final password = (data['password'] as String?) ?? '1';
-                                                    final age = data['age'] is int ? data['age'] as int : int.tryParse(data['age']?.toString() ?? '');
-
-                                                    final userSubs = subsByUserId[clientId] ?? const <Subscription>[];
-                                                    final bool hasDiscounts = (data['subscriptionDiscounts'] as List<dynamic>? ?? []).isNotEmpty;
-
-                                                    return _buildClientCard(
-                                                      clientId: clientId,
-                                                      hasDiscounts: hasDiscounts,
-                                                      name: name,
-                                                      phone: phone,
-                                                      age: age,
-                                                      loginId: loginId,
-                                                      password: password,
-                                                      subscriptions: userSubs,
-                                                      children: childrenByParent[clientId] ?? const [],
-                                                      branchId: (data['branchId'] as String? ?? 'kyiv'),
-                                                      isAllLocations: isAllLocations,
-                                                      index: index,
-                                                      currentTheme: currentTheme,
-                                                    );
-                                                  },
-                                                ),
-                                              ))),
-                              ),
-                            ],
-                          );
-                        },
+                                                return _buildClientCard(
+                                                  clientId: clientId,
+                                                  hasDiscounts: hasDiscounts,
+                                                  name: name,
+                                                  phone: phone,
+                                                  age: age,
+                                                  loginId: loginId,
+                                                  password: password,
+                                                  subscriptions: userSubs,
+                                                  children: childrenByParent[clientId] ?? const [],
+                                                  branchId: (data['branchId'] as String? ?? 'kyiv'),
+                                                  isAllLocations: isAllLocations,
+                                                  index: index,
+                                                  currentTheme: currentTheme,
+                                                );
+                                              },
+                                            ),
+                                          ))),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -890,9 +901,7 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
     final bool hasActiveSubs = activeSubs.isNotEmpty;
 
     return RepaintBoundary(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
+      child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1595,7 +1604,6 @@ class _AdminClientsScreenState extends ConsumerState<AdminClientsScreen> {
               ],
             ),
           ),
-        ),
       );
   }
 

@@ -1152,7 +1152,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                                   ])
                                 : (state.nearestClass != null
                                     ? 'admin.nearest_class_at'.tr(args: [
-                                        DateFormat('HH:mm').format(state.nearestClass!.startTime),
+                                        DateFormat('HH:mm').format(state.nearestClass!.branchStartTime),
                                         _formatCompactClassTitle(state.nearestClass!),
                                       ])
                                     : 'admin.normal_mode'.tr()),
@@ -1805,10 +1805,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 accentColor: gradients[1].first,
                 gradientColors: gradients[1],
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AdminCalendarScreen()),
-                  );
+                  _pushSmoothRoute(context, const AdminCalendarScreen());
                 },
               ),
             ),
@@ -1821,10 +1818,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 accentColor: gradients[2].first,
                 gradientColors: gradients[2],
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AdminClientsScreen()),
-                  );
+                  _pushSmoothRoute(context, const AdminClientsScreen());
                 },
               ),
             ),
@@ -1855,10 +1849,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                 accentColor: gradients[4].first,
                 gradientColors: gradients[4],
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AdminCoachesScreen()),
-                  );
+                  _pushSmoothRoute(context, const AdminCoachesScreen());
                 },
               ),
             ),
@@ -2250,10 +2241,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       child: InkWell(
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const AdminCalendarScreen()),
-                          );
+                          _pushSmoothRoute(context, const AdminCalendarScreen());
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: Row(
@@ -2357,6 +2345,33 @@ class _AdminMainState extends ConsumerState<AdminMain> {
   }
 
 
+
+  void _pushSmoothRoute(BuildContext context, Widget page) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 260),
+        reverseTransitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) => RepaintBoundary(child: page),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.0, 0.03),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   // ==========================================
   // ІСТОРІЯ ОСТАННІХ ДІЙ (MODAL BOTTOM SHEET)

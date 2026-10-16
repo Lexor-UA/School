@@ -497,7 +497,26 @@ class FamilyController {
 
   Future<void> adminUnlinkFamily(String familyId) async {
     try {
-      await FirebaseFirestore.instance.collection('families').doc(familyId).delete();
+      final db = FirebaseFirestore.instance;
+      final batch = db.batch();
+
+      final childrenSnap = await db
+          .collection('children')
+          .where('familyId', isEqualTo: familyId)
+          .get();
+
+      for (final cDoc in childrenSnap.docs) {
+        final childData = cDoc.data();
+        final originalParentId = childData['parentId'] as String?;
+        batch.update(cDoc.reference, {
+          if (originalParentId != null && originalParentId.isNotEmpty)
+            'parentIds': [originalParentId],
+          'familyId': FieldValue.delete(),
+        });
+      }
+
+      batch.delete(db.collection('families').doc(familyId));
+      await batch.commit();
     } catch (e) {
       debugPrint('Error unlinking family: $e');
     }

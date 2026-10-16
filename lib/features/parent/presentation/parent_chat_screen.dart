@@ -367,7 +367,9 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      captionController.dispose();
+    });
   }
 
   Future<void> _sendAttachmentMessage(Uint8List bytes, String caption) async {

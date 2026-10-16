@@ -65,6 +65,16 @@ class BranchTimezoneHelper {
         mapped.contains('dublin');
   }
 
+  /// Перевірка, чи належить ідентифікатор до східноамериканського часу (America/New_York)
+  static bool isEasternUS(String branchOrTimezone) {
+    final lower = branchOrTimezone.trim().toLowerCase();
+    final mapped = _branchTimezones[lower]?.toLowerCase() ?? lower;
+    return mapped.contains('new_york') ||
+        mapped.contains('america/new_york') ||
+        mapped.contains('toronto') ||
+        mapped.contains('miami');
+  }
+
   /// Отримати часовий пояс для вказаної філії
   static String timezoneForBranch(String branchOrTimezone) {
     final lower = branchOrTimezone.trim().toLowerCase();
@@ -76,6 +86,7 @@ class BranchTimezoneHelper {
     }
     if (isVienna(branchOrTimezone)) return viennaTimezone;
     if (isWesternEurope(branchOrTimezone)) return 'Europe/London';
+    if (isEasternUS(branchOrTimezone)) return 'America/New_York';
     return kyivTimezone;
   }
 
@@ -109,7 +120,10 @@ class BranchTimezoneHelper {
   /// Отримати зсув від UTC для вказаної філії на задану дату
   static Duration getUtcOffset(DateTime dateTime, String branchOrTimezone) {
     final isDst = isDaylightSavingTime(dateTime);
-    if (isWesternEurope(branchOrTimezone)) {
+    if (isEasternUS(branchOrTimezone)) {
+      // New York / EST-EDT: UTC-5 (standard) or UTC-4 (DST)
+      return Duration(hours: isDst ? -4 : -5);
+    } else if (isWesternEurope(branchOrTimezone)) {
       // London / Lisbon: UTC+0 (standard) or UTC+1 (DST)
       return Duration(hours: isDst ? 1 : 0);
     } else if (isVienna(branchOrTimezone)) {

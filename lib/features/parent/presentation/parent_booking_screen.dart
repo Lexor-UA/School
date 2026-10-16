@@ -122,7 +122,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                       : Text(
                           isSplitEmpty
                               ? (_selectedSplitUserIds.length == 2
-                                  ? 'parent.book_split_btn'.tr()
+                                  ? 'parent.confirm_record'.tr()
                                   : (_selectedSplitUserIds.isEmpty ? 'parent.select_2_participants'.tr() : 'parent.select_2nd_participant'.tr()))
                               : 'parent.confirm_record'.tr(),
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -140,10 +140,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       data: (classes) {
         final now = DateTime.now();
         final available = classes.where((c) {
-          final isSameDay = c.startTime.year == widget.date.year &&
-              c.startTime.month == widget.date.month &&
-              c.startTime.day == widget.date.day;
-          return isSameDay && c.startTime.isAfter(now);
+          final bStart = c.branchStartTime;
+          final isSameDay = bStart.year == widget.date.year &&
+              bStart.month == widget.date.month &&
+              bStart.day == widget.date.day;
+          return isSameDay && bStart.isAfter(now);
         }).toList();
         
         if (available.isEmpty) {
@@ -204,7 +205,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')}',
+                  '${c.branchStartTime.hour.toString().padLeft(2, '0')}:${c.branchStartTime.minute.toString().padLeft(2, '0')}',
                   style: TextStyle(color: isDark ? Colors.cyanAccent : AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ),
@@ -255,7 +256,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '${c.startTime.hour.toString().padLeft(2, '0')}:${c.startTime.minute.toString().padLeft(2, '0')} · $localizedTitle',
+                  '${c.branchStartTime.hour.toString().padLeft(2, '0')}:${c.branchStartTime.minute.toString().padLeft(2, '0')} · $localizedTitle',
                   style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -266,7 +267,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             children: [
               Icon(LucideIcons.user, color: isDark ? Colors.white54 : Colors.black54, size: 16),
               const SizedBox(width: 8),
-              Text('parent.coach_prefix'.tr(args: [c.coachName]), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+              Text('parent.coach_prefix'.tr(namedArgs: {'name': c.coachName}), style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
             ],
           ),
           const SizedBox(height: 4),
@@ -312,7 +313,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             child: Text(
               under6Msg ??
                   (selectedClass?.ageRange != null
-                      ? 'parent.children_age_mismatch'.tr(args: [selectedClass!.ageRange!.$1.toString(), selectedClass!.ageRange!.$2.toString()])
+                      ? 'parent.children_age_mismatch'.tr(namedArgs: {
+                          'min': selectedClass!.ageRange!.$1.toString(),
+                          'max': selectedClass!.ageRange!.$2.toString(),
+                        })
                       : (isChildClass
                           ? 'parent.no_children_added_for_class'.tr()
                           : 'parent.no_available_participants'.tr())),
@@ -542,7 +546,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
       return id;
     }
 
-    if (selectedClass!.startTime.isBefore(DateTime.now())) {
+    if (selectedClass!.branchStartTime.isBefore(DateTime.now())) {
       AppSnackBar.showError(context, 'parent.class_already_ended'.tr());
       return;
     }
@@ -598,9 +602,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
           subscription.expiryDate!.day,
           23, 59, 59,
         );
-        if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
+        if (selectedClass!.branchStartTime.isAfter(endOfExpiryDay)) {
           final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
-          final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
+          final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.branchStartTime);
           AppSnackBar.showError(context, 'parent.split_sub_expires_before_class'.tr(args: [expiryStr, dateStr]));
           return;
         }
@@ -613,7 +617,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         final isUidAdult = uid == user.id || familyParentIds.contains(uid);
         if (!isUidAdult) {
           final child = children.where((c) => c.id == uid).firstOrNull;
-          final childAge = child?.ageAt(selectedClass!.startTime) ?? child?.currentAge;
+          final childAge = child?.ageAt(selectedClass!.branchStartTime) ?? child?.currentAge;
           if (childAge != null && !selectedClass!.isAgeCompatible(childAge)) {
             final range = selectedClass!.ageRange;
             final msg = childAge >= 16 && selectedClass!.isChildOnly
@@ -692,9 +696,9 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
         subscription.expiryDate!.day,
         23, 59, 59,
       );
-      if (selectedClass!.startTime.isAfter(endOfExpiryDay)) {
+      if (selectedClass!.branchStartTime.isAfter(endOfExpiryDay)) {
         final expiryStr = DateFormat('dd.MM.yyyy').format(subscription.expiryDate!);
-        final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.startTime);
+        final dateStr = DateFormat('dd.MM.yyyy').format(selectedClass!.branchStartTime);
         AppSnackBar.showError(context, 'parent.sub_for_owner_expires_before_class'.tr(args: [ownerName, expiryStr, dateStr]));
         return;
       }
@@ -702,7 +706,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
 
     if (selectedUserId != user.id) {
       final child = children.where((c) => c.id == selectedUserId).firstOrNull;
-      final childAge = child?.ageAt(selectedClass!.startTime) ?? child?.currentAge;
+      final childAge = child?.ageAt(selectedClass!.branchStartTime) ?? child?.currentAge;
       if (child != null && (child.isAdultAge || (childAge ?? 0) >= 16)) {
         GraduateChildSheet.show(context, child);
         return;
@@ -713,7 +717,11 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
             ? 'parent.child_16_plus_adult_required'.tr(args: [child?.name ?? '', childAge.toString()])
             : (childAge <= 5
                 ? 'parent.child_under6_individual_only_age'.tr(args: [childAge.toString()])
-                : 'parent.child_age_mismatch_age'.tr(args: [childAge.toString(), (range?.$1 ?? 0).toString(), (range?.$2 ?? 0).toString()]));
+                : 'parent.child_age_mismatch_age'.tr(namedArgs: {
+                    'age': childAge.toString(),
+                    'min': (range?.$1 ?? 0).toString(),
+                    'max': (range?.$2 ?? 0).toString(),
+                  }));
         AppSnackBar.showWarning(context, msg);
         return;
       }
@@ -761,7 +769,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               const SizedBox(height: 16),
               Builder(builder: (context) {
                 final formattedTime = selectedClass != null
-                    ? DateFormat('HH:mm').format(selectedClass!.startTime)
+                    ? DateFormat('HH:mm').format(selectedClass!.branchStartTime)
                     : '';
                 final displayName = bookedTargetName.isNotEmpty ? bookedTargetName : 'parent.student_fallback'.tr();
                 return Text(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -35,6 +36,34 @@ class BranchSummaryMetric {
     required this.ongoingClassesCount,
     required this.unpaidSubscriptions,
   });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BranchSummaryMetric &&
+        other.branchId == branchId &&
+        other.branchName == branchName &&
+        other.currencySymbol == currencySymbol &&
+        other.flagEmoji == flagEmoji &&
+        other.activeClientsCount == activeClientsCount &&
+        other.todayClassesCount == todayClassesCount &&
+        other.totalCoachesCount == totalCoachesCount &&
+        other.ongoingClassesCount == ongoingClassesCount &&
+        other.unpaidSubscriptions == unpaidSubscriptions;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        branchId,
+        branchName,
+        currencySymbol,
+        flagEmoji,
+        activeClientsCount,
+        todayClassesCount,
+        totalCoachesCount,
+        ongoingClassesCount,
+        unpaidSubscriptions,
+      );
 }
 
 class AdminDashboardState {
@@ -80,6 +109,9 @@ class AdminDashboardState {
     this.branchMetrics = const {},
   });
 
+  static const _listEq = ListEquality();
+  static const _mapEq = MapEquality();
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -95,7 +127,12 @@ class AdminDashboardState {
         other.ongoingClassesCount == ongoingClassesCount &&
         other.ongoingClientsCount == ongoingClientsCount &&
         other.ongoingCoachesCount == ongoingCoachesCount &&
-        other.nearestClass?.id == nearestClass?.id;
+        other.nearestClass == nearestClass &&
+        _listEq.equals(other.todayClasses, todayClasses) &&
+        _listEq.equals(other.ongoingClasses, ongoingClasses) &&
+        _listEq.equals(other.tasks, tasks) &&
+        _listEq.equals(other.recentActions, recentActions) &&
+        _mapEq.equals(other.branchMetrics, branchMetrics);
   }
 
   @override
@@ -111,7 +148,12 @@ class AdminDashboardState {
         ongoingClassesCount,
         ongoingClientsCount,
         ongoingCoachesCount,
-        nearestClass?.id,
+        nearestClass,
+        _listEq.hash(todayClasses),
+        _listEq.hash(ongoingClasses),
+        _listEq.hash(tasks),
+        _listEq.hash(recentActions),
+        _mapEq.hash(branchMetrics),
       );
 }
 
@@ -158,21 +200,9 @@ Stream<List<AdminTask>> adminTasks(Ref ref) {
 }
 
 @riverpod
-Stream<int> unpaidSubscriptionsCount(Ref ref) {
-  final tenancyState = ref.watch(tenancyControllerProvider);
-  final activeBranchId = tenancyState.activeBranchId;
-  final isAllLocations = tenancyState.isAllLocationsSelected;
-
-  Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-      .collection('subscriptions')
-      .where('isActive', isEqualTo: true)
-      .where('remainingClasses', isEqualTo: 0);
-
-  if (!isAllLocations && activeBranchId != null) {
-    query = query.where('branchId', isEqualTo: activeBranchId);
-  }
-
-  return query.snapshots().map((snapshot) => snapshot.docs.length);
+Stream<int> unpaidSubscriptionsCount(Ref ref) async* {
+  final subs = await ref.watch(allSubscriptionsProvider.future);
+  yield subs.where((s) => s.isActive && s.remainingClasses == 0).length;
 }
 
 @riverpod
@@ -190,8 +220,7 @@ Stream<List<Subscription>> allSubscriptions(Ref ref) {
   return query.snapshots().map((snapshot) {
     final List<Subscription> list = [];
     for (final doc in snapshot.docs) {
-      if (doc.id == 'demo_sub_1' || doc.data()['userId'] == 'mock_active_client') {
-        doc.reference.delete();
+      if (doc.id == 'demo_sub_1') {
         continue;
       }
       try {
@@ -212,31 +241,28 @@ Stream<List<Subscription>> allSubscriptions(Ref ref) {
 }
 
 @riverpod
-Stream<List<AppUser>> coaches(Ref ref) {
+Stream<List<AppUser>> coaches(Ref ref) async* {
   final tenancyState = ref.watch(tenancyControllerProvider);
   final activeBranchId = tenancyState.activeBranchId;
   final isAllLocations = tenancyState.isAllLocationsSelected;
+  final docs = await ref.watch(adminAllUsersDocsProvider.future);
 
-  return FirebaseFirestore.instance
-      .collection('users')
-      .where('role', isEqualTo: 'coach')
-      .snapshots()
-      .map((snapshot) {
-    final List<AppUser> list = [];
-    for (final doc in snapshot.docs) {
-      try {
-        final data = Map<String, dynamic>.from(doc.data() as Map);
-        data['id'] = doc.id;
-        final coach = AppUser.fromJson(data);
-        if (isAllLocations ||
-            coach.branchId == activeBranchId ||
-            coach.branchIds.contains(activeBranchId)) {
-          list.add(coach);
-        }
-      } catch (_) {}
-    }
-    return list;
-  });
+  final List<AppUser> list = [];
+  for (final doc in docs) {
+    try {
+      final raw = doc.data();
+      if (raw['role'] != 'coach') continue;
+      final data = Map<String, dynamic>.from(raw);
+      data['id'] = doc.id;
+      final coach = AppUser.fromJson(data);
+      if (isAllLocations ||
+          coach.branchId == activeBranchId ||
+          coach.branchIds.contains(activeBranchId)) {
+        list.add(coach);
+      }
+    } catch (_) {}
+  }
+  yield list;
 }
 
 final adminAllClassesProvider = StreamProvider.autoDispose<List<GroupClass>>((ref) {
@@ -245,7 +271,7 @@ final adminAllClassesProvider = StreamProvider.autoDispose<List<GroupClass>>((re
   final isAllLocations = tenancyState.isAllLocationsSelected;
 
   final now = DateTime.now();
-  final startOfDay = DateTime(now.year, now.month, now.day);
+  final startOfDay = DateTime(now.year, now.month, now.day).subtract(const Duration(hours: 6));
 
   return FirebaseFirestore.instance
       .collection('classes')
@@ -258,10 +284,10 @@ final adminAllClassesProvider = StreamProvider.autoDispose<List<GroupClass>>((re
         final data = Map<String, dynamic>.from(doc.data() as Map);
         data['id'] = doc.id;
         if (data['startTime'] is Timestamp) {
-          data['startTime'] = (data['startTime'] as Timestamp).toDate().toIso8601String();
+          data['startTime'] = (data['startTime'] as Timestamp).toDate().toUtc().toIso8601String();
         }
         if (data['endTime'] is Timestamp) {
-          data['endTime'] = (data['endTime'] as Timestamp).toDate().toIso8601String();
+          data['endTime'] = (data['endTime'] as Timestamp).toDate().toUtc().toIso8601String();
         }
         final groupClass = GroupClass.fromJson(data);
         if (isAllLocations || groupClass.branchId == activeBranchId) {
@@ -273,32 +299,36 @@ final adminAllClassesProvider = StreamProvider.autoDispose<List<GroupClass>>((re
   });
 });
 
-final adminParentsProvider = StreamProvider.autoDispose<List<AppUser>>((ref) {
+final adminAllUsersDocsProvider = StreamProvider<List<QueryDocumentSnapshot<Map<String, dynamic>>>>((ref) {
+  return FirebaseFirestore.instance
+      .collection('users')
+      .snapshots()
+      .map((snapshot) => snapshot.docs);
+});
+
+final adminParentsProvider = StreamProvider.autoDispose<List<AppUser>>((ref) async* {
   final tenancyState = ref.watch(tenancyControllerProvider);
   final activeBranchId = tenancyState.activeBranchId;
   final isAllLocations = tenancyState.isAllLocationsSelected;
+  final docs = await ref.watch(adminAllUsersDocsProvider.future);
 
-  return FirebaseFirestore.instance
-      .collection('users')
-      .where('role', isEqualTo: 'parent')
-      .snapshots()
-      .map((snapshot) {
-    final List<AppUser> list = [];
-    for (final doc in snapshot.docs) {
-      try {
-        final data = Map<String, dynamic>.from(doc.data() as Map);
-        data['id'] = doc.id;
-        final parent = AppUser.fromJson(data);
-        if (isAllLocations || parent.branchId == activeBranchId) {
-          list.add(parent);
-        }
-      } catch (_) {}
-    }
-    return list;
-  });
+  final List<AppUser> list = [];
+  for (final doc in docs) {
+    try {
+      final raw = doc.data();
+      if (raw['role'] != 'parent') continue;
+      final data = Map<String, dynamic>.from(raw);
+      data['id'] = doc.id;
+      final parent = AppUser.fromJson(data);
+      if (isAllLocations || parent.branchId == activeBranchId) {
+        list.add(parent);
+      }
+    } catch (_) {}
+  }
+  yield list;
 });
 
-final adminAllChildrenProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
+final adminAllChildrenProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   return FirebaseFirestore.instance.collection('children').snapshots().map((snapshot) {
     return snapshot.docs.map((doc) {
       final data = Map<String, dynamic>.from(doc.data());
@@ -309,14 +339,19 @@ final adminAllChildrenProvider = StreamProvider.autoDispose<List<Map<String, dyn
 });
 
 final liveClockProvider = StreamProvider.autoDispose<DateTime>((ref) {
-  return Stream.periodic(const Duration(seconds: 15), (_) => DateTime.now());
+  return Stream.periodic(const Duration(seconds: 60), (_) => DateTime.now());
 });
 
 @riverpod
 AdminDashboardState adminDashboard(Ref ref) {
-  // Re-evaluate current timestamp every 15s so ongoing classes automatically trigger
+  // Re-evaluate current timestamp every 60s so ongoing classes automatically trigger
   ref.watch(liveClockProvider);
 
+  // Pre-warm all users & children streams so AdminClientsScreen opens with 0ms delay
+  ref.watch(adminAllUsersDocsProvider);
+  ref.watch(adminAllChildrenProvider);
+
+  final tenancyState = ref.watch(tenancyControllerProvider);
   final recentActionsList = ref.watch(recentActionsProvider).value ?? [];
   final tasksList = ref.watch(adminTasksProvider).value ?? [];
   final coachesList = ref.watch(coachesProvider).value ?? [];
@@ -326,16 +361,17 @@ AdminDashboardState adminDashboard(Ref ref) {
 
   final now = DateTime.now();
 
-  // Derived today classes from allClassesList (avoids redundant duplicate stream listening)
+  // Derived today classes from allClassesList using branch local time
   final todayClassesList = allClassesList.where((c) {
-    return c.startTime.year == now.year &&
-           c.startTime.month == now.month &&
-           c.startTime.day == now.day;
-  }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final bStart = c.branchStartTime;
+    return bStart.year == now.year &&
+           bStart.month == now.month &&
+           bStart.day == now.day;
+  }).toList()..sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
   // 1. Активні та майбутні заняття (ті, що ще не закінчились)
-  final activeUpcomingClasses = allClassesList.where((c) => c.endTime.isAfter(now)).toList();
-  activeUpcomingClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
+  final activeUpcomingClasses = allClassesList.where((c) => c.branchEndTime.isAfter(now)).toList();
+  activeUpcomingClasses.sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
   // 2. Найближче заняття (серед майбутніх або поточних)
   final GroupClass? nearest = activeUpcomingClasses.isNotEmpty ? activeUpcomingClasses.first : null;
@@ -386,7 +422,7 @@ AdminDashboardState adminDashboard(Ref ref) {
       title: 'admin.remind_payment_task_title'.tr(),
       subtitle: 'admin.remind_payment_task_subtitle'.tr(namedArgs: {'name': ownerName}),
       priority: TaskPriority.urgent,
-      createdAt: sub.expiryDate ?? DateTime.now(), // Use expiryDate instead of changing DateTime.now() to preserve equality if needed
+      createdAt: sub.expiryDate ?? DateTime(now.year, now.month, now.day),
       isAutoGenerated: true,
     );
   }).toList();
@@ -396,8 +432,8 @@ AdminDashboardState adminDashboard(Ref ref) {
 
   // 1. Активні заняття, які ПРЯМО ЗАРАЗ проводяться у басейні (live in pool)
   final ongoingClasses = allClassesList.where((c) {
-    return (now.isAfter(c.startTime) || now.isAtSameMomentAs(c.startTime)) &&
-           (now.isBefore(c.endTime) || now.isAtSameMomentAs(c.endTime));
+    return (now.isAfter(c.branchStartTime) || now.isAtSameMomentAs(c.branchStartTime)) &&
+           (now.isBefore(c.branchEndTime) || now.isAtSameMomentAs(c.branchEndTime));
   }).toList();
 
   // 2. Клієнти (діти/учні), які займаються прямо зараз
@@ -437,16 +473,19 @@ AdminDashboardState adminDashboard(Ref ref) {
   }
   final int unpaidCount = uniqueUnpaidKeys.length;
 
-  // Calculate per-branch metrics for Owner / Multi-tenancy view
+  // Calculate per-branch metrics for Owner / Multi-tenancy view across all available branches
   final Map<String, BranchSummaryMetric> branchBreakdown = {};
-  for (final branch in [Branch.kyiv, Branch.vienna]) {
+  final branchesToSummarize = tenancyState.availableBranches.isNotEmpty
+      ? tenancyState.availableBranches
+      : Branch.defaultBranches;
+  for (final branch in branchesToSummarize) {
     final bClasses = allClassesList.where((c) => c.branchId == branch.id).toList();
     final bToday = todayClassesList.where((c) => c.branchId == branch.id).toList();
-    final bCoaches = coachesList.where((u) => u.branchId == branch.id).toList();
+    final bCoaches = coachesList.where((u) => u.branchId == branch.id || u.branchIds.contains(branch.id)).toList();
     final bSubs = allSubs.where((s) => s.branchId == branch.id).toList();
     final bOngoing = bClasses.where((c) {
-      return (now.isAfter(c.startTime) || now.isAtSameMomentAs(c.startTime)) &&
-             (now.isBefore(c.endTime) || now.isAtSameMomentAs(c.endTime));
+      return (now.isAfter(c.branchStartTime) || now.isAtSameMomentAs(c.branchStartTime)) &&
+             (now.isBefore(c.branchEndTime) || now.isAtSameMomentAs(c.branchEndTime));
     }).toList();
 
     final Set<String> bActiveClientIds = {};

@@ -12,6 +12,7 @@ class AnimatedWaterBackground extends ConsumerStatefulWidget {
 
 class _AnimatedWaterBackgroundState extends ConsumerState<AnimatedWaterBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Animation<double>? _secondaryAnimation;
 
   @override
   void initState() {
@@ -23,7 +24,36 @@ class _AnimatedWaterBackgroundState extends ConsumerState<AnimatedWaterBackgroun
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    final newSecondary = route?.secondaryAnimation;
+    if (_secondaryAnimation != newSecondary) {
+      _secondaryAnimation?.removeStatusListener(_onSecondaryStatusChanged);
+      _secondaryAnimation = newSecondary;
+      _secondaryAnimation?.addStatusListener(_onSecondaryStatusChanged);
+      _updateTickerState();
+    }
+  }
+
+  void _onSecondaryStatusChanged(AnimationStatus status) {
+    _updateTickerState();
+  }
+
+  void _updateTickerState() {
+    if (!mounted) return;
+    // Pause background water shader when completely covered by another pushed screen
+    final isCovered = _secondaryAnimation?.status == AnimationStatus.completed;
+    if (isCovered && _controller.isAnimating) {
+      _controller.stop();
+    } else if (!isCovered && !_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
   void dispose() {
+    _secondaryAnimation?.removeStatusListener(_onSecondaryStatusChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -32,14 +62,16 @@ class _AnimatedWaterBackgroundState extends ConsumerState<AnimatedWaterBackgroun
   Widget build(BuildContext context) {
     final theme = ref.watch(appThemeControllerProvider);
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _WaterPainter(_controller.value, theme),
-          child: Container(), // Fills the available space
-        );
-      },
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _WaterPainter(_controller.value, theme),
+            size: Size.infinite,
+          );
+        },
+      ),
     );
   }
 }
@@ -111,7 +143,7 @@ class _WaterPainter extends CustomPainter {
     path3.lineTo(0, y3);
 
     bool first = true;
-    final double step = 4.0;
+    const double step = 6.0;
     for (double x = 0; x <= size.width + step; x += step) {
       final double clampedX = x.clamp(0.0, size.width);
       final double nx = clampedX / size.width;
@@ -217,60 +249,63 @@ class _WaterPainter extends CustomPainter {
 
     // Draw Wave 1
     canvas.drawPath(path1, wavePaint1);
+    final Shader crestShader1 = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
+        (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.32 : 0.22),
+        (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
+      ],
+    ).createShader(waveRect1);
     final Paint softCrest1 = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [
-          (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
-          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.32 : 0.22),
-          (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
-        ],
-      ).createShader(waveRect1)
+      ..shader = crestShader1
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.2;
     canvas.drawPath(crestPath1, softCrest1);
 
     // Draw Wave 2
     canvas.drawPath(path2, wavePaint2);
+    final Shader crestShader2 = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
+        (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF38BDF8)).withValues(alpha: isLight ? 0.42 : 0.30),
+        (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
+      ],
+    ).createShader(waveRect2);
     final Paint softCrest2 = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [
-          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
-          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF38BDF8)).withValues(alpha: isLight ? 0.42 : 0.30),
-          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
-        ],
-      ).createShader(waveRect2)
+      ..shader = crestShader2
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.6;
     canvas.drawPath(crestPath2, softCrest2);
 
     // Draw Wave 3 (Foreground swell)
     canvas.drawPath(path3, wavePaint3);
+    final Shader crestShader3 = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
+        (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.50 : 0.38),
+        (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
+      ],
+    ).createShader(waveRect3);
     final Paint softCrest3 = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [
-          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
-          (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.50 : 0.38),
-          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
-        ],
-      ).createShader(waveRect3)
+      ..shader = crestShader3
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.8
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 3.0;
     canvas.drawPath(crestPath3, softCrest3);
 
     // 5. Diagonal Volumetric God Rays (Streaming through water depth with Screen blend over waves)
     final double sunOriginX = size.width * 0.72;
     final double sunOriginY = -size.height * 0.08;
 
-    final rayAngles = [-0.64, -0.42, -0.20, 0.04];
+    const rayAngles = [-0.64, -0.42, -0.20, 0.04];
     final rayWidths = [size.width * 0.28, size.width * 0.36, size.width * 0.32, size.width * 0.26];
 
     for (int r = 0; r < rayAngles.length; r++) {
@@ -303,13 +338,12 @@ class _WaterPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: rAlpha * 1.8),
-            (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF0284C7)).withValues(alpha: rAlpha * 0.8),
+            (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: rAlpha * 1.55),
+            (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF0284C7)).withValues(alpha: rAlpha * 0.65),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.40, 1.0],
-        ).createShader(rayShaderRect)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14.0);
+          stops: const [0.0, 0.42, 1.0],
+        ).createShader(rayShaderRect);
 
       canvas.drawPath(rayPath, rayPaint);
     }

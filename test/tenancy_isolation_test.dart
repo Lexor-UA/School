@@ -58,10 +58,22 @@ void main() {
         lane: 'Доріжка 1',
         coachId: 'coach_2',
         branchId: 'vienna',
+        additionalClasses: [kyivClass],
+      );
+
+      // Verify that checkClassConflict with branchId 'kyiv' DOES detect the lane conflict against Kyiv class
+      final kyivConflict = scheduleController.checkClassConflict(
+        startTime: now,
+        endTime: now.add(const Duration(minutes: 45)),
+        lane: 'Доріжка 1',
+        coachId: 'coach_2',
+        branchId: 'kyiv',
+        additionalClasses: [kyivClass],
       );
 
       expect(kyivClass.branchId, equals('kyiv'));
       expect(viennaConflict, isNull, reason: 'Vienna class on Lane 1 must not conflict with Kyiv class on Lane 1');
+      expect(kyivConflict, isNotNull, reason: 'Kyiv class on Lane 1 at the same time must conflict with Kyiv class on Lane 1');
     });
 
     test('Subscriptions correctly preserve multi-currency and branch identifiers', () {

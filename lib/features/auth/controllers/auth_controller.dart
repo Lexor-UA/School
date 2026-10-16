@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:swimming_school_app/features/auth/models/app_user.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
 import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart';
 import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
+import 'package:swimming_school_app/shared/utils/totp_security_helper.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -20,6 +22,7 @@ part 'auth_controller.g.dart';
 class AuthController extends _$AuthController {
   bool _isLoggingIn = false;
   bool _isLoggingOut = false;
+  StreamSubscription<User?>? _authSub;
 
   Branch _getEffectiveBranchSync() {
     try {
@@ -35,6 +38,11 @@ class AuthController extends _$AuthController {
 
   @override
   AppUser? build() {
+    _authSub?.cancel();
+    ref.onDispose(() {
+      _authSub?.cancel();
+      _authSub = null;
+    });
 
     // Synchronously restore cached user from SharedPreferences for instant UI state
     AppUser? initialUser;
@@ -62,7 +70,7 @@ class AuthController extends _$AuthController {
       debugPrint('Error restoring initial user in build(): $e');
     }
 
-    FirebaseAuth.instance.authStateChanges().listen((user) async {
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (_isLoggingOut || _isLoggingIn) return;
       final prefs = await SharedPreferences.getInstance();
       final savedRoleString = prefs.getString('userRole');
@@ -85,7 +93,6 @@ class AuthController extends _$AuthController {
                   avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
                 );
               }
-              await _syncRoleToPrefs(state);
             } catch (_) {
               state = const AppUser(
                 id: 'mock_active_client',
@@ -94,8 +101,13 @@ class AuthController extends _$AuthController {
                 avatarUrl: 'https://ui-avatars.com/api/?name=Андрій',
               );
             }
-            await _ensureStaffFirebaseAuth(email: 'client.demo@cityswim.app', password: 'client123456');
-            await _syncAuthUserDoc(state);
+            _isLoggingIn = true;
+            try {
+              await _ensureStaffFirebaseAuth(email: 'client.demo@cityswim.app', password: 'client123456');
+            } finally {
+              _isLoggingIn = false;
+            }
+            await _syncRoleToPrefs(state);
           } else if (savedRoleString == 'coach') {
             // Coach session restoration
             final coachId = mockUserId ?? clientId;
@@ -104,8 +116,13 @@ class AuthController extends _$AuthController {
                 final doc = await FirebaseFirestore.instance.collection('users').doc(coachId).get();
                 if (doc.exists) {
                   state = AppUser.fromJson(doc.data()!);
+                  _isLoggingIn = true;
+                  try {
+                    await _ensureCoachFirebaseAuth(coachId, state);
+                  } finally {
+                    _isLoggingIn = false;
+                  }
                   await _syncRoleToPrefs(state);
-                  await _ensureCoachFirebaseAuth(coachId, state);
                   return;
                 }
               } catch (_) {}
@@ -146,7 +163,6 @@ class AuthController extends _$AuthController {
                         avatarUrl: 'https://ui-avatars.com/api/?name=Admin+Kyiv&background=8b5cf6&color=ffffff',
                       );
               }
-              await _syncRoleToPrefs(state);
             } catch (_) {
               state = isAdminVienna
                   ? const AppUser(id: 'admin_vienna', name: 'Адміністратор Відень', role: UserRole.admin, branchId: 'vienna', branchIds: ['vienna'])
@@ -154,17 +170,26 @@ class AuthController extends _$AuthController {
             }
             final staffEmail = isAdminVienna ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
             final staffPass = isAdminVienna ? 'vienna123456' : 'kyiv123456';
-            await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
-            await _syncAuthUserDoc(state);
+            _isLoggingIn = true;
+            try {
+              await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
+            } finally {
+              _isLoggingIn = false;
+            }
+            await _syncRoleToPrefs(state);
           } else if (savedRoleString == 'owner') {
             state = const AppUser(
               id: 'mock_owner',
               name: 'Owner',
               role: UserRole.owner,
             );
+            _isLoggingIn = true;
+            try {
+              await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
+            } finally {
+              _isLoggingIn = false;
+            }
             await _syncRoleToPrefs(state);
-            await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
-            await _syncAuthUserDoc(state);
           } else if (savedRoleString == 'parent' || clientId != null) {
             // Real client / parent session restoration!
             final targetId = clientId ?? mockUserId;
@@ -172,7 +197,12 @@ class AuthController extends _$AuthController {
               final isDemo = targetId == 'demo_client' || targetId == 'mock_active_client';
               final safeId = targetId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
               final clientEmail = isDemo ? 'client.demo@cityswim.app' : 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
-              await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
+              _isLoggingIn = true;
+              try {
+                await _ensureStaffFirebaseAuth(email: clientEmail, password: 'client123456');
+              } finally {
+                _isLoggingIn = false;
+              }
               await _fetchUserFromFirestore(targetId, hasCachedState: state != null);
               await _syncAuthUserDoc(state);
             }
@@ -210,11 +240,10 @@ class AuthController extends _$AuthController {
             organizationId: effectiveBranch.organizationId,
           );
           hasCachedState = true;
-          await _syncRoleToPrefs(state);
         }
 
         await _fetchUserFromFirestore(effectiveId, hasCachedState: hasCachedState);
-        _syncAuthUserDoc(state);
+        await _syncRoleToPrefs(state);
       }
     });
     return initialUser;
@@ -879,266 +908,411 @@ class AuthController extends _$AuthController {
     }
   }
 
-  Future<void> signInWithEmail(String email, String password) async {
+  bool isStaffLoginIdentifier(String rawLogin) {
+    final login = rawLogin.trim().toLowerCase();
+    final isKyivAdmin = login == 'admin' ||
+        login == 'admin_kyiv' ||
+        login == 'admin@cityswim.com' ||
+        login == 'admin@gmail.com' ||
+        login == 'admin.kyiv@cityswim.com';
+    final isViennaAdmin = login == 'admin_vienna' ||
+        login == 'vienna.admin@cityswim.at' ||
+        login == 'admin.vienna@cityswim.com';
+    final isOwner = login == 'owner' ||
+        login == 'owner@cityswim.com' ||
+        login == 'owner@gmail.com';
+    final isCoach = login == 'coach' ||
+        login == 'coach1' ||
+        login == 'тренер' ||
+        login == 'coach@cityswim.com' ||
+        login == 'coach@gmail.com' ||
+        login.startsWith('coach') ||
+        login.contains('coach') ||
+        login.endsWith('@cityswim.at') ||
+        login.contains('maria') ||
+        login.contains('stefan');
+    return isKyivAdmin || isViennaAdmin || isOwner || isCoach;
+  }
+
+  /// Перевіряє стан прив'язки Google Authenticator (TOTP) для співробітника за логіном.
+  /// Якщо секрет ще не згенеровано в Firestore, створює його з `totpEnabled: false`.
+  Future<StaffTotpStatus> checkStaffTotpStatus(String rawLogin) async {
+    final login = rawLogin.trim().toLowerCase();
+    if (login.isEmpty) {
+      throw Exception('Введіть логін співробітника');
+    }
+
+    final isKyivAdmin = login == 'admin' ||
+        login == 'admin_kyiv' ||
+        login == 'admin@cityswim.com' ||
+        login == 'admin@gmail.com' ||
+        login == 'admin.kyiv@cityswim.com';
+    final isViennaAdmin = login == 'admin_vienna' ||
+        login == 'vienna.admin@cityswim.at' ||
+        login == 'admin.vienna@cityswim.com';
+    final isOwner = login == 'owner' ||
+        login == 'owner@cityswim.com' ||
+        login == 'owner@gmail.com';
+
     _isLoggingIn = true;
     try {
-      // Hardcoded test credentials for testing different portals
-      final login = email.trim().toLowerCase();
-
-      // Check role/login-based accounts
-      final isKyivAdmin = login == 'admin' ||
-          login == 'admin_kyiv' ||
-          login == 'admin@cityswim.com' ||
-          login == 'admin@gmail.com' ||
-          login == 'admin.kyiv@cityswim.com';
-      final isViennaAdmin = login == 'admin_vienna' ||
-          login == 'vienna.admin@cityswim.at' ||
-          login == 'admin.vienna@cityswim.com';
-
       if (isKyivAdmin || isViennaAdmin) {
         final targetDocId = isViennaAdmin ? 'admin_vienna' : 'admin';
         final targetBranchId = isViennaAdmin ? 'vienna' : 'kyiv';
         final targetCurrency = isViennaAdmin ? '€' : '₴';
+        final defaultName = isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ';
+        final defaultLogin = isViennaAdmin ? 'admin_vienna' : 'admin_kyiv';
+        final staffEmail = isViennaAdmin ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
+        final staffPass = isViennaAdmin ? 'vienna123456' : 'kyiv123456';
+
+        await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
         final docRef = FirebaseFirestore.instance.collection('users').doc(targetDocId);
         try {
           final docSnap = await docRef.get();
-          final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-          final isValidPassword = PasswordSecurityHelper.verifyPassword(password, storedPassword) ||
-              (isKyivAdmin && (password == 'kyiv123' || password == '1')) ||
-              (isViennaAdmin && (password == 'vienna123' || password == '1'));
-
-          if (!isValidPassword) {
-            throw Exception('Невірний пароль');
-          }
-          if (!PasswordSecurityHelper.isHashed(storedPassword) && password != '1') {
-            docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
-          }
-
-          if (docSnap.exists) {
-            final data = docSnap.data()!;
-            state = AppUser(
-              id: targetDocId,
-              name: (data['name'] as String?) ?? (isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ'),
-              role: UserRole.admin,
-              branchId: targetBranchId,
-              branchIds: [targetBranchId],
-              phone: data['phone'] as String?,
-              loginId: (data['loginId'] as String?) ?? (isViennaAdmin ? 'admin_vienna' : 'admin_kyiv'),
-              avatarUrl: (data['avatarUrl'] as String?) ??
-                  'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
-            );
-          } else {
-            final adminData = {
+          final data = docSnap.data();
+          String secret = (data?['totpSecret'] as String?)?.trim() ?? '';
+          final totpEnabled = data?['totpEnabled'] == true;
+          if (secret.isEmpty) {
+            secret = TotpSecurityHelper.generateBase32Secret();
+            await docRef.set({
               'id': targetDocId,
-              'name': isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ',
+              'name': (data?['name'] as String?) ?? defaultName,
               'role': 'admin',
-              'loginId': isViennaAdmin ? 'admin_vienna' : 'admin_kyiv',
-              'password': isViennaAdmin ? 'vienna123' : 'kyiv123',
-              'phone': isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01',
+              'loginId': (data?['loginId'] as String?) ?? defaultLogin,
+              'phone': (data?['phone'] as String?) ?? (isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01'),
               'branchId': targetBranchId,
               'branchIds': [targetBranchId],
               'currency': targetCurrency,
-              'adminSalary': isViennaAdmin ? 1900 : 20000,
-              'avatarUrl':
+              'adminSalary': (data?['adminSalary'] as int?) ?? (isViennaAdmin ? 1900 : 20000),
+              'totpSecret': secret,
+              'totpEnabled': false,
+              'avatarUrl': (data?['avatarUrl'] as String?) ??
                   'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
-              'createdAt': FieldValue.serverTimestamp(),
-            };
-            await docRef.set(adminData).catchError((_) {});
-            state = AppUser(
-              id: targetDocId,
-              name: isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ',
-              role: UserRole.admin,
-              branchId: targetBranchId,
-              branchIds: [targetBranchId],
-              phone: isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01',
-              loginId: isViennaAdmin ? 'admin_vienna' : 'admin_kyiv',
-              avatarUrl:
-                  'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
-            );
+            }, SetOptions(merge: true));
           }
-        } catch (e) {
-          if (e.toString().contains('Невірний пароль')) rethrow;
-          debugPrint('Firestore admin check error, using local fallback: $e');
-          final isValidFallback = (isKyivAdmin && (password == 'kyiv123' || password == '1')) ||
-              (isViennaAdmin && (password == 'vienna123' || password == '1'));
-          if (!isValidFallback) {
-            throw Exception('Невірний пароль');
-          }
-          state = AppUser(
-            id: targetDocId,
-            name: isViennaAdmin ? 'Адміністратор Відень' : 'Адміністратор Київ',
-            role: UserRole.admin,
-            branchId: targetBranchId,
-            branchIds: [targetBranchId],
-            phone: isViennaAdmin ? '+43 1 234 5678' : '+380 (99) 000-00-01',
-            loginId: isViennaAdmin ? 'admin_vienna' : 'admin_kyiv',
-            avatarUrl:
-                'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
+          final effectiveLogin = (data?['loginId'] as String?) ?? defaultLogin;
+          return StaffTotpStatus(
+            userId: targetDocId,
+            loginId: effectiveLogin,
+            displayName: (data?['name'] as String?) ?? defaultName,
+            role: 'admin',
+            totpEnabled: totpEnabled,
+            secret: secret,
+            otpAuthUri: TotpSecurityHelper.buildOtpAuthUri(accountName: effectiveLogin, secret: secret),
+          );
+        } catch (_) {
+          final fallbackSecret = TotpSecurityHelper.deterministicFallbackSecret(targetDocId);
+          return StaffTotpStatus(
+            userId: targetDocId,
+            loginId: defaultLogin,
+            displayName: defaultName,
+            role: 'admin',
+            totpEnabled: false,
+            secret: fallbackSecret,
+            otpAuthUri: TotpSecurityHelper.buildOtpAuthUri(accountName: defaultLogin, secret: fallbackSecret),
           );
         }
-        await _syncRoleToPrefs(state);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mockUserId', targetDocId);
-        await prefs.setString('clientId', targetDocId);
-        await prefs.setString('userBranchId', targetBranchId);
-        await prefs.setString('selected_branch_id', targetBranchId);
-        final staffEmail = isViennaAdmin ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
-        final staffPass = isViennaAdmin ? 'vienna123456' : 'kyiv123456';
-        await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
-        await _syncAuthUserDoc(state);
-        if (isKyivAdmin) {
-          ensureAdminInFirestore().catchError((_) {});
-        }
-        return;
-      } else if (login == 'owner' || login == 'owner@cityswim.com' || login == 'owner@gmail.com') {
+      }
+
+      if (isOwner) {
+        await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
         final docRef = FirebaseFirestore.instance.collection('users').doc('mock_owner');
         try {
           final docSnap = await docRef.get();
-          final storedPassword = (docSnap.data()?['password'] as String?) ?? '1';
-          if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
-            throw Exception('Невірний пароль');
+          final data = docSnap.data();
+          String secret = (data?['totpSecret'] as String?)?.trim() ?? '';
+          final totpEnabled = data?['totpEnabled'] == true;
+          if (secret.isEmpty) {
+            secret = TotpSecurityHelper.generateBase32Secret();
+            await docRef.set({
+              'id': 'mock_owner',
+              'name': (data?['name'] as String?) ?? 'Owner',
+              'role': 'owner',
+              'loginId': 'owner',
+              'totpSecret': secret,
+              'totpEnabled': false,
+            }, SetOptions(merge: true));
           }
-          if (!PasswordSecurityHelper.isHashed(storedPassword)) {
-            docRef.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
+          return StaffTotpStatus(
+            userId: 'mock_owner',
+            loginId: 'owner',
+            displayName: (data?['name'] as String?) ?? 'Owner',
+            role: 'owner',
+            totpEnabled: totpEnabled,
+            secret: secret,
+            otpAuthUri: TotpSecurityHelper.buildOtpAuthUri(accountName: 'owner', secret: secret),
+          );
+        } catch (_) {
+          final fallbackSecret = TotpSecurityHelper.deterministicFallbackSecret('mock_owner');
+          return StaffTotpStatus(
+            userId: 'mock_owner',
+            loginId: 'owner',
+            displayName: 'Owner',
+            role: 'owner',
+            totpEnabled: false,
+            secret: fallbackSecret,
+            otpAuthUri: TotpSecurityHelper.buildOtpAuthUri(accountName: 'owner', secret: fallbackSecret),
+          );
+        }
+      }
+
+      // Coach resolution
+      final coachAuthEmail = login.contains('maria')
+          ? 'coach.maria@cityswim.app'
+          : (login.contains('stefan') ? 'coach.stefan@cityswim.app' : 'coach.kyiv@cityswim.app');
+      await _ensureStaffFirebaseAuth(email: coachAuthEmail, password: 'coach123456');
+
+      final db = FirebaseFirestore.instance;
+      DocumentSnapshot<Map<String, dynamic>>? matchedDoc;
+
+      var usersSnap = await db.collection('users').where('loginId', isEqualTo: login).get();
+      if (usersSnap.docs.isNotEmpty) {
+        matchedDoc = usersSnap.docs.first;
+      }
+
+      if (matchedDoc == null) {
+        final coachesSnap = await db.collection('coaches').where('loginId', isEqualTo: login).get();
+        if (coachesSnap.docs.isNotEmpty) {
+          final coachDoc = coachesSnap.docs.first;
+          final coachData = Map<String, dynamic>.from(coachDoc.data());
+          coachData['id'] = coachDoc.id;
+          coachData['role'] = 'coach';
+          await db.collection('users').doc(coachDoc.id).set(coachData, SetOptions(merge: true));
+          matchedDoc = await db.collection('users').doc(coachDoc.id).get();
+        }
+      }
+
+      if (matchedDoc == null || !matchedDoc.exists) {
+        if (login == 'maria' || login == 'coach_maria' || login.contains('maria')) {
+          final mDoc = await db.collection('users').doc('coach_maria').get();
+          if (mDoc.exists) matchedDoc = mDoc;
+        } else if (login == 'stefan' || login == 'coach_stefan' || login.contains('stefan')) {
+          final sDoc = await db.collection('users').doc('coach_stefan').get();
+          if (sDoc.exists) matchedDoc = sDoc;
+        } else if (login == 'coach' || login == 'тренер') {
+          final dDoc = await db.collection('users').doc('default_coach').get();
+          if (!dDoc.exists) {
+            final initSecret = TotpSecurityHelper.generateBase32Secret();
+            await db.collection('users').doc('default_coach').set({
+              'id': 'default_coach',
+              'name': 'Олена Коваль',
+              'role': 'coach',
+              'phone': '+380 (99) 000-00-02',
+              'loginId': 'coach',
+              'branchId': 'kyiv',
+              'branchIds': ['kyiv'],
+              'organizationId': 'cityswim',
+              'totpSecret': initSecret,
+              'totpEnabled': false,
+              'avatarUrl': 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
+            }, SetOptions(merge: true));
           }
-        } catch (e) {
-          if (e.toString().contains('Невірний пароль')) rethrow;
-          debugPrint('Firestore owner check error, using local fallback: $e');
-          if (password != '1') {
-            throw Exception('Невірний пароль');
+          matchedDoc = await db.collection('users').doc('default_coach').get();
+        }
+      }
+
+      // Case-insensitive fallback scan across coaches if still not found
+      if (matchedDoc == null || !matchedDoc.exists) {
+        final allCoachesSnap = await db.collection('users').where('role', isEqualTo: 'coach').get();
+        for (final doc in allCoachesSnap.docs) {
+          final docLogin = (doc.data()['loginId'] as String?)?.trim().toLowerCase() ?? '';
+          if (docLogin == login || doc.id.toLowerCase() == login) {
+            matchedDoc = doc;
+            break;
           }
         }
+      }
+
+      if (matchedDoc == null || !matchedDoc.exists) {
+        throw Exception('Співробітника з логіном $login не знайдено');
+      }
+
+      final doc = matchedDoc;
+      final data = doc.data() ?? <String, dynamic>{};
+      String secret = (data['totpSecret'] as String?)?.trim() ?? '';
+      final totpEnabled = data['totpEnabled'] == true;
+      final effectiveLogin = (data['loginId'] as String?)?.trim().isNotEmpty == true
+          ? (data['loginId'] as String).trim()
+          : login;
+      final displayName = (data['name'] as String?)?.trim().isNotEmpty == true
+          ? (data['name'] as String).trim()
+          : effectiveLogin;
+
+      if (secret.isEmpty) {
+        secret = TotpSecurityHelper.generateBase32Secret();
+        await doc.reference.set({
+          'id': doc.id,
+          'totpSecret': secret,
+          'totpEnabled': false,
+        }, SetOptions(merge: true));
+        await db.collection('coaches').doc(doc.id).set({
+          'id': doc.id,
+          'totpSecret': secret,
+          'totpEnabled': false,
+        }, SetOptions(merge: true)).catchError((_) {});
+      }
+
+      return StaffTotpStatus(
+        userId: doc.id,
+        loginId: effectiveLogin,
+        displayName: displayName,
+        role: (data['role'] as String?) ?? 'coach',
+        totpEnabled: totpEnabled,
+        secret: secret,
+        otpAuthUri: TotpSecurityHelper.buildOtpAuthUri(accountName: effectiveLogin, secret: secret),
+      );
+    } finally {
+      _isLoggingIn = false;
+    }
+  }
+
+  /// Авторизує співробітника (Owner, Admin, Coach) за допомогою 6-значного коду Google Authenticator.
+  Future<void> signInStaffWithTotp({
+    required String login,
+    required String totpCode,
+  }) async {
+    final cleanLogin = login.trim().toLowerCase();
+    final cleanCode = totpCode.replaceAll(RegExp(r'\D'), '');
+    if (cleanCode.length != 6) {
+      throw Exception('Введіть 6-значний код із Google Authenticator');
+    }
+
+    final status = await checkStaffTotpStatus(cleanLogin);
+    final isValid = TotpSecurityHelper.verifyCode(cleanCode, status.secret);
+    if (!isValid) {
+      throw Exception('Невірний або застарілий код Google Authenticator');
+    }
+
+    _isLoggingIn = true;
+    try {
+      final db = FirebaseFirestore.instance;
+      final userRef = db.collection('users').doc(status.userId);
+      if (!status.totpEnabled) {
+        await userRef.set({
+          'totpEnabled': true,
+          'totpSecret': status.secret,
+        }, SetOptions(merge: true)).catchError((_) {});
+        if (status.role == 'coach') {
+          await db.collection('coaches').doc(status.userId).set({
+            'totpEnabled': true,
+            'totpSecret': status.secret,
+          }, SetOptions(merge: true)).catchError((_) {});
+        }
+      }
+
+      Map<String, dynamic>? data;
+      try {
+        final docSnap = await userRef.get();
+        data = docSnap.data();
+      } catch (_) {
+        data = null;
+      }
+
+      if (status.role == 'admin') {
+        final isViennaAdmin = status.userId == 'admin_vienna';
+        final targetBranchId = isViennaAdmin ? 'vienna' : 'kyiv';
+        state = AppUser(
+          id: status.userId,
+          name: (data?['name'] as String?) ?? status.displayName,
+          role: UserRole.admin,
+          branchId: targetBranchId,
+          branchIds: [targetBranchId],
+          phone: data?['phone'] as String?,
+          loginId: status.loginId,
+          avatarUrl: (data?['avatarUrl'] as String?) ??
+              'https://ui-avatars.com/api/?name=${isViennaAdmin ? 'Admin+Vienna' : 'Admin+Kyiv'}&background=8b5cf6&color=ffffff',
+        );
+        await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mockUserId', status.userId);
+        await prefs.setString('clientId', status.userId);
+        await prefs.setString('userBranchId', targetBranchId);
+        await prefs.setString('selected_branch_id', targetBranchId);
+        if (!isViennaAdmin) {
+          ensureAdminInFirestore().catchError((_) {});
+        }
+        return;
+      } else if (status.role == 'owner') {
         state = const AppUser(id: 'mock_owner', name: 'Owner', role: UserRole.owner);
         await _syncRoleToPrefs(state);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mockUserId', 'mock_owner');
         await prefs.setString('clientId', 'mock_owner');
-        await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
-        await _syncAuthUserDoc(state);
         return;
-      } else if (login == 'coach' || login == 'coach1' || login == 'тренер' || login == 'coach@cityswim.com' || login == 'coach@gmail.com' || login.startsWith('coach') || login.contains('coach') || login.endsWith('@cityswim.at') || login.contains('maria') || login.contains('stefan')) {
-        try {
-          final coachAuthEmail = login.contains('maria')
-              ? 'coach.maria@cityswim.app'
-              : (login.contains('stefan') ? 'coach.stefan@cityswim.app' : 'coach.kyiv@cityswim.app');
-          await _ensureStaffFirebaseAuth(email: coachAuthEmail, password: 'coach123456');
-
-          var usersSnap = await FirebaseFirestore.instance.collection('users').where('loginId', isEqualTo: login).get();
-          if (usersSnap.docs.isEmpty) {
-            final coachesSnap = await FirebaseFirestore.instance.collection('coaches').where('loginId', isEqualTo: login).get();
-            if (coachesSnap.docs.isNotEmpty) {
-              final coachDoc = coachesSnap.docs.first;
-              final coachData = Map<String, dynamic>.from(coachDoc.data());
-              coachData['id'] = coachDoc.id;
-              coachData['role'] = 'coach';
-              await FirebaseFirestore.instance.collection('users').doc(coachDoc.id).set(coachData, SetOptions(merge: true));
-              usersSnap = await FirebaseFirestore.instance.collection('users').where('id', isEqualTo: coachDoc.id).get();
-            }
-          }
-          if (usersSnap.docs.isEmpty) {
-            if (login == 'maria' || login == 'coach_maria' || login.contains('maria')) {
-              final mDoc = await FirebaseFirestore.instance.collection('users').doc('coach_maria').get();
-              if (mDoc.exists) {
-                usersSnap = await FirebaseFirestore.instance.collection('users').where('id', isEqualTo: 'coach_maria').get();
-              }
-            } else if (login == 'stefan' || login == 'coach_stefan' || login.contains('stefan')) {
-              final sDoc = await FirebaseFirestore.instance.collection('users').doc('coach_stefan').get();
-              if (sDoc.exists) {
-                usersSnap = await FirebaseFirestore.instance.collection('users').where('id', isEqualTo: 'coach_stefan').get();
-              }
-            }
-          }
-          if (usersSnap.docs.isEmpty && (login == 'coach' || login == 'тренер')) {
-            final fallbackDoc = await FirebaseFirestore.instance.collection('users').doc('default_coach').get();
-            if (fallbackDoc.exists) {
-              final userData = fallbackDoc.data()!;
-              final storedPassword = (userData['password'] as String?) ?? '1';
-              if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
-                throw Exception('Невірний пароль');
-              }
-              state = AppUser.fromJson(userData);
-              await _syncRoleToPrefs(state);
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('clientId', state!.id);
-              await prefs.setString('mockUserId', state!.id);
-              await _ensureCoachFirebaseAuth(login, state);
-              return;
-            }
-          }
-
-          if (usersSnap.docs.isNotEmpty) {
-            final userData = usersSnap.docs.first.data();
-            final storedPassword = (userData['password'] as String?) ?? '1';
-            if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
-              throw Exception('Невірний пароль');
-            }
-            if (!PasswordSecurityHelper.isHashed(storedPassword)) {
-              usersSnap.docs.first.reference.update({'password': PasswordSecurityHelper.hashPassword(password)}).catchError((_) {});
-            }
-            state = AppUser.fromJson(userData);
-            await _syncRoleToPrefs(state);
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('clientId', state!.id);
-            await prefs.setString('mockUserId', state!.id);
-            await prefs.setBool('needsOnboarding', false);
-            await _ensureCoachFirebaseAuth(login, state);
-            return;
-          } else {
-            throw Exception('Тренера з логіном $login не знайдено');
-          }
-        } catch (e) {
-          if (e.toString().contains('Невірний пароль') || e.toString().contains('не знайдено')) rethrow;
-          debugPrint('Firestore coach check error, using local fallback: $e');
-          if (password != '1') {
-            throw Exception('Невірний пароль');
-          }
-          if (login.contains('maria')) {
-            state = const AppUser(
-              id: 'coach_maria',
-              name: 'Coach Maria Huber',
-              role: UserRole.coach,
-              phone: '+43 676 1234567',
-              loginId: 'maria.huber@cityswim.at',
-              branchId: 'vienna',
-              branchIds: ['vienna'],
-              organizationId: 'cityswim',
-              avatarUrl: 'https://ui-avatars.com/api/?name=Maria+Huber&background=00e5ff&color=000000',
-            );
-          } else if (login.contains('stefan')) {
-            state = const AppUser(
-              id: 'coach_stefan',
-              name: 'Coach Stefan Gruber',
-              role: UserRole.coach,
-              phone: '+43 676 7654321',
-              loginId: 'stefan.gruber@cityswim.at',
-              branchId: 'vienna',
-              branchIds: ['vienna'],
-              organizationId: 'cityswim',
-              avatarUrl: 'https://ui-avatars.com/api/?name=Stefan+Gruber&background=0284c7&color=ffffff',
-            );
-          } else if (login == 'coach' || login == 'тренер') {
-            state = const AppUser(
-              id: 'default_coach',
-              name: 'Олена Коваль',
-              role: UserRole.coach,
-              phone: '+380 (99) 000-00-02',
-              loginId: 'coach',
-              branchId: 'kyiv',
-              branchIds: ['kyiv'],
-              organizationId: 'cityswim',
-              avatarUrl: 'https://ui-avatars.com/api/?name=Olena+Koval&background=0284c7&color=ffffff',
-            );
-          } else {
-            rethrow;
-          }
-          await _syncRoleToPrefs(state);
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('clientId', state!.id);
-          await prefs.setString('mockUserId', state!.id);
-          await _ensureCoachFirebaseAuth(login, state);
-          return;
+      } else {
+        if (data != null) {
+          final normalizedData = Map<String, dynamic>.from(data);
+          normalizedData['id'] = (normalizedData['id'] as String?)?.isNotEmpty == true
+              ? normalizedData['id']
+              : status.userId;
+          state = AppUser.fromJson(normalizedData);
+        } else {
+          state = AppUser(
+            id: status.userId,
+            name: status.displayName,
+            role: UserRole.coach,
+            loginId: status.loginId,
+            branchId: cleanLogin.contains('maria') || cleanLogin.contains('stefan') ? 'vienna' : 'kyiv',
+            branchIds: [cleanLogin.contains('maria') || cleanLogin.contains('stefan') ? 'vienna' : 'kyiv'],
+          );
         }
-      } else if (login == 'client' || login == 'client1' || login == 'parent' || login.startsWith('client') || !login.contains('@')) {
+        await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('clientId', state!.id);
+        await prefs.setString('mockUserId', state!.id);
+        await prefs.setBool('needsOnboarding', false);
+        await _ensureCoachFirebaseAuth(cleanLogin, state);
+        return;
+      }
+    } finally {
+      _isLoggingIn = false;
+    }
+  }
+
+  /// Скидає прив'язку Google Authenticator для співробітника та генерує новий секретний ключ.
+  Future<StaffTotpStatus> resetStaffTotp(
+    String staffId, {
+    required String loginId,
+    required String displayName,
+    required String role,
+  }) async {
+    final newSecret = TotpSecurityHelper.generateBase32Secret();
+    final db = FirebaseFirestore.instance;
+    await db.collection('users').doc(staffId).set({
+      'totpSecret': newSecret,
+      'totpEnabled': false,
+    }, SetOptions(merge: true));
+
+    if (role == 'coach') {
+      await db.collection('coaches').doc(staffId).set({
+        'totpSecret': newSecret,
+        'totpEnabled': false,
+      }, SetOptions(merge: true)).catchError((_) {});
+    }
+
+    return StaffTotpStatus(
+      userId: staffId,
+      loginId: loginId,
+      displayName: displayName,
+      role: role,
+      totpEnabled: false,
+      secret: newSecret,
+      otpAuthUri: TotpSecurityHelper.buildOtpAuthUri(accountName: loginId, secret: newSecret),
+    );
+  }
+
+  Future<void> signInWithEmail(String email, String password) async {
+    _isLoggingIn = true;
+    try {
+      final login = email.trim().toLowerCase();
+
+      // Staff accounts (Owner, Admins, Coaches) strictly authenticate via Google Authenticator TOTP
+      if (isStaffLoginIdentifier(login)) {
+        await signInStaffWithTotp(login: login, totpCode: password);
+        return;
+      }
+
+      if (login == 'client' || login == 'client1' || login == 'parent' || login.startsWith('client') || !login.contains('@')) {
         if (FirebaseAuth.instance.currentUser == null) {
           final safeId = login.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
           final clientEmail = 'client.${safeId.isEmpty ? "parent" : safeId}@cityswim.app';
@@ -2000,6 +2174,12 @@ Future<void> ensureDefaultClassesForCoachInFirestore() async {
   try {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final prefs = await SharedPreferences.getInstance();
+    final seedKey = 'demo_coach_classes_seeded_${today.year}_${today.month}_${today.day}';
+    if (prefs.getBool(seedKey) == true) {
+      return;
+    }
+
     final firestore = FirebaseFirestore.instance;
 
     // Check if there are already classes for today for Coach Olena Koval
@@ -2026,7 +2206,10 @@ Future<void> ensureDefaultClassesForCoachInFirestore() async {
         break;
       }
     }
-    if (hasTodayClass) return;
+    if (hasTodayClass) {
+      await prefs.setBool(seedKey, true);
+      return;
+    }
 
     // Ensure sample children exist for attendees list
     await firestore.collection('children').doc('demo_child_1').set({
@@ -2110,6 +2293,7 @@ Future<void> ensureDefaultClassesForCoachInFirestore() async {
       'poolId': 'pool_25m',
     }, SetOptions(merge: true));
 
+    await prefs.setBool(seedKey, true);
     debugPrint('Successfully seeded demo today classes for Coach Olena Koval');
   } catch (e) {
     debugPrint('Error in ensureDefaultClassesForCoachInFirestore: $e');

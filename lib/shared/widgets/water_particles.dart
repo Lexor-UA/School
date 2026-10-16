@@ -12,6 +12,7 @@ class WaterParticles extends ConsumerStatefulWidget {
 
 class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Animation<double>? _secondaryAnimation;
   final List<_Particle> _particles = [];
   final math.Random _random = math.Random();
 
@@ -45,6 +46,33 @@ class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTick
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    final newSecondary = route?.secondaryAnimation;
+    if (_secondaryAnimation != newSecondary) {
+      _secondaryAnimation?.removeStatusListener(_onSecondaryStatusChanged);
+      _secondaryAnimation = newSecondary;
+      _secondaryAnimation?.addStatusListener(_onSecondaryStatusChanged);
+      _updateTickerState();
+    }
+  }
+
+  void _onSecondaryStatusChanged(AnimationStatus status) {
+    _updateTickerState();
+  }
+
+  void _updateTickerState() {
+    if (!mounted) return;
+    final isCovered = _secondaryAnimation?.status == AnimationStatus.completed;
+    if (isCovered && _controller.isAnimating) {
+      _controller.stop();
+    } else if (!isCovered && !_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
   _Particle _generateParticle({required bool initial}) {
     return _Particle(
       x: _random.nextDouble() * 100, // percentage width
@@ -58,6 +86,7 @@ class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTick
 
   @override
   void dispose() {
+    _secondaryAnimation?.removeStatusListener(_onSecondaryStatusChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -66,14 +95,16 @@ class _WaterParticlesState extends ConsumerState<WaterParticles> with SingleTick
   Widget build(BuildContext context) {
     final theme = ref.watch(appThemeControllerProvider);
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _ParticlePainter(_particles, theme),
-          child: Container(),
-        );
-      },
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _ParticlePainter(_particles, theme),
+            size: Size.infinite,
+          );
+        },
+      ),
     );
   }
 }

@@ -591,7 +591,7 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  act.message,
+                  act.localizedMessage,
                   style: TextStyle(
                     color: themeConfig.textPrimary,
                     fontSize: 13,

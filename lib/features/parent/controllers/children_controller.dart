@@ -19,15 +19,20 @@ class ChildrenController extends _$ChildrenController {
 
     final familyAsync = ref.watch(familyStreamProvider);
     final family = familyAsync.value;
-    final parentIds = (family != null && family.parentIds.isNotEmpty)
-        ? family.parentIds
-        : [user.id];
+    final parentIds = <String>{
+      user.id,
+      if (family != null) ...family.parentIds,
+    }.toList();
 
-    return FirebaseFirestore.instance
-        .collection('children')
-        .where('parentId', whereIn: parentIds)
-        .snapshots()
-        .map((snapshot) {
+    final query = parentIds.length == 1
+        ? FirebaseFirestore.instance
+            .collection('children')
+            .where('parentId', isEqualTo: parentIds.first)
+        : FirebaseFirestore.instance
+            .collection('children')
+            .where('parentId', whereIn: parentIds);
+
+    return query.snapshots().map((snapshot) {
       return snapshot.docs
           .map((doc) => Child.fromJson({'id': doc.id, ...doc.data()}))
           .toList();

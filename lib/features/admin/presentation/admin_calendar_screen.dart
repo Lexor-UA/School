@@ -40,18 +40,23 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
   String? _selectedCoachName;
 
 
+  static bool _didRunSessionDuplicateCleanup = false;
+
   @override
   void initState() {
     super.initState();
     _selectedCoachId = widget.initialCoachId;
     _selectedCoachName = widget.initialCoachName;
 
-    // Automatically check and clean up any duplicate ghost classes from the database (delayed so route transition is smooth)
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        ref.read(scheduleControllerProvider.notifier).cleanupDuplicateClasses();
-      }
-    });
+    // Automatically check and clean up any duplicate ghost classes once per session
+    if (!_didRunSessionDuplicateCleanup) {
+      _didRunSessionDuplicateCleanup = true;
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          ref.read(scheduleControllerProvider.notifier).cleanupDuplicateClasses();
+        }
+      });
+    }
   }
 
   @override
@@ -70,9 +75,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
 
     final Map<String, GroupClass> uniqueDayClasses = {};
     for (final c in branchClasses) {
-      final matchesDate = c.startTime.year == _selectedDate.year && 
-        c.startTime.month == _selectedDate.month && 
-        c.startTime.day == _selectedDate.day;
+      final bStart = c.branchStartTime;
+      final matchesDate = bStart.year == _selectedDate.year && 
+        bStart.month == _selectedDate.month && 
+        bStart.day == _selectedDate.day;
       if (!matchesDate) continue;
 
       if (_selectedCoachId != null && _selectedCoachId!.isNotEmpty) {
@@ -85,7 +91,7 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
       uniqueDayClasses[c.id] = c;
     }
     final dayClasses = uniqueDayClasses.values.toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      ..sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
 
     return Scaffold(
       backgroundColor: currentTheme.scaffoldBg,
@@ -227,8 +233,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
     final selectedMonth = _selectedDate.month;
     final daysWithClasses = <int>{};
     for (final c in allClasses) {
-      if (c.startTime.year == selectedYear && c.startTime.month == selectedMonth) {
-        daysWithClasses.add(c.startTime.day);
+      final bStart = c.branchStartTime;
+      if (bStart.year == selectedYear && bStart.month == selectedMonth) {
+        daysWithClasses.add(bStart.day);
       }
     }
     final daysOfWeek = [

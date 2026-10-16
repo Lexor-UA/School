@@ -8,11 +8,13 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class EditCoachSheet extends ConsumerStatefulWidget {
   final String coachId;
   final String initialName;
   final String initialPhone;
+  final String? initialLoginId;
   final int initialRateGroup;
   final int initialRateIndividual;
   final int initialRateSplit;
@@ -23,6 +25,7 @@ class EditCoachSheet extends ConsumerStatefulWidget {
     required this.coachId,
     required this.initialName,
     required this.initialPhone,
+    this.initialLoginId,
     this.initialRateGroup = 400,
     this.initialRateIndividual = 450,
     this.initialRateSplit = 600,
@@ -86,15 +89,24 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
     final rateSplit = int.tryParse(_rateSplitController.text.trim()) ?? 0;
 
     try {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(widget.coachId);
-
-      await userRef.set({
+      final db = FirebaseFirestore.instance;
+      final updatePayload = {
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'rateGroup': rateGroup,
         'rateIndividual': rateIndividual,
         'rateSplit': rateSplit,
-      }, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
+      };
+
+      await db.collection('users').doc(widget.coachId).set(
+        updatePayload,
+        SetOptions(merge: true),
+      ).timeout(const Duration(seconds: 15));
+
+      await db.collection('coaches').doc(widget.coachId).set(
+        updatePayload,
+        SetOptions(merge: true),
+      ).catchError((_) {});
 
       if (mounted) {
         final admin = ref.read(authControllerProvider);
@@ -234,7 +246,16 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                         currentTheme: currentTheme,
                         unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
                       ),
-                      const SizedBox(height: 26),
+                      const SizedBox(height: 18),
+                      TotpStaffManagementCard(
+                        staffId: widget.coachId,
+                        loginId: (widget.initialLoginId?.isNotEmpty == true)
+                            ? widget.initialLoginId!
+                            : widget.coachId,
+                        displayName: widget.initialName,
+                        role: 'coach',
+                      ),
+                      const SizedBox(height: 22),
                   
                       if (_errorMessage != null) ...[
                         Container(

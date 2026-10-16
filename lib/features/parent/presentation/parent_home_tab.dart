@@ -85,11 +85,11 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     if (scheduleAsync.value != null) {
       final now = DateTime.now();
       final upcomingClasses = scheduleAsync.value!.where((c) {
-        if (c.startTime.isBefore(now)) return false;
+        if (c.branchStartTime.isBefore(now)) return false;
         return c.enrolledChildIds.any((id) => allEnrolledIds.contains(id));
       }).toList();
       
-      upcomingClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
+      upcomingClasses.sort((a, b) => a.branchStartTime.compareTo(b.branchStartTime));
       
       if (upcomingClasses.isNotEmpty) {
         nextEnrolledClass = upcomingClasses.first;

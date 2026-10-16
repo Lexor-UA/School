@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class OwnerEditSalarySheet extends ConsumerStatefulWidget {
   final String staffId;
@@ -90,12 +91,18 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
         final rateGroup = int.tryParse(_rateGroupController.text.trim()) ?? 400;
         final rateIndividual = int.tryParse(_rateIndividualController.text.trim()) ?? 450;
         final rateSplit = int.tryParse(_rateSplitController.text.trim()) ?? 600;
-
-        await userRef.set({
+        final ratePayload = {
           'rateGroup': rateGroup,
           'rateIndividual': rateIndividual,
           'rateSplit': rateSplit,
-        }, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
+        };
+
+        await userRef.set(ratePayload, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
+        await FirebaseFirestore.instance
+            .collection('coaches')
+            .doc(widget.staffId)
+            .set(ratePayload, SetOptions(merge: true))
+            .catchError((_) {});
 
         final owner = ref.read(authControllerProvider);
         if (owner != null) {
@@ -121,7 +128,9 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
             'name': widget.staffId == 'admin' ? 'auth.default_admin'.tr() : 'Admin Vienna',
             'branchId': widget.staffId == 'admin' ? 'kyiv' : 'vienna',
             'phone': widget.staffId == 'admin' ? '+380 (99) 000-00-01' : '+43 1 234 5678',
-            'loginId': widget.staffId == 'admin' ? 'Admin' : 'vienna.admin@cityswim.at',
+            'loginId': widget.loginId.isNotEmpty
+                ? widget.loginId
+                : (widget.staffId == 'admin' ? 'admin_kyiv' : 'admin_vienna'),
             'currency': widget.staffId == 'admin' ? '₴' : '€',
             'avatarUrl': widget.staffId == 'admin' 
                 ? 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff' 
@@ -280,7 +289,16 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                         ),
                       ],
 
-                      const SizedBox(height: 26),
+                      const SizedBox(height: 18),
+
+                      TotpStaffManagementCard(
+                        staffId: widget.staffId,
+                        loginId: widget.loginId,
+                        displayName: widget.name,
+                        role: widget.role,
+                      ),
+
+                      const SizedBox(height: 22),
 
                       if (_errorMessage != null) ...[
                         Container(

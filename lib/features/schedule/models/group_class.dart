@@ -48,7 +48,7 @@ abstract class GroupClass with _$GroupClass {
         : (int.tryParse(copy['maxCapacity']?.toString() ?? '') ?? 8);
 
     if (copy['startTime'] is Timestamp) {
-      copy['startTime'] = (copy['startTime'] as Timestamp).toDate().toIso8601String();
+      copy['startTime'] = (copy['startTime'] as Timestamp).toDate().toUtc().toIso8601String();
     } else if (copy['startTime'] is DateTime) {
       copy['startTime'] = (copy['startTime'] as DateTime).toIso8601String();
     } else if (copy['startTime'] == null || copy['startTime'].toString().trim().isEmpty) {
@@ -56,7 +56,7 @@ abstract class GroupClass with _$GroupClass {
     }
 
     if (copy['endTime'] is Timestamp) {
-      copy['endTime'] = (copy['endTime'] as Timestamp).toDate().toIso8601String();
+      copy['endTime'] = (copy['endTime'] as Timestamp).toDate().toUtc().toIso8601String();
     } else if (copy['endTime'] is DateTime) {
       copy['endTime'] = (copy['endTime'] as DateTime).toIso8601String();
     } else if (copy['endTime'] == null || copy['endTime'].toString().trim().isEmpty) {

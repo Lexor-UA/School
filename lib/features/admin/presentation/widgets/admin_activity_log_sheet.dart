@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/models/activity_log.dart';
+import 'package:swimming_school_app/features/schedule/models/class_activity.dart';
 
 enum ActivityPeriod { day, week, month }
 
@@ -427,7 +428,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        a.action,
+                                        ClassActivity.sanitizeNotificationText(a.action),
                                         style: TextStyle(
                                           color: currentTheme.textPrimary,
                                           fontSize: 13.5,

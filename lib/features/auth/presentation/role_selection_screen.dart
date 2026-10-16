@@ -17,6 +17,9 @@ import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' a
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
+import 'package:swimming_school_app/shared/utils/totp_security_helper.dart';
+import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
+
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   final bool skipSplash;
   final String? initialBranchId;
@@ -120,7 +123,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       return;
     }
 
-    Future.delayed(const Duration(seconds: 3), () async {
+    Future.delayed(const Duration(milliseconds: 2600), () async {
       if (!mounted) return;
       setState(() => _splashFinished = true);
 
@@ -211,9 +214,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       }
     } catch (e) {
       debugPrint('Biometric auth error: $e');
-      if (mounted) {
-        _navigateBasedOnRole(targetRole, user);
-      }
     } finally {
       if (mounted) {
         setState(() => _isAuthenticatingBiometrics = false);
@@ -257,7 +257,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final splashOffset =
-        screenHeight * 0.25; // Відступ для центрування логотипу
+        screenHeight * 0.28; // Відступ для старту логотипу знизу екрану
 
 
     ref.listen(authControllerProvider, (previous, next) {
@@ -314,18 +314,31 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             child: Column(
               children: [
                 // Top Bar with Language Selector
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 16.0,
-                  ),
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: _buildLanguageButton(context),
-                  ),
-                ).animate().fadeIn(
-                  delay: widget.skipSplash ? 0.ms : 3800.ms,
-                  duration: widget.skipSplash ? 300.ms : 800.ms,
+                IgnorePointer(
+                  ignoring: !_splashFinished,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 16.0,
+                    ),
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: _buildLanguageButton(context),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(
+                        delay: widget.skipSplash ? 0.ms : 2250.ms,
+                        duration: widget.skipSplash ? 250.ms : 650.ms,
+                        curve: Curves.easeOutCubic,
+                      )
+                      .slideY(
+                        begin: widget.skipSplash ? 0 : -0.15,
+                        end: 0,
+                        delay: widget.skipSplash ? 0.ms : 2250.ms,
+                        duration: widget.skipSplash ? 250.ms : 650.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
                 ),
 
                 Expanded(
@@ -373,30 +386,30 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                     )
                                     .animate()
                                     .fadeIn(
-                                      duration: widget.skipSplash ? 0.ms : 1200.ms,
-                                      curve: Curves.easeOut,
+                                      duration: widget.skipSplash ? 0.ms : 900.ms,
+                                      curve: Curves.easeOutCubic,
                                     )
                                     .moveY(
                                       begin: widget.skipSplash ? 0 : splashOffset,
                                       end: 0,
-                                      duration: widget.skipSplash ? 0.ms : 4500.ms,
-                                      delay: widget.skipSplash ? 0.ms : 2400.ms, // Starts a bit earlier for smoother transition
-                                      curve: Curves.easeOutQuint, // Extremely smooth and slow deceleration
+                                      duration: widget.skipSplash ? 0.ms : 1400.ms,
+                                      delay: widget.skipSplash ? 0.ms : 1050.ms,
+                                      curve: Curves.easeInOutCubic,
                                     )
                                     .scaleXY(
-                                      begin: widget.skipSplash ? 1.0 : 1.6,
+                                      begin: widget.skipSplash ? 1.0 : 1.35,
                                       end: 1.0,
-                                      duration: widget.skipSplash ? 0.ms : 4500.ms,
-                                      delay: widget.skipSplash ? 0.ms : 2400.ms,
-                                      curve: Curves.easeOutQuint,
+                                      duration: widget.skipSplash ? 0.ms : 1400.ms,
+                                      delay: widget.skipSplash ? 0.ms : 1050.ms,
+                                      curve: Curves.easeInOutCubic,
                                     ),
 
                                 const SizedBox(height: 50),
 
-                                if (!_splashFinished)
-                                  const SizedBox(height: 180)
-                                else
-                                  _buildStandardLoginView(context),
+                                IgnorePointer(
+                                  ignoring: !_splashFinished,
+                                  child: _buildStandardLoginView(context),
+                                ),
 
                                 const SizedBox(height: 20),
                               ],
@@ -409,8 +422,10 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 ),
 
                 // Bottom Isolated Staff Access Portal Button
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12, top: 4),
+                IgnorePointer(
+                  ignoring: !_splashFinished,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12, top: 4),
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white.withValues(alpha: 0.85),
@@ -437,10 +452,21 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                         ),
                       ),
                     ),
-                  ).animate().fadeIn(
-                    delay: widget.skipSplash ? 0.ms : 3600.ms,
-                    duration: widget.skipSplash ? 300.ms : 1000.ms,
-                  ),
+                  )
+                      .animate()
+                      .fadeIn(
+                        delay: widget.skipSplash ? 0.ms : 2300.ms,
+                        duration: widget.skipSplash ? 250.ms : 650.ms,
+                        curve: Curves.easeOutCubic,
+                      )
+                      .slideY(
+                        begin: widget.skipSplash ? 0 : 0.25,
+                        end: 0,
+                        delay: widget.skipSplash ? 0.ms : 2300.ms,
+                        duration: widget.skipSplash ? 250.ms : 650.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
+                ),
               ],
             ),
           ),
@@ -598,7 +624,20 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               if (mounted) setState(() => _isLoading = false);
             }
           },
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: widget.skipSplash ? 0.ms : 1850.ms,
+              duration: widget.skipSplash ? 250.ms : 650.ms,
+              curve: Curves.easeOutCubic,
+            )
+            .slideY(
+              begin: widget.skipSplash ? 0 : 0.25,
+              end: 0,
+              delay: widget.skipSplash ? 0.ms : 1850.ms,
+              duration: widget.skipSplash ? 250.ms : 650.ms,
+              curve: Curves.easeOutCubic,
+            ),
         const SizedBox(height: 16),
 
         _buildPremiumAuthButton(
@@ -647,7 +686,20 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               if (mounted) setState(() => _isLoading = false);
             }
           },
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: widget.skipSplash ? 0.ms : 1960.ms,
+              duration: widget.skipSplash ? 250.ms : 650.ms,
+              curve: Curves.easeOutCubic,
+            )
+            .slideY(
+              begin: widget.skipSplash ? 0 : 0.25,
+              end: 0,
+              delay: widget.skipSplash ? 0.ms : 1960.ms,
+              duration: widget.skipSplash ? 250.ms : 650.ms,
+              curve: Curves.easeOutCubic,
+            ),
         
         const SizedBox(height: 24),
         Row(
@@ -662,7 +714,20 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             ),
             Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
           ],
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: widget.skipSplash ? 0.ms : 2070.ms,
+              duration: widget.skipSplash ? 250.ms : 600.ms,
+              curve: Curves.easeOutCubic,
+            )
+            .slideY(
+              begin: widget.skipSplash ? 0 : 0.25,
+              end: 0,
+              delay: widget.skipSplash ? 0.ms : 2070.ms,
+              duration: widget.skipSplash ? 250.ms : 600.ms,
+              curve: Curves.easeOutCubic,
+            ),
         const SizedBox(height: 24),
 
         _buildPremiumAuthButton(
@@ -676,14 +741,22 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
             HapticFeedback.lightImpact();
             _showClientAuthModal(context, ref, initialTab: 0);
           },
-        ),
+        )
+            .animate()
+            .fadeIn(
+              delay: widget.skipSplash ? 0.ms : 2180.ms,
+              duration: widget.skipSplash ? 250.ms : 650.ms,
+              curve: Curves.easeOutCubic,
+            )
+            .slideY(
+              begin: widget.skipSplash ? 0 : 0.25,
+              end: 0,
+              delay: widget.skipSplash ? 0.ms : 2180.ms,
+              duration: widget.skipSplash ? 250.ms : 650.ms,
+              curve: Curves.easeOutCubic,
+            ),
       ],
-    ).animate().fadeIn(duration: 600.ms).slideY(
-          begin: 0.08,
-          end: 0,
-          duration: 600.ms,
-          curve: Curves.easeOutExpo,
-        );
+    );
   }
 
   Widget _buildPremiumAuthButton(
@@ -1572,7 +1645,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     final staffPasswordController = TextEditingController();
 
     bool isStaffLoading = false;
-    bool obscureStaffPassword = true;
+    StaffTotpStatus? pendingSetupStatus;
 
     showModalBottomSheet(
       context: context,
@@ -1582,18 +1655,73 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (BuildContext builderContext, StateSetter setModalState) {
+            Future<void> openTotpSetup() async {
+              final login = staffLoginController.text.trim();
+              if (login.isEmpty) {
+                _showModalToast(modalContext, 'auth.totp_enter_login_first'.tr(), color: Colors.amber.shade800);
+                return;
+              }
+              try {
+                setModalState(() => isStaffLoading = true);
+                final notifier = ref.read(authControllerProvider.notifier);
+                final status = await notifier.checkStaffTotpStatus(login);
+                if (modalContext.mounted) {
+                  setModalState(() {
+                    isStaffLoading = false;
+                    pendingSetupStatus = status;
+                  });
+                }
+              } catch (e) {
+                if (modalContext.mounted) {
+                  setModalState(() => isStaffLoading = false);
+                  _showModalToast(modalContext, 'auth.staff_login_error'.tr(args: ['$e']));
+                }
+              }
+            }
+
             Future<void> submitStaffLogin() async {
               final login = staffLoginController.text.trim();
-              final password = staffPasswordController.text.trim();
-              if (login.isEmpty || password.isEmpty) {
-                _showModalToast(modalContext, 'auth.enter_staff_credentials'.tr(), color: Colors.amber.shade800);
+              final code = staffPasswordController.text.replaceAll(RegExp(r'\D'), '');
+              if (login.isEmpty) {
+                _showModalToast(modalContext, 'auth.totp_enter_login_first'.tr(), color: Colors.amber.shade800);
+                return;
+              }
+
+              // If 6-digit code is empty, check if this staff member needs first-time QR setup
+              if (code.isEmpty) {
+                await openTotpSetup();
+                return;
+              }
+
+              if (code.length != 6) {
+                _showModalToast(modalContext, 'auth.totp_enter_6_digits'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
               try {
                 setModalState(() => isStaffLoading = true);
                 final notifier = ref.read(authControllerProvider.notifier);
-                await notifier.signInWithEmail(login, password);
+
+                // Check if 2FA is not yet enabled and user hasn't seen the QR code
+                if (pendingSetupStatus == null) {
+                  final status = await notifier.checkStaffTotpStatus(login);
+                  if (!status.totpEnabled && !TotpSecurityHelper.verifyCode(code, status.secret)) {
+                    if (modalContext.mounted) {
+                      setModalState(() {
+                        isStaffLoading = false;
+                        pendingSetupStatus = status;
+                      });
+                      _showModalToast(
+                        modalContext,
+                        'auth.totp_scan_qr_first_msg'.tr(),
+                        color: const Color(0xFF0284C7),
+                      );
+                    }
+                    return;
+                  }
+                }
+
+                await notifier.signInStaffWithTotp(login: login, totpCode: code);
                 if (modalContext.mounted) {
                   Navigator.of(modalContext, rootNavigator: true).pop();
                 }
@@ -1695,7 +1823,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                     ),
                                   ),
                                   child: const Icon(
-                                    LucideIcons.shieldAlert,
+                                    LucideIcons.shieldCheck,
                                     color: Color(0xFFFFB300),
                                     size: 22,
                                   ),
@@ -1716,7 +1844,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'auth.staff_portal_subtitle'.tr(),
+                                        'auth.totp_portal_subtitle'.tr(),
                                         style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
@@ -1745,6 +1873,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
                               autocorrect: false,
                               textInputAction: TextInputAction.next,
+                              onChanged: (_) {
+                                if (pendingSetupStatus != null) {
+                                  setModalState(() => pendingSetupStatus = null);
+                                }
+                              },
                               decoration: _modalInputDecoration(
                                 hintText: 'auth.staff_login_hint'.tr(),
                                 prefixIcon: LucideIcons.badgeCheck,
@@ -1754,31 +1887,74 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                             const SizedBox(height: 12),
 
-                            // Staff Password Input
+                            // Google Authenticator 6-digit TOTP Code Input
                             TextField(
                               controller: staffPasswordController,
-                              obscureText: obscureStaffPassword,
-                              style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(6),
+                              ],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 6,
+                              ),
                               textInputAction: TextInputAction.done,
                               onSubmitted: (_) => submitStaffLogin(),
                               decoration: _modalInputDecoration(
-                                hintText: 'auth.staff_password_hint'.tr(),
+                                hintText: 'auth.totp_code_hint'.tr(),
                                 prefixIcon: LucideIcons.keyRound,
                                 accentColor: const Color(0xFFFFB300),
                                 suffixIcon: IconButton(
-                                  icon: Icon(
-                                    obscureStaffPassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                                    color: Colors.white.withValues(alpha: 0.65),
+                                  tooltip: 'auth.totp_setup_qr_btn'.tr(),
+                                  icon: const Icon(
+                                    LucideIcons.qrCode,
+                                    color: Color(0xFFFFB300),
                                     size: 19,
                                   ),
-                                  onPressed: () {
-                                    setModalState(() => obscureStaffPassword = !obscureStaffPassword);
-                                  },
+                                  onPressed: isStaffLoading ? null : openTotpSetup,
                                 ),
                               ),
                             ),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
+
+                            // First-time setup button (QR code)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFFFFB300),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                onPressed: isStaffLoading ? null : openTotpSetup,
+                                icon: const Icon(LucideIcons.qrCode, size: 15),
+                                label: Text(
+                                  pendingSetupStatus == null
+                                      ? 'auth.totp_setup_qr_btn'.tr()
+                                      : 'auth.totp_refresh_qr_btn'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            if (pendingSetupStatus != null) ...[
+                              const SizedBox(height: 8),
+                              TotpQrSetupBox(
+                                loginId: pendingSetupStatus!.loginId,
+                                displayName: pendingSetupStatus!.displayName,
+                                secret: pendingSetupStatus!.secret,
+                                isDark: true,
+                                accentColor: const Color(0xFFFFB300),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
 
                             // Notice
                             Container(
@@ -1790,11 +1966,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(LucideIcons.info, size: 14, color: Colors.amber.withValues(alpha: 0.8)),
+                                  Icon(LucideIcons.shieldCheck, size: 14, color: Colors.amber.withValues(alpha: 0.85)),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'auth.staff_only_notice'.tr(),
+                                      'auth.totp_staff_notice'.tr(),
                                       style: const TextStyle(color: Colors.white60, fontSize: 11.5),
                                     ),
                                   ),
@@ -1806,7 +1982,9 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                             // Staff Submit Button
                             _buildSubmitButton(
-                              title: 'auth.staff_submit_btn'.tr(),
+                              title: pendingSetupStatus != null
+                                  ? 'auth.totp_verify_and_login_btn'.tr()
+                                  : 'auth.staff_submit_btn'.tr(),
                               icon: LucideIcons.logIn,
                               isLoading: isStaffLoading,
                               accentColors: const [Color(0xFFFFB300), Color(0xFFE65100)],

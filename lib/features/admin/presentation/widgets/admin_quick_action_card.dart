@@ -39,18 +39,19 @@ class AdminQuickActionCardState extends ConsumerState<AdminQuickActionCard> {
       widget.accentColor.withValues(alpha: 0.8),
     ];
 
-    return MouseRegion(
-      onEnter: (_) {
-        if (!_isHovered) setState(() => _isHovered = true);
-      },
-      onExit: (_) {
-        if (_isHovered) setState(() => _isHovered = false);
-      },
-      cursor: SystemMouseCursors.click,
-      child: AnimatedScale(
-        scale: _isPressed ? 0.94 : (_isHovered ? 1.025 : 1.0),
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOutCubic,
+    return RepaintBoundary(
+      child: MouseRegion(
+        onEnter: (_) {
+          if (!_isHovered) setState(() => _isHovered = true);
+        },
+        onExit: (_) {
+          if (_isHovered) setState(() => _isHovered = false);
+        },
+        cursor: SystemMouseCursors.click,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.95 : (_isHovered ? 1.025 : 1.0),
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOutCubic,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -252,7 +253,8 @@ class AdminQuickActionCardState extends ConsumerState<AdminQuickActionCard> {
                 ),
               ),
             ),
-          );
+          ),
+        );
   }
 }
 

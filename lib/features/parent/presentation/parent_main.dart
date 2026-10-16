@@ -78,9 +78,15 @@ class _ParentMainState extends ConsumerState<ParentMain> {
             const Positioned.fill(
               child: RepaintBoundary(child: WaterParticles()),
             ),
-          SafeArea(bottom: false, child: _tabs[selectedIndex]),
-        ],
-      ),
+            SafeArea(
+              bottom: false,
+              child: IndexedStack(
+                index: selectedIndex,
+                children: _tabs,
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Container(

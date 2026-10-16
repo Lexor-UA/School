@@ -13,6 +13,7 @@ import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
+import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 import 'add_coach_sheet.dart';
 import 'edit_coach_sheet.dart';
 import 'admin_calendar_screen.dart';
@@ -68,7 +69,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
   void _copyCredentials(String coachId, String loginId, String name) {
     HapticFeedback.selectionClick();
-    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n${'admin.clients_password_label'.tr()}1'));
+    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n2FA: Google Authenticator'));
     setState(() => _recentlyCopiedCoachId = coachId);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _recentlyCopiedCoachId == coachId) {
@@ -893,6 +894,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 coachId: coachId,
                                 initialName: name,
                                 initialPhone: phone,
+                                initialLoginId: loginId,
                                 initialRateGroup: rateGroup,
                                 initialRateIndividual: rateIndividual,
                                 initialRateSplit: rateSplit,
@@ -1110,40 +1112,80 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 ),
                               ),
                             ),
-                            Text(
-                              'admin.clients_password_label'.tr(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: currentTheme.isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFBBF24).withValues(alpha: 0.16),
+                                color: const Color(0xFF10B981).withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: const Color(0xFFFBBF24).withValues(alpha: 0.35),
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.35),
                                   width: 0.9,
                                 ),
                               ),
-                              child: const Text(
-                                '1',
-                                style: TextStyle(
-                                  color: Color(0xFFFBBF24),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 12,
-                                  fontFamily: 'monospace',
-                                ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.shieldCheck, size: 11, color: Color(0xFF10B981)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '2FA',
+                                    style: TextStyle(
+                                      color: Color(0xFF10B981),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          TotpQrSheet.show(
+                            context,
+                            staffId: coachId,
+                            loginId: loginId,
+                            displayName: name,
+                            role: 'coach',
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(9),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.40),
+                              width: 1,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.qrCode, color: Color(0xFF10B981), size: 13),
+                              SizedBox(width: 4),
+                              Text(
+                                'QR',
+                                style: TextStyle(
+                                  color: Color(0xFF10B981),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     Material(
                       color: Colors.transparent,
                       child: InkWell(

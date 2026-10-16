@@ -23,6 +23,7 @@ import 'package:swimming_school_app/features/admin/presentation/client_managemen
 import 'package:swimming_school_app/features/admin/presentation/client_management/widgets/client_credentials_form.dart';
 import 'package:swimming_school_app/features/admin/presentation/client_management/widgets/client_family_section.dart';
 import 'package:swimming_school_app/features/admin/presentation/client_management/widgets/client_classes_section.dart';
+import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
 
 class EditClientSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -49,6 +50,8 @@ class EditClientSheet extends ConsumerStatefulWidget {
 }
 
 class _EditClientSheetState extends ConsumerState<EditClientSheet> {
+  static const String _hashedPasswordPlaceholder = '••••••';
+
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _ageController;
@@ -75,8 +78,11 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       text: widget.initialAge?.toString() ?? '',
     );
     _loginIdController = TextEditingController(text: widget.initialLoginId);
+    final rawInitialPassword = widget.initialPassword ?? '1';
     _passwordController = TextEditingController(
-      text: widget.initialPassword ?? '1',
+      text: PasswordSecurityHelper.isHashed(rawInitialPassword)
+          ? _hashedPasswordPlaceholder
+          : rawInitialPassword,
     );
     _selectedBranchId = widget.initialBranchId ?? 'kyiv';
   }
@@ -148,11 +154,17 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
       }
 
       final age = int.tryParse(_ageController.text.trim());
+      final enteredPassword = _passwordController.text.trim();
+      final effectivePassword =
+          (enteredPassword == _hashedPasswordPlaceholder &&
+              widget.initialPassword != null)
+          ? widget.initialPassword!
+          : enteredPassword;
       final updateData = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'loginId': _loginIdController.text.trim(),
-        'password': _passwordController.text.trim(),
+        'password': effectivePassword,
         'branchId': _selectedBranchId,
         'branchIds': [_selectedBranchId],
       };

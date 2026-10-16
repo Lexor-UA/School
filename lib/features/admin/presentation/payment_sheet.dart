@@ -199,23 +199,24 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final subsAsync = ref.watch(allSubscriptionsProvider);
     final tenancyState = ref.watch(tenancyControllerProvider);
     final pendingMap = ref.watch(pendingSubscriptionsProvider).value ?? {};
+    final userDocs = ref.watch(adminAllUsersDocsProvider).value ?? [];
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'parent').snapshots(),
-      builder: (context, usersSnap) {
-        final Map<String, Map<String, dynamic>> clientsMap = {};
-        if (usersSnap.hasData) {
-          for (var doc in usersSnap.data!.docs) {
-            clientsMap[doc.id] = doc.data() as Map<String, dynamic>;
-          }
-        }
+    final Map<String, Map<String, dynamic>> clientsMap = {};
+    for (final doc in userDocs) {
+      final data = doc.data();
+      if (data['role'] != 'parent') continue;
+      final bId = data['branchId'] as String? ?? 'kyiv';
+      if (tenancyState.isAllLocationsSelected ||
+          tenancyState.activeBranchId == null ||
+          bId == tenancyState.activeBranchId) {
+        clientsMap[doc.id] = data;
+      }
+    }
 
-        return subsAsync.when(
-          data: (allSubs) => _buildMainSheet(context, allSubs, clientsMap, pendingMap, currentTheme, tenancyState),
-          loading: () => _buildLoadingSheet(context, currentTheme),
-          error: (err, stack) => _buildErrorSheet(context, err.toString(), currentTheme),
-        );
-      },
+    return subsAsync.when(
+      data: (allSubs) => _buildMainSheet(context, allSubs, clientsMap, pendingMap, currentTheme, tenancyState),
+      loading: () => _buildLoadingSheet(context, currentTheme),
+      error: (err, stack) => _buildErrorSheet(context, err.toString(), currentTheme),
     );
   }
 

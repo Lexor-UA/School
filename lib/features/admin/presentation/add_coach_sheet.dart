@@ -11,6 +11,8 @@ import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_c
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
+import 'package:swimming_school_app/shared/utils/totp_security_helper.dart';
+import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class AddCoachSheet extends ConsumerStatefulWidget {
   const AddCoachSheet({super.key});
@@ -30,6 +32,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
   bool _isSuccess = false;
   String? _errorMessage;
   String? _generatedLogin;
+  String? _generatedTotpSecret;
 
   @override
   void dispose() {
@@ -83,6 +86,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
       final effectiveBranch = ref.read(effectiveBranchProvider);
       final activeBranchId = effectiveBranch.id;
       final organizationId = effectiveBranch.organizationId;
+      final totpSecret = TotpSecurityHelper.generateBase32Secret();
 
       final coachPayload = {
         'id': userRef.id,
@@ -91,6 +95,8 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
         'phone': _phoneController.text.trim(),
         'loginId': generatedLogin,
         'password': PasswordSecurityHelper.hashPassword('1'),
+        'totpSecret': totpSecret,
+        'totpEnabled': false,
         'avatarUrl': '',
         'organizationId': organizationId,
         'branchId': activeBranchId,
@@ -125,6 +131,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           _isLoading = false;
           _isSuccess = true;
           _generatedLogin = generatedLogin;
+          _generatedTotpSecret = totpSecret;
         });
       }
     } catch (e) {
@@ -197,300 +204,297 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
   }
 
   Widget _buildSuccessState(AppThemeConfig currentTheme, bool isDark) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Top drag handle & close button
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SizedBox(width: 36),
-            Container(
-              width: 44,
-              height: 5,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFFBAE6FD),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).pop();
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
+    final loginId = _generatedLogin ?? 'coach';
+    final totpSecret = _generatedTotpSecret ?? TotpSecurityHelper.deterministicFallbackSecret(loginId);
+
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+            // Top drag handle & close button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 36),
+                Container(
+                  width: 44,
+                  height: 5,
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
-                      width: 1.2,
-                    ),
-                    boxShadow: isDark
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-                              blurRadius: 6,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                  ),
-                  child: Icon(
-                    LucideIcons.x,
-                    color: isDark ? currentTheme.textSecondary : const Color(0xFF0284C7),
-                    size: 18,
+                    color: isDark ? Colors.white.withValues(alpha: 0.30) : const Color(0xFFBAE6FD),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-
-        // Glowing Success Icon
-        Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF047857)],
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF10B981).withValues(alpha: 0.50),
-                blurRadius: 24,
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Icon(LucideIcons.check, color: Colors.white, size: 36),
-          ),
-        ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
-        const SizedBox(height: 18),
-
-        Text(
-          'admin.add_coach_success_title'.tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDark ? Colors.white : currentTheme.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
-          ),
-        ).animate().fadeIn(delay: 150.ms),
-        const SizedBox(height: 6),
-
-        Text(
-          _nameController.text.trim(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ).animate().fadeIn(delay: 250.ms),
-        const SizedBox(height: 22),
-
-        // Solid Oceanic Credentials Card
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0D2137) : const Color(0xFFF0F9FF),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'admin.add_client_credentials_title'.tr().toUpperCase(),
-                    style: TextStyle(
-                      color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  GestureDetector(
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
                     onTap: () {
-                      HapticFeedback.selectionClick();
-                      Clipboard.setData(ClipboardData(
-                        text: '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}\n${'admin.clients_password_label'.tr()}1',
-                      ));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
-                              const SizedBox(width: 8),
-                              Text('admin.coaches_copied_msg'.tr(args: [_nameController.text.trim()])),
-                            ],
-                          ),
-                          backgroundColor: const Color(0xFF10B981),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).pop();
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE),
-                        borderRadius: BorderRadius.circular(8),
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF0F9FF),
+                        shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFFBAE6FD),
-                          width: 1.1,
+                          color: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD),
+                          width: 1.2,
                         ),
                       ),
-                      child: Row(
+                      child: Icon(
+                        LucideIcons.x,
+                        color: isDark ? currentTheme.textSecondary : const Color(0xFF0284C7),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Glowing Success Icon
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF047857)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.50),
+                    blurRadius: 24,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(LucideIcons.check, color: Colors.white, size: 32),
+              ),
+            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 14),
+
+            Text(
+              'admin.add_coach_success_title'.tr(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white : currentTheme.textPrimary,
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ).animate().fadeIn(delay: 150.ms),
+            const SizedBox(height: 4),
+
+            Text(
+              _nameController.text.trim(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? const Color(0xFFB0D4EC) : currentTheme.textSecondary,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ).animate().fadeIn(delay: 250.ms),
+            const SizedBox(height: 16),
+
+            // Solid Oceanic Credentials Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0D2137) : const Color(0xFFF0F9FF),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
+                  width: 1.2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'admin.add_client_credentials_title'.tr().toUpperCase(),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          Clipboard.setData(ClipboardData(
+                            text: '${'admin.clients_login_label'.tr()}$loginId\n2FA Key: $totpSecret',
+                          ));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
+                                  const SizedBox(width: 8),
+                                  Text('admin.coaches_copied_msg'.tr(args: [_nameController.text.trim()])),
+                                ],
+                              ),
+                              backgroundColor: const Color(0xFF10B981),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFFBAE6FD),
+                              width: 1.1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.copy,
+                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'admin.clients_copy'.tr(),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            LucideIcons.copy,
-                            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                            size: 13,
-                          ),
-                          const SizedBox(width: 5),
+                          Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
+                          const SizedBox(width: 6),
                           Text(
-                            'admin.clients_copy'.tr(),
+                            '${'admin.clients_login_label'.tr()}$loginId',
                             style: TextStyle(
                               color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 1.2,
+                        height: 20,
+                        color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
+                      ),
+                      const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.shieldCheck, size: 15, color: Color(0xFF10B981)),
+                          SizedBox(width: 6),
+                          Text(
+                            'Google 2FA',
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.08),
+            const SizedBox(height: 14),
+
+            TotpQrSetupBox(
+              loginId: loginId,
+              displayName: _nameController.text.trim(),
+              secret: totpSecret,
+              isDark: isDark,
+              compact: true,
+            ).animate().fadeIn(delay: 380.ms),
+            const SizedBox(height: 18),
+
+            // Sapphire VIP CTA: «Готово»
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [const Color(0xFF0E3D64), const Color(0xFF082038)]
+                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.45),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.45),
+                      blurRadius: 18,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pop(context);
+                    },
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'admin.done'.tr(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${'admin.clients_login_label'.tr()}${_generatedLogin ?? ""}',
-                        style: TextStyle(
-                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    width: 1.2,
-                    height: 20,
-                    color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(LucideIcons.keyRound, size: 15, color: Color(0xFFFBBF24)),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${'admin.clients_password_label'.tr()}1',
-                        style: const TextStyle(
-                          color: Color(0xFFFBBF24),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.08),
-        const SizedBox(height: 24),
-
-        // Sapphire VIP CTA: «Готово»
-        SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF0E3D64), const Color(0xFF082038)]
-                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(
-                color: isDark ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.45),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.45),
-                  blurRadius: 18,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.pop(context);
-                },
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        'admin.done'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
-            ),
-          ),
-        ).animate().fadeIn(delay: 450.ms).slideY(begin: 0.08),
-      ],
-    );
+            ).animate().fadeIn(delay: 450.ms).slideY(begin: 0.08),
+          ],
+        ),
+      );
   }
 
   Widget _buildFormState(AppThemeConfig currentTheme, bool isDark) {

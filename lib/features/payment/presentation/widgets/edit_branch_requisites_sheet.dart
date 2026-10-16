@@ -147,18 +147,19 @@ class _EditBranchRequisitesSheetState extends ConsumerState<EditBranchRequisites
     final isDark = currentTheme.isDark;
     final mediaQuery = MediaQuery.of(context);
 
-    // Watch live config stream for active branch
-    final streamAsync = ref.watch(branchPaymentConfigStreamProvider(_selectedBranchId));
-    streamAsync.whenData((cfg) {
-      if (!_isSaving && _companyController.text.isEmpty && _ibanController.text.isEmpty) {
-        final d = cfg.legalEntityDetails;
-        _companyController.text = d['companyName'] ?? '';
-        _taxIdController.text = d['taxId'] ?? '';
-        _taxIdLabelController.text = d['taxIdLabel'] ?? (_selectedBranchId == 'vienna' ? 'UID-Nummer' : 'ЄДРПОУ');
-        _ibanController.text = d['iban'] ?? '';
-        _bankNameController.text = d['bankName'] ?? '';
-        _addressController.text = d['address'] ?? '';
-      }
+    // Listen to live config stream updates without mutating controllers on every build
+    ref.listen(branchPaymentConfigStreamProvider(_selectedBranchId), (prev, next) {
+      next.whenData((cfg) {
+        if (!_isSaving && _companyController.text.isEmpty && _ibanController.text.isEmpty) {
+          final d = cfg.legalEntityDetails;
+          _companyController.text = d['companyName'] ?? '';
+          _taxIdController.text = d['taxId'] ?? '';
+          _taxIdLabelController.text = d['taxIdLabel'] ?? (_selectedBranchId == 'vienna' ? 'UID-Nummer' : 'ЄДРПОУ');
+          _ibanController.text = d['iban'] ?? '';
+          _bankNameController.text = d['bankName'] ?? '';
+          _addressController.text = d['address'] ?? '';
+        }
+      });
     });
 
     return Container(

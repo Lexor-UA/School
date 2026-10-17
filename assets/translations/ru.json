@@ -43,7 +43,7 @@
     "copied_to_clipboard": "Сообщение скопировано в буфер обмена",
     "login_phone_email": "Вход по номеру / Email",
     "register_client": "Создать аккаунт",
-    "staff_portal": "Вход для персонала (TOTP)",
+    "staff_portal": "Вход для персонала",
     "staff_portal_title": "Служебный вход",
     "staff_portal_subtitle": "Для тренеров, администраторов и владельцев",
     "staff_login_hint": "Служебный логин или Email",

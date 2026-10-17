@@ -794,7 +794,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
             onPressed: _isLoading ? null : onPressed,
             child: Row(
@@ -809,13 +809,20 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 else if (icon != null)
                   Icon(icon, size: 22, color: iconColor ?? Colors.white),
                 
-                const SizedBox(width: 14),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                const SizedBox(width: 12),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
                 ),
               ],

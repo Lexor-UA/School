@@ -43,7 +43,7 @@
     "copied_to_clipboard": "Nachricht in die Zwischenablage kopiert",
     "login_phone_email": "Anmeldung mit Telefon / E-Mail",
     "register_client": "Konto erstellen",
-    "staff_portal": "Personal-Login (TOTP)",
+    "staff_portal": "Personal-Login",
     "staff_portal_title": "Mitarbeiter-Portal",
     "staff_portal_subtitle": "Für Trainer, Administratoren und Inhaber",
     "staff_login_hint": "Mitarbeiter-Login oder E-Mail",

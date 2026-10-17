@@ -40,7 +40,7 @@
     "recovery_info_card": "Write your name, phone number, or login. The administrator will verify your details and send your login and new password right here in the chat.",
     "login_phone_email": "Sign in via Phone / Email",
     "register_client": "Create Account",
-    "staff_portal": "Staff Portal (TOTP)",
+    "staff_portal": "Staff Portal",
     "staff_portal_title": "Staff Portal",
     "staff_portal_subtitle": "For coaches, administrators, and owners",
     "staff_login_hint": "Staff Login or Email",

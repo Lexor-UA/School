@@ -308,6 +308,9 @@ class _WaterPainter extends CustomPainter {
     const rayAngles = [-0.64, -0.42, -0.20, 0.04];
     final rayWidths = [size.width * 0.28, size.width * 0.36, size.width * 0.32, size.width * 0.26];
 
+    canvas.save();
+    canvas.clipRect(rect);
+
     for (int r = 0; r < rayAngles.length; r++) {
       // Exact integer harmonic phase shift (smooth continuous 360 loop)
       final double rayOffset = r * (math.pi / 2);
@@ -334,6 +337,7 @@ class _WaterPainter extends CustomPainter {
 
       final Paint rayPaint = Paint()
         ..blendMode = BlendMode.screen
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28.0)
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -347,6 +351,8 @@ class _WaterPainter extends CustomPainter {
 
       canvas.drawPath(rayPath, rayPaint);
     }
+
+    canvas.restore();
   }
 
   @override

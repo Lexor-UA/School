@@ -10,9 +10,6 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
-import 'package:swimming_school_app/shared/utils/password_security_helper.dart';
-import 'package:swimming_school_app/shared/utils/totp_security_helper.dart';
-import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class AddCoachSheet extends ConsumerStatefulWidget {
   const AddCoachSheet({super.key});
@@ -32,7 +29,6 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
   bool _isSuccess = false;
   String? _errorMessage;
   String? _generatedLogin;
-  String? _generatedTotpSecret;
 
   @override
   void dispose() {
@@ -86,7 +82,6 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
       final effectiveBranch = ref.read(effectiveBranchProvider);
       final activeBranchId = effectiveBranch.id;
       final organizationId = effectiveBranch.organizationId;
-      final totpSecret = TotpSecurityHelper.generateBase32Secret();
 
       final coachPayload = {
         'id': userRef.id,
@@ -94,9 +89,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
         'role': 'coach',
         'phone': _phoneController.text.trim(),
         'loginId': generatedLogin,
-        'password': PasswordSecurityHelper.hashPassword('1'),
-        'totpSecret': totpSecret,
-        'totpEnabled': false,
+        'password': '1',
         'avatarUrl': '',
         'organizationId': organizationId,
         'branchId': activeBranchId,
@@ -131,7 +124,6 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
           _isLoading = false;
           _isSuccess = true;
           _generatedLogin = generatedLogin;
-          _generatedTotpSecret = totpSecret;
         });
       }
     } catch (e) {
@@ -205,7 +197,6 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
 
   Widget _buildSuccessState(AppThemeConfig currentTheme, bool isDark) {
     final loginId = _generatedLogin ?? 'coach';
-    final totpSecret = _generatedTotpSecret ?? TotpSecurityHelper.deterministicFallbackSecret(loginId);
 
     return SingleChildScrollView(
       child: Column(
@@ -299,7 +290,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             ).animate().fadeIn(delay: 250.ms),
             const SizedBox(height: 16),
 
-            // Solid Oceanic Credentials Card
+            // Solid Oceanic Notice Card (Owner Exclusive Credentials)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -307,133 +298,27 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 color: isDark ? const Color(0xFF0D2137) : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
+                  color: isDark ? const Color(0xFFFFB300).withValues(alpha: 0.40) : const Color(0xFFFDE68A),
                   width: 1.2,
                 ),
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'admin.add_client_credentials_title'.tr().toUpperCase(),
-                        style: TextStyle(
-                          color: isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                        ),
+                  const Icon(LucideIcons.crown, color: Color(0xFFFFB300), size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '${'owner.staff.managed_by_owner_notice'.tr()} (${'owner.staff.login_label'.tr()}: $loginId)',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          Clipboard.setData(ClipboardData(
-                            text: '${'admin.clients_login_label'.tr()}$loginId\n2FA Key: $totpSecret',
-                          ));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  const Icon(LucideIcons.checkCheck, color: Colors.white, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text('admin.coaches_copied_msg'.tr(args: [_nameController.text.trim()])),
-                                ],
-                              ),
-                              backgroundColor: const Color(0xFF10B981),
-                              duration: const Duration(seconds: 2),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.18) : const Color(0xFFE0F2FE),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.50) : const Color(0xFFBAE6FD),
-                              width: 1.1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.copy,
-                                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                size: 13,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'admin.clients_copy'.tr(),
-                                style: TextStyle(
-                                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.user, size: 15, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${'admin.clients_login_label'.tr()}$loginId',
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        width: 1.2,
-                        height: 20,
-                        color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFCBD5E1),
-                      ),
-                      const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.shieldCheck, size: 15, color: Color(0xFF10B981)),
-                          SizedBox(width: 6),
-                          Text(
-                            'Google 2FA',
-                            style: TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
             ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.08),
-            const SizedBox(height: 14),
-
-            TotpQrSetupBox(
-              loginId: loginId,
-              displayName: _nameController.text.trim(),
-              secret: totpSecret,
-              isDark: isDark,
-              compact: true,
-            ).animate().fadeIn(delay: 380.ms),
             const SizedBox(height: 18),
 
             // Sapphire VIP CTA: «Готово»

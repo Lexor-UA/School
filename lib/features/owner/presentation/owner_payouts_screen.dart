@@ -752,6 +752,7 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
 
                           for (final doc in staffDocs) {
                             final data = doc.data() as Map<String, dynamic>? ?? {};
+                            if (data['aliasOf'] != null) continue;
                             final roleRaw = (data['role'] as String?)?.toLowerCase() ?? '';
                             final loginId = (data['loginId'] as String?) ?? '';
                             final bool isAdmin = roleRaw == 'admin' || roleRaw == 'administrator' || loginId.toLowerCase() == 'admin';
@@ -2004,41 +2005,48 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.15 : 0.10),
-                  shape: BoxShape.circle,
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF43F5E).withValues(alpha: isDark ? 0.15 : 0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(LucideIcons.arrowUpRight, color: Color(0xFFF43F5E), size: 14),
                 ),
-                child: const Icon(LucideIcons.arrowUpRight, color: Color(0xFFF43F5E), size: 14),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: themeConfig.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: themeConfig.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        date,
+                        style: TextStyle(
+                          color: themeConfig.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    date,
-                    style: TextStyle(
-                      color: themeConfig.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
           Text(
             amount,
             style: const TextStyle(

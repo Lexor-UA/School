@@ -132,14 +132,18 @@ class AuthController extends _$AuthController {
             await prefs.remove('mockUserId');
             await prefs.remove('clientId');
           } else if (savedRoleString == 'admin') {
-            final mockUserId = prefs.getString('mockUserId');
+            final mockUserId = prefs.getString('mockUserId') ?? prefs.getString('clientId');
             final savedBranch = prefs.getString('userBranchId') ?? prefs.getString('selected_branch_id');
             final isAdminVienna = mockUserId == 'admin_vienna' || savedBranch == 'vienna';
-            final targetDocId = isAdminVienna ? 'admin_vienna' : 'admin';
+            final targetDocId = (mockUserId != null && mockUserId.isNotEmpty)
+                ? mockUserId
+                : (isAdminVienna ? 'admin_vienna' : 'admin');
             try {
               final doc = await FirebaseFirestore.instance.collection('users').doc(targetDocId).get();
-              if (doc.exists) {
-                state = AppUser.fromJson(doc.data()!);
+              if (doc.exists && doc.data() != null) {
+                final data = Map<String, dynamic>.from(doc.data()!);
+                data['id'] = (data['id'] as String?)?.isNotEmpty == true ? data['id'] : targetDocId;
+                state = AppUser.fromJson(data);
               } else {
                 state = isAdminVienna
                     ? const AppUser(
@@ -168,8 +172,9 @@ class AuthController extends _$AuthController {
                   ? const AppUser(id: 'admin_vienna', name: 'Адміністратор Відень', role: UserRole.admin, branchId: 'vienna', branchIds: ['vienna'])
                   : const AppUser(id: 'admin', name: 'Адміністратор Київ', role: UserRole.admin, branchId: 'kyiv', branchIds: ['kyiv']);
             }
-            final staffEmail = isAdminVienna ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
-            final staffPass = isAdminVienna ? 'vienna123456' : 'kyiv123456';
+            final effectiveBranch = state?.branchId == 'vienna' ? 'vienna' : 'kyiv';
+            final staffEmail = effectiveBranch == 'vienna' ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
+            final staffPass = effectiveBranch == 'vienna' ? 'vienna123456' : 'kyiv123456';
             _isLoggingIn = true;
             try {
               await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
@@ -178,14 +183,33 @@ class AuthController extends _$AuthController {
             }
             await _syncRoleToPrefs(state);
           } else if (savedRoleString == 'owner') {
-            state = const AppUser(
-              id: 'mock_owner',
-              name: 'Owner',
-              role: UserRole.owner,
-            );
             _isLoggingIn = true;
             try {
               await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
+              final doc = await FirebaseFirestore.instance.collection('users').doc('mock_owner').get();
+              if (doc.exists && doc.data() != null) {
+                final data = doc.data()!;
+                state = AppUser(
+                  id: 'mock_owner',
+                  name: (data['name'] as String?)?.trim().isNotEmpty == true ? (data['name'] as String).trim() : 'Owner',
+                  role: UserRole.owner,
+                  loginId: (data['loginId'] as String?)?.trim().isNotEmpty == true ? (data['loginId'] as String).trim() : 'owner',
+                );
+              } else {
+                state = const AppUser(
+                  id: 'mock_owner',
+                  name: 'Owner',
+                  role: UserRole.owner,
+                  loginId: 'owner',
+                );
+              }
+            } catch (_) {
+              state = const AppUser(
+                id: 'mock_owner',
+                name: 'Owner',
+                role: UserRole.owner,
+                loginId: 'owner',
+              );
             } finally {
               _isLoggingIn = false;
             }
@@ -1301,14 +1325,197 @@ class AuthController extends _$AuthController {
     );
   }
 
+  /// Авторизує службовий персонал (Owner, Admin, Coach) за логіном та паролем.
+  /// Логін та пароль для персоналу створює та змінює Власник.
+  Future<void> signInStaffWithPassword({
+    required String login,
+    required String password,
+  }) async {
+    final cleanLogin = login.trim().toLowerCase();
+    final cleanPassword = password.trim();
+    if (cleanLogin.isEmpty) {
+      throw Exception('Введіть логін співробітника');
+    }
+    if (cleanPassword.isEmpty) {
+      throw Exception('Введіть пароль');
+    }
+
+    _isLoggingIn = true;
+    try {
+      // Ensure Firebase Auth session so Firestore queries are permitted by security rules
+      if (FirebaseAuth.instance.currentUser == null) {
+        await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
+      }
+
+      // Ensure default staff profiles exist in Firestore
+      await ensureOwnerInFirestore();
+      await ensureAdminInFirestore();
+      await ensureDefaultCoachInFirestore();
+
+      final db = FirebaseFirestore.instance;
+      DocumentSnapshot<Map<String, dynamic>>? matchedDoc;
+
+      // 1. Direct lookup in `users` by exact loginId
+      final directSnap = await db.collection('users').where('loginId', isEqualTo: cleanLogin).get();
+      for (final doc in directSnap.docs) {
+        final r = (doc.data()['role'] as String?)?.toLowerCase();
+        if (r == 'owner' || r == 'admin' || r == 'coach') {
+          matchedDoc = doc;
+          break;
+        }
+      }
+
+      // 2. Case-insensitive scan across all staff in `users`
+      if (matchedDoc == null) {
+        final staffSnap = await db
+            .collection('users')
+            .where('role', whereIn: ['owner', 'admin', 'coach'])
+            .get();
+        for (final doc in staffSnap.docs) {
+          final data = doc.data();
+          final docLogin = (data['loginId'] as String?)?.trim().toLowerCase() ?? '';
+          final docEmail = (data['email'] as String?)?.trim().toLowerCase() ?? '';
+          if (docLogin == cleanLogin ||
+              (docEmail.isNotEmpty && docEmail == cleanLogin) ||
+              doc.id.toLowerCase() == cleanLogin) {
+            matchedDoc = doc;
+            break;
+          }
+        }
+      }
+
+      // 3. Check `coaches` collection if not yet synced to `users`
+      if (matchedDoc == null) {
+        final coachesSnap = await db.collection('coaches').get();
+        for (final cDoc in coachesSnap.docs) {
+          final cData = cDoc.data();
+          final cLogin = (cData['loginId'] as String?)?.trim().toLowerCase() ?? '';
+          if (cLogin == cleanLogin || cDoc.id.toLowerCase() == cleanLogin) {
+            final syncData = Map<String, dynamic>.from(cData);
+            syncData['id'] = cDoc.id;
+            syncData['role'] = 'coach';
+            await db.collection('users').doc(cDoc.id).set(syncData, SetOptions(merge: true));
+            matchedDoc = await db.collection('users').doc(cDoc.id).get();
+            break;
+          }
+        }
+      }
+
+      // 4. Fallback well-known aliases for default accounts
+      if (matchedDoc == null || !matchedDoc.exists) {
+        if (cleanLogin == 'owner' ||
+            cleanLogin == 'owner@cityswim.com' ||
+            cleanLogin == 'owner@gmail.com') {
+          matchedDoc = await db.collection('users').doc('mock_owner').get();
+        } else if (cleanLogin == 'admin' ||
+            cleanLogin == 'admin_kyiv' ||
+            cleanLogin == 'admin@cityswim.com' ||
+            cleanLogin == 'admin@gmail.com' ||
+            cleanLogin == 'admin.kyiv@cityswim.com') {
+          matchedDoc = await db.collection('users').doc('admin').get();
+        } else if (cleanLogin == 'admin_vienna' ||
+            cleanLogin == 'vienna.admin@cityswim.at' ||
+            cleanLogin == 'admin.vienna@cityswim.com') {
+          matchedDoc = await db.collection('users').doc('admin_vienna').get();
+        } else if (cleanLogin == 'coach' || cleanLogin == 'тренер') {
+          matchedDoc = await db.collection('users').doc('default_coach').get();
+        } else if (cleanLogin == 'maria' || cleanLogin == 'coach_maria' || cleanLogin.contains('maria')) {
+          matchedDoc = await db.collection('users').doc('coach_maria').get();
+        } else if (cleanLogin == 'stefan' || cleanLogin == 'coach_stefan' || cleanLogin.contains('stefan')) {
+          matchedDoc = await db.collection('users').doc('coach_stefan').get();
+        }
+      }
+
+      if (matchedDoc == null || !matchedDoc.exists) {
+        throw Exception('Співробітника з логіном "$login" не знайдено');
+      }
+
+      final docId = matchedDoc.id;
+      final data = matchedDoc.data() ?? <String, dynamic>{};
+      final roleStr = (data['role'] as String?)?.toLowerCase() ?? 'coach';
+      final storedPassword = (data['password'] as String?)?.trim().isNotEmpty == true
+          ? (data['password'] as String).trim()
+          : '1';
+
+      if (!PasswordSecurityHelper.verifyPassword(cleanPassword, storedPassword)) {
+        throw Exception('Невірний пароль');
+      }
+
+      final effectiveLogin = (data['loginId'] as String?)?.trim().isNotEmpty == true
+          ? (data['loginId'] as String).trim()
+          : cleanLogin;
+      final displayName = (data['name'] as String?)?.trim().isNotEmpty == true
+          ? (data['name'] as String).trim()
+          : effectiveLogin;
+
+      if (roleStr == 'owner') {
+        await _ensureStaffFirebaseAuth(email: 'owner@cityswim.app', password: 'owner123456');
+        state = AppUser(
+          id: docId,
+          name: displayName,
+          role: UserRole.owner,
+          loginId: effectiveLogin,
+        );
+        await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mockUserId', docId);
+        await prefs.setString('clientId', docId);
+        return;
+      } else if (roleStr == 'admin') {
+        final isViennaAdmin = docId == 'admin_vienna' || (data['branchId'] as String?) == 'vienna';
+        final targetBranchId = (data['branchId'] as String?)?.trim().isNotEmpty == true
+            ? (data['branchId'] as String).trim()
+            : (isViennaAdmin ? 'vienna' : 'kyiv');
+        final staffEmail = targetBranchId == 'vienna' ? 'admin.vienna@cityswim.app' : 'admin.kyiv@cityswim.app';
+        final staffPass = targetBranchId == 'vienna' ? 'vienna123456' : 'kyiv123456';
+        await _ensureStaffFirebaseAuth(email: staffEmail, password: staffPass);
+
+        state = AppUser(
+          id: docId,
+          name: displayName,
+          role: UserRole.admin,
+          branchId: targetBranchId,
+          branchIds: [targetBranchId],
+          phone: data['phone'] as String?,
+          loginId: effectiveLogin,
+          avatarUrl: (data['avatarUrl'] as String?) ??
+              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(displayName)}&background=8b5cf6&color=ffffff',
+        );
+        await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mockUserId', docId);
+        await prefs.setString('clientId', docId);
+        await prefs.setString('userBranchId', targetBranchId);
+        await prefs.setString('selected_branch_id', targetBranchId);
+        return;
+      } else {
+        final normalizedData = Map<String, dynamic>.from(data);
+        normalizedData['id'] = (normalizedData['id'] as String?)?.isNotEmpty == true
+            ? normalizedData['id']
+            : docId;
+        normalizedData['role'] = 'coach';
+        state = AppUser.fromJson(normalizedData);
+        await _syncRoleToPrefs(state);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('clientId', state!.id);
+        await prefs.setString('mockUserId', state!.id);
+        await prefs.setBool('needsOnboarding', false);
+        await _ensureCoachFirebaseAuth(cleanLogin, state);
+        return;
+      }
+    } finally {
+      _isLoggingIn = false;
+    }
+  }
+
   Future<void> signInWithEmail(String email, String password) async {
     _isLoggingIn = true;
     try {
       final login = email.trim().toLowerCase();
 
-      // Staff accounts (Owner, Admins, Coaches) strictly authenticate via Google Authenticator TOTP
+      // Staff accounts (Owner, Admins, Coaches) authenticate via Login & Password
       if (isStaffLoginIdentifier(login)) {
-        await signInStaffWithTotp(login: login, totpCode: password);
+        await signInStaffWithPassword(login: login, password: password);
         return;
       }
 
@@ -1347,6 +1554,11 @@ class AuthController extends _$AuthController {
         }
         if (usersSnap.docs.isNotEmpty) {
           final userData = usersSnap.docs.first.data();
+          final roleStr = (userData['role'] as String?)?.toLowerCase();
+          if (roleStr == 'owner' || roleStr == 'admin' || roleStr == 'coach') {
+            await signInStaffWithPassword(login: login, password: password);
+            return;
+          }
           final storedPassword = (userData['password'] as String?) ?? '1';
           if (!PasswordSecurityHelper.verifyPassword(password, storedPassword)) {
             throw Exception('Невірний пароль');
@@ -1976,6 +2188,37 @@ class AuthController extends _$AuthController {
   }
 }
 
+/// Guarantees that the default Owner profile exists in Firestore `users` collection.
+Future<void> ensureOwnerInFirestore() async {
+  try {
+    if (Firebase.apps.isEmpty) return;
+    final firestore = FirebaseFirestore.instance;
+    final docRef = firestore.collection('users').doc('mock_owner');
+    final docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      await docRef.set({
+        'id': 'mock_owner',
+        'name': 'Owner',
+        'role': 'owner',
+        'loginId': 'owner',
+        'password': '1',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      final data = docSnap.data() ?? {};
+      final updates = <String, dynamic>{};
+      if (data['role'] != 'owner') updates['role'] = 'owner';
+      if ((data['loginId'] as String?)?.trim().isEmpty != false) updates['loginId'] = 'owner';
+      if ((data['password'] as String?)?.trim().isEmpty != false) updates['password'] = '1';
+      if (updates.isNotEmpty) {
+        await docRef.set(updates, SetOptions(merge: true));
+      }
+    }
+  } catch (e) {
+    debugPrint('Error in ensureOwnerInFirestore: $e');
+  }
+}
+
 /// Guarantees that the default Admin profile exists in Firestore `users` collection.
 Future<void> ensureAdminInFirestore() async {
   try {
@@ -2014,6 +2257,7 @@ Future<void> ensureAdminInFirestore() async {
       if (data['adminSalary'] == null) updates['adminSalary'] = 20000;
       if (data['name'] == 'Адміністратор' || data['name'] == null) updates['name'] = 'Адміністратор Київ';
       if (data['loginId'] == 'Admin' || data['loginId'] == null) updates['loginId'] = 'admin_kyiv';
+      if ((data['password'] as String?)?.trim().isEmpty != false) updates['password'] = '1';
       if (updates.isNotEmpty) {
         await docRef.set(updates, SetOptions(merge: true));
       }
@@ -2051,6 +2295,7 @@ Future<void> ensureAdminInFirestore() async {
       if (vData['adminSalary'] == null) vUpdates['adminSalary'] = 1900;
       if (vData['name'] == 'Admin Vienna' || vData['name'] == null) vUpdates['name'] = 'Адміністратор Відень';
       if (vData['loginId'] == 'vienna.admin@cityswim.at' || vData['loginId'] == null) vUpdates['loginId'] = 'admin_vienna';
+      if ((vData['password'] as String?)?.trim().isEmpty != false) vUpdates['password'] = '1';
       if (vUpdates.isNotEmpty) {
         await viennaRef.set(vUpdates, SetOptions(merge: true));
       }

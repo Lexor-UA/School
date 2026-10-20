@@ -1996,17 +1996,19 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               ),
                             ),
                             const SizedBox(width: 5.5),
-                            Text(
-                              isPendingSub ? 'parent.pending_approval_status'.tr() : 'parent.active'.tr(),
-                              style: TextStyle(
-                                color: isPendingSub
-                                    ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706))
-                                    : (isDark ? const Color(0xFF34D399) : const Color(0xFF047857)),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                                letterSpacing: 0.3,
-                                height: 1.1,
-                                leadingDistribution: TextLeadingDistribution.even,
+                            Flexible(
+                              child: Text(
+                                isPendingSub ? 'parent.pending_approval_status'.tr() : 'parent.active'.tr(),
+                                style: TextStyle(
+                                  color: isPendingSub
+                                      ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706))
+                                      : (isDark ? const Color(0xFF34D399) : const Color(0xFF047857)),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                  letterSpacing: 0.3,
+                                  height: 1.15,
+                                  leadingDistribution: TextLeadingDistribution.even,
+                                ),
                               ),
                             ),
                           ],

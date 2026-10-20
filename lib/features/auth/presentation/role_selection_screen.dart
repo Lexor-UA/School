@@ -17,8 +17,6 @@ import 'package:swimming_school_app/core/providers/shared_prefs_provider.dart' a
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/features/tenancy/models/branch.dart';
 import 'package:swimming_school_app/features/schedule/controllers/schedule_controller.dart';
-import 'package:swimming_school_app/shared/utils/totp_security_helper.dart';
-import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   final bool skipSplash;
@@ -1652,7 +1650,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     final staffPasswordController = TextEditingController();
 
     bool isStaffLoading = false;
-    StaffTotpStatus? pendingSetupStatus;
+    bool obscureStaffPassword = true;
 
     showModalBottomSheet(
       context: context,
@@ -1662,46 +1660,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (BuildContext builderContext, StateSetter setModalState) {
-            Future<void> openTotpSetup() async {
-              final login = staffLoginController.text.trim();
-              if (login.isEmpty) {
-                _showModalToast(modalContext, 'auth.totp_enter_login_first'.tr(), color: Colors.amber.shade800);
-                return;
-              }
-              try {
-                setModalState(() => isStaffLoading = true);
-                final notifier = ref.read(authControllerProvider.notifier);
-                final status = await notifier.checkStaffTotpStatus(login);
-                if (modalContext.mounted) {
-                  setModalState(() {
-                    isStaffLoading = false;
-                    pendingSetupStatus = status;
-                  });
-                }
-              } catch (e) {
-                if (modalContext.mounted) {
-                  setModalState(() => isStaffLoading = false);
-                  _showModalToast(modalContext, 'auth.staff_login_error'.tr(args: ['$e']));
-                }
-              }
-            }
-
             Future<void> submitStaffLogin() async {
               final login = staffLoginController.text.trim();
-              final code = staffPasswordController.text.replaceAll(RegExp(r'\D'), '');
-              if (login.isEmpty) {
-                _showModalToast(modalContext, 'auth.totp_enter_login_first'.tr(), color: Colors.amber.shade800);
-                return;
-              }
-
-              // If 6-digit code is empty, check if this staff member needs first-time QR setup
-              if (code.isEmpty) {
-                await openTotpSetup();
-                return;
-              }
-
-              if (code.length != 6) {
-                _showModalToast(modalContext, 'auth.totp_enter_6_digits'.tr(), color: Colors.amber.shade800);
+              final password = staffPasswordController.text.trim();
+              if (login.isEmpty || password.isEmpty) {
+                _showModalToast(modalContext, 'auth.staff_fill_all_fields'.tr(), color: Colors.amber.shade800);
                 return;
               }
 
@@ -1709,26 +1672,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 setModalState(() => isStaffLoading = true);
                 final notifier = ref.read(authControllerProvider.notifier);
 
-                // Check if 2FA is not yet enabled and user hasn't seen the QR code
-                if (pendingSetupStatus == null) {
-                  final status = await notifier.checkStaffTotpStatus(login);
-                  if (!status.totpEnabled && !TotpSecurityHelper.verifyCode(code, status.secret)) {
-                    if (modalContext.mounted) {
-                      setModalState(() {
-                        isStaffLoading = false;
-                        pendingSetupStatus = status;
-                      });
-                      _showModalToast(
-                        modalContext,
-                        'auth.totp_scan_qr_first_msg'.tr(),
-                        color: const Color(0xFF0284C7),
-                      );
-                    }
-                    return;
-                  }
-                }
-
-                await notifier.signInStaffWithTotp(login: login, totpCode: code);
+                await notifier.signInStaffWithPassword(login: login, password: password);
                 if (modalContext.mounted) {
                   Navigator.of(modalContext, rootNavigator: true).pop();
                 }
@@ -1741,7 +1685,8 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isStaffLoading = false);
-                  _showModalToast(modalContext, 'auth.staff_login_error'.tr(args: ['$e']));
+                  final cleanError = e.toString().replaceFirst('Exception: ', '');
+                  _showModalToast(modalContext, 'auth.staff_login_error'.tr(args: [cleanError]));
                 }
               }
             }
@@ -1851,7 +1796,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'auth.totp_portal_subtitle'.tr(),
+                                        'auth.staff_portal_subtitle'.tr(),
                                         style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
@@ -1880,11 +1825,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                               style: const TextStyle(color: Colors.white, fontSize: 14.5),
                               autocorrect: false,
                               textInputAction: TextInputAction.next,
-                              onChanged: (_) {
-                                if (pendingSetupStatus != null) {
-                                  setModalState(() => pendingSetupStatus = null);
-                                }
-                              },
                               decoration: _modalInputDecoration(
                                 hintText: 'auth.staff_login_hint'.tr(),
                                 prefixIcon: LucideIcons.badgeCheck,
@@ -1894,74 +1834,34 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                             const SizedBox(height: 12),
 
-                            // Google Authenticator 6-digit TOTP Code Input
+                            // Staff Password Input
                             TextField(
                               controller: staffPasswordController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(6),
-                              ],
+                              obscureText: obscureStaffPassword,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 6,
+                                fontSize: 14.5,
                               ),
                               textInputAction: TextInputAction.done,
                               onSubmitted: (_) => submitStaffLogin(),
                               decoration: _modalInputDecoration(
-                                hintText: 'auth.totp_code_hint'.tr(),
+                                hintText: 'auth.staff_password_hint'.tr(),
                                 prefixIcon: LucideIcons.keyRound,
                                 accentColor: const Color(0xFFFFB300),
                                 suffixIcon: IconButton(
-                                  tooltip: 'auth.totp_setup_qr_btn'.tr(),
-                                  icon: const Icon(
-                                    LucideIcons.qrCode,
-                                    color: Color(0xFFFFB300),
+                                  icon: Icon(
+                                    obscureStaffPassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                                    color: Colors.white54,
                                     size: 19,
                                   ),
-                                  onPressed: isStaffLoading ? null : openTotpSetup,
+                                  onPressed: () => setModalState(() {
+                                    obscureStaffPassword = !obscureStaffPassword;
+                                  }),
                                 ),
                               ),
                             ),
 
-                            const SizedBox(height: 8),
-
-                            // First-time setup button (QR code)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFFFFB300),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                                onPressed: isStaffLoading ? null : openTotpSetup,
-                                icon: const Icon(LucideIcons.qrCode, size: 15),
-                                label: Text(
-                                  pendingSetupStatus == null
-                                      ? 'auth.totp_setup_qr_btn'.tr()
-                                      : 'auth.totp_refresh_qr_btn'.tr(),
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            if (pendingSetupStatus != null) ...[
-                              const SizedBox(height: 8),
-                              TotpQrSetupBox(
-                                loginId: pendingSetupStatus!.loginId,
-                                displayName: pendingSetupStatus!.displayName,
-                                secret: pendingSetupStatus!.secret,
-                                isDark: true,
-                                accentColor: const Color(0xFFFFB300),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
+                            const SizedBox(height: 14),
 
                             // Notice
                             Container(
@@ -1977,7 +1877,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'auth.totp_staff_notice'.tr(),
+                                      'auth.staff_password_notice'.tr(),
                                       style: const TextStyle(color: Colors.white60, fontSize: 11.5),
                                     ),
                                   ),
@@ -1989,9 +1889,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
                             // Staff Submit Button
                             _buildSubmitButton(
-                              title: pendingSetupStatus != null
-                                  ? 'auth.totp_verify_and_login_btn'.tr()
-                                  : 'auth.staff_submit_btn'.tr(),
+                              title: 'auth.staff_submit_btn'.tr(),
                               icon: LucideIcons.logIn,
                               isLoading: isStaffLoading,
                               accentColors: const [Color(0xFFFFB300), Color(0xFFE65100)],

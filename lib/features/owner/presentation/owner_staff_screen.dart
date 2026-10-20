@@ -9,6 +9,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
+import 'package:swimming_school_app/features/owner/presentation/owner_add_staff_sheet.dart';
 import 'package:swimming_school_app/features/owner/presentation/owner_edit_salary_sheet.dart';
 import 'package:swimming_school_app/features/schedule/models/group_class.dart';
 import 'package:swimming_school_app/shared/widgets/animated_water_background.dart';
@@ -33,6 +34,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
   @override
   void initState() {
     super.initState();
+    ensureOwnerInFirestore();
     ensureAdminInFirestore();
   }
 
@@ -79,6 +81,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
     required String role,
     required String phone,
     required String loginId,
+    String password = '1',
     required int rateGroup,
     required int rateIndividual,
     required int rateSplit,
@@ -95,11 +98,65 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
         role: role,
         phone: phone,
         loginId: loginId,
+        initialPassword: password,
         initialRateGroup: rateGroup,
         initialRateIndividual: rateIndividual,
         initialRateSplit: rateSplit,
         initialAdminSalary: adminSalary,
         currencySymbol: currencySymbol,
+      ),
+    );
+  }
+
+  void _openAddStaffSheet(String? activeBranchId) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => OwnerAddStaffSheet(
+        initialBranchId: activeBranchId == 'vienna' ? 'vienna' : 'kyiv',
+      ),
+    );
+  }
+
+  void _openOwnerCredentialsSheet() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => const OwnerSelfCredentialsSheet(),
+    );
+  }
+
+  void _copyStaffCredentials({
+    required String name,
+    required String role,
+    required String loginId,
+    required String password,
+  }) {
+    final roleLabel = role == 'coach' ? 'owner.role_coach'.tr() : 'owner.role_admin_full'.tr();
+    final copyText = '🏊 City Swim — Доступ для персоналу\n'
+        '👤 $name ($roleLabel)\n'
+        '🔑 Логін: $loginId\n'
+        '🔒 Пароль: $password';
+    Clipboard.setData(ClipboardData(text: copyText));
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(LucideIcons.copyCheck, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('owner.staff.credentials_copied'.tr(namedArgs: {'name': name})),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -294,6 +351,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
 
                           for (final doc in staffDocs) {
                             final data = doc.data() as Map<String, dynamic>? ?? {};
+                            if (data['aliasOf'] != null) continue;
                             final String staffBranchId = (data['branchId'] as String?) ?? 'kyiv';
                             final List<dynamic> staffBranchIds = (data['branchIds'] as List<dynamic>?) ?? [staffBranchId];
 
@@ -309,9 +367,16 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 : (isViennaStaff ? '€' : '₴');
 
                             final roleRaw = (data['role'] as String?)?.toLowerCase() ?? '';
-                            final loginId = (data['loginId'] as String?) ?? '';
-                            final bool isAdmin = roleRaw == 'admin' || roleRaw == 'administrator' || loginId.toLowerCase() == 'admin';
+                            final rawLoginId = (data['loginId'] as String?)?.trim() ?? '';
+                            final bool isAdmin = roleRaw == 'admin' || roleRaw == 'administrator' || rawLoginId.toLowerCase() == 'admin';
                             final role = isAdmin ? 'admin' : 'coach';
+                            final loginId = rawLoginId.isNotEmpty
+                                ? rawLoginId
+                                : (isAdmin
+                                    ? (doc.id == 'admin_vienna' ? 'admin_vienna' : 'admin_kyiv')
+                                    : 'coach');
+                            final rawPass = (data['password'] as String?)?.trim() ?? '';
+                            final password = (rawPass.isNotEmpty && rawPass.length < 40) ? rawPass : '1';
                             final name = (data['name'] as String?) ?? (isAdmin ? 'auth.default_admin'.tr() : 'owner.staff.no_name'.tr());
                             final phone = (data['phone'] as String?) ?? '';
                             final avatarUrl = (data['avatarUrl'] as String?) ??
@@ -342,6 +407,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 'role': role,
                                 'phone': phone,
                                 'loginId': loginId,
+                                'password': password,
                                 'avatarUrl': avatarUrl,
                                 'branchId': staffBranchId,
                                 'currency': staffCurrency,
@@ -416,6 +482,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 'role': role,
                                 'phone': phone,
                                 'loginId': loginId,
+                                'password': password,
                                 'avatarUrl': avatarUrl,
                                 'branchId': staffBranchId,
                                 'currency': staffCurrency,
@@ -470,7 +537,11 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 themeConfig: themeConfig,
                               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08),
 
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 14),
+
+                              _buildOwnerStaffActionsRow(activeBranchId, themeConfig),
+
+                              const SizedBox(height: 16),
 
                               _buildFilterBar(coachCount, adminCount, staffList.length, themeConfig),
 
@@ -977,6 +1048,99 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
     );
   }
 
+  Widget _buildOwnerStaffActionsRow(String? activeBranchId, AppThemeConfig themeConfig) {
+    final isDark = themeConfig.isDark;
+
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: _openOwnerCredentialsSheet,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFFFFB300).withValues(alpha: 0.14)
+                    : const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFFFB300).withValues(alpha: isDark ? 0.45 : 0.65),
+                  width: 1.1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    LucideIcons.crown,
+                    size: 16,
+                    color: isDark ? const Color(0xFFFFB300) : const Color(0xFFB45309),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'owner.staff.my_owner_credentials_btn'.tr(),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF78350F),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _openAddStaffSheet(activeBranchId),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.22),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(LucideIcons.userPlus, size: 16, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'owner.staff.add_staff_btn'.tr(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFilterBar(int coachCount, int adminCount, int totalCount, AppThemeConfig themeConfig) {
     final isDark = themeConfig.isDark;
 
@@ -1117,6 +1281,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
     final conductedTotal = staff['conductedTotal'] as int;
     final phone = staff['phone'] as String;
     final loginId = staff['loginId'] as String;
+    final password = staff['password'] as String? ?? '1';
 
     final rateGroup = staff['rateGroup'] as int;
     final rateIndividual = staff['rateIndividual'] as int;
@@ -1305,6 +1470,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         role: staff['role'],
                         phone: phone,
                         loginId: loginId,
+                        password: password,
                         rateGroup: rateGroup,
                         rateIndividual: rateIndividual,
                         rateSplit: rateSplit,
@@ -1521,7 +1687,71 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                   ),
                 ],
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+
+                // Credentials Pill (Owner Exclusive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? accentColor.withValues(alpha: 0.25) : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(LucideIcons.keyRound, size: 15, color: accentColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${'owner.staff.login_label'.tr()}: $loginId   •   ${'owner.staff.password_label'.tr()}: $password',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => _copyStaffCredentials(
+                          name: name,
+                          role: staff['role'],
+                          loginId: loginId,
+                          password: password,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.copy, size: 12.5, color: accentColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                'owner.staff.copy_short_btn'.tr(),
+                                style: TextStyle(
+                                  color: accentColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
 
                 // Bottom Action Button
                 SizedBox(
@@ -1533,6 +1763,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                       role: staff['role'],
                       phone: phone,
                       loginId: loginId,
+                      password: password,
                       rateGroup: rateGroup,
                       rateIndividual: rateIndividual,
                       rateSplit: rateSplit,

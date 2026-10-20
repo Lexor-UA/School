@@ -734,13 +734,19 @@ class _AquatixLabSuperAdminScreenState
                               size: 18,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'tenancy.acceptance_matrix_title'.tr(),
-                              style: TextStyle(
-                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'tenancy.acceptance_matrix_title'.tr(),
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -1353,7 +1359,7 @@ class _CriteriaItemTile extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${item['id']}. ${item['title']}',
+                        '${item['title']}',
                         style: TextStyle(
                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontSize: 13,

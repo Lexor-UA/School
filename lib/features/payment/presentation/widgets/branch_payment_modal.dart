@@ -883,14 +883,21 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'payment.receipt_no'.tr(args: [receipt.receiptNumber]),
-                    style: TextStyle(
-                      color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'payment.receipt_no'.tr(args: [receipt.receiptNumber]),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF00E5FF) : currentTheme.accentPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
@@ -1047,17 +1054,22 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : currentTheme.textSecondary, fontSize: 12),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: isDark ? Colors.white : currentTheme.textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: isDark ? Colors.white : currentTheme.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

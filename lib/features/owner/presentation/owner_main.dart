@@ -1014,32 +1014,47 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       ),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              LucideIcons.arrowUpRight,
-                              size: 14,
-                              color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                        Expanded(
+                          flex: 6,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.arrowUpRight,
+                                  size: 14,
+                                  color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'owner.profit_with_amount'.tr(namedArgs: {'amount': profitText}),
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'owner.profit_with_amount'.tr(namedArgs: {'amount': profitText}),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 5,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': expensesText}),
                               style: TextStyle(
-                                color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                                fontSize: 12,
+                                fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                               ),
                             ),
-                          ],
-                        ),
-                        Text(
-                          'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': expensesText}),
-                          style: TextStyle(
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
-                            fontSize: 12,
-                            fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                           ),
                         ),
                       ],
@@ -1056,6 +1071,8 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       fontSize: 11.5,
                       fontWeight: isDark ? FontWeight.w600 : FontWeight.w700,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

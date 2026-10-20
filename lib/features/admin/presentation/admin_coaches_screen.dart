@@ -13,7 +13,6 @@ import 'package:swimming_school_app/shared/widgets/theme_header_button.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
-import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 import 'add_coach_sheet.dart';
 import 'edit_coach_sheet.dart';
 import 'admin_calendar_screen.dart';
@@ -69,7 +68,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
   void _copyCredentials(String coachId, String loginId, String name) {
     HapticFeedback.selectionClick();
-    Clipboard.setData(ClipboardData(text: '${'admin.clients_login_label'.tr()}$loginId\n2FA: Google Authenticator'));
+    Clipboard.setData(ClipboardData(text: loginId));
     setState(() => _recentlyCopiedCoachId = coachId);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _recentlyCopiedCoachId == coachId) {
@@ -1122,66 +1121,23 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                   width: 0.9,
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(LucideIcons.shieldCheck, size: 11, color: Color(0xFF10B981)),
-                                  SizedBox(width: 4),
+                                  const Icon(LucideIcons.lock, size: 11, color: Color(0xFF10B981)),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    '2FA',
-                                    style: TextStyle(
+                                    'owner.staff.managed_by_owner_short'.tr(),
+                                    style: const TextStyle(
                                       color: Color(0xFF10B981),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 10.5,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          TotpQrSheet.show(
-                            context,
-                            staffId: coachId,
-                            loginId: loginId,
-                            displayName: name,
-                            role: 'coach',
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(9),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(9),
-                            border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.40),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(LucideIcons.qrCode, color: Color(0xFF10B981), size: 13),
-                              SizedBox(width: 4),
-                              Text(
-                                'QR',
-                                style: TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),

@@ -1,5 +1,7 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
-import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class OwnerEditSalarySheet extends ConsumerStatefulWidget {
   final String staffId;
@@ -15,6 +16,7 @@ class OwnerEditSalarySheet extends ConsumerStatefulWidget {
   final String role; // 'coach' or 'admin'
   final String phone;
   final String loginId;
+  final String initialPassword;
   final int initialRateGroup;
   final int initialRateIndividual;
   final int initialRateSplit;
@@ -28,6 +30,7 @@ class OwnerEditSalarySheet extends ConsumerStatefulWidget {
     required this.role,
     required this.phone,
     required this.loginId,
+    this.initialPassword = '1',
     this.initialRateGroup = 400,
     this.initialRateIndividual = 450,
     this.initialRateSplit = 600,
@@ -44,8 +47,11 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
   late TextEditingController _rateIndividualController;
   late TextEditingController _rateSplitController;
   late TextEditingController _adminSalaryController;
+  late TextEditingController _loginIdController;
+  late TextEditingController _passwordController;
 
   bool _isLoading = false;
+  bool _obscurePassword = false;
   String? _errorMessage;
 
   @override
@@ -63,6 +69,34 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
     _adminSalaryController = TextEditingController(
       text: widget.initialAdminSalary > 0 ? widget.initialAdminSalary.toString() : '20000',
     );
+    final fallbackLogin = widget.loginId.trim().isNotEmpty
+        ? widget.loginId.trim()
+        : (widget.role == 'admin'
+            ? (widget.staffId == 'admin_vienna' ? 'admin_vienna' : 'admin_kyiv')
+            : 'coach');
+    _loginIdController = TextEditingController(text: fallbackLogin);
+    _passwordController = TextEditingController(
+      text: widget.initialPassword.trim().isNotEmpty ? widget.initialPassword.trim() : '1',
+    );
+    _loadCurrentCredentials();
+  }
+
+  Future<void> _loadCurrentCredentials() async {
+    try {
+      final snap = await FirebaseFirestore.instance.collection('users').doc(widget.staffId).get();
+      if (!mounted || !snap.exists) return;
+      final data = snap.data() ?? {};
+      final dbLogin = (data['loginId'] as String?)?.trim() ?? '';
+      final dbPass = (data['password'] as String?)?.trim() ?? '';
+      setState(() {
+        if (dbLogin.isNotEmpty) {
+          _loginIdController.text = dbLogin;
+        }
+        if (dbPass.isNotEmpty && dbPass.length < 40) {
+          _passwordController.text = dbPass;
+        }
+      });
+    } catch (_) {}
   }
 
   @override
@@ -71,10 +105,71 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
     _rateIndividualController.dispose();
     _rateSplitController.dispose();
     _adminSalaryController.dispose();
+    _loginIdController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
+  void _generateRandomPassword() {
+    const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+    final rand = Random.secure();
+    final generated = List.generate(6, (_) => chars[rand.nextInt(chars.length)]).join();
+    HapticFeedback.lightImpact();
+    setState(() {
+      _passwordController.text = generated;
+      _obscurePassword = false;
+    });
+  }
+
+  void _resetPasswordToDefault() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _passwordController.text = '1';
+      _obscurePassword = false;
+    });
+  }
+
+  void _copyCredentials() {
+    final login = _loginIdController.text.trim();
+    final pass = _passwordController.text.trim();
+    final roleLabel = widget.role == 'coach'
+        ? 'owner.role_coach'.tr()
+        : 'owner.role_admin_full'.tr();
+    final copyText = '🏊 City Swim — Доступ для персоналу\n'
+        '👤 ${widget.name} ($roleLabel)\n'
+        '🔑 Логін: $login\n'
+        '🔒 Пароль: $pass';
+    Clipboard.setData(ClipboardData(text: copyText));
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(LucideIcons.copyCheck, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('owner.staff.credentials_copied'.tr(namedArgs: {'name': widget.name})),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
+    final newLogin = _loginIdController.text.trim().toLowerCase();
+    final newPassword = _passwordController.text.trim();
+
+    if (newLogin.isEmpty || newPassword.isEmpty) {
+      setState(() {
+        _errorMessage = 'owner.staff.fill_credentials_error'.tr();
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -84,6 +179,22 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
+      // Check uniqueness of loginId across users
+      final dupSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('loginId', isEqualTo: newLogin)
+          .get();
+      final hasConflict = dupSnap.docs.any((d) => d.id != widget.staffId);
+      if (hasConflict) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'owner.staff.login_taken_error'.tr(namedArgs: {'login': newLogin});
+          });
+        }
+        return;
+      }
+
       final userRef = FirebaseFirestore.instance.collection('users').doc(widget.staffId);
       final isCoach = widget.role == 'coach';
 
@@ -95,6 +206,8 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
           'rateGroup': rateGroup,
           'rateIndividual': rateIndividual,
           'rateSplit': rateSplit,
+          'loginId': newLogin,
+          'password': newPassword,
         };
 
         await userRef.set(ratePayload, SetOptions(merge: true)).timeout(const Duration(seconds: 15));
@@ -124,13 +237,12 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
           'adminSalary': adminSalary,
           'salaryType': 'monthly',
           'role': 'admin',
+          'loginId': newLogin,
+          'password': newPassword,
           if (widget.staffId == 'admin' || widget.staffId == 'admin_vienna') ...{
             'name': widget.staffId == 'admin' ? 'auth.default_admin'.tr() : 'Admin Vienna',
             'branchId': widget.staffId == 'admin' ? 'kyiv' : 'vienna',
             'phone': widget.staffId == 'admin' ? '+380 (99) 000-00-01' : '+43 1 234 5678',
-            'loginId': widget.loginId.isNotEmpty
-                ? widget.loginId
-                : (widget.staffId == 'admin' ? 'admin_kyiv' : 'admin_vienna'),
             'currency': widget.staffId == 'admin' ? '₴' : '€',
             'avatarUrl': widget.staffId == 'admin' 
                 ? 'https://ui-avatars.com/api/?name=Admin&background=8b5cf6&color=ffffff' 
@@ -289,14 +401,9 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                         ),
                       ],
 
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 22),
 
-                      TotpStaffManagementCard(
-                        staffId: widget.staffId,
-                        loginId: widget.loginId,
-                        displayName: widget.name,
-                        role: widget.role,
-                      ),
+                      _buildCredentialsSection(isCoach, isDark),
 
                       const SizedBox(height: 22),
 
@@ -745,6 +852,271 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCredentialsSection(bool isCoach, bool isDark) {
+    final accentColor = isCoach
+        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+        : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669));
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? accentColor.withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
+          width: 1.2,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: const Color(0xFF003B73).withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+                ),
+                child: Icon(LucideIcons.keyRound, color: accentColor, size: 17),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'owner.staff.credentials_title'.tr(),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'owner.staff.credentials_subtitle'.tr(),
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'owner.staff.copy_credentials_btn'.tr(),
+                onPressed: _copyCredentials,
+                style: IconButton.styleFrom(
+                  backgroundColor: accentColor.withValues(alpha: 0.14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: accentColor.withValues(alpha: 0.35)),
+                  ),
+                ),
+                icon: Icon(LucideIcons.copy, size: 16, color: accentColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Login ID Input
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withValues(alpha: 0.28) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(LucideIcons.userCheck, color: accentColor, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'owner.staff.login_label'.tr(),
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      TextField(
+                        controller: _loginIdController,
+                        autocorrect: false,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintText: 'coach_login',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white24 : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Password Input
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withValues(alpha: 0.28) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFCBD5E1),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(LucideIcons.lock, color: accentColor, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'owner.staff.password_label'.tr(),
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        autocorrect: false,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: _obscurePassword ? 2.5 : 0.5,
+                        ),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintText: '••••••',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white24 : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                    size: 18,
+                    color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Quick Actions Row
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildCredentialActionChip(
+                icon: LucideIcons.sparkles,
+                label: 'owner.staff.generate_password_btn'.tr(),
+                color: accentColor,
+                isDark: isDark,
+                onTap: _generateRandomPassword,
+              ),
+              _buildCredentialActionChip(
+                icon: LucideIcons.rotateCcw,
+                label: 'owner.staff.reset_password_1_btn'.tr(),
+                color: const Color(0xFFF59E0B),
+                isDark: isDark,
+                onTap: _resetPasswordToDefault,
+              ),
+              _buildCredentialActionChip(
+                icon: LucideIcons.copy,
+                label: 'owner.staff.copy_credentials_btn'.tr(),
+                color: const Color(0xFF10B981),
+                isDark: isDark,
+                onTap: _copyCredentials,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCredentialActionChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.14 : 0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13.5, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

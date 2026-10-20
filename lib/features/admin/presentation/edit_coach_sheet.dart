@@ -8,7 +8,6 @@ import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_controller.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
-import 'package:swimming_school_app/shared/widgets/totp_qr_sheet.dart';
 
 class EditCoachSheet extends ConsumerStatefulWidget {
   final String coachId;
@@ -247,13 +246,33 @@ class _EditCoachSheetState extends ConsumerState<EditCoachSheet> {
                         unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
                       ),
                       const SizedBox(height: 18),
-                      TotpStaffManagementCard(
-                        staffId: widget.coachId,
-                        loginId: (widget.initialLoginId?.isNotEmpty == true)
-                            ? widget.initialLoginId!
-                            : widget.coachId,
-                        displayName: widget.initialName,
-                        role: 'coach',
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFFFFB300).withValues(alpha: 0.10)
+                              : const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFFFB300).withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(LucideIcons.shieldCheck, color: Color(0xFFFFB300), size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'owner.staff.managed_by_owner_notice'.tr(),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white70 : const Color(0xFF78350F),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 22),
                   

@@ -263,7 +263,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
 
       // Only navigate from ref.listen if an external manual login occurred (e.g. from modal)
       // Do not navigate while Google Sign-In is loading (_isLoading == true), as Google Sign-In handles its own navigation on completion.
-      if (next != null && !_isLoading && (previous == null || previous.id != next.id)) {
+      if (next != null && !_isLoading && (previous == null || previous.id != next.id || previous.role != next.role)) {
         _clearModalToast();
         ScaffoldMessenger.of(context).clearSnackBars();
         final rootNav = Navigator.of(context, rootNavigator: true);
@@ -1673,15 +1673,6 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                 final notifier = ref.read(authControllerProvider.notifier);
 
                 await notifier.signInStaffWithPassword(login: login, password: password);
-                if (modalContext.mounted) {
-                  Navigator.of(modalContext, rootNavigator: true).pop();
-                }
-                if (mounted) {
-                  final currentUser = ref.read(authControllerProvider);
-                  if (currentUser != null) {
-                    _navigateBasedOnRole(currentUser.role, currentUser);
-                  }
-                }
               } catch (e) {
                 if (modalContext.mounted) {
                   setModalState(() => isStaffLoading = false);

@@ -506,9 +506,10 @@ class _CoachChangesBannerState extends ConsumerState<CoachChangesBanner> {
         badgeText = 'coach.act_badge_class_cancelled'.tr();
         break;
       default:
-        iconColor = const Color(0xFF00E5FF);
+        iconColor = themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7);
         badgeTextColor = themeConfig.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
-        badgeBgColor = const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.22 : 0.15);
+        badgeBgColor = (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+            .withValues(alpha: themeConfig.isDark ? 0.22 : 0.12);
         iconData = LucideIcons.info;
         badgeText = 'coach.act_badge_change'.tr();
     }

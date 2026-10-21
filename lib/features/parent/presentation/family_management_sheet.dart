@@ -250,13 +250,17 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.22),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -336,7 +340,9 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                           children: [
                             Icon(
                               isPaired ? LucideIcons.checkCircle2 : LucideIcons.info,
-                              color: isPaired ? const Color(0xFF10B981) : const Color(0xFF00E5FF),
+                              color: isPaired
+                                  ? (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
+                                  : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -487,7 +493,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             name: currentUserName,
             phone: currentUserPhone,
             roleBadge: 'family.you_badge'.tr(),
-            badgeColor: const Color(0xFF00E5FF),
+            badgeColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
             isDark: isDark,
           ),
           const SizedBox(height: 10),
@@ -502,11 +508,11 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.link2, size: 12, color: Color(0xFF10B981)),
+                  Icon(LucideIcons.link2, size: 12, color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                   const SizedBox(width: 4),
                   Text(
                     'family.shared_access_badge'.tr(),
-                    style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669), fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -519,7 +525,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
             name: partnerName,
             phone: partnerPhone,
             roleBadge: 'parent.partner'.tr(),
-            badgeColor: const Color(0xFFA78BFA),
+            badgeColor: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
             isDark: isDark,
           ),
         ],
@@ -605,7 +611,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.baby, color: Color(0xFF00E5FF), size: 18),
+            Icon(LucideIcons.baby, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
             const SizedBox(width: 8),
             Text(
               'family.shared_children_count'.tr(args: [children.length.toString()]),
@@ -635,7 +641,10 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
         else
           Column(
             children: children.map((child) {
-              final childColor = Color(int.tryParse(child.colorHex) ?? 0xFF00E5FF);
+              final rawChildColor = Color(int.tryParse(child.colorHex) ?? 0xFF00E5FF);
+              final childColor = isDark
+                  ? rawChildColor
+                  : AppThemeConfig.lightAzure.adaptColorForTheme(rawChildColor);
               final age = child.currentAge;
               final ageFormatted = age != null ? ' (${formatAgeUk(age)})' : '';
               final displayName = '${child.name}$ageFormatted';
@@ -690,7 +699,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
         color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.65),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.25),
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
       ),
@@ -759,7 +768,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.5) : const Color(0xFF38BDF8),
                 width: 1.2,
               ),
             ),
@@ -796,12 +805,12 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                             : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       ),
                       border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.65),
+                        color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.4),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -817,7 +826,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                         elevation: 0,
                       ),
                       onPressed: () => _copyToClipboard(code),
-                      icon: const Icon(LucideIcons.copy, size: 15, color: Color(0xFF00E5FF)),
+                      icon: Icon(LucideIcons.copy, size: 15, color: isDark ? const Color(0xFF00E5FF) : Colors.white),
                       label: Text(
                         'parent.copy'.tr(),
                         style: TextStyle(
@@ -872,7 +881,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
         color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.65),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.20),
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.25) : const Color(0xFFBAE6FD),
           width: 1.2,
         ),
       ),
@@ -976,7 +985,7 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
+                borderSide: BorderSide(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), width: 1.5),
               ),
             ),
           ),
@@ -1004,12 +1013,14 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.65 : 0.40),
+                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.40),
                 width: 1.4,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                  color: isDark
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                      : const Color(0xFF0284C7).withValues(alpha: 0.20),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -1030,15 +1041,18 @@ class _FamilyManagementSheetState extends ConsumerState<FamilyManagementSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(color: Color(0xFF00E5FF), strokeWidth: 2.2),
+                      child: CircularProgressIndicator(
+                        color: isDark ? const Color(0xFF00E5FF) : Colors.white,
+                        strokeWidth: 2.2,
+                      ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.userCheck, size: 19, color: Color(0xFF00E5FF)),
+                        Icon(LucideIcons.userCheck, size: 19, color: isDark ? const Color(0xFF00E5FF) : Colors.white),
                         const SizedBox(width: 8),
                         Text(
                           'parent.family_link_accounts'.tr(),

@@ -180,6 +180,32 @@ class AppThemeConfig {
     );
   }
 
+  /// Harmonizes bright/neon accent or member colors for comfortable reading in Light Mode,
+  /// while returning the exact original color untouched in Dark Mode.
+  Color adaptColorForTheme(Color raw) {
+    if (isDark) return raw;
+    final v = raw.toARGB32();
+    if (v == 0xFF00E5FF || v == 0xFF00D2FF || v == 0xFF00F2FE || v == 0xFF18FFFF || v == 0xFF00B4D8 || v == 0xFF38BDF8 || v == 0xFF0EA5E9) {
+      return const Color(0xFF0284C7);
+    }
+    if (v == 0xFF00E676 || v == 0xFF69F0AE || v == 0xFF34D399 || v == 0xFF6EE7B7 || v == 0xFF10B981) {
+      return const Color(0xFF059669);
+    }
+    if (v == 0xFF2DD4BF || v == 0xFF14B8A6 || v == 0xFF06B6D4) {
+      return const Color(0xFF0D9488);
+    }
+    if (v == 0xFFFFD740 || v == 0xFFFFAB40 || v == 0xFFFBBF24 || v == 0xFFF59E0B || v == 0xFFFFB300) {
+      return const Color(0xFFD97706);
+    }
+    if (v == 0xFFFF3366 || v == 0xFFFF2A55 || v == 0xFFFF4081 || v == 0xFFF43F5E || v == 0xFFFB7185 || v == 0xFFEC4899) {
+      return const Color(0xFFE11D48);
+    }
+    if (v == 0xFFE040FB || v == 0xFFA855F7 || v == 0xFFC084FC || v == 0xFFA78BFA) {
+      return const Color(0xFF7C3AED);
+    }
+    return raw;
+  }
+
   // Preset 1: Deep Ocean Dark (The Standard Dark)
   static final AppThemeConfig darkOcean = AppThemeConfig(
     id: AppThemeMode.darkOcean,
@@ -250,55 +276,55 @@ class AppThemeConfig {
     subKey: 'theme_light_pearl_sub',
     badgeKey: 'theme_badge_light',
     isDark: false,
-    scaffoldBg: const Color(0xFFE0F2FE), // Very light sky blue
+    scaffoldBg: const Color(0xFFF0F9FF), // Calm airy pearl-azure
     bgGradient: [
-      const Color(0xFF0EA5E9).withValues(alpha: 0.15),
-      const Color(0xFF38BDF8).withValues(alpha: 0.10),
-      const Color(0xFF0284C7).withValues(alpha: 0.22),
+      const Color(0xFF0284C7).withValues(alpha: 0.08),
+      const Color(0xFF38BDF8).withValues(alpha: 0.06),
+      const Color(0xFF0369A1).withValues(alpha: 0.12),
     ],
-    cardBg: Colors.white.withValues(alpha: 0.65), // Translucent for glassmorphism
+    cardBg: Colors.white.withValues(alpha: 0.82), // Soft frosted white glass
     cardBorder: Colors.white.withValues(alpha: 0.95), // Crisp white edges
-    cardShadow: const Color(0xFF003B73).withValues(alpha: 0.12), // Deep azure shadow
-    glassCardBg: Colors.white.withValues(alpha: 0.55), // Highly translucent glass
+    cardShadow: const Color(0xFF0284C7).withValues(alpha: 0.08), // Subtle sapphire shadow
+    glassCardBg: Colors.white.withValues(alpha: 0.72), // Clean translucent glass
     textPrimary: const Color(0xFF0F172A), // Deep Slate Navy
     textSecondary: const Color(0xFF334155), // Slate Gray
     textMuted: const Color(0xFF64748B), // Slate gray
-    accentPrimary: const Color(0xFF0EA5E9), // Vibrant Sky Blue
-    accentSecondary: const Color(0xFF0284C7), // Deep Ocean Blue
-    accentGradient: const [Color(0xFF38BDF8), Color(0xFF0284C7)],
-    chipBg: Colors.white.withValues(alpha: 0.5),
-    chipBorder: Colors.white.withValues(alpha: 0.7),
-    inputBg: Colors.white.withValues(alpha: 0.6),
-    inputBorder: Colors.white.withValues(alpha: 0.8),
-    dialogBg: const Color(0xFFF0F9FF),
+    accentPrimary: const Color(0xFF0284C7), // Noble Sapphire Azure
+    accentSecondary: const Color(0xFF0D9488), // Calm Deep Teal
+    accentGradient: const [Color(0xFF0284C7), Color(0xFF0369A1)],
+    chipBg: Colors.white.withValues(alpha: 0.65),
+    chipBorder: const Color(0xFFBAE6FD).withValues(alpha: 0.85),
+    inputBg: Colors.white.withValues(alpha: 0.78),
+    inputBorder: const Color(0xFFBAE6FD),
+    dialogBg: const Color(0xFFF8FAFC),
     dialogBorder: Colors.white,
-    dividerColor: const Color(0xFF0284C7).withValues(alpha: 0.1),
-    statusActiveBadgeBg: const Color(0xFF10B981).withValues(alpha: 0.15),
-    statusActiveBadgeText: const Color(0xFF059669),
-    statusWarningBadgeBg: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-    statusWarningBadgeText: const Color(0xFFD97706),
-    statusErrorBadgeBg: const Color(0xFFF43F5E).withValues(alpha: 0.15),
-    statusErrorBadgeText: const Color(0xFFE11D48),
-    statusNeutralBadgeBg: Colors.white.withValues(alpha: 0.5),
+    dividerColor: const Color(0xFF0284C7).withValues(alpha: 0.10),
+    statusActiveBadgeBg: const Color(0xFF059669).withValues(alpha: 0.12),
+    statusActiveBadgeText: const Color(0xFF047857),
+    statusWarningBadgeBg: const Color(0xFFD97706).withValues(alpha: 0.12),
+    statusWarningBadgeText: const Color(0xFFB45309),
+    statusErrorBadgeBg: const Color(0xFFE11D48).withValues(alpha: 0.12),
+    statusErrorBadgeText: const Color(0xFFBE123C),
+    statusNeutralBadgeBg: Colors.white.withValues(alpha: 0.65),
     statusNeutralBadgeText: const Color(0xFF475569),
-    // Vibrant tropical water background with visible dynamic waves
-    waterBgTop: const Color(0xFFE0F2FE), 
-    waterBgBottom: const Color(0xFFBAE6FD),
-    waterWave1: const Color(0xFF38BDF8).withValues(alpha: 0.38),
-    waterWave2: const Color(0xFF0EA5E9).withValues(alpha: 0.32),
-    waterWave3: const Color(0xFF0284C7).withValues(alpha: 0.26),
-    orb1Color: const Color(0xFF00B4D8).withValues(alpha: 0.40),
-    orb2Color: const Color(0xFF90E0EF).withValues(alpha: 0.40),
-    orb3Color: const Color(0xFF2DD4BF).withValues(alpha: 0.4),
+    // Calm crystal water background with gentle dynamic waves
+    waterBgTop: const Color(0xFFF0F9FF),
+    waterBgBottom: const Color(0xFFE0F2FE),
+    waterWave1: const Color(0xFF38BDF8).withValues(alpha: 0.22),
+    waterWave2: const Color(0xFF0284C7).withValues(alpha: 0.18),
+    waterWave3: const Color(0xFF0369A1).withValues(alpha: 0.14),
+    orb1Color: const Color(0xFF38BDF8).withValues(alpha: 0.16),
+    orb2Color: const Color(0xFF7DD3FC).withValues(alpha: 0.16),
+    orb3Color: const Color(0xFF5EEAD4).withValues(alpha: 0.12),
     actionCardGradients: const [
-      [Color(0xFF10B981), Color(0xFF059669)], // Green
-      [Color(0xFF0EA5E9), Color(0xFF0284C7)], // Blue
-      [Color(0xFF8B5CF6), Color(0xFF6D28D9)], // Purple
-      [Color(0xFFF43F5E), Color(0xFFE11D48)], // Rose
-      [Color(0xFFF59E0B), Color(0xFFD97706)], // Amber
-      [Color(0xFF06B6D4), Color(0xFF0891B2)], // Cyan
+      [Color(0xFF059669), Color(0xFF047857)], // Emerald
+      [Color(0xFF0284C7), Color(0xFF0369A1)], // Sapphire Blue
+      [Color(0xFF7C3AED), Color(0xFF5B21B6)], // Royal Purple
+      [Color(0xFFE11D48), Color(0xFFBE123C)], // Noble Rose
+      [Color(0xFFD97706), Color(0xFFB45309)], // Warm Amber
+      [Color(0xFF0891B2), Color(0xFF0E7490)], // Deep Cyan-Teal
     ],
-    previewColors: const [Color(0xFFE0F2FE), Color(0xFF0EA5E9), Color(0xFF38BDF8), Color(0xFF0F172A)],
+    previewColors: const [Color(0xFFF0F9FF), Color(0xFF0284C7), Color(0xFF0369A1), Color(0xFF0F172A)],
   );
 
   static AppThemeConfig fromMode(AppThemeMode mode) {

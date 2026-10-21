@@ -75,8 +75,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
           padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
           decoration: BoxDecoration(
             gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                ? LinearGradient(
+                    colors: _isLight
+                        ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -91,7 +93,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: _isLight ? 0.32 : 0.45),
+                      color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                          .withValues(alpha: _isLight ? 0.24 : 0.45),
                       blurRadius: 14,
                       offset: const Offset(0, 2),
                     ),
@@ -106,7 +109,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                 icon,
                 size: 14,
                 color: isSelected
-                    ? (_isLight ? const Color(0xFF032238) : Colors.white)
+                    ? Colors.white
                     : (_isLight ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
               ),
               const SizedBox(width: 5),
@@ -117,7 +120,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isSelected
-                        ? (_isLight ? const Color(0xFF032238) : Colors.white)
+                        ? Colors.white
                         : (_isLight ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
                     fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
                     fontSize: 12,
@@ -141,8 +144,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+              ? LinearGradient(
+                  colors: _isLight
+                      ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -160,7 +165,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                    color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                        .withValues(alpha: _isLight ? 0.24 : 0.40),
                     blurRadius: 12,
                     offset: const Offset(0, 2),
                   ),
@@ -185,7 +191,7 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
           label,
           style: TextStyle(
             color: isSelected
-                ? (_isLight ? const Color(0xFF032238) : Colors.white)
+                ? Colors.white
                 : (_isLight ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
             fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
             fontSize: 12.5,
@@ -218,8 +224,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                          gradient: LinearGradient(
+                            colors: _isLight
+                                ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                : const [Color(0xFF00E5FF), Color(0xFF0077B6)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -230,7 +238,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                              color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                  .withValues(alpha: _isLight ? 0.24 : 0.40),
                               blurRadius: 14,
                               offset: const Offset(0, 3),
                             ),
@@ -653,8 +662,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                       height: 68,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: _isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -664,7 +675,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                            color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                .withValues(alpha: _isLight ? 0.24 : 0.40),
                             blurRadius: 22,
                             offset: const Offset(0, 4),
                           ),
@@ -709,8 +721,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: _isLight
+                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -721,7 +735,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                    .withValues(alpha: _isLight ? 0.24 : 0.40),
                                 blurRadius: 16,
                                 offset: const Offset(0, 3),
                               ),
@@ -1149,11 +1164,16 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             gradient: LinearGradient(
                               colors: fillRatio >= 1.0
                                   ? [const Color(0xFFF43F5E), const Color(0xFFFB7185)]
-                                  : [const Color(0xFF00E5FF), const Color(0xFF10B981)],
+                                  : (_isLight
+                                      ? [const Color(0xFF0284C7), const Color(0xFF10B981)]
+                                      : [const Color(0xFF00E5FF), const Color(0xFF10B981)]),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: (fillRatio >= 1.0 ? const Color(0xFFF43F5E) : const Color(0xFF00E5FF)).withValues(alpha: 0.45),
+                                color: (fillRatio >= 1.0
+                                        ? const Color(0xFFF43F5E)
+                                        : (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)))
+                                    .withValues(alpha: _isLight ? 0.25 : 0.45),
                                 blurRadius: 8,
                               ),
                             ],
@@ -1174,8 +1194,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                      gradient: LinearGradient(
+                        colors: _isLight
+                            ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -1186,7 +1208,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: _isLight ? 0.35 : 0.45),
+                          color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                              .withValues(alpha: _isLight ? 0.24 : 0.45),
                           blurRadius: 14,
                           offset: const Offset(0, 3),
                         ),
@@ -1580,14 +1603,17 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                           height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: _isLight
+                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                    .withValues(alpha: _isLight ? 0.24 : 0.35),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1766,8 +1792,10 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                             height: 48,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                              gradient: LinearGradient(
+                                colors: _isLight
+                                    ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                    : const [Color(0xFF00E5FF), Color(0xFF0077B6)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -1777,7 +1805,8 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                  color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                      .withValues(alpha: _isLight ? 0.24 : 0.40),
                                   blurRadius: 12,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1853,14 +1882,16 @@ class _CoachSwimmersTabState extends ConsumerState<CoachSwimmersTab> {
                                 height: 36,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  gradient: LinearGradient(
+                                    colors: _isLight
+                                        ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                      color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: _isLight ? 0.24 : 0.35),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),

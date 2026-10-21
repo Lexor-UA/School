@@ -285,13 +285,16 @@ class _CoachMainState extends ConsumerState<CoachMain> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: themeConfig.isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         ),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                            color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                .withValues(alpha: themeConfig.isDark ? 0.6 : 0.35),
                             blurRadius: 6,
                           ),
                         ],

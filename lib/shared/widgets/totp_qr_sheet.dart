@@ -58,6 +58,10 @@ class _TotpQrSetupBoxState extends State<TotpQrSetupBox> {
 
     final textPrimary = widget.isDark ? Colors.white : const Color(0xFF0F172A);
     final textSecondary = widget.isDark ? Colors.white70 : const Color(0xFF475569);
+    final effectiveAccent = widget.isDark
+        ? widget.accentColor
+        : AppThemeConfig.lightAzure.adaptColorForTheme(widget.accentColor);
+    final copiedColor = widget.isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
 
     return Container(
       padding: EdgeInsets.all(widget.compact ? 14 : 18),
@@ -67,12 +71,12 @@ class _TotpQrSetupBoxState extends State<TotpQrSetupBox> {
             : Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: widget.accentColor.withValues(alpha: 0.38),
+          color: effectiveAccent.withValues(alpha: 0.38),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: widget.accentColor.withValues(alpha: 0.10),
+            color: effectiveAccent.withValues(alpha: 0.10),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -86,12 +90,12 @@ class _TotpQrSetupBoxState extends State<TotpQrSetupBox> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: widget.accentColor.withValues(alpha: 0.15),
+                  color: effectiveAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   LucideIcons.shieldCheck,
-                  color: widget.accentColor,
+                  color: effectiveAccent,
                   size: 18,
                 ),
               ),
@@ -174,8 +178,8 @@ class _TotpQrSetupBoxState extends State<TotpQrSetupBox> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _copied
-                      ? const Color(0xFF10B981)
-                      : widget.accentColor.withValues(alpha: 0.30),
+                      ? copiedColor
+                      : effectiveAccent.withValues(alpha: 0.30),
                 ),
               ),
               child: Row(
@@ -198,8 +202,8 @@ class _TotpQrSetupBoxState extends State<TotpQrSetupBox> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: _copied
-                          ? const Color(0xFF10B981).withValues(alpha: 0.20)
-                          : widget.accentColor.withValues(alpha: 0.18),
+                          ? copiedColor.withValues(alpha: 0.20)
+                          : effectiveAccent.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -208,13 +212,13 @@ class _TotpQrSetupBoxState extends State<TotpQrSetupBox> {
                         Icon(
                           _copied ? LucideIcons.check : LucideIcons.copy,
                           size: 14,
-                          color: _copied ? const Color(0xFF10B981) : widget.accentColor,
+                          color: _copied ? copiedColor : effectiveAccent,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _copied ? 'auth.totp_copied'.tr() : 'auth.totp_copy_btn'.tr(),
                           style: TextStyle(
-                            color: _copied ? const Color(0xFF10B981) : widget.accentColor,
+                            color: _copied ? copiedColor : effectiveAccent,
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                           ),
@@ -327,6 +331,9 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
   Widget build(BuildContext context) {
     final themeConfig = ref.watch(appThemeControllerProvider);
     final isDark = themeConfig.isDark;
+    final effectiveAccent = themeConfig.adaptColorForTheme(widget.accentColor);
+    final activeGreen = isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
+    final pendingAmber = isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706);
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('users').doc(widget.staffId).snapshots(),
@@ -346,7 +353,7 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
                 : Colors.white.withValues(alpha: 0.90),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: widget.accentColor.withValues(alpha: isDark ? 0.30 : 0.40),
+              color: effectiveAccent.withValues(alpha: isDark ? 0.30 : 0.40),
             ),
           ),
           child: Column(
@@ -357,12 +364,12 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: widget.accentColor.withValues(alpha: 0.15),
+                      color: effectiveAccent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       LucideIcons.shieldCheck,
-                      color: widget.accentColor,
+                      color: effectiveAccent,
                       size: 18,
                     ),
                   ),
@@ -395,19 +402,19 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: totpEnabled
-                          ? const Color(0xFF10B981).withValues(alpha: 0.16)
-                          : const Color(0xFFF59E0B).withValues(alpha: 0.16),
+                          ? activeGreen.withValues(alpha: 0.16)
+                          : pendingAmber.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: totpEnabled
-                            ? const Color(0xFF10B981).withValues(alpha: 0.45)
-                            : const Color(0xFFF59E0B).withValues(alpha: 0.45),
+                            ? activeGreen.withValues(alpha: 0.45)
+                            : pendingAmber.withValues(alpha: 0.45),
                       ),
                     ),
                     child: Text(
                       totpEnabled ? 'auth.totp_status_active'.tr() : 'auth.totp_status_pending'.tr(),
                       style: TextStyle(
-                        color: totpEnabled ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                        color: totpEnabled ? activeGreen : pendingAmber,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -421,8 +428,8 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: widget.accentColor,
-                        side: BorderSide(color: widget.accentColor.withValues(alpha: 0.45)),
+                        foregroundColor: effectiveAccent,
+                        side: BorderSide(color: effectiveAccent.withValues(alpha: 0.45)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                       ),
@@ -445,8 +452,8 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
                   const SizedBox(width: 10),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFF59E0B),
-                      side: BorderSide(color: const Color(0xFFF59E0B).withValues(alpha: 0.45)),
+                      foregroundColor: pendingAmber,
+                      side: BorderSide(color: pendingAmber.withValues(alpha: 0.45)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     ),
@@ -466,7 +473,7 @@ class _TotpStaffManagementCardState extends ConsumerState<TotpStaffManagementCar
                   displayName: widget.displayName,
                   secret: secret,
                   isDark: isDark,
-                  accentColor: widget.accentColor,
+                  accentColor: effectiveAccent,
                   compact: true,
                 ),
               ],

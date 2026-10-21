@@ -806,13 +806,18 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: _isEditing
-                                ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                                ? (isDark
+                                    ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)])
                                 : const [Color(0xFF10B981), Color(0xFF047857)],
                           ),
                           borderRadius: BorderRadius.circular(13),
                           boxShadow: [
                             BoxShadow(
-                              color: (_isEditing ? const Color(0xFF00E5FF) : const Color(0xFF10B981)).withValues(alpha: 0.45),
+                              color: (_isEditing
+                                      ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                      : const Color(0xFF10B981))
+                                  .withValues(alpha: isDark ? 0.45 : 0.25),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -1167,7 +1172,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (hasConflict ? const Color(0xFFEF4444) : const Color(0xFF00E5FF)).withValues(alpha: isDark ? 0.30 : 0.20),
+                              color: (hasConflict
+                                      ? const Color(0xFFEF4444)
+                                      : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
+                                  .withValues(alpha: isDark ? 0.30 : 0.20),
                               blurRadius: 14,
                               offset: const Offset(0, 3),
                             ),
@@ -1279,7 +1287,10 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.4),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+          width: 1.4,
+        ),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -1488,20 +1499,26 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   gradient: _isRecurring
-                      ? const LinearGradient(
+                      ? LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                          colors: isDark
+                              ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         )
                       : null,
                   borderRadius: BorderRadius.circular(12),
                   border: _isRecurring
-                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
+                      ? Border.all(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8),
+                          width: 1.3,
+                        )
                       : Border.all(color: Colors.transparent, width: 1.3),
                   boxShadow: _isRecurring
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                .withValues(alpha: isDark ? 0.28 : 0.22),
                             blurRadius: 10,
                           ),
                         ]
@@ -1513,7 +1530,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.users,
                       size: 15,
-                      color: _isRecurring ? const Color(0xFF00E5FF) : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
+                      color: _isRecurring
+                          ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
+                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1544,20 +1563,26 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   gradient: !_isRecurring
-                      ? const LinearGradient(
+                      ? LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                          colors: isDark
+                              ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         )
                       : null,
                   borderRadius: BorderRadius.circular(12),
                   border: !_isRecurring
-                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
+                      ? Border.all(
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8),
+                          width: 1.3,
+                        )
                       : Border.all(color: Colors.transparent, width: 1.3),
                   boxShadow: !_isRecurring
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                .withValues(alpha: isDark ? 0.28 : 0.22),
                             blurRadius: 10,
                           ),
                         ]
@@ -1569,7 +1594,9 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     Icon(
                       LucideIcons.calendar,
                       size: 15,
-                      color: !_isRecurring ? const Color(0xFF00E5FF) : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
+                      color: !_isRecurring
+                          ? (isDark ? const Color(0xFF00E5FF) : Colors.white)
+                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1649,24 +1676,27 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       gradient: isSelected
-                          ? const LinearGradient(
+                          ? LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                              colors: isDark
+                                  ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             )
                           : null,
                       color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF00E5FF)
+                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
                             : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
                         width: isSelected ? 1.3 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                    .withValues(alpha: isDark ? 0.28 : 0.22),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1743,24 +1773,27 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
                     decoration: BoxDecoration(
                       gradient: isSelected
-                          ? const LinearGradient(
+                          ? LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Color(0xFF0E3D64), Color(0xFF082038)],
+                              colors: isDark
+                                  ? const [Color(0xFF0E3D64), Color(0xFF082038)]
+                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             )
                           : null,
                       color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF00E5FF)
+                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
                             : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
                         width: isSelected ? 1.3 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                    .withValues(alpha: isDark ? 0.28 : 0.22),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1788,7 +1821,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                           sub,
                           style: TextStyle(
                             color: isSelected
-                                ? const Color(0xFF00E5FF)
+                                ? (isDark ? const Color(0xFF00E5FF) : Colors.white.withValues(alpha: 0.90))
                                 : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF475569)),
                             fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -1850,13 +1883,16 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+              gradient: LinearGradient(
+                colors: isDark
+                    ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
               ),
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                      .withValues(alpha: isDark ? 0.40 : 0.22),
                   blurRadius: 8,
                 ),
               ],
@@ -1957,14 +1993,14 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: Colors.amberAccent.withValues(alpha: 0.6),
+            color: (isDark ? Colors.amberAccent : const Color(0xFFD97706)).withValues(alpha: 0.6),
             width: 1.1,
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 18),
+            Icon(LucideIcons.triangleAlert, color: isDark ? Colors.amberAccent : const Color(0xFFD97706), size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1976,8 +2012,8 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
                         : (activeConflict.type == ClassConflictType.coachConflict
                             ? 'admin.conflict_coach_full'.tr()
                             : 'admin.conflict_schedule_full'.tr()),
-                    style: const TextStyle(
-                      color: Colors.amberAccent,
+                    style: TextStyle(
+                      color: isDark ? Colors.amberAccent : const Color(0xFFB45309),
                       fontWeight: FontWeight.bold,
                       fontSize: 12.5,
                     ),
@@ -2096,7 +2132,7 @@ class _CreateClassSheetState extends ConsumerState<CreateClassSheet> {
           ),
           Switch.adaptive(
             value: _updateEntireSeries,
-            activeTrackColor: const Color(0xFF00E5FF),
+            activeTrackColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
             activeThumbColor: Colors.white,
             onChanged: (v) => setState(() => _updateEntireSeries = v),
           ),

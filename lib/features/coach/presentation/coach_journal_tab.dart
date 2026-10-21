@@ -242,7 +242,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
               ? LinearGradient(
                   colors: themeConfig.isDark
                       ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                      : [const Color(0xFF00E5FF), const Color(0xFF0284C7)],
+                      : [const Color(0xFF0284C7), const Color(0xFF0369A1)],
                 )
               : null,
           color: isSelected
@@ -495,7 +495,7 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                     ? LinearGradient(
                                         colors: themeConfig.isDark
                                             ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
-                                            : [const Color(0xFF00E5FF), const Color(0xFF0284C7)],
+                                            : [const Color(0xFF0284C7), const Color(0xFF0369A1)],
                                       )
                                     : null,
                                 color: (!_isSameDay(_selectedDate, yesterday) &&
@@ -959,7 +959,9 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                                             (themeConfig.isDark ? const Color(0xFF1E293B) : const Color(0xFF64748B)).withValues(alpha: 0.9),
                                             (themeConfig.isDark ? const Color(0xFF0F172A) : const Color(0xFF475569)).withValues(alpha: 0.9),
                                           ]
-                                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                        : (themeConfig.isDark
+                                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -1274,7 +1276,9 @@ class _CoachJournalTabState extends ConsumerState<CoachJournalTab> {
                     gradient: LinearGradient(
                       colors: isPresent
                           ? [const Color(0xFF10B981), const Color(0xFF047857)]
-                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          : (themeConfig.isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
                     ),
                     boxShadow: [
                       BoxShadow(

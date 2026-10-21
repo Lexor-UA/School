@@ -1127,7 +1127,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                               ? LinearGradient(
                                   colors: isDark
                                       ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 )
@@ -1142,7 +1142,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                           boxShadow: totalPrice > 0 && selectedService != null
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                                    color: isDark
+                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                        : const Color(0xFF0284C7).withValues(alpha: 0.22),
                                     blurRadius: 16,
                                     offset: const Offset(0, 4),
                                   ),
@@ -1739,7 +1741,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.10 : 0.08),
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.06),
                       blurRadius: 28,
                       offset: const Offset(0, 8),
                     ),
@@ -1862,7 +1866,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.10 : 0.08),
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.10)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.06),
                       blurRadius: 28,
                       offset: const Offset(0, 8),
                     ),
@@ -2177,7 +2183,7 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   ),
                   border: Border.all(
                     color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.35),
@@ -2185,7 +2191,9 @@ class _ParentSubscriptionTabState extends ConsumerState<ParentSubscriptionTab> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.32 : 0.22),
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.32)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.22),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),

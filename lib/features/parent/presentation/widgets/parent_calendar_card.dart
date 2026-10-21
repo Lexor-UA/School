@@ -279,7 +279,7 @@ class ParentCalendarCard extends ConsumerWidget {
                                 ? LinearGradient(
                                     colors: isDark
                                         ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
-                                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   )
@@ -307,7 +307,7 @@ class ParentCalendarCard extends ConsumerWidget {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.35),
+                                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                                       blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),

@@ -56,7 +56,7 @@ class _ProfileStyleConfig {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+            color: const Color(0xFF0284C7).withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 6),
           ),
@@ -593,13 +593,15 @@ class ParentProfileTab extends ConsumerWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        colors: [accentColor, Colors.blueAccent, Colors.cyanAccent],
+                        colors: isDark
+                            ? [accentColor, Colors.blueAccent, Colors.cyanAccent]
+                            : [accentColor, const Color(0xFF0369A1), const Color(0xFF38BDF8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: accentColor.withValues(alpha: 0.38),
+                          color: accentColor.withValues(alpha: isDark ? 0.38 : 0.22),
                           blurRadius: 14,
                           spreadRadius: 1.5,
                         ),
@@ -765,7 +767,7 @@ class ParentProfileTab extends ConsumerWidget {
                       value: '+28',
                       unit: '°C',
                       label: 'parent.pool_water'.tr(),
-                      color: const Color(0xFF00E5FF),
+                      color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                       isDark: isDark,
                       textColor: textColor,
                       subColor: subColor,
@@ -778,7 +780,7 @@ class ParentProfileTab extends ConsumerWidget {
                             backgroundColor: isDark ? const Color(0xFF0C233C) : const Color(0xFF0284C7),
                             content: Row(
                               children: [
-                                const Icon(LucideIcons.droplets, color: Color(0xFF00E5FF), size: 18),
+                                Icon(LucideIcons.droplets, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFFE0F2FE), size: 18),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -1440,15 +1442,19 @@ class ParentProfileTab extends ConsumerWidget {
                     ? Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.25),
                               blurRadius: 6,
                             ),
                           ],
@@ -1487,7 +1493,9 @@ class ParentProfileTab extends ConsumerWidget {
               // Row 4: Branch Location (Locked upon registration)
               _buildGroupedItem(
                 icon: LucideIcons.mapPin,
-                gradientColors: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                gradientColors: isDark
+                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                 title: 'parent.branch_and_location'.tr(),
                 subtitle: user?.branchId == 'vienna' ? 'parent.branch_vienna'.tr() : 'parent.branch_kyiv'.tr(),
                 textColor: textColor,
@@ -1655,12 +1663,12 @@ class ParentProfileTab extends ConsumerWidget {
                           end: Alignment.bottomRight,
                         ),
                         border: Border.all(
-                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.65 : 0.45),
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.65) : const Color(0xFF0284C7).withValues(alpha: 0.35),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.15),
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFF0284C7).withValues(alpha: 0.12),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -1705,12 +1713,12 @@ class ParentProfileTab extends ConsumerWidget {
                         color: isDark ? const Color(0xFF0E3D64).withValues(alpha: 0.5) : const Color(0xFFE0F2FE).withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
+                          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.8) : const Color(0xFF38BDF8),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.1),
+                            color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.2) : const Color(0xFF0284C7).withValues(alpha: 0.08),
                             blurRadius: 12,
                             offset: const Offset(0, 3),
                           ),
@@ -1750,10 +1758,10 @@ class ParentProfileTab extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.2 : 0.15),
+                              color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.2) : const Color(0xFF0284C7).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                                color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.6) : const Color(0xFF0284C7).withValues(alpha: 0.4),
                                 width: 1.0,
                               ),
                             ),
@@ -1972,8 +1980,8 @@ class ParentProfileTab extends ConsumerWidget {
                   const Color(0xFFC00030),
                 ]
               : [
-                  const Color(0xFFFF3366),
                   const Color(0xFFE11D48),
+                  const Color(0xFFBE123C),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1985,7 +1993,9 @@ class ParentProfileTab extends ConsumerWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF2A55).withValues(alpha: isDark ? 0.42 : 0.28),
+            color: isDark
+                ? const Color(0xFFFF2A55).withValues(alpha: 0.42)
+                : const Color(0xFFE11D48).withValues(alpha: 0.22),
             blurRadius: isCompact ? 16 : 20,
             offset: Offset(0, isCompact ? 4 : 6),
           ),

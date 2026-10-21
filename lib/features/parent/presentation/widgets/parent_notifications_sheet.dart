@@ -129,15 +129,19 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                               Container(
                                 padding: const EdgeInsets.all(9),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  gradient: LinearGradient(
+                                    colors: isDarkMode
+                                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                      color: isDarkMode
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                                          : const Color(0xFF0284C7).withValues(alpha: 0.25),
                                       blurRadius: 12,
                                       offset: const Offset(0, 3),
                                     ),
@@ -474,8 +478,10 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
       badgeColors = const [Color(0xFF10B981), Color(0xFF06B6D4)];
       badgeGlow = const Color(0xFF10B981);
     } else if (notif.actionType == 'calendar' || lowerTitle.contains('тренуван') || lowerTitle.contains('розклад')) {
-      badgeColors = const [Color(0xFF00E5FF), Color(0xFF0284C7)];
-      badgeGlow = const Color(0xFF00E5FF);
+      badgeColors = isDark
+          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+          : const [Color(0xFF0284C7), Color(0xFF0369A1)];
+      badgeGlow = isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7);
     } else if (lowerTitle.contains('досягнен') || lowerTitle.contains('бейдж') || lowerTitle.contains('нагород') || lowerMsg.contains('акула')) {
       badgeColors = const [Color(0xFFA855F7), Color(0xFF6366F1)];
       badgeGlow = const Color(0xFFA855F7);
@@ -587,11 +593,11 @@ class _ParentNotificationsSheetState extends ConsumerState<ParentNotificationsSh
                         height: 8,
                         margin: const EdgeInsets.only(left: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E5FF),
+                          color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.60),
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.60 : 0.40),
                               blurRadius: 6,
                             ),
                           ],

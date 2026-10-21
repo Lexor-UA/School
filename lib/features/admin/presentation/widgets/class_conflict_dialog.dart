@@ -39,7 +39,7 @@ class ClassConflictDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
         side: BorderSide(
-          color: Colors.amberAccent.withValues(alpha: isDark ? 0.4 : 0.6),
+          color: (isDark ? Colors.amberAccent : const Color(0xFFD97706)).withValues(alpha: isDark ? 0.4 : 0.4),
           width: 1.2,
         ),
       ),
@@ -48,10 +48,14 @@ class ClassConflictDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.amberAccent.withValues(alpha: isDark ? 0.2 : 0.15),
+              color: (isDark ? Colors.amberAccent : const Color(0xFFD97706)).withValues(alpha: isDark ? 0.2 : 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.triangleAlert, color: Colors.amberAccent, size: 22),
+            child: Icon(
+              LucideIcons.triangleAlert,
+              color: isDark ? Colors.amberAccent : const Color(0xFFD97706),
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -86,8 +90,8 @@ class ClassConflictDialog extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               extraInfo!,
-              style: const TextStyle(
-                color: Colors.orangeAccent,
+              style: TextStyle(
+                color: isDark ? Colors.orangeAccent : const Color(0xFFD97706),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),

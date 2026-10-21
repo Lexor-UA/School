@@ -60,14 +60,17 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: themeConfig.isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                              color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                  .withValues(alpha: themeConfig.isDark ? 0.40 : 0.22),
                               blurRadius: 18,
                               spreadRadius: 1,
                             ),
@@ -544,8 +547,10 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                     child: Ink(
                                       padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12.5),
                                       decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                        gradient: LinearGradient(
+                                          colors: themeConfig.isDark
+                                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
@@ -556,7 +561,8 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.48 : 0.28),
+                                            color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                                .withValues(alpha: themeConfig.isDark ? 0.48 : 0.24),
                                             blurRadius: 18,
                                             offset: const Offset(0, 4),
                                           ),
@@ -673,8 +679,10 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                     width: 42,
                                     height: 42,
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                      gradient: LinearGradient(
+                                        colors: themeConfig.isDark
+                                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
@@ -685,7 +693,8 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: themeConfig.isDark ? 0.48 : 0.30),
+                                          color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                              .withValues(alpha: themeConfig.isDark ? 0.48 : 0.24),
                                           blurRadius: 16,
                                           offset: const Offset(0, 3),
                                         ),
@@ -1328,7 +1337,7 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                               BoxShadow(
                                 color: isNearFull
                                     ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
-                                    : const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                                    : (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: themeConfig.isDark ? 0.5 : 0.28),
                                 blurRadius: 6,
                               ),
                             ],
@@ -1351,8 +1360,10 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                    gradient: LinearGradient(
+                      colors: themeConfig.isDark
+                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1363,7 +1374,8 @@ class _CoachScheduleTabState extends ConsumerState<CoachScheduleTab> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.38),
+                        color: (themeConfig.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            .withValues(alpha: themeConfig.isDark ? 0.38 : 0.24),
                         blurRadius: 14,
                         offset: const Offset(0, 3),
                       ),

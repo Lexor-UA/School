@@ -140,7 +140,9 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
     final textSubColor = themeConfig.textSecondary;
     final accentColor = themeConfig.accentPrimary;
 
-    final childColor = Color(int.tryParse(widget.child.colorHex) ?? 0xFF00E5FF);
+    final childColor = themeConfig.adaptColorForTheme(
+      Color(int.tryParse(widget.child.colorHex) ?? 0xFF00E5FF),
+    );
     final ageText = widget.child.currentAge != null
         ? _formatAge(widget.child.currentAge!)
         : _formatAge(16);
@@ -538,7 +540,7 @@ class _GraduateChildSheetState extends ConsumerState<GraduateChildSheet> {
               if (hasSessions)
                 Switch.adaptive(
                   value: _transferSubscriptions,
-                  activeThumbColor: const Color(0xFF00E5FF),
+                  activeThumbColor: isDark ? const Color(0xFF00E5FF) : Colors.white,
                   activeTrackColor: const Color(0xFF0284C7),
                   onChanged: (val) {
                     setState(() => _transferSubscriptions = val);

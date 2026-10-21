@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/auth/controllers/auth_controller.dart';
 
 class AvatarPicker extends ConsumerStatefulWidget {
@@ -119,7 +120,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.12 : 0.08),
+                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.12 : 0.08),
                     blurRadius: 28,
                     offset: const Offset(0, -4),
                   ),
@@ -151,8 +152,10 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -162,7 +165,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                               blurRadius: 10,
                             ),
                           ],
@@ -289,15 +292,17 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(13),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                                     blurRadius: 8,
                                   ),
                                 ],
@@ -510,6 +515,8 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
       }
     }
 
+    final isDark = ref.watch(appThemeControllerProvider).isDark;
+
     return GestureDetector(
       onTap: widget.showCameraIcon ? _showOptions : null,
       child: Hero(
@@ -520,7 +527,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
             CircleAvatar(
               radius: widget.radius,
               backgroundImage: imageProvider,
-              backgroundColor: const Color(0xFF0F1E32),
+              backgroundColor: isDark ? const Color(0xFF0F1E32) : const Color(0xFFE0F2FE),
               onBackgroundImageError: imageProvider != null
                   ? (exception, stackTrace) {
                       debugPrint('AvatarPicker: image load bypassed for $effectiveAvatarUrl: $exception');
@@ -536,26 +543,26 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                       ? Text(
                           effectiveName.trim().characters.first.toUpperCase(),
                           style: TextStyle(
-                            color: Colors.cyanAccent,
+                            color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7),
                             fontWeight: FontWeight.bold,
                             fontSize: widget.radius * 0.75,
                           ),
                         )
-                      : Icon(LucideIcons.user, size: widget.radius * 0.9, color: Colors.cyanAccent))
+                      : Icon(LucideIcons.user, size: widget.radius * 0.9, color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7)))
                   : null,
             ),
             if (widget.showCameraIcon)
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00E5FF),
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFF030D1B),
+                    color: isDark ? const Color(0xFF030D1B) : Colors.white,
                     width: 2.0,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.45 : 0.25),
                       blurRadius: 6,
                     ),
                   ],
@@ -563,7 +570,7 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
                 padding: EdgeInsets.all(widget.radius <= 30 ? 3.5 : 5.5),
                 child: Icon(
                   Icons.camera_alt,
-                  color: const Color(0xFF030D1B),
+                  color: isDark ? const Color(0xFF030D1B) : Colors.white,
                   size: widget.radius <= 30 ? 11 : 15,
                 ),
               ),

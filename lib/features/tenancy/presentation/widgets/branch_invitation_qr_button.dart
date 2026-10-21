@@ -52,7 +52,7 @@ class BranchInvitationQrButton extends ConsumerWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.20 : 0.15),
+                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.20 : 0.14),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -64,14 +64,14 @@ class BranchInvitationQrButton extends ConsumerWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00E5FF),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   LucideIcons.qrCode,
                   size: 13,
-                  color: Color(0xFF0B192C),
+                  color: isDark ? const Color(0xFF0B192C) : Colors.white,
                 ),
               ),
               const SizedBox(width: 6),

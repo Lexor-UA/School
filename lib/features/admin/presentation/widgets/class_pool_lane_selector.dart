@@ -126,14 +126,14 @@ class ClassPoolLaneSelector extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF00E5FF)
+                              ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
                               : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1)),
                           width: isSelected ? 1.3 : 1.0,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.28 : 0.20),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
@@ -147,7 +147,7 @@ class ClassPoolLaneSelector extends StatelessWidget {
                             isWellen ? LucideIcons.baby : LucideIcons.waves,
                             size: 16,
                             color: isSelected
-                                ? const Color(0xFF00E5FF)
+                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
                                 : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B)),
                           ),
                           const SizedBox(width: 7),
@@ -247,21 +247,26 @@ class ClassPoolLaneSelector extends StatelessWidget {
                           color: isSelected
                               ? null
                               : (isLaneBusy
-                                  ? Colors.orangeAccent.withValues(alpha: isDark ? 0.16 : 0.12)
+                                  ? (isDark ? Colors.orangeAccent : const Color(0xFFD97706)).withValues(alpha: isDark ? 0.16 : 0.10)
                                   : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9))),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
-                                ? (isLaneBusy ? const Color(0xFFF87171) : const Color(0xFF00E5FF))
+                                ? (isLaneBusy
+                                    ? const Color(0xFFF87171)
+                                    : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8)))
                                 : (isLaneBusy
-                                    ? Colors.orangeAccent.withValues(alpha: 0.6)
+                                    ? (isDark ? Colors.orangeAccent : const Color(0xFFD97706)).withValues(alpha: isDark ? 0.6 : 0.45)
                                     : (isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFCBD5E1))),
                             width: isSelected || isLaneBusy ? 1.3 : 1,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: (isLaneBusy ? const Color(0xFFEF4444) : const Color(0xFF00E5FF)).withValues(alpha: 0.28),
+                                    color: (isLaneBusy
+                                            ? const Color(0xFFEF4444)
+                                            : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
+                                        .withValues(alpha: isDark ? 0.28 : 0.20),
                                     blurRadius: 10,
                                     offset: const Offset(0, 2),
                                   ),
@@ -272,7 +277,13 @@ class ClassPoolLaneSelector extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (isSelected) ...[
-                              Icon(LucideIcons.check, size: 13, color: isLaneBusy ? Colors.white : const Color(0xFF00E5FF)),
+                              Icon(
+                                LucideIcons.check,
+                                size: 13,
+                                color: isLaneBusy
+                                    ? Colors.white
+                                    : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8)),
+                              ),
                               const SizedBox(width: 5),
                             ],
                             Text(

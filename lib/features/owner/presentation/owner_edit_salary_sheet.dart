@@ -432,7 +432,7 @@ class _OwnerEditSalarySheetState extends ConsumerState<OwnerEditSalarySheet> {
                               ? (isDark
                                   ? null
                                   : const LinearGradient(
-                                      colors: [Color(0xFF0284C7), Color(0xFF00E5FF)],
+                                      colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ))

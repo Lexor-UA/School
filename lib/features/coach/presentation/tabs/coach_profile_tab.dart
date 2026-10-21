@@ -300,13 +300,16 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                           Container(
                             padding: const EdgeInsets.all(7.5),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              gradient: LinearGradient(
+                                colors: _isLight
+                                    ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               ),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                  color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                      .withValues(alpha: _isLight ? 0.22 : 0.35),
                                   blurRadius: 6,
                                 ),
                               ],
@@ -380,13 +383,16 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                           Container(
                             padding: const EdgeInsets.all(7.5),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              gradient: LinearGradient(
+                                colors: _isLight
+                                    ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                    : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               ),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                  color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                      .withValues(alpha: _isLight ? 0.22 : 0.35),
                                   blurRadius: 6,
                                 ),
                               ],
@@ -421,15 +427,18 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 3),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                gradient: LinearGradient(
+                                  colors: _isLight
+                                      ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                    color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                        .withValues(alpha: _isLight ? 0.25 : 0.45),
                                     blurRadius: 8,
                                   ),
                                 ],
@@ -578,13 +587,16 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: _isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                         ),
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                            color: (_isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                .withValues(alpha: _isLight ? 0.22 : 0.30),
                             blurRadius: 5,
                           ),
                         ],
@@ -733,7 +745,7 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: _isLight
-                        ? const [Color(0xFF0284C7), Color(0xFF00E5FF)]
+                        ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
                         : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1073,13 +1085,15 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: _isLight
+                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                             ),
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF0284C7).withValues(alpha: _isLight ? 0.30 : 0.35),
+                                color: const Color(0xFF0284C7).withValues(alpha: _isLight ? 0.22 : 0.35),
                                 blurRadius: 6,
                                 offset: const Offset(0, 1.5),
                               ),
@@ -1181,8 +1195,10 @@ class _CoachProfileTabState extends ConsumerState<CoachProfileTab> {
           padding: const EdgeInsets.symmetric(vertical: 5.5),
           decoration: BoxDecoration(
             gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                ? LinearGradient(
+                    colors: _isLight
+                        ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )

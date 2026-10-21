@@ -145,8 +145,10 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       Container(
                         padding: const EdgeInsets.all(7.5),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: themeConfig.isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -278,8 +280,10 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                       margin: const EdgeInsets.all(2.5),
                       decoration: BoxDecoration(
                         gradient: isSelected
-                            ? const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            ? LinearGradient(
+                                colors: themeConfig.isDark
+                                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
@@ -549,8 +553,10 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                      gradient: LinearGradient(
+                        colors: themeConfig.isDark
+                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -1086,8 +1092,10 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(vertical: 9.5),
                                   decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                    gradient: LinearGradient(
+                                      colors: themeConfig.isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
@@ -1150,8 +1158,10 @@ class _CoachCalendarTabState extends ConsumerState<CoachCalendarTab> {
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+              ? LinearGradient(
+                  colors: themeConfig.isDark
+                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )

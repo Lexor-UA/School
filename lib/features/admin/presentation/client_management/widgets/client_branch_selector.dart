@@ -143,7 +143,9 @@ class ClientBranchSelector extends StatelessWidget {
               ? LinearGradient(
                   colors: isVienna
                       ? [const Color(0xFFEF4444), const Color(0xFFB91C1C)]
-                      : [const Color(0xFF00E5FF), const Color(0xFF0284C7)],
+                      : (isDark
+                          ? [const Color(0xFF00E5FF), const Color(0xFF0284C7)]
+                          : [const Color(0xFF0284C7), const Color(0xFF0369A1)]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -166,7 +168,7 @@ class ClientBranchSelector extends StatelessWidget {
                     color:
                         (isVienna
                                 ? const Color(0xFFEF4444)
-                                : const Color(0xFF00E5FF))
+                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
                             .withValues(alpha: isDark ? 0.35 : 0.20),
                     blurRadius: 10,
                     offset: const Offset(0, 3),

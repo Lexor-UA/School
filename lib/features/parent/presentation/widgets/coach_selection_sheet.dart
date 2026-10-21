@@ -157,15 +157,19 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: isLight
+                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                color: isLight
+                                    ? const Color(0xFF0284C7).withValues(alpha: 0.22)
+                                    : const Color(0xFF00E5FF).withValues(alpha: 0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -343,7 +347,7 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: hasUnread
-                  ? const Color(0xFF00E5FF)
+                  ? (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
                   : (isLight ? const Color(0xFFBAE6FD) : const Color(0xFF00E5FF).withValues(alpha: 0.22)),
               width: hasUnread ? 1.5 : 1.0,
             ),
@@ -381,15 +385,19 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                            color: isLight
+                                ? const Color(0xFF0284C7).withValues(alpha: 0.20)
+                                : const Color(0xFF00E5FF).withValues(alpha: 0.30),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -472,15 +480,19 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isLight
+                                ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                              color: isLight
+                                  ? const Color(0xFF0284C7).withValues(alpha: 0.25)
+                                  : const Color(0xFF00E5FF).withValues(alpha: 0.45),
                               blurRadius: 6,
                             ),
                           ],
@@ -577,8 +589,10 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0284C7), Color(0xFF00E5FF)],
+                        gradient: LinearGradient(
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF0284C7), Color(0xFF00E5FF)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -705,12 +719,12 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
               ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: isLight ? 0.40 : 0.50),
+                color: isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF).withValues(alpha: 0.50),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                  color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.18),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -758,14 +772,16 @@ class _CoachSelectionSheetState extends ConsumerState<CoachSelectionSheet> {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                  colors: isLight
+                      ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                    color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.22 : 0.35),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),

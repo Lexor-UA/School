@@ -500,7 +500,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   )
                 : null,
             color: isSelected ? null : Colors.transparent,
@@ -516,7 +516,7 @@ class AdminActivityLogSheetState extends ConsumerState<AdminActivityLogSheet> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.25),
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.20),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

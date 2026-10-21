@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:swimming_school_app/core/theme/app_theme_provider.dart';
 import 'package:swimming_school_app/features/parent/controllers/children_controller.dart';
 import 'package:swimming_school_app/features/parent/models/child.dart';
 import 'package:swimming_school_app/features/parent/presentation/graduate_child_sheet.dart';
@@ -424,7 +425,10 @@ class _AddChildSheetState extends ConsumerState<AddChildSheet> {
                       final bDate = _birthDates[index];
                       final age = bDate != null ? calculateAgeFromDate(bDate) : null;
                       final selectedColorHex = _selectedColors[index];
-                      final selectedColor = Color(int.tryParse(selectedColorHex) ?? 0xFF00E5FF);
+                      final rawSelectedColor = Color(int.tryParse(selectedColorHex) ?? 0xFF00E5FF);
+                      final selectedColor = isDark
+                          ? rawSelectedColor
+                          : AppThemeConfig.lightAzure.adaptColorForTheme(rawSelectedColor);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
@@ -1016,7 +1020,10 @@ class _EditChildSheetState extends ConsumerState<EditChildSheet> {
     final now = DateTime.now();
     final yearList = List.generate(16, (i) => now.year - 1 - i);
     final age = _birthDate != null ? calculateAgeFromDate(_birthDate!) : widget.child.currentAge;
-    final childColor = Color(int.tryParse(_selectedColorHex) ?? 0xFF00E5FF);
+    final rawChildColor = Color(int.tryParse(_selectedColorHex) ?? 0xFF00E5FF);
+    final childColor = isDark
+        ? rawChildColor
+        : AppThemeConfig.lightAzure.adaptColorForTheme(rawChildColor);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),

@@ -576,7 +576,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.20),
                 blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
@@ -594,11 +594,11 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
               ),
             ),
             child: _isProcessing
-                ? const SizedBox(
+                ? SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                      color: Color(0xFF00E5FF),
+                      color: isDark ? const Color(0xFF00E5FF) : Colors.white,
                       strokeWidth: 2.5,
                     ),
                   )
@@ -607,7 +607,11 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.sendHorizontal, color: Color(0xFF00E5FF), size: 20),
+                        Icon(
+                          LucideIcons.sendHorizontal,
+                          color: isDark ? const Color(0xFF00E5FF) : Colors.white,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'payment.i_have_paid_btn'.tr(),
@@ -980,7 +984,7 @@ class _BranchPaymentModalState extends ConsumerState<BranchPaymentModal> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.20),
+                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.20),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

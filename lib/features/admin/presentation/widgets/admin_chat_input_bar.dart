@@ -44,23 +44,26 @@ class AdminChatInputBar extends StatelessWidget {
         color: isDark ? const Color(0xFF092842) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.40),
           width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(
+          SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            ),
           ),
           const SizedBox(width: 8),
           Text(
             'chat_ui.uploading_photo'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF00E5FF),
+            style: TextStyle(
+              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),

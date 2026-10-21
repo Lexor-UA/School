@@ -178,8 +178,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
         height: 52,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+          gradient: LinearGradient(
+            colors: currentTheme.isDark
+                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -189,15 +191,17 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+              color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                  .withValues(alpha: currentTheme.isDark ? 0.45 : 0.28),
               blurRadius: 18,
               offset: const Offset(0, 5),
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.30),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
+            if (currentTheme.isDark)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.30),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
           ],
         ),
         child: Material(
@@ -473,21 +477,27 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF00E5FF).withValues(alpha: 0.18),
-                            const Color(0xFF0284C7).withValues(alpha: 0.12),
-                          ],
+                          colors: currentTheme.isDark
+                              ? [
+                                  const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                                  const Color(0xFF0284C7).withValues(alpha: 0.12),
+                                ]
+                              : [
+                                  const Color(0xFF0284C7).withValues(alpha: 0.12),
+                                  const Color(0xFF0369A1).withValues(alpha: 0.08),
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(9),
                         border: Border.all(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                          color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                              .withValues(alpha: currentTheme.isDark ? 0.40 : 0.30),
                           width: 1.1,
                         ),
                       ),
                       child: Text(
                         'admin.coaches_team_badge'.tr().toUpperCase(),
-                        style: const TextStyle(
-                          color: Color(0xFF00E5FF),
+                        style: TextStyle(
+                          color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                           fontSize: 9.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.6,
@@ -605,9 +615,9 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             LucideIcons.search,
-            color: Color(0xFF00E5FF),
+            color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
             size: 18,
           ),
           suffixIcon: _searchQuery.isNotEmpty
@@ -633,20 +643,20 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
 
   Widget _buildBranchBadge(String? branchId, List<dynamic>? branchIds, AppThemeConfig currentTheme) {
     String label = '🇺🇦 ${'branches.city_kyiv'.tr()}';
-    Color accentColor = const Color(0xFF00E5FF);
+    Color accentColor = currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7);
 
     final ids = branchIds?.map((e) => e.toString().toLowerCase()).toList() ?? [];
     final bId = branchId?.toLowerCase() ?? 'kyiv';
 
     if (ids.contains('vienna') && ids.contains('kyiv')) {
       label = '🌐 ${'branches.all_branches'.tr()}';
-      accentColor = const Color(0xFF38BDF8);
+      accentColor = currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
     } else if (bId == 'vienna' || ids.contains('vienna')) {
       label = '🇦🇹 ${'branches.city_vienna'.tr()}';
       accentColor = const Color(0xFFF43F5E);
     } else if (bId == 'all') {
       label = '🌐 ${'branches.all_branches'.tr()}';
-      accentColor = const Color(0xFF38BDF8);
+      accentColor = currentTheme.isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
     }
 
     return Container(
@@ -814,10 +824,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       LucideIcons.phone,
                                       size: 12.5,
-                                      color: Color(0xFF00E5FF),
+                                      color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -980,7 +990,7 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                         label: 'admin.coaches_rate_group_chip'.tr(),
                         amount: '$rateGroup $currencySymbol',
                         icon: LucideIcons.users,
-                        color: const Color(0xFF00E5FF),
+                        color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         currentTheme: currentTheme,
                       ),
                     ),
@@ -1051,16 +1061,16 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                     Container(
                       padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                        color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                          color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.30),
                           width: 1,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.keyRound,
-                        color: Color(0xFF00E5FF),
+                        color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         size: 13,
                       ),
                     ),
@@ -1084,17 +1094,17 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                                color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                                  color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.30),
                                   width: 0.9,
                                 ),
                               ),
                               child: Text(
                                 loginId,
-                                style: const TextStyle(
-                                  color: Color(0xFF00E5FF),
+                                style: TextStyle(
+                                  color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                                   fontWeight: FontWeight.w900,
                                   fontSize: 12,
                                   fontFamily: 'monospace',
@@ -1155,8 +1165,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                                 ? const LinearGradient(
                                     colors: [Color(0xFF10B981), Color(0xFF059669)],
                                   )
-                                : const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                : LinearGradient(
+                                    colors: currentTheme.isDark
+                                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -1167,7 +1179,10 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: (isCopied ? const Color(0xFF10B981) : const Color(0xFF00E5FF)).withValues(alpha: 0.35),
+                                color: (isCopied
+                                        ? const Color(0xFF10B981)
+                                        : (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
+                                    .withValues(alpha: currentTheme.isDark ? 0.35 : 0.22),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1258,13 +1273,13 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                              color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               LucideIcons.calendarClock,
                               size: 15,
-                              color: Color(0xFF00E5FF),
+                              color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                             ),
                           ),
                           const SizedBox(width: 9),
@@ -1393,14 +1408,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                      color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
                       width: 1.2,
                     ),
                   ),
-                  child: const Icon(LucideIcons.users, size: 40, color: Color(0xFF00E5FF)),
+                  child: Icon(LucideIcons.users, size: 40, color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                 ),
                 const SizedBox(height: 18),
                 Text(
@@ -1532,14 +1547,14 @@ class _AdminCoachesScreenState extends ConsumerState<AdminCoachesScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                      color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
                       width: 1.2,
                     ),
                   ),
-                  child: const Icon(LucideIcons.userX, size: 40, color: Color(0xFF00E5FF)),
+                  child: Icon(LucideIcons.userX, size: 40, color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                 ),
                 const SizedBox(height: 18),
                 Text(

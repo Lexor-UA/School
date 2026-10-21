@@ -107,8 +107,8 @@ class _WaterPainter extends CustomPainter {
         center: const Alignment(0.0, -0.65),
         radius: 1.25,
         colors: [
-          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.30 : 0.18),
-          (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF0284C7)).withValues(alpha: isLight ? 0.15 : 0.08),
+          (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.18 : 0.18),
+          (isLight ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: isLight ? 0.08 : 0.08),
           Colors.transparent,
         ],
         stops: const [0.0, 0.42, 1.0],
@@ -200,9 +200,9 @@ class _WaterPainter extends CustomPainter {
                 const Color(0xFF001B3A).withValues(alpha: 0.78),
               ]
             : [
-                const Color(0xFF7DD3FC).withValues(alpha: 0.45),
-                const Color(0xFF38BDF8).withValues(alpha: 0.35),
-                const Color(0xFF0284C7).withValues(alpha: 0.28),
+                const Color(0xFFBAE6FD).withValues(alpha: 0.28),
+                const Color(0xFF7DD3FC).withValues(alpha: 0.22),
+                const Color(0xFF38BDF8).withValues(alpha: 0.16),
               ],
         stops: const [0.0, 0.40, 1.0],
       ).createShader(waveRect1);
@@ -220,9 +220,9 @@ class _WaterPainter extends CustomPainter {
                 const Color(0xFF001F3F).withValues(alpha: 0.82),
               ]
             : [
-                const Color(0xFF38BDF8).withValues(alpha: 0.50),
-                const Color(0xFF0EA5E9).withValues(alpha: 0.38),
-                const Color(0xFF0369A1).withValues(alpha: 0.32),
+                const Color(0xFF7DD3FC).withValues(alpha: 0.30),
+                const Color(0xFF38BDF8).withValues(alpha: 0.22),
+                const Color(0xFF0284C7).withValues(alpha: 0.18),
               ],
         stops: const [0.0, 0.35, 1.0],
       ).createShader(waveRect2);
@@ -240,9 +240,9 @@ class _WaterPainter extends CustomPainter {
                 const Color(0xFF001428).withValues(alpha: 0.72),
               ]
             : [
-                const Color(0xFF0EA5E9).withValues(alpha: 0.50),
-                const Color(0xFF0284C7).withValues(alpha: 0.38),
-                const Color(0xFF003B73).withValues(alpha: 0.30),
+                const Color(0xFF38BDF8).withValues(alpha: 0.28),
+                const Color(0xFF0284C7).withValues(alpha: 0.22),
+                const Color(0xFF0369A1).withValues(alpha: 0.18),
               ],
         stops: const [0.0, 0.30, 1.0],
       ).createShader(waveRect3);
@@ -254,7 +254,7 @@ class _WaterPainter extends CustomPainter {
       end: Alignment.centerRight,
       colors: [
         (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
-        (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.32 : 0.22),
+        (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.20 : 0.22),
         (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8)).withValues(alpha: 0.05),
       ],
     ).createShader(waveRect1);
@@ -272,7 +272,7 @@ class _WaterPainter extends CustomPainter {
       end: Alignment.centerRight,
       colors: [
         (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
-        (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF38BDF8)).withValues(alpha: isLight ? 0.42 : 0.30),
+        (isLight ? const Color(0xFF0284C7) : const Color(0xFF38BDF8)).withValues(alpha: isLight ? 0.25 : 0.30),
         (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: 0.05),
       ],
     ).createShader(waveRect2);
@@ -289,9 +289,9 @@ class _WaterPainter extends CustomPainter {
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
       colors: [
-        (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
-        (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.50 : 0.38),
-        (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF00B4D8)).withValues(alpha: 0.08),
+        (isLight ? const Color(0xFF0284C7) : const Color(0xFF00B4D8)).withValues(alpha: 0.06),
+        (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: isLight ? 0.30 : 0.38),
+        (isLight ? const Color(0xFF0284C7) : const Color(0xFF00B4D8)).withValues(alpha: 0.06),
       ],
     ).createShader(waveRect3);
     final Paint softCrest3 = Paint()
@@ -314,8 +314,8 @@ class _WaterPainter extends CustomPainter {
     for (int r = 0; r < rayAngles.length; r++) {
       // Exact integer harmonic phase shift (smooth continuous 360 loop)
       final double rayOffset = r * (math.pi / 2);
-      final double rAlpha = (isLight ? 0.15 : 0.10) +
-          math.sin(phase + rayOffset) * (isLight ? 0.04 : 0.028);
+      final double rAlpha = (isLight ? 0.09 : 0.10) +
+          math.sin(phase + rayOffset) * (isLight ? 0.025 : 0.028);
       final double angle = rayAngles[r] + math.sin(phase + rayOffset) * 0.035;
       final double length = size.height * 1.45;
 
@@ -342,8 +342,8 @@ class _WaterPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            (isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF)).withValues(alpha: rAlpha * 1.55),
-            (isLight ? const Color(0xFF0EA5E9) : const Color(0xFF0284C7)).withValues(alpha: rAlpha * 0.65),
+            (isLight ? const Color(0xFF7DD3FC) : const Color(0xFF00E5FF)).withValues(alpha: rAlpha * (isLight ? 1.15 : 1.55)),
+            (isLight ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: rAlpha * (isLight ? 0.50 : 0.65)),
             Colors.transparent,
           ],
           stops: const [0.0, 0.42, 1.0],

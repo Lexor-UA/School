@@ -220,11 +220,16 @@ void showSwimmerDetailsSheet(
                                   gradient: LinearGradient(
                                     colors: isAdult
                                         ? const [Color(0xFF38BDF8), Color(0xFF0284C7)]
-                                        : const [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                                        : (isDark
+                                            ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (isAdult ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.35),
+                                      color: (isAdult
+                                              ? const Color(0xFF0284C7)
+                                              : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)))
+                                          .withValues(alpha: isDark ? 0.35 : 0.22),
                                       blurRadius: 14,
                                       offset: const Offset(0, 3),
                                     ),

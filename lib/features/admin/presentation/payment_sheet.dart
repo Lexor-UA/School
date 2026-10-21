@@ -12,7 +12,6 @@ import 'package:swimming_school_app/features/admin/controllers/admin_dashboard_c
 import 'package:swimming_school_app/features/chat/repositories/chat_repository.dart';
 import 'package:swimming_school_app/features/tenancy/controllers/tenancy_controller.dart';
 import 'package:swimming_school_app/shared/utils/app_snack_bar.dart';
-import 'package:swimming_school_app/features/payment/presentation/widgets/edit_branch_requisites_sheet.dart';
 import 'package:swimming_school_app/features/payment/services/branch_payment_service.dart';
 
 final pendingSubscriptionsProvider = StreamProvider.autoDispose<Map<String, Map<String, dynamic>>>((ref) {
@@ -505,8 +504,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                  gradient: LinearGradient(
+                    colors: currentTheme.isDark
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -517,7 +518,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                      color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                          .withValues(alpha: currentTheme.isDark ? 0.40 : 0.24),
                       blurRadius: 14,
                       offset: const Offset(0, 3),
                     ),
@@ -592,49 +594,6 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   ],
                 ),
               ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: currentTheme.isDark
-                        ? const Color(0xFF0C2238).withValues(alpha: 0.85)
-                        : const Color(0xFFF0F9FF),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: currentTheme.isDark
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
-                          : const Color(0xFFBAE6FD),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.15 : 0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    tooltip: 'admin.payment_requisites_tooltip'.tr(),
-                    icon: Icon(
-                      LucideIcons.landmark,
-                      color: currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
-                      size: 18,
-                    ),
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      EditBranchRequisitesSheet.show(
-                        context,
-                        initialBranchId: tenancyState.effectiveBranch.id,
-                      );
-                    },
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
@@ -997,7 +956,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           gradient: isSelected
               ? LinearGradient(
                   colors: index == 0
-                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                      ? (currentTheme.isDark
+                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)])
                       : const [Color(0xFFF43F5E), Color(0xFFBE123C)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1008,8 +969,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (index == 0 ? const Color(0xFF00E5FF) : const Color(0xFFF43F5E))
-                        .withValues(alpha: 0.35),
+                    color: (index == 0
+                            ? (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            : const Color(0xFFF43F5E))
+                        .withValues(alpha: currentTheme.isDark ? 0.35 : 0.22),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -1124,9 +1087,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
               ),
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 LucideIcons.search,
-                color: Color(0xFF00E5FF),
+                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                 size: 18,
               ),
               suffixIcon: _searchQuery.isNotEmpty
@@ -1402,7 +1365,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         ? const Color(0xFFFBBF24)
         : (!isActive
             ? const Color(0xFF475569)
-            : (isExpiringSoon ? const Color(0xFFFB923C) : const Color(0xFF00E5FF)));
+            : (isExpiringSoon
+                ? const Color(0xFFFB923C)
+                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF059669))));
 
     final bool isSubSending = _sendingReminderClientIds.contains(sub.userId);
     final bool isSubSent = _sentReminderClientIds.contains(sub.userId);
@@ -1803,7 +1768,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                       ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
                                       : (isExpiringSoon
                                           ? const Color(0xFFF59E0B)
-                                          : const Color(0xFF00E5FF)),
+                                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
                                 ),
                                 const SizedBox(width: 4.5),
                                 Text(
@@ -1825,7 +1790,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                     decoration: BoxDecoration(
                                       color: isExpiringSoon
                                           ? const Color(0xFFF59E0B).withValues(alpha: 0.18)
-                                          : const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.14),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -1835,7 +1800,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                             ? (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
                                             : (isExpiringSoon
                                                 ? const Color(0xFFF59E0B)
-                                                : const Color(0xFF00E5FF)),
+                                                : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -1937,8 +1902,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                                   ? const LinearGradient(
                                       colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
                                     )
-                                  : const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  : LinearGradient(
+                                      colors: isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     )),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -1949,7 +1916,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                             BoxShadow(
                               color: (isSubSent
                                       ? const Color(0xFF10B981)
-                                      : (isExpiringSoon ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF)))
+                                      : (isExpiringSoon
+                                          ? const Color(0xFFF59E0B)
+                                          : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))))
                                   .withValues(alpha: isDark ? 0.35 : 0.20),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
@@ -2374,11 +2343,16 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF00E5FF),
-                        Color(0xFF0284C7),
-                      ],
+                    gradient: LinearGradient(
+                      colors: currentTheme.isDark
+                          ? const [
+                              Color(0xFF00E5FF),
+                              Color(0xFF0284C7),
+                            ]
+                          : const [
+                              Color(0xFF0284C7),
+                              Color(0xFF0369A1),
+                            ],
                     ),
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -2387,7 +2361,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                        color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            .withValues(alpha: currentTheme.isDark ? 0.40 : 0.22),
                         blurRadius: 16,
                       ),
                     ],

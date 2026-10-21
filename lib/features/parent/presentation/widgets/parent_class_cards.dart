@@ -290,7 +290,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           id: child.id,
           name: child.name,
           isParent: false,
-          color: Color(int.tryParse(child.colorHex) ?? 0xFF10B981),
+          color: currentTheme.adaptColorForTheme(Color(int.tryParse(child.colorHex) ?? 0xFF10B981)),
         );
       }
 
@@ -299,7 +299,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           id: id,
           name: family.parentNames[id]!.trim(),
           isParent: true,
-          color: const Color(0xFFA78BFA),
+          color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA)),
         );
       }
 
@@ -308,7 +308,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           id: id,
           name: partnerName,
           isParent: true,
-          color: const Color(0xFFA78BFA),
+          color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA)),
         );
       }
 
@@ -318,7 +318,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           id: id,
           name: name,
           isParent: true,
-          color: const Color(0xFFA78BFA),
+          color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA)),
         );
       }
 
@@ -327,7 +327,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           id: id,
           name: partnerName,
           isParent: true,
-          color: const Color(0xFFA78BFA),
+          color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA)),
         );
       }
 
@@ -335,7 +335,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
         id: id,
         name: user?.name ?? meShort,
         isParent: true,
-        color: const Color(0xFFA78BFA),
+        color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA)),
       );
     }).toList();
 
@@ -352,7 +352,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
           id: partnerId,
           name: partnerName,
           isParent: true,
-          color: const Color(0xFFA78BFA),
+          color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA)),
         ),
       ...children
           .where((ch) => !c.enrolledChildIds.contains(ch.id) && !c.isAdultOnly && c.isAgeCompatible(ch.ageAt(c.startTime)))
@@ -360,7 +360,7 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                 id: ch.id,
                 name: ch.name,
                 isParent: false,
-                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+                color: currentTheme.adaptColorForTheme(Color(int.tryParse(ch.colorHex) ?? 0xFF10B981)),
               )),
     ];
 
@@ -1021,14 +1021,14 @@ class ParentEnrolledClassCard extends ConsumerWidget {
                                 gradient: LinearGradient(
                                   colors: isDark
                                       ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                      : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(9),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.25),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   ),
@@ -1375,10 +1375,12 @@ class ParentAvailableClassCard extends ConsumerWidget {
                                             : (c.isSplit ? LucideIcons.users : LucideIcons.waves)),
                                     size: 11,
                                     color: c.isChildOnly
-                                        ? const Color(0xFF34D399)
+                                        ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
                                         : (c.isAdultOnly
                                             ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
-                                            : (c.isSplit ? const Color(0xFF38BDF8) : const Color(0xFF2DD4BF))),
+                                            : (c.isSplit
+                                                ? (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))
+                                                : (isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488)))),
                                   ),
                                   const SizedBox(width: 3.5),
                                   Text(
@@ -1394,7 +1396,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
                                               ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5))
                                               : (c.isSplit
                                                   ? (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))
-                                                  : const Color(0xFF2DD4BF))),
+                                                  : (isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488)))),
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1408,17 +1410,17 @@ class ParentAvailableClassCard extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                               decoration: BoxDecoration(
-                                color: Colors.orangeAccent.withValues(alpha: isDark ? 0.22 : 0.12),
+                                color: (isDark ? Colors.orangeAccent : const Color(0xFFD97706)).withValues(alpha: isDark ? 0.22 : 0.12),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: Colors.orangeAccent.withValues(alpha: 0.5),
+                                  color: (isDark ? Colors.orangeAccent : const Color(0xFFD97706)).withValues(alpha: 0.5),
                                   width: 0.8,
                                 ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(LucideIcons.triangleAlert, size: 11, color: Colors.orangeAccent),
+                                  Icon(LucideIcons.triangleAlert, size: 11, color: isDark ? Colors.orangeAccent : const Color(0xFFD97706)),
                                   const SizedBox(width: 3.5),
                                   Text(
                                     childAge <= 5
@@ -1525,7 +1527,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
                           gradient: LinearGradient(
                             colors: isDark
                                 ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
-                                : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -1536,7 +1538,7 @@ class ParentAvailableClassCard extends ConsumerWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                              color: (isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.35) : const Color(0xFF0284C7).withValues(alpha: 0.22)),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -1857,7 +1859,7 @@ void showChildPickerForQuickBooking(
       if (includeParent)
         (id: user.id, name: '${user.name}$meSuffix', rawName: user.name, isParent: true, color: currentTheme.accentPrimary),
       if (includePartner)
-        (id: partnerId, name: partnerName, rawName: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
+        (id: partnerId, name: partnerName, rawName: partnerName, isParent: true, color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA))),
       if (includeChildren)
         ...children
             .where((ch) => !c.enrolledChildIds.contains(ch.id))
@@ -1869,7 +1871,7 @@ void showChildPickerForQuickBooking(
                 name: age != null ? '${ch.name} ($age ${'parent.years_short'.tr()})' : ch.name,
                 rawName: ch.name,
                 isParent: false,
-                color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+                color: currentTheme.adaptColorForTheme(Color(int.tryParse(ch.colorHex) ?? 0xFF10B981)),
               );
             }),
     ];
@@ -2105,7 +2107,7 @@ void showSplitBookingSheet(
       if (user != null)
         (id: user.id, name: '${user.name}$meSuffix', isParent: true, color: currentTheme.accentPrimary),
       if (partnerId != null && partnerName != null)
-        (id: partnerId, name: partnerName, isParent: true, color: const Color(0xFFA78BFA)),
+        (id: partnerId, name: partnerName, isParent: true, color: currentTheme.adaptColorForTheme(const Color(0xFFA78BFA))),
       ...children
           .where((ch) => c.isAgeCompatible(ch.ageAt(c.startTime)))
           .map((ch) {
@@ -2114,7 +2116,7 @@ void showSplitBookingSheet(
               id: ch.id,
               name: age != null ? '${ch.name} ($age ${'parent.years_short'.tr()})' : ch.name,
               isParent: false,
-              color: Color(int.tryParse(ch.colorHex) ?? 0xFF10B981),
+              color: currentTheme.adaptColorForTheme(Color(int.tryParse(ch.colorHex) ?? 0xFF10B981)),
             );
           }),
     ];
@@ -2370,7 +2372,7 @@ void showSplitBookingSheet(
                                                   style: TextStyle(
                                                     color: m.isParent
                                                         ? (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF6366F1))
-                                                        : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF10B981)),
+                                                        : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669)),
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.w600,
                                                   ),
@@ -2384,13 +2386,13 @@ void showSplitBookingSheet(
                                               decoration: BoxDecoration(
                                                 color: (index == 0
                                                         ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                                        : const Color(0xFF10B981))
+                                                        : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)))
                                                     .withValues(alpha: 0.2),
                                                 borderRadius: BorderRadius.circular(10),
                                                 border: Border.all(
                                                   color: index == 0
                                                       ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                                      : const Color(0xFF10B981),
+                                                      : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                                                   width: 1,
                                                 ),
                                               ),
@@ -2399,7 +2401,7 @@ void showSplitBookingSheet(
                                                 style: TextStyle(
                                                   color: index == 0
                                                       ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
-                                                      : const Color(0xFF10B981),
+                                                      : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),

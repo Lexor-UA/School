@@ -288,14 +288,14 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       gradient: LinearGradient(
                         colors: isDark
                             ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                           blurRadius: 5,
                           offset: const Offset(0, 1.5),
                         ),
@@ -399,14 +399,16 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                               height: iconBoxSize,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                                     blurRadius: 6,
                                     offset: const Offset(0, 1.5),
                                   ),
@@ -531,15 +533,17 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                   width: iconBoxSize,
                                   height: iconBoxSize,
                                   decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                    gradient: LinearGradient(
+                                      colors: isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(11),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                                         blurRadius: 6,
                                         offset: const Offset(0, 1.5),
                                       ),
@@ -654,14 +658,14 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                                     gradient: LinearGradient(
                                       colors: isDark
                                           ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                                          : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(11),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                                         blurRadius: 6,
                                         offset: const Offset(0, 1.5),
                                       ),
@@ -823,15 +827,17 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: isDark
+                                  ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.40 : 0.22),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2.5),
                               ),
@@ -1034,15 +1040,17 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                                     blurRadius: 6,
                                   ),
                                 ],
@@ -1225,7 +1233,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         gradient: LinearGradient(
                           colors: isDark
                               ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                              : const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -1236,7 +1244,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: 0.35),
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                             blurRadius: 8,
                             offset: const Offset(0, 2.5),
                           ),

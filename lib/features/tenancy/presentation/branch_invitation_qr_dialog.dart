@@ -204,12 +204,12 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.20 : 0.14),
                   blurRadius: 32,
                   offset: const Offset(0, 10),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -230,12 +230,12 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.15 : 0.12),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               LucideIcons.qrCode,
-                              color: Color(0xFF00E5FF),
+                              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                               size: 20,
                             ),
                           ),
@@ -279,7 +279,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.15 : 0.08),
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.15 : 0.08),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -335,7 +335,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                     ? LinearGradient(
                                         colors: isDark
                                             ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       )
@@ -352,7 +352,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                 boxShadow: _selectedBranchId == 'kyiv'
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.25),
+                                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.22),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -395,7 +395,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                     ? LinearGradient(
                                         colors: isDark
                                             ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       )
@@ -412,7 +412,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                                 boxShadow: _selectedBranchId == 'vienna'
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.25),
+                                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.22),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -462,7 +462,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.12 : 0.08),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.12 : 0.08),
                           blurRadius: 18,
                         ),
                       ],
@@ -573,7 +573,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                           ),
                           child: Row(
                             children: [
-                              const Icon(LucideIcons.link, size: 13, color: Color(0xFF00E5FF)),
+                              Icon(LucideIcons.link, size: 13, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -644,7 +644,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                             gradient: LinearGradient(
                               colors: isDark
                                   ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -657,7 +657,7 @@ class _BranchInvitationQrDialogState extends ConsumerState<BranchInvitationQrDia
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.28 : 0.35),
+                                color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.28 : 0.24),
                                 blurRadius: 12,
                                 offset: const Offset(0, 3),
                               ),

@@ -214,8 +214,10 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                   colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                                 )
                               : (tabId == 'kyiv'
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  ? LinearGradient(
+                                      colors: isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     )
                                   : const LinearGradient(
                                       colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
@@ -233,7 +235,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                               BoxShadow(
                                 color: (tabId == 'all'
                                         ? const Color(0xFF6366F1)
-                                        : (tabId == 'kyiv' ? const Color(0xFF00E5FF) : const Color(0xFFA855F7)))
+                                        : (tabId == 'kyiv'
+                                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                            : const Color(0xFFA855F7)))
                                     .withValues(alpha: isDark ? 0.38 : 0.24),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
@@ -671,12 +675,12 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                   height: 38,
                   decoration: BoxDecoration(
                     color: _isSearchVisible
-                        ? const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.25 : 0.15)
+                        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.12)
                         : (isDark ? const Color(0xFF0C2442) : Colors.white),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _isSearchVisible
-                          ? const Color(0xFF00E5FF)
+                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                           : (isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFBAE6FD)),
                     ),
                     boxShadow: [
@@ -691,7 +695,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                     child: Icon(
                       _isSearchVisible ? LucideIcons.x : LucideIcons.search,
                       color: _isSearchVisible
-                          ? const Color(0xFF00E5FF)
+                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
                           : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                       size: 18,
                     ),
@@ -739,7 +743,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
               color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
               fontSize: 13,
             ),
-            prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF00E5FF), size: 18),
+            prefixIcon: Icon(LucideIcons.search, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
                     icon: Icon(LucideIcons.x, color: isDark ? Colors.white54 : Colors.black45, size: 16),
@@ -805,10 +809,10 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.16 : 0.12),
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.16 : 0.10),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(LucideIcons.wallet, color: Color(0xFF00E5FF), size: 18),
+                          child: Icon(LucideIcons.wallet, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
                         ),
                         const SizedBox(width: 10),
                         Flexible(
@@ -984,7 +988,7 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                         value: '$coachCount',
                         label: 'owner.staff.coaches'.tr(),
                         sub: _formatLessonsCount(totalConductedClasses),
-                        color: const Color(0xFF00E5FF),
+                        color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
                         themeConfig: themeConfig,
                       ),
                     ),
@@ -1101,15 +1105,17 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.22),
+                    color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.22),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -1203,7 +1209,11 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
               ? (index == 0
                   ? const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)])
                   : (index == 1
-                      ? const LinearGradient(colors: [Color(0xFF00E5FF), Color(0xFF0284C7)])
+                      ? LinearGradient(
+                          colors: isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
+                        )
                       : const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)])))
               : null,
           borderRadius: BorderRadius.circular(14),
@@ -1215,7 +1225,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                   BoxShadow(
                     color: (index == 0
                             ? const Color(0xFF6366F1)
-                            : (index == 1 ? const Color(0xFF00E5FF) : const Color(0xFFA855F7)))
+                            : (index == 1
+                                ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                : const Color(0xFFA855F7)))
                         .withValues(alpha: isDark ? 0.38 : 0.24),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
@@ -1291,7 +1303,9 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
     final isVienna = staffBranchId == 'vienna';
     final effectiveCurrency = staff['currency'] as String? ?? (isVienna ? '€' : '₴');
 
-    final accentColor = isCoach ? const Color(0xFF00E5FF) : const Color(0xFFA855F7);
+    final accentColor = isCoach
+        ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+        : const Color(0xFFA855F7);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1424,12 +1438,12 @@ class _OwnerStaffScreenState extends ConsumerState<OwnerStaffScreen> {
                                 decoration: BoxDecoration(
                                   color: isVienna
                                       ? const Color(0xFFA855F7).withValues(alpha: isDark ? 0.16 : 0.12)
-                                      : const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.16 : 0.12),
+                                      : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.16 : 0.10),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: isVienna
                                         ? const Color(0xFFA855F7).withValues(alpha: 0.35)
-                                        : const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                        : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.30),
                                     width: 0.8,
                                   ),
                                 ),

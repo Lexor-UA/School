@@ -102,13 +102,13 @@ class AdminQuickActionCardState extends ConsumerState<AdminQuickActionCard> {
               ] else ...[
                 // Layer 1: Ambient Jewel Bloom (colored reflection on the water)
                 BoxShadow(
-                  color: widget.accentColor.withValues(alpha: _isHovered ? 0.28 : 0.12),
+                  color: widget.accentColor.withValues(alpha: _isHovered ? 0.18 : 0.08),
                   blurRadius: _isHovered ? 16 : 10,
                   offset: Offset(0, _isHovered ? 4 : 2),
                 ),
                 // Layer 2: Deep grounding shadow
                 BoxShadow(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.06),
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
                 ),
@@ -151,13 +151,13 @@ class AdminQuickActionCardState extends ConsumerState<AdminQuickActionCard> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: effectiveGradient.first.withValues(alpha: _isHovered ? 0.65 : (isDark ? 0.42 : 0.36)),
+                                  color: effectiveGradient.first.withValues(alpha: _isHovered ? (isDark ? 0.65 : 0.35) : (isDark ? 0.42 : 0.22)),
                                   blurRadius: _isHovered ? 16 : (isDark ? 10 : 8),
                                   offset: Offset(0, isDark ? 3 : 2),
                                 ),
                                 if (!isDark)
                                   BoxShadow(
-                                    color: effectiveGradient.last.withValues(alpha: 0.25),
+                                    color: effectiveGradient.last.withValues(alpha: 0.15),
                                     blurRadius: 6,
                                     spreadRadius: -1,
                                   ),

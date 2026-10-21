@@ -510,17 +510,28 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
   Widget _buildLanguageButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: const Color(0xFF00284D).withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
           width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF001F3F).withValues(alpha: 0.30),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.10),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -536,7 +547,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                   children: [
                     const Icon(
                       LucideIcons.globe,
-                      color: Colors.white,
+                      color: Color(0xFF00E5FF),
                       size: 16,
                     ),
                     const SizedBox(width: 8),
@@ -546,13 +557,14 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(
+                    Icon(
                       LucideIcons.chevronDown,
-                      color: Colors.white70,
-                      size: 16,
+                      color: Colors.white.withValues(alpha: 0.75),
+                      size: 15,
                     ),
                   ],
                 ),

@@ -331,7 +331,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                   gradient: LinearGradient(
                     colors: isDark
                         ? [const Color(0xFF0E3D64), const Color(0xFF082038)]
-                        : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -341,7 +341,8 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.45),
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                          .withValues(alpha: isDark ? 0.35 : 0.25),
                       blurRadius: 18,
                       offset: const Offset(0, 4),
                     ),
@@ -359,7 +360,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.checkCircle2, color: Color(0xFF00E5FF), size: 18),
+                          Icon(LucideIcons.checkCircle2, color: isDark ? const Color(0xFF00E5FF) : Colors.white, size: 18),
                           const SizedBox(width: 8),
                           Text(
                             'admin.done'.tr(),
@@ -510,7 +511,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
             label: 'admin.coach_rate_group_label'.tr(args: [currencySymbol]),
             icon: LucideIcons.users,
             controller: _rateGroupController,
-            color: const Color(0xFF00E5FF),
+            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
             currentTheme: currentTheme,
             unitBadge: '$currencySymbol / ${'admin.coach_rate_unit_short'.tr()}',
           ),
@@ -560,7 +561,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 gradient: LinearGradient(
                   colors: isDark
                       ? currentTheme.accentGradient
-                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -570,7 +571,7 @@ class _AddCoachSheetState extends ConsumerState<AddCoachSheet> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (isDark ? currentTheme.accentPrimary : const Color(0xFF00E5FF)).withValues(alpha: isDark ? 0.45 : 0.45),
+                    color: (isDark ? currentTheme.accentPrimary : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.45 : 0.25),
                     blurRadius: 20,
                     offset: const Offset(0, 5),
                   ),

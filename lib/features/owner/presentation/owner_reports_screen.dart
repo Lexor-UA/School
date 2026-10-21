@@ -251,7 +251,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                         const SizedBox(height: 4),
                         Text(
                           'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': analytics.kyiv.formatExpenses()}),
-                          style: const TextStyle(color: Colors.pinkAccent, fontSize: 12),
+                          style: TextStyle(color: isDark ? Colors.pinkAccent : const Color(0xFFE11D48), fontSize: 12),
                         ),
                       ],
                     ),
@@ -292,7 +292,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
                         const SizedBox(height: 4),
                         Text(
                           'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': analytics.vienna.formatExpenses()}),
-                          style: const TextStyle(color: Colors.pinkAccent, fontSize: 12),
+                          style: TextStyle(color: isDark ? Colors.pinkAccent : const Color(0xFFE11D48), fontSize: 12),
                         ),
                       ],
                     ),
@@ -381,12 +381,16 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.greenAccent.withValues(alpha: 0.2),
+                  color: (isDark ? Colors.greenAccent : const Color(0xFF059669)).withValues(alpha: isDark ? 0.2 : 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '+${summary.revenueGrowth}%',
-                  style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  style: TextStyle(
+                    color: isDark ? Colors.greenAccent : const Color(0xFF047857),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -404,7 +408,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
           const SizedBox(height: 8),
           Text(
             'owner.reports.expenses_with_amount'.tr(namedArgs: {'amount': summary.formatExpenses()}),
-            style: const TextStyle(color: Colors.pinkAccent, fontSize: 14),
+            style: TextStyle(color: isDark ? Colors.pinkAccent : const Color(0xFFE11D48), fontSize: 14),
           ),
         ],
       ),
@@ -485,9 +489,10 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
   }
 
   Widget _buildBreakdownItem(String label, int percentage, Color color, AppThemeConfig themeConfig) {
+    final effectiveColor = themeConfig.adaptColorForTheme(color);
     return Row(
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: effectiveColor, shape: BoxShape.circle)),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -498,7 +503,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
             ),
           ),
         ),
-        Text('$percentage%', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+        Text('$percentage%', style: TextStyle(color: effectiveColor, fontWeight: FontWeight.bold)),
         const SizedBox(width: 12),
         Expanded(
           flex: 2,
@@ -507,7 +512,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
             child: LinearProgressIndicator(
               value: percentage / 100,
               backgroundColor: themeConfig.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+              valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
               minHeight: 8,
             ),
           ),
@@ -548,6 +553,7 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
   ) {
     final isPositive = change.startsWith('+');
     final isDark = themeConfig.isDark;
+    final effectiveColor = themeConfig.adaptColorForTheme(color);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -564,11 +570,13 @@ class _OwnerReportsScreenState extends ConsumerState<OwnerReportsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: effectiveColor, size: 20),
               Text(
                 change,
                 style: TextStyle(
-                  color: isPositive ? Colors.greenAccent : Colors.pinkAccent,
+                  color: isPositive
+                      ? (isDark ? Colors.greenAccent : const Color(0xFF059669))
+                      : (isDark ? Colors.pinkAccent : const Color(0xFFE11D48)),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),

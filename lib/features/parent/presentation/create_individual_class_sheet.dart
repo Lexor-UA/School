@@ -735,7 +735,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.18),
+                                color: isDark
+                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.30)
+                                    : const Color(0xFF0284C7).withValues(alpha: 0.16),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -1224,7 +1226,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.22),
+                                      color: isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                          : const Color(0xFF0284C7).withValues(alpha: 0.22),
                                       blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),
@@ -1335,7 +1339,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.22),
+                                          color: isDark
+                                              ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                              : const Color(0xFF0284C7).withValues(alpha: 0.22),
                                           blurRadius: 10,
                                           offset: const Offset(0, 2),
                                         ),
@@ -1392,7 +1398,9 @@ class _CreateIndividualClassSheetState extends ConsumerState<CreateIndividualCla
                     boxShadow: canSubmit
                         ? [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.20),
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.35)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.20),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),

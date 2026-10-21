@@ -556,6 +556,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
     Child? childData,
   }) {
     final isDark = currentTheme.isDark;
+    final effectiveColor = currentTheme.adaptColorForTheme(color);
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -605,7 +606,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
-                    ? (isDark ? const Color(0xFF00E5FF) : color)
+                    ? (isDark ? const Color(0xFF00E5FF) : effectiveColor)
                     : (isDark
                         ? const Color(0xFF00E5FF).withValues(alpha: 0.20)
                         : const Color(0xFFBAE6FD)),
@@ -614,7 +615,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: (isDark ? const Color(0xFF00E5FF) : color).withValues(alpha: isDark ? 0.30 : 0.14),
+                        color: (isDark ? const Color(0xFF00E5FF) : effectiveColor).withValues(alpha: isDark ? 0.30 : 0.14),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -631,7 +632,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     gradient: isSelected
                         ? (isDark
                             ? LinearGradient(colors: [color.withValues(alpha: 0.4), color.withValues(alpha: 0.2)])
-                            : const LinearGradient(colors: [Color(0xFF00E5FF), Color(0xFF0284C7)]))
+                            : const LinearGradient(colors: [Color(0xFF0284C7), Color(0xFF0369A1)]))
                         : null,
                     color: isSelected ? null : (isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE0F2FE)),
                     shape: BoxShape.circle,
@@ -681,7 +682,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       child: Icon(
                         LucideIcons.pencil,
                         size: 10,
-                        color: isDark ? Colors.white70 : color,
+                        color: isDark ? Colors.white70 : effectiveColor,
                       ),
                     ),
                   ),
@@ -786,7 +787,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     gradient: LinearGradient(
                       colors: isDark
                           ? const [Color(0xFF0E2E50), Color(0xFF081C32)]
-                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -799,7 +800,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.32),
+                        color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.22),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -1151,7 +1152,7 @@ class _ParentCalendarTabState extends ConsumerState<ParentCalendarTab> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.30 : 0.18),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.30 : 0.18),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),

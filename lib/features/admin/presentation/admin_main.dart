@@ -1434,18 +1434,25 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF00D2FF),
-                          Color(0xFF0077B6),
-                        ],
+                        colors: isDark
+                            ? const [
+                                Color(0xFF00D2FF),
+                                Color(0xFF0077B6),
+                              ]
+                            : const [
+                                Color(0xFF0284C7),
+                                Color(0xFF0369A1),
+                              ],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00B4D8).withValues(alpha: 0.45),
+                          color: isDark
+                              ? const Color(0xFF00B4D8).withValues(alpha: 0.45)
+                              : const Color(0xFF0284C7).withValues(alpha: 0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -1518,13 +1525,17 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0077B6)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00B4D8).withValues(alpha: 0.5),
+                            color: isDark
+                                ? const Color(0xFF00B4D8).withValues(alpha: 0.5)
+                                : const Color(0xFF0284C7).withValues(alpha: 0.25),
                             blurRadius: 8,
                           ),
                         ],
@@ -2168,13 +2179,17 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                       widthFactor: percent,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                           ),
                           borderRadius: BorderRadius.circular(7),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.25),
+                              color: isDark
+                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                                  : const Color(0xFF0284C7).withValues(alpha: 0.20),
                               blurRadius: 6,
                               offset: const Offset(0, 1),
                             ),
@@ -2217,7 +2232,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         end: Alignment.bottomRight,
                         colors: isDark
                             ? const [Color(0xFF0E3D64), Color(0xFF082038)]
-                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
@@ -2230,7 +2245,7 @@ class _AdminMainState extends ConsumerState<AdminMain> {
                         BoxShadow(
                           color: isDark
                               ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
-                              : const Color(0xFF0284C7).withValues(alpha: 0.35),
+                              : const Color(0xFF0284C7).withValues(alpha: 0.22),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),

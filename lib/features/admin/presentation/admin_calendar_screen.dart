@@ -303,8 +303,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              gradient: LinearGradient(
+                                colors: currentTheme.isDark
+                                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -315,7 +317,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                  color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                      .withValues(alpha: currentTheme.isDark ? 0.35 : 0.22),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
@@ -487,8 +490,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       margin: const EdgeInsets.all(2.5),
                       decoration: BoxDecoration(
                         gradient: isSelected
-                            ? const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            ? LinearGradient(
+                                colors: currentTheme.isDark
+                                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
@@ -510,14 +515,16 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           color: isSelected
                               ? Colors.white.withValues(alpha: 0.55)
                               : (isToday
-                                  ? const Color(0xFF00E5FF).withValues(alpha: 0.65)
+                                  ? (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                      .withValues(alpha: currentTheme.isDark ? 0.65 : 0.45)
                                   : Colors.transparent),
                           width: isSelected ? 1.4 : 1.1,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                  color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                      .withValues(alpha: currentTheme.isDark ? 0.45 : 0.25),
                                   blurRadius: 12,
                                   offset: const Offset(0, 2),
                                 ),
@@ -662,8 +669,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
                 gradient: _selectedCoachId == null
-                    ? const LinearGradient(
-                        colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                    ? LinearGradient(
+                        colors: currentTheme.isDark
+                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
@@ -681,7 +690,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 boxShadow: _selectedCoachId == null
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                          color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                              .withValues(alpha: currentTheme.isDark ? 0.40 : 0.22),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -746,8 +756,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
                   gradient: isSelected
-                      ? const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                      ? LinearGradient(
+                          colors: currentTheme.isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -765,7 +777,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                            color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                .withValues(alpha: currentTheme.isDark ? 0.40 : 0.22),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -872,8 +885,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: currentTheme.isDark
+                                  ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -884,7 +899,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                    .withValues(alpha: currentTheme.isDark ? 0.45 : 0.22),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -963,8 +979,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: currentTheme.isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -975,15 +993,17 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                              color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                  .withValues(alpha: currentTheme.isDark ? 0.45 : 0.25),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
+                            if (currentTheme.isDark)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
                           ],
                         ),
                         child: Row(
@@ -1151,9 +1171,11 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   height: 68,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.12 : 0.06),
+                    color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                        .withValues(alpha: currentTheme.isDark ? 0.12 : 0.08),
                     border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.35 : 0.20),
+                      color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                          .withValues(alpha: currentTheme.isDark ? 0.35 : 0.22),
                       width: 1.2,
                     ),
                   ),
@@ -1163,8 +1185,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                    gradient: LinearGradient(
+                      colors: currentTheme.isDark
+                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1175,7 +1199,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: currentTheme.isDark ? 0.45 : 0.25),
+                        color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            .withValues(alpha: currentTheme.isDark ? 0.45 : 0.22),
                         blurRadius: 16,
                         offset: const Offset(0, 3),
                       ),
@@ -1347,8 +1372,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                    gradient: LinearGradient(
+                      colors: currentTheme.isDark
+                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1359,15 +1386,17 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+                        color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                            .withValues(alpha: currentTheme.isDark ? 0.40 : 0.24),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
+                      if (currentTheme.isDark)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                     ],
                   ),
                   child: Row(
@@ -1616,8 +1645,10 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: currentTheme.isDark
+                              ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                              : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -1628,7 +1659,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            color: (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                .withValues(alpha: currentTheme.isDark ? 0.35 : 0.20),
                             blurRadius: 6,
                             offset: const Offset(0, 1.5),
                           ),
@@ -2189,7 +2221,9 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                   ? const [Color(0xFFF43F5E), Color(0xFFE11D48)]
                                   : progress >= 0.75
                                       ? const [Color(0xFFF59E0B), Color(0xFFD97706)]
-                                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                      : (currentTheme.isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -2197,8 +2231,8 @@ class _AdminCalendarScreenState extends ConsumerState<AdminCalendarScreen> {
                                         ? const Color(0xFFF43F5E)
                                         : (progress >= 0.75
                                             ? const Color(0xFFF59E0B)
-                                            : const Color(0xFF00E5FF)))
-                                    .withValues(alpha: currentTheme.isDark ? 0.45 : 0.25),
+                                            : (currentTheme.isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))))
+                                    .withValues(alpha: currentTheme.isDark ? 0.45 : 0.22),
                                 blurRadius: 4,
                               ),
                             ],

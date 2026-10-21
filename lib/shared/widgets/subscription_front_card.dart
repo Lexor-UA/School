@@ -38,8 +38,8 @@ class SubscriptionFrontCard extends ConsumerWidget {
               onTap: onTap,
               enableHologram: false,
               borderRadius: BorderRadius.circular(24),
-              shadowColor: isDark ? null : const Color(0xFF0284C7).withValues(alpha: 0.28),
-              glowColor: isDark ? null : const Color(0xFF00E5FF).withValues(alpha: 0.16),
+              shadowColor: isDark ? null : const Color(0xFF0284C7).withValues(alpha: 0.18),
+              glowColor: isDark ? null : const Color(0xFF0284C7).withValues(alpha: 0.08),
               child: cardContent,
             ),
           ),
@@ -74,8 +74,8 @@ class SubscriptionFrontCard extends ConsumerWidget {
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFF00E5FF).withValues(alpha: 0.55),
-          width: isDark ? 1.2 : 1.4,
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.28) : const Color(0xFF38BDF8).withValues(alpha: 0.45),
+          width: isDark ? 1.2 : 1.3,
         ),
         boxShadow: isInteractive
             ? null
@@ -83,12 +83,12 @@ class SubscriptionFrontCard extends ConsumerWidget {
                 BoxShadow(
                   color: isDark
                       ? const Color(0xFF003B73).withValues(alpha: 0.35)
-                      : const Color(0xFF0284C7).withValues(alpha: 0.22),
+                      : const Color(0xFF0284C7).withValues(alpha: 0.16),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.10),
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.10 : 0.06),
                   blurRadius: 16,
                   offset: const Offset(0, 2),
                 ),

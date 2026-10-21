@@ -506,10 +506,12 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                   width: double.infinity,
                   height: 52,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF00D2FF), Color(0xFF0077B6)],
+                      colors: isDark
+                          ? const [Color(0xFF00D2FF), Color(0xFF0077B6)]
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
@@ -518,7 +520,8 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00B4D8).withValues(alpha: 0.40),
+                        color: (isDark ? const Color(0xFF00B4D8) : const Color(0xFF0284C7))
+                            .withValues(alpha: isDark ? 0.40 : 0.25),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -640,7 +643,10 @@ class _EditClientSheetState extends ConsumerState<EditClientSheet> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
+          borderSide: BorderSide(
+            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            width: 1.5,
+          ),
         ),
       ),
     );

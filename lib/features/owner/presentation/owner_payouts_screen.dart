@@ -619,8 +619,10 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                   colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                                 )
                               : (tabId == 'kyiv'
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  ? LinearGradient(
+                                      colors: isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     )
                                   : const LinearGradient(
                                       colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
@@ -638,7 +640,9 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                               BoxShadow(
                                 color: (tabId == 'all'
                                         ? const Color(0xFF6366F1)
-                                        : (tabId == 'kyiv' ? const Color(0xFF00E5FF) : const Color(0xFFA855F7)))
+                                        : (tabId == 'kyiv'
+                                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                            : const Color(0xFFA855F7)))
                                     .withValues(alpha: isDark ? 0.38 : 0.24),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
@@ -1602,7 +1606,9 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
 
     final accentColor = isPaid
         ? const Color(0xFF10B981)
-        : (isCoach ? const Color(0xFF00E5FF) : const Color(0xFFA855F7));
+        : (isCoach
+            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+            : const Color(0xFFA855F7));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -1793,12 +1799,12 @@ class _OwnerPayoutsScreenState extends ConsumerState<OwnerPayoutsScreen> {
                                 decoration: BoxDecoration(
                                   color: isVienna
                                       ? const Color(0xFFA855F7).withValues(alpha: isDark ? 0.16 : 0.12)
-                                      : const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.16 : 0.12),
+                                      : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.16 : 0.10),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: isVienna
                                         ? const Color(0xFFA855F7).withValues(alpha: 0.35)
-                                        : const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                        : (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.30),
                                     width: 0.8,
                                   ),
                                 ),

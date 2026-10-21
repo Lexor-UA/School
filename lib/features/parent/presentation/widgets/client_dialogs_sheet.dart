@@ -141,15 +141,19 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                            gradient: LinearGradient(
+                              colors: isLight
+                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                  : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                color: isLight
+                                    ? const Color(0xFF0284C7).withValues(alpha: 0.22)
+                                    : const Color(0xFF00E5FF).withValues(alpha: 0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -349,15 +353,19 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            color: isLight
+                                ? const Color(0xFF0284C7).withValues(alpha: 0.22)
+                                : const Color(0xFF00E5FF).withValues(alpha: 0.35),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -445,7 +453,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
         boxShadow: [
           BoxShadow(
             color: hasUnread
-                ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                ? (isLight ? const Color(0xFF0284C7).withValues(alpha: 0.14) : const Color(0xFF00E5FF).withValues(alpha: 0.18))
                 : (isLight ? const Color(0xFF0284C7).withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.20)),
             blurRadius: 10,
             offset: const Offset(0, 3),
@@ -466,7 +474,7 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: hasUnread
-                  ? const Color(0xFF00E5FF)
+                  ? (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
                   : (isLight ? const Color(0xFFE2E8F0) : const Color(0xFF00E5FF).withValues(alpha: 0.20)),
               width: hasUnread ? 1.5 : 1.0,
             ),
@@ -504,15 +512,19 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                            color: isLight
+                                ? const Color(0xFF0284C7).withValues(alpha: 0.20)
+                                : const Color(0xFF00E5FF).withValues(alpha: 0.30),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -582,15 +594,19 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isLight
+                                ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                              color: isLight
+                                  ? const Color(0xFF0284C7).withValues(alpha: 0.25)
+                                  : const Color(0xFF00E5FF).withValues(alpha: 0.45),
                               blurRadius: 6,
                             ),
                           ],
@@ -680,8 +696,10 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0284C7), Color(0xFF00E5FF)],
+                        gradient: LinearGradient(
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF0284C7), Color(0xFF00E5FF)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -807,12 +825,12 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
               ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: isLight ? 0.40 : 0.50),
+                color: isLight ? const Color(0xFF38BDF8) : const Color(0xFF00E5FF).withValues(alpha: 0.50),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.20),
+                  color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.16),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -863,12 +881,12 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                     : const [Color(0xFF0E3D64), Color(0xFF082038)],
               ),
               border: Border.all(
-                color: const Color(0xFF00E5FF).withValues(alpha: isLight ? 0.45 : 0.65),
+                color: isLight ? Colors.white.withValues(alpha: 0.4) : const Color(0xFF00E5FF).withValues(alpha: 0.65),
                 width: 1.3,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                  color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.22),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
                 ),
@@ -888,10 +906,10 @@ class _ClientDialogsSheetState extends ConsumerState<ClientDialogsSheet> {
                 Navigator.pop(context);
                 ref.read(parentTabProvider.notifier).setTab(1);
               },
-              icon: const Icon(
+              icon: Icon(
                 LucideIcons.calendarDays,
                 size: 16,
-                color: Color(0xFF00E5FF),
+                color: isLight ? Colors.white : const Color(0xFF00E5FF),
               ),
               label: Text(
                 'parent.view_schedule'.tr(),

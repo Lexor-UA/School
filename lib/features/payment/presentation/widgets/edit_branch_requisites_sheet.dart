@@ -208,8 +208,10 @@ class _EditBranchRequisitesSheetState extends ConsumerState<EditBranchRequisites
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                              gradient: LinearGradient(
+                                colors: isDark
+                                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -380,15 +382,17 @@ class _EditBranchRequisitesSheetState extends ConsumerState<EditBranchRequisites
                       height: 52,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.22),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -462,7 +466,9 @@ class _EditBranchRequisitesSheetState extends ConsumerState<EditBranchRequisites
               : Colors.transparent,
           borderRadius: BorderRadius.circular(11),
           border: isSelected
-              ? Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.40))
+              ? Border.all(
+                  color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.40 : 0.35),
+                )
               : null,
           boxShadow: isSelected
               ? [
@@ -523,7 +529,11 @@ class _EditBranchRequisitesSheetState extends ConsumerState<EditBranchRequisites
           ),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: const Color(0xFF00E5FF)),
+              Icon(
+                icon,
+                size: 16,
+                color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(

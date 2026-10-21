@@ -353,13 +353,15 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.20),
+                      color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.20),
                       blurRadius: 14,
                       offset: const Offset(0, 3),
                     ),
@@ -472,7 +474,7 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.35 : 0.20),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.35 : 0.20),
                           blurRadius: 16,
                           spreadRadius: 1,
                         ),
@@ -507,8 +509,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                      : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                 ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
@@ -669,8 +673,10 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                                   colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                                 )
                               : (tabId == 'kyiv'
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  ? LinearGradient(
+                                      colors: isDark
+                                          ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                          : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     )
                                   : const LinearGradient(
                                       colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
@@ -688,7 +694,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                               BoxShadow(
                                 color: (tabId == 'all'
                                         ? const Color(0xFF6366F1)
-                                        : (tabId == 'kyiv' ? const Color(0xFF00E5FF) : const Color(0xFFA855F7)))
+                                        : (tabId == 'kyiv'
+                                            ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                                            : const Color(0xFFA855F7)))
                                     .withValues(alpha: isDark ? 0.38 : 0.24),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
@@ -1714,7 +1722,9 @@ class _OwnerMainState extends ConsumerState<OwnerMain> {
                 percent: childPercentStr,
                 value: childPercent,
                 amount: childAmountStr,
-                gradient: const [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                gradient: themeConfig.isDark
+                    ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                    : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                 themeConfig: themeConfig,
               ),
 

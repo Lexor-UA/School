@@ -302,15 +302,19 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                               flex: 2,
                               child: Container(
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                  gradient: LinearGradient(
+                                    colors: isDark
+                                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                                      color: isDark
+                                          ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                                          : const Color(0xFF0284C7).withValues(alpha: 0.25),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
                                     ),
@@ -625,12 +629,12 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.45 : 0.60),
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.45) : const Color(0xFF38BDF8),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.16 : 0.10),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -641,10 +645,10 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+              color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.18 : 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.eye, color: Color(0xFF00E5FF), size: 18),
+            child: Icon(LucideIcons.eye, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7), size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -687,23 +691,23 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
         color: isDark ? const Color(0xFF092842) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: 0.40),
+          color: isDark ? const Color(0xFF00E5FF).withValues(alpha: 0.40) : const Color(0xFFBAE6FD),
           width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(
+          SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
+            child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)),
           ),
           const SizedBox(width: 8),
           Text(
             'chat.sending_photo'.tr(),
-            style: const TextStyle(
-              color: Color(0xFF00E5FF),
+            style: TextStyle(
+              color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -776,18 +780,22 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: widget.isMonitoring
-                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                        : (widget.type == 'coach_client'
-                            ? const [Color(0xFF38BDF8), Color(0xFF0284C7)]
-                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)]),
+                    colors: isDark
+                        ? (widget.isMonitoring
+                            ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                            : (widget.type == 'coach_client'
+                                ? const [Color(0xFF38BDF8), Color(0xFF0284C7)]
+                                : const [Color(0xFF00E5FF), Color(0xFF0284C7)]))
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.45)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.25),
                       blurRadius: 14,
                       spreadRadius: 1,
                     ),
@@ -870,7 +878,7 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                   colors: isMe
                       ? (isDark
                           ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
-                          : const [Color(0xFF00E5FF), Color(0xFF0284C7)])
+                          : const [Color(0xFF0284C7), Color(0xFF0369A1)])
                       : (isDark
                           ? [
                               const Color(0xFF0E3D64).withValues(alpha: 0.75),
@@ -900,8 +908,8 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
                 boxShadow: isMe
                     ? [
                         BoxShadow(
-                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00E5FF))
-                              .withValues(alpha: isDark ? 0.35 : 0.30),
+                          color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7))
+                              .withValues(alpha: isDark ? 0.35 : 0.20),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
@@ -1147,15 +1155,19 @@ class _ParentChatScreenState extends ConsumerState<ParentChatScreen> {
               const SizedBox(width: 10),
               Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                        : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: isDark ? 0.40 : 0.35),
+                      color: isDark
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.40)
+                          : const Color(0xFF0284C7).withValues(alpha: 0.25),
                       blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),

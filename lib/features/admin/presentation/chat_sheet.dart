@@ -201,8 +201,8 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                           const Color(0xFF0077B6).withValues(alpha: 0.18),
                                         ]
                                       : const [
-                                          Color(0xFF00D2FF),
-                                          Color(0xFF0077B6),
+                                          Color(0xFF0284C7),
+                                          Color(0xFF0369A1),
                                         ],
                                 ),
                                 borderRadius: BorderRadius.circular(16),
@@ -214,7 +214,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00D2FF).withValues(alpha: isDark ? 0.25 : 0.30),
+                                    color: (isDark ? const Color(0xFF00D2FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.25 : 0.22),
                                     blurRadius: 12,
                                     offset: const Offset(0, 2),
                                   ),
@@ -286,8 +286,10 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                                     decoration: BoxDecoration(
                                       gradient: _onlyUnread
-                                          ? const LinearGradient(
-                                              colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                                          ? LinearGradient(
+                                              colors: isDark
+                                                  ? const [Color(0xFF00E5FF), Color(0xFF0284C7)]
+                                                  : const [Color(0xFF0284C7), Color(0xFF0369A1)],
                                             )
                                           : null,
                                       color: _onlyUnread
@@ -759,7 +761,7 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                         ? const [Color(0xFF0E3D64), Color(0xFF082038)]
                         : (accentColor != null
                             ? [accentColor, Color.lerp(accentColor, const Color(0xFF0284C7), 0.35)!]
-                            : const [Color(0xFF00E5FF), Color(0xFF0284C7)]),
+                            : const [Color(0xFF0284C7), Color(0xFF0369A1)]),
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -1543,7 +1545,9 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                         ? const [Color(0xFFF59E0B), Color(0xFFD97706)]
                                         : (isCoach
                                             ? const [Color(0xFF10B981), Color(0xFF059669)]
-                                            : const [Color(0xFF00D2FF), Color(0xFF0077B6)]),
+                                            : (isDark
+                                                ? const [Color(0xFF00D2FF), Color(0xFF0077B6)]
+                                                : const [Color(0xFF0284C7), Color(0xFF0369A1)])),
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -1552,8 +1556,10 @@ class _ChatSheetState extends ConsumerState<ChatSheet> {
                                     BoxShadow(
                                       color: (isRecovery
                                               ? const Color(0xFFF59E0B)
-                                              : (isCoach ? const Color(0xFF10B981) : const Color(0xFF00D2FF)))
-                                          .withValues(alpha: 0.45),
+                                              : (isCoach
+                                                  ? const Color(0xFF10B981)
+                                                  : (isDark ? const Color(0xFF00D2FF) : const Color(0xFF0284C7))))
+                                          .withValues(alpha: isDark ? 0.45 : 0.25),
                                       blurRadius: 6,
                                     ),
                                   ],

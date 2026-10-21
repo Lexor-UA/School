@@ -591,8 +591,8 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00E5FF),
-                    foregroundColor: Colors.black,
+                    backgroundColor: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+                    foregroundColor: isDark ? Colors.black : Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -600,12 +600,12 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.black,
+                            color: isDark ? Colors.black : Colors.white,
                           ),
                         )
                       : Row(
@@ -664,7 +664,10 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
+          borderSide: BorderSide(
+            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            width: 1.5,
+          ),
         ),
       ),
       onSaved: onSaved,
@@ -703,7 +706,10 @@ class _EditBranchSheetState extends ConsumerState<EditBranchSheet> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
+          borderSide: BorderSide(
+            color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7),
+            width: 1.5,
+          ),
         ),
       ),
       items: items.map((item) {

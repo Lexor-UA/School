@@ -111,15 +111,18 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF0077B6)],
+                            gradient: LinearGradient(
+                              colors: isLight
+                                  ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                  : const [Color(0xFF00E5FF), Color(0xFF0077B6)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                    .withValues(alpha: isLight ? 0.22 : 0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -277,8 +280,10 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+              ? LinearGradient(
+                  colors: isLight
+                      ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                      : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -296,7 +301,8 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                    color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                        .withValues(alpha: isLight ? 0.22 : 0.35),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -307,7 +313,7 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
           label,
           style: TextStyle(
             color: isSelected
-                ? (isLight ? const Color(0xFF032238) : Colors.white)
+                ? Colors.white
                 : (isLight ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 12.5,
@@ -367,15 +373,18 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                .withValues(alpha: isLight ? 0.22 : 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -502,14 +511,14 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: hasUnread
-              ? const Color(0xFF00E5FF)
+              ? (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
               : (isLight ? const Color(0xFFBAE6FD) : const Color(0xFF1E4570)),
           width: hasUnread ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
             color: hasUnread
-                ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                ? (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF)).withValues(alpha: 0.18)
                 : (isLight ? const Color(0xFF0284C7).withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.25)),
             blurRadius: 10,
             offset: const Offset(0, 3),
@@ -553,17 +562,20 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       height: 44,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF00E5FF),
-                            dialog.childName != null ? const Color(0xFF0284C7) : const Color(0xFF0077B6),
-                          ],
+                          colors: isLight
+                              ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                              : [
+                                  const Color(0xFF00E5FF),
+                                  dialog.childName != null ? const Color(0xFF0284C7) : const Color(0xFF0077B6),
+                                ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.30),
+                            color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                .withValues(alpha: isLight ? 0.22 : 0.30),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -650,15 +662,18 @@ class _CoachDialogsSheetState extends ConsumerState<CoachDialogsSheet> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00E5FF), Color(0xFF0284C7)],
+                          gradient: LinearGradient(
+                            colors: isLight
+                                ? const [Color(0xFF0284C7), Color(0xFF0369A1)]
+                                : const [Color(0xFF00E5FF), Color(0xFF0284C7)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+                              color: (isLight ? const Color(0xFF0284C7) : const Color(0xFF00E5FF))
+                                  .withValues(alpha: isLight ? 0.25 : 0.45),
                               blurRadius: 6,
                             ),
                           ],

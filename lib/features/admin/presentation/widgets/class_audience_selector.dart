@@ -96,12 +96,12 @@ class ClassAudienceSelector extends StatelessWidget {
                       : null,
                   borderRadius: BorderRadius.circular(12),
                   border: isSelected
-                      ? Border.all(color: const Color(0xFF00E5FF), width: 1.3)
+                      ? Border.all(color: isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8), width: 1.3)
                       : Border.all(color: Colors.transparent, width: 1.3),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                            color: (isDark ? const Color(0xFF00E5FF) : const Color(0xFF0284C7)).withValues(alpha: isDark ? 0.28 : 0.20),
                             blurRadius: 10,
                           ),
                         ]
@@ -114,7 +114,7 @@ class ClassAudienceSelector extends StatelessWidget {
                       opt.icon,
                       size: 14,
                       color: isSelected
-                          ? const Color(0xFF00E5FF)
+                          ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF38BDF8))
                           : (opt.disabled
                               ? (isDark ? Colors.white24 : Colors.black26)
                               : (isDark ? const Color(0xFFB0D4EC) : const Color(0xFF64748B))),

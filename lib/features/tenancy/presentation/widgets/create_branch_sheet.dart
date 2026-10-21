@@ -384,11 +384,11 @@ class _CreateBranchSheetState extends ConsumerState<CreateBranchSheet> {
                       : BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF0284C7), Color(0xFF00E5FF)],
+                            colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.24),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

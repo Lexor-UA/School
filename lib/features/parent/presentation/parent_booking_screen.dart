@@ -84,7 +84,7 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                           selectedUserId = null;
                           _selectedSplitUserIds.clear();
                         }),
-                        child: Text('parent.change'.tr(), style: const TextStyle(color: Colors.cyanAccent)),
+                        child: Text('parent.change'.tr(), style: TextStyle(color: isDark ? Colors.cyanAccent : const Color(0xFF0284C7))),
                       ),
                     ],
                   ),
@@ -112,13 +112,13 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
                 child: ElevatedButton(
                   onPressed: (isBooking || !canConfirm) ? null : _confirmBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: canConfirm ? Colors.cyanAccent : (isDark ? Colors.white12 : Colors.black12),
-                    foregroundColor: canConfirm ? Colors.black87 : (isDark ? Colors.white38 : Colors.black38),
+                    backgroundColor: canConfirm ? (isDark ? Colors.cyanAccent : const Color(0xFF0284C7)) : (isDark ? Colors.white12 : Colors.black12),
+                    foregroundColor: canConfirm ? (isDark ? Colors.black87 : Colors.white) : (isDark ? Colors.white38 : Colors.black38),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: isBooking
-                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 3))
+                      ? SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: isDark ? Colors.black87 : Colors.white, strokeWidth: 3))
                       : Text(
                           isSplitEmpty
                               ? (_selectedSplitUserIds.length == 2
@@ -494,17 +494,17 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (splitIndex == 0 ? Colors.cyanAccent : const Color(0xFF10B981)).withValues(alpha: 0.2),
+                  color: (splitIndex == 0 ? (isDark ? Colors.cyanAccent : const Color(0xFF0284C7)) : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: splitIndex == 0 ? Colors.cyanAccent : const Color(0xFF10B981),
+                    color: splitIndex == 0 ? (isDark ? Colors.cyanAccent : const Color(0xFF0284C7)) : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                     width: 1,
                   ),
                 ),
                 child: Text(
                   splitBadge,
                   style: TextStyle(
-                    color: splitIndex == 0 ? (isDark ? Colors.cyanAccent : const Color(0xFF0284C7)) : const Color(0xFF10B981),
+                    color: splitIndex == 0 ? (isDark ? Colors.cyanAccent : const Color(0xFF0284C7)) : (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)),
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                   ),
@@ -756,10 +756,10 @@ class _ParentBookingScreenState extends ConsumerState<ParentBookingScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.greenAccent.withValues(alpha: 0.2),
+                  color: (isDark ? Colors.greenAccent : const Color(0xFF059669)).withValues(alpha: isDark ? 0.2 : 0.14),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.check, color: Colors.greenAccent, size: 64),
+                child: Icon(LucideIcons.check, color: isDark ? Colors.greenAccent : const Color(0xFF059669), size: 64),
               ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
               const SizedBox(height: 32),
               Text(

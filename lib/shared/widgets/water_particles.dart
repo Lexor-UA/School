@@ -145,10 +145,10 @@ class _ParticlePainter extends CustomPainter {
       bodyColor = const Color(0xFF0284C7).withValues(alpha: 0.22);
       highlightColor = Colors.white.withValues(alpha: 0.90);
     } else {
-      // Ocean Pearl (Light): Crystal azure and sky blue water bubbles
-      rimColor = const Color(0xFF0284C7).withValues(alpha: 0.45);
-      bodyColor = const Color(0xFF38BDF8).withValues(alpha: 0.24);
-      highlightColor = Colors.white.withValues(alpha: 0.95);
+      // Ocean Pearl (Light): Soft crystal azure and sky blue water bubbles
+      rimColor = const Color(0xFF0284C7).withValues(alpha: 0.30);
+      bodyColor = const Color(0xFF7DD3FC).withValues(alpha: 0.18);
+      highlightColor = Colors.white.withValues(alpha: 0.90);
     }
 
     final bodyPaint = Paint()..style = PaintingStyle.fill;
